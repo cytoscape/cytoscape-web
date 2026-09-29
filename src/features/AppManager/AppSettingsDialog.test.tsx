@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { createElement, type ReactNode } from 'react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { createElement, type ReactNode, useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { AppConfigContext, defaultAppConfig } from '../../AppConfigContext'
@@ -44,7 +44,7 @@ const commands = {
   refreshCatalog: vi.fn(async () => undefined),
 } as unknown as Parameters<typeof AppManagerCommandsProvider>[0]['value']
 
-const renderDialog = (): void => {
+const renderDialog = (): { reopen: () => void } => {
   const config = { ...defaultAppConfig, allowsLocalhostAppsOn: DEV1 }
   const wrapper = ({ children }: { children: ReactNode }) =>
     createElement(
@@ -52,13 +52,18 @@ const renderDialog = (): void => {
       { value: config },
       createElement(AppManagerCommandsProvider, { value: commands }, children),
     )
-  render(
-    createElement(AppSettingsDialog, {
-      openDialog: true,
-      setOpenDialog: vi.fn(),
-    }),
-    { wrapper },
-  )
+  // Stateful, like the App menu: the dialog's own Close button closes it.
+  let setOpen: (open: boolean) => void = () => {}
+  const Host = () => {
+    const [open, setOpenState] = useState(true)
+    setOpen = setOpenState
+    return createElement(AppSettingsDialog, {
+      openDialog: open,
+      setOpenDialog: setOpenState,
+    })
+  }
+  render(createElement(Host), { wrapper })
+  return { reopen: () => act(() => setOpen(true)) }
 }
 
 describe('AppSettingsDialog — localhost opt-in wiring', () => {
@@ -167,5 +172,47 @@ describe('AppSettingsDialog — advanced section', () => {
       expect(screen.queryByLabelText('Custom manifest URL')).toBeNull(),
     )
     expect(advanced.textContent).toMatch(/^advanced$/i)
+  })
+})
+
+// The App menu keeps this dialog mounted and only toggles `openDialog`, so
+// everything typed or chosen used to survive Close and reappear on reopen.
+describe('AppSettingsDialog — reopening', () => {
+  const selectedTab = (): string | null =>
+    screen
+      .getAllByRole('tab')
+      .find((tab) => tab.getAttribute('aria-selected') === 'true')
+      ?.textContent ?? null
+
+  it('starts every open on the Apps tab with empty fields', async () => {
+    const { reopen } = renderDialog()
+
+    fireEvent.change(screen.getByTestId('install-from-url-input'), {
+      target: { value: 'https://example.org/app.json' },
+    })
+    fireEvent.click(screen.getByTestId('app-settings-advanced-button'))
+    fireEvent.change(screen.getByLabelText('Custom manifest URL'), {
+      target: { value: 'https://example.org/manifest.json' },
+    })
+    // The service URL field lives in ServiceListPanel, which mounts only on
+    // this tab: starting on Apps is what resets it.
+    fireEvent.click(screen.getByRole('tab', { name: 'Service Apps' }))
+    expect(selectedTab()).toBe('Service Apps')
+
+    fireEvent.click(screen.getByTestId('app-settings-dialog-close-button'))
+    await waitFor(() =>
+      expect(screen.queryByTestId('app-settings-dialog')).toBeNull(),
+    )
+    reopen()
+
+    expect(selectedTab()).toBe('Apps')
+    expect(
+      (screen.getByTestId('install-from-url-input') as HTMLInputElement).value,
+    ).toBe('')
+    expect(screen.queryByLabelText('Custom manifest URL')).toBeNull()
+    fireEvent.click(screen.getByTestId('app-settings-advanced-button'))
+    expect(
+      (screen.getByLabelText('Custom manifest URL') as HTMLInputElement).value,
+    ).toBe('')
   })
 })

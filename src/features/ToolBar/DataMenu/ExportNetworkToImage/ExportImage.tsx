@@ -46,8 +46,31 @@ type FileType = (typeof FileTypes)[keyof typeof FileTypes]
  *
  * It renders the live view of `currentNetworkId`, so callers should only open
  * it for the network that is currently displayed.
+ *
+ * Its hosts (the Data menu, the summary panel's network menu) keep it mounted
+ * and only toggle `open`, so the dialog is re-created (by key) on every open:
+ * the file name re-seeds from the network current at that moment, and edits
+ * abandoned with Cancel are discarded. The key is stable while closing, so
+ * the exit transition still plays.
  */
 export const ExportImage = (props: ExportImageProps): ReactElement => {
+  const [wasOpen, setWasOpen] = useState(props.open)
+  const [formKey, setFormKey] = useState(0)
+  if (props.open !== wasOpen) {
+    setWasOpen(props.open)
+    if (props.open) {
+      setFormKey(formKey + 1)
+    }
+  }
+
+  return <ExportImageContent key={formKey} {...props} />
+}
+
+/**
+ * The dialog itself. Kept as one component so the Cancel button stays inside
+ * the CyDialog block, where the dismissal policy test looks for it.
+ */
+const ExportImageContent = (props: ExportImageProps): ReactElement => {
   const [loading, setLoading] = useState(false)
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,

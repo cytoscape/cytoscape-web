@@ -1,5 +1,5 @@
 import { createTheme } from '@mui/material/styles'
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -231,101 +231,99 @@ describe('DropdownMenu keyboard access', () => {
   })
 })
 
-describe('DropdownMenu with a dialog owned by a template row', () => {
-  // Help > About, Citation, Report a Bug and Developer > Import Database
-  // Snapshot keep their dialog state inside the menu item: the row opens a
-  // CyDialog rendered next to it, and the menu is told to close only when
-  // the dialog closes. The dialog is a React descendant of the menu but a
-  // DOM descendant of body, so the menu must neither close when the dialog
-  // takes focus (unmounting the dialog with it) nor treat keys and clicks
-  // inside the dialog as its own.
-  const DialogRow = () => {
+describe('DropdownMenu and the dialogs its rows open', () => {
+  // A row never renders a dialog (#784, enforced by menuRowDialogs.test.ts):
+  // the menu component owns it, and the row's onClick closes the menu and
+  // opens the dialog. The dialog is then independent of the menu entirely.
+  const MenuHarness = () => {
     const [open, setOpen] = useState(false)
+    const [dialogOpen, setDialogOpen] = useState(false)
     return (
       <>
-        <DropdownMenuItem label="About" onClick={() => setOpen(true)} />
-        <CyDialog open={open}>
+        <DropdownMenu
+          id="help"
+          label="Help"
+          menuItems={[
+            {
+              template: (
+                <DropdownMenuItem
+                  label="About"
+                  onClick={() => {
+                    setOpen(false)
+                    setDialogOpen(true)
+                  }}
+                />
+              ),
+            },
+            { template: <DropdownMenuItem label="Other" /> },
+          ]}
+          open={open}
+          onOpenChange={setOpen}
+        />
+        <CyDialog open={dialogOpen}>
           <input aria-label="Name" />
-          <button onClick={() => setOpen(false)}>Close</button>
+          <button onClick={() => setDialogOpen(false)}>Close</button>
         </CyDialog>
       </>
     )
   }
 
-  const MenuHarness = () => {
-    const [open, setOpen] = useState(false)
-    return (
-      <DropdownMenu
-        id="help"
-        label="Help"
-        menuItems={[{ template: <DialogRow /> }]}
-        open={open}
-        onOpenChange={setOpen}
-      />
-    )
+  // Let the menu's focus-out task and ClickAwayListener's arming run.
+  const settle = async (): Promise<void> => {
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
   }
 
-  const openDialogFromMenu = async (): Promise<HTMLElement> => {
+  const openMenu = async (): Promise<void> => {
     render(<MenuHarness />)
     fireEvent.click(screen.getByTestId('toolbar-help-menu-button'))
-    fireEvent.click(screen.getByText('About'))
-    // The menu decides whether focus left it in a microtask after the blur
-    // the dialog's focus trap causes; let that settle before asserting.
-    await act(async () => {})
-    return screen.getByLabelText('Name')
+    await settle()
   }
 
-  // The open modal aria-hides everything else on the page, the menu
-  // included, so look for the menu through that flag.
-  const getMenu = (): HTMLElement => screen.getByRole('menu', { hidden: true })
+  it('closes the menu before the dialog shows', async () => {
+    await openMenu()
 
-  it('keeps the menu, and so the dialog, mounted while the dialog has focus', async () => {
-    await openDialogFromMenu()
-
-    expect(screen.getByRole('dialog')).toBeTruthy()
-    expect(getMenu()).toBeTruthy()
-  })
-
-  it('ignores Escape pressed inside the dialog', async () => {
-    const input = await openDialogFromMenu()
-
-    fireEvent.keyDown(input, { key: 'Escape' })
-    await act(async () => {})
+    fireEvent.click(screen.getByText('About'))
+    await settle()
 
     expect(screen.getByRole('dialog')).toBeTruthy()
-    expect(getMenu()).toBeTruthy()
-  })
-
-  it('lets the dialog own its keys and mouse: Space types, mousedown focuses', async () => {
-    const input = await openDialogFromMenu()
-
-    // fireEvent returns false when a handler called preventDefault().
+    expect(screen.queryByRole('menu', { hidden: true })).toBeNull()
+    // Nothing in the menu intercepts the dialog's keys or mouse any more.
+    const input = screen.getByLabelText('Name')
     expect(fireEvent.keyDown(input, { key: ' ' })).toBe(true)
-    expect(fireEvent.keyDown(input, { key: 'Enter' })).toBe(true)
-    expect(fireEvent.keyDown(input, { key: 'ArrowDown' })).toBe(true)
     expect(fireEvent.mouseDown(input)).toBe(true)
-    expect(screen.getByRole('dialog')).toBeTruthy()
   })
 
-  it('leaves the dialog mounted when a click lands inside it', async () => {
-    const input = await openDialogFromMenu()
+  it('stays open when a press inside the menu is released outside it', async () => {
+    await openMenu()
 
-    // A full pointer sequence, since ClickAwayListener acts on mousedown and
-    // the row's own handlers act on click.
-    fireEvent.mouseDown(input)
-    fireEvent.mouseUp(input)
-    fireEvent.click(input)
-    await act(async () => {})
+    // The browser fires this click on the common ancestor of the press and
+    // the release: body, outside the menu.
+    fireEvent.mouseDown(screen.getByText('Other'))
+    fireEvent.mouseUp(document.body)
+    fireEvent.click(document.body)
+    await settle()
 
-    expect(screen.getByRole('dialog')).toBeTruthy()
+    expect(screen.getByRole('menu')).toBeTruthy()
   })
 
-  it('closes the menu when the dialog closes and asks it to', async () => {
-    await openDialogFromMenu()
+  it('closes when its trigger is pressed, while focus moves to the trigger', async () => {
+    await openMenu()
+    const trigger = screen.getByTestId('toolbar-help-menu-button')
 
-    fireEvent.click(screen.getByText('Close'))
-    await act(async () => {})
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    // A real press moves focus from the menu to the trigger with a microtask
+    // checkpoint between focusout and focusin: a focus-out check made in
+    // that gap closed the menu, and the click then reopened it.
+    ;(document.activeElement as HTMLElement).blur()
+    await Promise.resolve()
+    trigger.focus()
+    fireEvent.mouseDown(trigger)
+    fireEvent.mouseUp(trigger)
+    fireEvent.click(trigger)
+    await settle()
+
+    expect(screen.queryByRole('menu')).toBeNull()
   })
 })
 

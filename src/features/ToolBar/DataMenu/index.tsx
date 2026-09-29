@@ -1,12 +1,19 @@
 import DownloadIcon from '@mui/icons-material/Download'
 import UploadIcon from '@mui/icons-material/Upload'
 import { ToolbarMenuItem as MenuItem } from '@/features/ToolBar/menuItemModel'
-import { lazy, Suspense, useCallback, useState } from 'react'
+import { lazy, Suspense, useCallback, useContext, useState } from 'react'
 
+import { AppConfigContext } from '../../../AppConfigContext'
+import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
+import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { useCytoscapeDesktopPermissionNotice } from '../../../data/hooks/useCytoscapeDesktopPermissionNotice'
+import { useOpenNetworkInCytoscapeFromStores } from '../../../data/hooks/useOpenInCytoscapeDesktop'
 import { useResetWorkspace } from '../../../data/hooks/useResetWorkspace'
 import { useDeleteCyNetwork } from '../../../data/hooks/useDeleteCyNetwork'
 import { RootMenu } from '../../../models/AppModel/RootMenu'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
+import { LazyDialogBoundary } from '@/features/LazyDialogBoundary'
+import { CytoscapeDesktopPermissionDialog } from '../../CytoscapeDesktopPermissionDialog'
 import { JoinTableToNetworkMenuItem } from '../../TableDataLoader/components/JoinTableToNetwork/JoinTableToNetworkMenuItem'
 import { appendServiceMenuItems } from '../AppMenu/appendServiceMenuItems'
 import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
@@ -21,10 +28,17 @@ const FileUpload = lazy(() =>
     default: m.FileUpload,
   })),
 )
+// Lazy: keeps the export dialog out of the eager toolbar chunk, as the lazy
+// wrapper around its menu row used to. Mounted after first open only.
+const ExportImage = lazy(() =>
+  import('./ExportNetworkToImage/ExportImage').then((m) => ({
+    default: m.ExportImage,
+  })),
+)
 import { CopyNetworkToNDExMenuItem } from './CopyNetworkToNDExMenuItem'
 import { DownloadNetworkMenuItem } from './DownloadNetworkMenuItem'
 import { DuplicateNetworkMenuItem } from './DuplicateNetworkMenuItem'
-import { ExportImageMenuItem } from './ExportNetworkToImage/DynamicExportImageMenuItem'
+import { ExportImageMenuItem } from './ExportNetworkToImage/ExportNetworkToImageMenuItem'
 import { UploadNetworkMenuItem } from './ImportNetworkFromFileMenuItem'
 import { LoadDemoNetworksMenuItem } from './LoadDemoNetworksMenuItem'
 import { LoadFromNdexDialog } from './LoadFromNdexDialog'
@@ -33,6 +47,8 @@ import LoadWorkspaceDialog from './LoadWorkspaceDialog'
 import { LoadWorkspaceMenuItem } from './LoadWorkspaceMenuItem'
 import { useFileUploadDialogStore } from './store/fileUploadDialogStore'
 import { useLoadFromNdexDialogStore } from './store/loadFromNdexDialogStore'
+import { useSaveNetworkCopyToNDExFlow } from './useSaveNetworkCopyToNDExFlow'
+import { useSaveNetworkToNDExFlow } from './useSaveNetworkToNDExFlow'
 import { OpenNetworkInCytoscapeMenuItem } from './OpenNetworkInCytoscapeMenuItem'
 import { RemoveAllNetworksMenuItem } from './RemoveAllNetworksMenuItem'
 import { RemoveNetworkMenuItem } from './RemoveNetworkMenuItem'
@@ -40,6 +56,7 @@ import { ResetLocalWorkspaceMenuItem } from './ResetLocalWorkspace'
 import { SaveToNDExMenuItem } from './SaveToNDExMenuItem'
 import { SaveWorkspaceToNDExMenuItem } from './SaveWorkspaceToNDEx'
 import { SaveWorkspaceToNDExOverwriteMenuItem } from './SaveWorkspaceToNDExOverwrite'
+import { WorkspaceNamingDialog } from './WorkspaceNamingDialog'
 
 export const DataMenu = () => {
   const { open, setOpen } = useMenuBarMenu('data-menu')
@@ -109,6 +126,55 @@ export const DataMenu = () => {
   const handleOpenFileUpload = (): void => {
     handleClose()
     openFileUploadAction()
+  }
+
+  // Export image dialog. `hasOpenedExportImage` is the mount latch for the
+  // lazy dialog, like `hasOpenedFileUpload`.
+  const [openExportImage, setOpenExportImage] = useState(false)
+  const [hasOpenedExportImage, setHasOpenedExportImage] = useState(false)
+  const handleOpenExportImage = (): void => {
+    handleClose()
+    setHasOpenedExportImage(true)
+    setOpenExportImage(true)
+  }
+
+  // Open in Cytoscape Desktop: on first use, the permission notice explains
+  // the browser's local-network prompt before anything reaches localhost.
+  const currentNetworkId = useWorkspaceStore(
+    (state) => state.workspace.currentNetworkId,
+  )
+  const openNetworkInCytoscape = useOpenNetworkInCytoscapeFromStores()
+  const desktopNotice = useCytoscapeDesktopPermissionNotice()
+  const handleOpenNetworkInCytoscape = (): void => {
+    handleClose()
+    desktopNotice.run(() => {
+      void openNetworkInCytoscape(currentNetworkId)
+    })
+  }
+
+  // Save Workspace (As): the naming dialog, mounted only while open — it
+  // subscribes to the whole workspace, and a closed dialog must not re-render
+  // on every edit. Mounting per open also starts every open with an empty name.
+  const { ndexBaseUrl } = useContext(AppConfigContext)
+  const getToken = useCredentialStore((state) => state.getToken)
+  const [openWorkspaceNaming, setOpenWorkspaceNaming] = useState(false)
+  const handleOpenWorkspaceNaming = (): void => {
+    handleClose()
+    setOpenWorkspaceNaming(true)
+  }
+
+  // Save Network to NDEx: the flow (and its dialogs) outlives the menu.
+  const saveFlow = useSaveNetworkToNDExFlow()
+  const handleSaveToNDEx = (): void => {
+    handleClose()
+    saveFlow.start()
+  }
+
+  // Save Copy to NDEx: the flow (and its HCX warning) outlives the menu.
+  const saveCopyFlow = useSaveNetworkCopyToNDExFlow()
+  const handleSaveCopyToNDEx = (): void => {
+    handleClose()
+    saveCopyFlow.start()
   }
 
   // Delete network handlers
@@ -187,7 +253,11 @@ export const DataMenu = () => {
       template: <LoadDemoNetworksMenuItem onClick={handleClose} />,
     },
     {
-      template: <OpenNetworkInCytoscapeMenuItem onClick={handleClose} />,
+      template: (
+        <OpenNetworkInCytoscapeMenuItem
+          onClick={handleOpenNetworkInCytoscape}
+        />
+      ),
     },
     {
       label: 'Import',
@@ -208,26 +278,33 @@ export const DataMenu = () => {
       template: <DuplicateNetworkMenuItem onClick={handleClose} />,
     },
     {
-      template: <SaveToNDExMenuItem onClick={handleClose} />,
+      template: <SaveToNDExMenuItem onClick={handleSaveToNDEx} />,
     },
     {
-      template: <CopyNetworkToNDExMenuItem onClick={handleClose} />,
+      template: <CopyNetworkToNDExMenuItem onClick={handleSaveCopyToNDEx} />,
     },
     {
       template: <DownloadNetworkMenuItem onClick={handleClose} />,
     },
     {
-      template: <SaveWorkspaceToNDExOverwriteMenuItem onClick={handleClose} />,
+      template: (
+        <SaveWorkspaceToNDExOverwriteMenuItem
+          onClick={handleClose}
+          onSaveAs={handleOpenWorkspaceNaming}
+        />
+      ),
     },
     {
-      template: <SaveWorkspaceToNDExMenuItem onClick={handleClose} />,
+      template: (
+        <SaveWorkspaceToNDExMenuItem onClick={handleOpenWorkspaceNaming} />
+      ),
     },
     {
       label: 'Export',
       icon: <DownloadIcon sx={{ mr: 1 }} />,
       items: [
         {
-          template: <ExportImageMenuItem onClick={handleClose} />,
+          template: <ExportImageMenuItem onClick={handleOpenExportImage} />,
         },
       ],
     },
@@ -278,12 +355,43 @@ export const DataMenu = () => {
         handleClose={handleCloseWorkspaceDialog}
       />
       {hasOpenedFileUpload && (
-        <Suspense fallback={null}>
-          <FileUpload
-            show={openFileUpload}
-            handleClose={handleCloseFileUpload}
-          />
-        </Suspense>
+        <LazyDialogBoundary
+          name="Import Network from File"
+          open={openFileUpload}
+        >
+          <Suspense fallback={null}>
+            <FileUpload
+              show={openFileUpload}
+              handleClose={handleCloseFileUpload}
+            />
+          </Suspense>
+        </LazyDialogBoundary>
+      )}
+      {openWorkspaceNaming && (
+        <WorkspaceNamingDialog
+          openDialog={true}
+          onClose={() => setOpenWorkspaceNaming(false)}
+          ndexBaseUrl={ndexBaseUrl}
+          getToken={getToken}
+        />
+      )}
+      <CytoscapeDesktopPermissionDialog
+        open={desktopNotice.open}
+        onConfirm={desktopNotice.onConfirm}
+        onCancel={desktopNotice.onCancel}
+      />
+      {hasOpenedExportImage && (
+        <LazyDialogBoundary
+          name="Export Network to Image"
+          open={openExportImage}
+        >
+          <Suspense fallback={null}>
+            <ExportImage
+              open={openExportImage}
+              handleClose={() => setOpenExportImage(false)}
+            />
+          </Suspense>
+        </LazyDialogBoundary>
       )}
       <ConfirmationDialog
         title="Remove Current Network"
@@ -312,6 +420,8 @@ export const DataMenu = () => {
         buttonTitle="Reset Workspace (cannot be undone)"
         isAlert
       />
+      {saveFlow.dialogs}
+      {saveCopyFlow.dialogs}
       {dialogs}
     </>
   )

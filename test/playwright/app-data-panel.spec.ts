@@ -157,9 +157,11 @@ test.describe('app data survives a network switch and a reload', () => {
       page.locator('[data-testid="app-settings-dialog"]'),
     ).toBeHidden()
 
-    // Open the right panel. `?right=open` sets the boot UI state, but the
-    // dialog flow above can leave it closed, so drive the button when it is
-    // showing — it only renders while the panel is closed.
+    // `?right=open` has the panel open already. It used to close again at an
+    // unpredictable moment after boot (useHierarchyViewerManager acted on the
+    // popup flag it mounted with), and this single check raced that close:
+    // it found no button, then waited for tabs that never came. The helper
+    // still clicks the button when the panel is closed.
     await openRightPanel(page)
 
     // Select the app's right-panel tab. The panel unmounts when another tab is

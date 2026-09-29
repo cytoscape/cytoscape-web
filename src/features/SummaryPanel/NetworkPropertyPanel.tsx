@@ -38,6 +38,7 @@ import { useCloneNetwork } from '../../data/hooks/useCloneNetwork'
 import { useCytoscapeDesktopPermissionNotice } from '../../data/hooks/useCytoscapeDesktopPermissionNotice'
 import { useDownloadNetworkFile } from '../../data/hooks/useDownloadNetworkFile'
 import { useOpenNetworkInCytoscapeFromStores } from '../../data/hooks/useOpenInCytoscapeDesktop'
+import { LazyDialogBoundary } from '@/features/LazyDialogBoundary'
 import { useSaveCurrentNetworkToNDEx } from '../../data/hooks/useSaveCurrentNetworkToNDEx'
 import { KeycloakContext } from '@/boot/keycloak'
 import { IdType } from '../../models/IdType'
@@ -653,12 +654,17 @@ export const NetworkPropertyPanel = ({
         onCancel={desktopNotice.onCancel}
       />
       {hasOpenedExportImage && (
-        <Suspense fallback={null}>
-          <ExportImage
-            open={openExportImage}
-            handleClose={() => setOpenExportImage(false)}
-          />
-        </Suspense>
+        <LazyDialogBoundary
+          name="Export Network to Image"
+          open={openExportImage}
+        >
+          <Suspense fallback={null}>
+            <ExportImage
+              open={openExportImage}
+              handleClose={() => setOpenExportImage(false)}
+            />
+          </Suspense>
+        </LazyDialogBoundary>
       )}
     </>
   )

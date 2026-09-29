@@ -1,99 +1,40 @@
 import CloudUploadIcon from '@mui/icons-material/CloudUpload'
-import {
-  Button,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-} from '@mui/material'
 import { ReactElement, useContext, useEffect, useState } from 'react'
 
 import { AppConfigContext } from '../../../AppConfigContext'
-import {
-  fetchNdexSummaries,
-  hasNdexEditPermission,
-} from '../../../data/external-api/ndex'
-import {
-  TimeOutErrorIndicator,
-  TimeOutErrorMessage,
-} from '../../../data/external-api/ndex'
+import { hasNdexEditPermission } from '../../../data/external-api/ndex'
 import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
-import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
-import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
-import { useOpaqueAspectStore } from '../../../data/hooks/stores/OpaqueAspectStore'
-import { useTableStore } from '../../../data/hooks/stores/TableStore'
-import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
-import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
-import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
-import { useSaveCyNetworkCopyToNDEx } from '../../../data/hooks/useSaveCyNetworkCopyToNDEx'
-import { useSaveCyNetworkToNDEx } from '../../../data/hooks/useSaveCyNetworkToNDEx'
 import { logUi } from '../../../debug'
-import { CyDialog } from '@/components/CyDialog'
 import { KeycloakContext } from '@/boot/keycloak'
-import { MessageSeverity } from '../../../models/MessageModel'
-import { Network } from '../../../models/NetworkModel'
-import { NetworkView } from '../../../models/ViewModel'
-import { HcxValidationSaveDialog } from '../../HierarchyViewer/components/Validation/HcxValidationSaveDialog'
-import { useHcxValidatorStore } from '../../HierarchyViewer/store/HcxValidatorStore'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
 
+/**
+ * Data > Save Network to NDEx. The save and its dialogs belong to the Data
+ * menu (`useSaveNetworkToNDExFlow`), not to this row (#784): `onClick` closes
+ * the menu and starts the flow. The row only decides whether it is enabled,
+ * which needs the user's edit permission on the NDEx copy.
+ */
 export const SaveToNDExMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const { ndexBaseUrl } = useContext(AppConfigContext)
-  const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false)
-  const [showHcxValidationDialog, setShowHcxValidationDialog] =
-    useState<boolean>(false)
   const [editPermission, setEditPermission] = useState<boolean>(false)
   const [tooltipText, setTooltipText] = useState<string>('')
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
-
-  const table = useTableStore((state) => state.tables[currentNetworkId])
-
   const summary = useNetworkSummaryStore(
     (state) => state.summaries[currentNetworkId],
   )
-
-  const viewModel: NetworkView | undefined = useViewModelStore((state) =>
-    state.getViewModel(currentNetworkId),
-  )
-  const visualStyle = useVisualStyleStore(
-    (state) => state.visualStyles[currentNetworkId],
-  )
-  const visualStyleOptions = useUiStateStore(
-    (state) => state.ui.visualStyleOptions[currentNetworkId],
-  )
-  const network = useNetworkStore((state) =>
-    state.networks.get(currentNetworkId),
-  ) as Network
-
-  const opaqueAspects = useOpaqueAspectStore(
-    (state) => state.opaqueAspects[currentNetworkId],
-  )
-
   const isModified =
     useWorkspaceStore(
       (state) => state.workspace.networkModified[currentNetworkId],
     ) ?? false
 
-  const setNetworkModified = useWorkspaceStore(
-    (state) => state.setNetworkModified,
-  )
-  const validationResults = useHcxValidatorStore(
-    (state) => state.validationResults,
-  )
-
   const client = useContext(KeycloakContext)
-
   const getToken = useCredentialStore((state) => state.getToken)
   const authenticated: boolean = client?.authenticated ?? false
-  const addMessage = useMessageStore((state) => state.addMessage)
-
-  const saveNetworkOverwrite = useSaveCyNetworkToNDEx()
-  const saveNetworkCopy = useSaveCyNetworkCopyToNDEx()
 
   useEffect(() => {
     const fetchPermission = async () => {
@@ -146,206 +87,17 @@ export const SaveToNDExMenuItem = (props: BaseMenuItemProps): ReactElement => {
     currentNetworkId,
   ])
 
-  const overwriteNDExNetwork = async (accessToken: string): Promise<void> => {
-    await saveNetworkOverwrite(
-      accessToken,
-      currentNetworkId,
-      network,
-      visualStyle,
-      summary,
-      table.nodeTable,
-      table.edgeTable,
-      viewModel,
-      visualStyleOptions,
-      opaqueAspects,
-    )
-    setNetworkModified(currentNetworkId, false)
-    addMessage({
-      message: `Saved network to NDEx`,
-      duration: 3000,
-      severity: MessageSeverity.SUCCESS,
-    })
-
-    setShowConfirmDialog(false)
-    props.onClick()
-  }
-
-  const saveCopyToNDEx = async (
-    accessToken: string,
-    deleteOriginal: boolean,
-  ): Promise<void> => {
-    try {
-      const uuid = await saveNetworkCopy(
-        accessToken,
-        network,
-        visualStyle,
-        summary,
-        table.nodeTable,
-        table.edgeTable,
-        viewModel,
-        visualStyleOptions,
-        opaqueAspects,
-        deleteOriginal,
-      )
-      addMessage({
-        message: `Saved a copy of the current network to NDEx with new uuid ${
-          uuid as string
-        }`,
-        duration: 3000,
-        severity: MessageSeverity.SUCCESS,
-      })
-    } catch (e) {
-      const message = e instanceof Error ? e.message : String(e)
-      logUi.error(`[${saveCopyToNDEx.name}]: Error saving copy to NDEx`, e)
-      if (message.includes(TimeOutErrorIndicator)) {
-        addMessage({
-          message: TimeOutErrorMessage,
-          duration: 4000,
-          severity: MessageSeverity.ERROR,
-        })
-      } else {
-        addMessage({
-          message: `Error: Could not save a copy of the current network to NDEx. ${message}`,
-          duration: 4000,
-          severity: MessageSeverity.ERROR,
-        })
-      }
-    }
-
-    setShowConfirmDialog(false)
-    props.onClick()
-  }
-
-  const handleClick = async (): Promise<void> => {
-    props.onClick()
-    const validationResult = validationResults?.[currentNetworkId]
-
-    if (validationResult !== undefined && !validationResult.isValid) {
-      setShowHcxValidationDialog(true)
-    } else {
-      await handleSaveCurrentNetworkToNDEx()
-    }
-  }
-
-  const handleSaveCurrentNetworkToNDEx = async (): Promise<void> => {
-    const accessToken = await getToken()
-
-    if (summary?.isNdex === false) {
-      await saveCopyToNDEx(accessToken, true)
-      return
-    }
-
-    const localModificationTime = summary?.modificationTime
-
-    try {
-      const ndexSummaries = await fetchNdexSummaries(
-        currentNetworkId,
-        accessToken,
-        ndexBaseUrl,
-      )
-      const ndexSummary = ndexSummaries?.[0]
-      const ndexModificationTime = ndexSummary?.modificationTime
-
-      if (ndexModificationTime > localModificationTime) {
-        setShowConfirmDialog(true)
-      } else {
-        await overwriteNDExNetwork(accessToken)
-      }
-    } catch (e) {
-      const message = e instanceof Error ? e.message : String(e)
-      logUi.error(
-        `[${handleSaveCurrentNetworkToNDEx.name}]: Error saving current network to NDEx`,
-        e,
-      )
-      if (message.includes(TimeOutErrorIndicator)) {
-        addMessage({
-          message: TimeOutErrorIndicator,
-          duration: 4000,
-          severity: MessageSeverity.ERROR,
-        })
-      } else {
-        addMessage({
-          message: `Error: Could not overwrite the current network to NDEx. ${message}`,
-          duration: 4000,
-          severity: MessageSeverity.ERROR,
-        })
-      }
-    }
-  }
-
   const enabled =
     currentNetworkId !== '' &&
     (summary?.isNdex ? isModified && editPermission : authenticated)
 
-  const dialog = (
-    <CyDialog data-testid="save-to-ndex-sync-dialog" open={showConfirmDialog}>
-      <DialogTitle>Networks out of sync</DialogTitle>
-      <DialogContent>
-        <DialogContentText>
-          The network on NDEx has been modified since the last time you saved it
-          from Cytoscape Web. Do you want to create a new copy of this network
-          on NDEx instead?
-        </DialogContentText>
-      </DialogContent>
-      <DialogActions>
-        {/* Nothing dismisses on backdrop click or Escape, so without this the
-            dialog would force a write to NDEx either way
-            (docs/specifications/DIALOG_DISMISS_POLICY.md). */}
-        <Button
-          data-testid="save-to-ndex-cancel-button"
-          variant="outlined"
-          onClick={() => {
-            setShowConfirmDialog(false)
-            props.onClick()
-          }}
-        >
-          Cancel
-        </Button>
-        <Button
-          data-testid="save-to-ndex-overwrite-button"
-          variant="outlined"
-          color="error"
-          onClick={async () => {
-            const accessToken = await getToken()
-            await overwriteNDExNetwork(accessToken)
-          }}
-        >
-          No, overwrite the network in NDEx
-        </Button>
-        <Button
-          data-testid="save-to-ndex-copy-button"
-          variant="contained"
-          onClick={async () => {
-            const accessToken = await getToken()
-            await saveCopyToNDEx(accessToken, false)
-          }}
-        >
-          Yes, create copy to NDEx
-        </Button>
-      </DialogActions>
-    </CyDialog>
-  )
-
   return (
-    <>
-      <DropdownMenuItem
-        label="Save Network to NDEx"
-        tooltip={tooltipText}
-        icon={<CloudUploadIcon />}
-        disabled={!enabled}
-        onClick={handleClick}
-      />
-      {enabled && (
-        <>
-          {dialog}
-          <HcxValidationSaveDialog
-            open={showHcxValidationDialog}
-            onClose={() => setShowHcxValidationDialog(false)}
-            onSubmit={() => handleSaveCurrentNetworkToNDEx()}
-            validationResult={validationResults?.[currentNetworkId]}
-          />
-        </>
-      )}
-    </>
+    <DropdownMenuItem
+      label="Save Network to NDEx"
+      tooltip={tooltipText}
+      icon={<CloudUploadIcon />}
+      disabled={!enabled}
+      onClick={props.onClick}
+    />
   )
 }

@@ -7,6 +7,8 @@ import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { createNetworkSummary } from '../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { HcxMetaTag } from '../model/HcxMetaTag'
+import { Panel } from '../../../models/UiModel/Panel'
+import { PanelState } from '../../../models/UiModel/PanelState'
 import { useHierarchyViewerManager } from './useHierarchyViewerManager'
 
 vi.mock('../../../data/db', () => ({
@@ -26,17 +28,21 @@ type Mock = import('vitest').Mock
 
 const deleteRendererMock = vi.fn()
 const enablePopupMock = vi.fn()
+const setPanelStateMock = vi.fn()
 
-const setupStores = (summary: any): void => {
+const setupStores = (
+  summary: any,
+  enablePopup = false,
+): { ui: { enablePopup: boolean } } => {
   // Stable references so the networkIds-diff effect doesn't re-fire and loop.
   const workspaceState = {
     workspace: { networkIds: ['net1'], currentNetworkId: 'net1' },
   }
   const uiStoreState = {
-    ui: { activeNetworkView: '', enablePopup: false },
+    ui: { activeNetworkView: '', enablePopup },
     setCustomNetworkTabName: vi.fn(),
     setActiveNetworkView: vi.fn(),
-    setPanelState: vi.fn(),
+    setPanelState: setPanelStateMock,
     enablePopup: enablePopupMock,
   }
   const rendererState = {
@@ -60,6 +66,7 @@ const setupStores = (summary: any): void => {
   ;(useNetworkSummaryStore as unknown as Mock).mockImplementation((selector) =>
     selector(summaryState),
   )
+  return uiStoreState
 }
 
 describe('useHierarchyViewerManager (CW-466)', () => {
@@ -101,5 +108,49 @@ describe('useHierarchyViewerManager (CW-466)', () => {
 
     expect(deleteRendererMock).not.toHaveBeenCalled()
     expect(enablePopupMock).toHaveBeenCalledWith(true)
+  })
+})
+
+// The right panel follows `enablePopup` only when it CHANGES: switching to a
+// hierarchy opens the panel, switching away closes it. Mounting must not
+// close it, or `?right=open` (and a restored open panel) is undone on every
+// boot with a regular network.
+describe('useHierarchyViewerManager right panel', () => {
+  const regularSummary = createNetworkSummary({
+    networkId: 'net1',
+    name: 'Regular network',
+    properties: [],
+  })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('leaves the right panel alone when it mounts', () => {
+    setupStores(regularSummary)
+
+    renderHook(() => useHierarchyViewerManager())
+
+    expect(setPanelStateMock).not.toHaveBeenCalled()
+  })
+
+  it('opens the right panel when the popup is enabled, and closes it when disabled', () => {
+    const uiStoreState = setupStores(regularSummary)
+    const { rerender } = renderHook(() => useHierarchyViewerManager())
+
+    uiStoreState.ui = { ...uiStoreState.ui, enablePopup: true }
+    rerender()
+    expect(setPanelStateMock).toHaveBeenLastCalledWith(
+      Panel.RIGHT,
+      PanelState.OPEN,
+    )
+
+    uiStoreState.ui = { ...uiStoreState.ui, enablePopup: false }
+    rerender()
+    expect(setPanelStateMock).toHaveBeenLastCalledWith(
+      Panel.RIGHT,
+      PanelState.CLOSED,
+    )
+    expect(setPanelStateMock).toHaveBeenCalledTimes(2)
   })
 })

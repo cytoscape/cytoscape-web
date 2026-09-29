@@ -47,7 +47,34 @@ interface AppSettingsDialogProps {
   setOpenDialog: (open: boolean) => void
 }
 
-export const AppSettingsDialog = ({
+/**
+ * Apps > Manage Apps.
+ *
+ * The App menu keeps this dialog mounted and only toggles `openDialog`, so the
+ * dialog is re-created (by key) on every open: it starts on the Apps tab with
+ * the Advanced section hidden and every URL field empty, and nothing typed
+ * before Close comes back. The service URL field lives in `ServiceListPanel`,
+ * which mounts only on the Service Apps tab, so it resets with the rest. The
+ * key is stable while closing, so the exit transition still plays.
+ */
+export const AppSettingsDialog = (props: AppSettingsDialogProps) => {
+  const [wasOpen, setWasOpen] = useState(props.openDialog)
+  const [formKey, setFormKey] = useState(0)
+  if (props.openDialog !== wasOpen) {
+    setWasOpen(props.openDialog)
+    if (props.openDialog) {
+      setFormKey(formKey + 1)
+    }
+  }
+
+  return <AppSettingsDialogContent key={formKey} {...props} />
+}
+
+/**
+ * The dialog itself. Kept as one component so the Close button stays inside
+ * the CyDialog block, where the dismissal policy test looks for it.
+ */
+const AppSettingsDialogContent = ({
   openDialog,
   setOpenDialog,
 }: AppSettingsDialogProps) => {
@@ -468,11 +495,7 @@ export const AppSettingsDialog = ({
         <Button
           data-testid="app-settings-dialog-close-button"
           variant="contained"
-          onClick={() => {
-            // Reopening starts hidden again: the section is opt-in each time.
-            setAdvancedOpen(false)
-            setOpenDialog(false)
-          }}
+          onClick={() => setOpenDialog(false)}
         >
           Close
         </Button>

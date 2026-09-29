@@ -2,6 +2,7 @@ import CodeIcon from '@mui/icons-material/Code'
 import { lazy, Suspense, useCallback, useState } from 'react'
 
 import { RootMenu } from '../../../models/AppModel/RootMenu'
+import { LazyDialogBoundary } from '@/features/LazyDialogBoundary'
 import { appendServiceMenuItems } from '../AppMenu/appendServiceMenuItems'
 import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
 import { DropdownMenu } from '../DropdownMenu'
@@ -160,12 +161,17 @@ export const HelpMenu = () => {
         onClose={handleCloseDialog}
       />
       {hasOpenedImport && (
-        <Suspense fallback={null}>
-          <ImportDatabaseSnapshotDialog
-            open={openDialog === 'import-database'}
-            onClose={handleCloseDialog}
-          />
-        </Suspense>
+        <LazyDialogBoundary
+          name="Import Database Snapshot"
+          open={openDialog === 'import-database'}
+        >
+          <Suspense fallback={null}>
+            <ImportDatabaseSnapshotDialog
+              open={openDialog === 'import-database'}
+              onClose={handleCloseDialog}
+            />
+          </Suspense>
+        </LazyDialogBoundary>
       )}
       {dialogs}
     </>
