@@ -47,6 +47,7 @@ import { LoadWorkspaceMenuItem } from './LoadWorkspaceMenuItem'
 import { useFileUploadDialogStore } from './store/fileUploadDialogStore'
 import { useLoadFromNdexDialogStore } from './store/loadFromNdexDialogStore'
 import { useSaveNetworkCopyToNDExFlow } from './useSaveNetworkCopyToNDExFlow'
+import { useSaveNetworkToNDExFlow } from './useSaveNetworkToNDExFlow'
 import { OpenNetworkInCytoscapeMenuItem } from './OpenNetworkInCytoscapeMenuItem'
 import { RemoveAllNetworksMenuItem } from './RemoveAllNetworksMenuItem'
 import { RemoveNetworkMenuItem } from './RemoveNetworkMenuItem'
@@ -161,6 +162,13 @@ export const DataMenu = () => {
     setOpenWorkspaceNaming(true)
   }
 
+  // Save Network to NDEx: the flow (and its dialogs) outlives the menu.
+  const saveFlow = useSaveNetworkToNDExFlow()
+  const handleSaveToNDEx = (): void => {
+    handleClose()
+    saveFlow.start()
+  }
+
   // Save Copy to NDEx: the flow (and its HCX warning) outlives the menu.
   const saveCopyFlow = useSaveNetworkCopyToNDExFlow()
   const handleSaveCopyToNDEx = (): void => {
@@ -269,7 +277,7 @@ export const DataMenu = () => {
       template: <DuplicateNetworkMenuItem onClick={handleClose} />,
     },
     {
-      template: <SaveToNDExMenuItem onClick={handleClose} />,
+      template: <SaveToNDExMenuItem onClick={handleSaveToNDEx} />,
     },
     {
       template: <CopyNetworkToNDExMenuItem onClick={handleSaveCopyToNDEx} />,
@@ -401,6 +409,7 @@ export const DataMenu = () => {
         buttonTitle="Reset Workspace (cannot be undone)"
         isAlert
       />
+      {saveFlow.dialogs}
       {saveCopyFlow.dialogs}
       {dialogs}
     </>
