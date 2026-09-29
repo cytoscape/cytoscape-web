@@ -61,6 +61,15 @@ export async function loadRemoteApp(
       }
     }
 
+    // The bundle is untyped at runtime, so an app built against an older
+    // api-types can still carry the field removed in 1.0.0-beta.5 (#786).
+    if (Object.hasOwn(remoteApp, 'components')) {
+      logApp.warn(
+        `[loadRemoteApp]: App "${id}" declares \`components\`, which was removed in App API 1.0.0-beta.5 and is ignored. ` +
+          "Declare panels and menu items in `resources` ('right-panel', 'apps-menu') instead.",
+      )
+    }
+
     appRegistry.set(id, remoteApp)
     return { ok: true, app: remoteApp }
   } catch (error) {

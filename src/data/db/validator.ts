@@ -336,16 +336,13 @@ const FilterConfigWithRecordsSchema = FilterConfigSchema.extend({
     .optional(),
 })
 
-const ComponentMetadataSchema = z.object({
-  id: z.string(),
-  type: z.string(),
-})
-
+// No `components`: the field was removed in App API 1.0.0-beta.5 (#786). A
+// record saved before that still carries it; zod drops unknown keys, so such a
+// record parses and comes back without it.
 const CyAppSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string().optional(),
-  components: z.array(ComponentMetadataSchema),
   status: z.string().optional(),
 })
 

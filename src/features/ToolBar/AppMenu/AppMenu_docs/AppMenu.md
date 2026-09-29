@@ -4,7 +4,7 @@
 
 The `AppMenu` feature provides the **Apps** toolbar menu, acting as the entry point for user-installed external apps and services. It integrates with the `AppManager` and `ServiceApps` systems to:
 
-- Discover active apps and their menu entries — runtime `'apps-menu'` resources (plain data the host renders) and legacy manifest menu components
+- Discover active apps and their menu entries — `'apps-menu'` resources, plain data the host renders
 - Render app-specific menu rows dynamically
 - Run service tasks and monitor their status
 - Open app/settings and task-status dialogs
@@ -21,8 +21,6 @@ The `AppMenu` feature provides the **Apps** toolbar menu, acting as the entry po
     - `AppSettingsDialog`: Manage installed apps and services.
     - `TaskStatusDialog`: Show progress of running service app tasks.
   - **`AppResourceStore`**: Runtime `'apps-menu'` resources registered through the App API (`registerMenuItem` / declarative `resources`).
-  - **Dynamic Components** (legacy manifest path only):
-    - `ExternalComponent`: Loads app-specific menu components at runtime.
   - **Menu Model Factory**:
     - `createMenuItems` (from `MenuFactory.tsx`): Converts `serviceApps` into TieredMenu models.
 
@@ -36,19 +34,13 @@ The `AppMenu` feature provides the **Apps** toolbar menu, acting as the entry po
    - Enablement: `getResourceVisibility` (`requires.network` / `requires.selection` / app active) plus the app's `isEnabled(apis)` snapshot. Both are re-evaluated every time the menu opens (`open` is a deliberate dependency of `createAppMenu`); a throwing `isEnabled` is logged and counts as disabled.
    - Click: closes the dropdown, then calls `onClick(buildPerAppApis(appId))`. Throws and rejected promises are logged, never surfaced into the menu. Apps that need UI open it from `onClick` via `apis.dialog.open(...)` (rendered by `AppDialogHost`) or `apis.resource.openModal(id)` (rendered by `ModalLauncherHost`) — both outside the menu, in the host-owned `AppDialogShell`.
 
-2. **Legacy manifest menu components** (`CyApp.components` of type `ComponentType.Menu`)
-   - Filters `apps` by `AppStatus.Active` and builds `componentList` of `[appId, componentId]` pairs.
-   - For each pair, uses `ExternalComponent(appId, './' + componentId)` to create a React component, wrapped in a local `Suspense`, and passes `handleClose` so the app can close the menu after actions.
-   - Entries whose id collides with a runtime resource are skipped (runtime wins).
-   - Such a component is a menu row, so it must not render a dialog of its own: the row, and anything it renders, unmounts when the menu closes, and `DropdownMenu` no longer tolerates dialogs inside rows (#784). A legacy entry that needs UI should become an `'apps-menu'` resource whose `onClick(apis)` calls `apis.dialog.open(...)`; a component that stays must call `handleClose()` and open its UI through the `apis` its app received in `mount(context)`.
-
-3. **Service Menu Items**
+2. **Service Menu Items**
    - Uses `createMenuItems(serviceApps, handleRun)` to build items that run service tasks via `useServiceTaskRunner`.
 
-4. **Base Menu**
+3. **Base Menu**
    - Always includes a **Manage Apps...** entry that opens the `AppSettingsDialog`.
 
-5. **Final Model**
+4. **Final Model**
    - Combines app items, service items, optional divider, and base menu into a single `menuModel`.
    - Model is recomputed when `apps`, `serviceApps`, or `appStateUpdated` change.
 
@@ -83,9 +75,8 @@ The `AppMenu` feature provides the **Apps** toolbar menu, acting as the entry po
 - **Host-rendered menu rows for App API entries**
   - `'apps-menu'` resources are data, not components: the dropdown is shared by every installed app and the host's own items, so the host owns 100% of its rendering. Isolated surfaces (right panel, dialogs) still take full app components.
 
-- **Dynamic Menu via External Components** (legacy)
-  - Older apps contribute menu entries by declaring components of type `ComponentType.Menu`.
-  - `ExternalComponent` + module federation allows loading components from external bundles at runtime.
+- **One way to contribute a menu entry**
+  - Until App API 1.0.0-beta.5 an app could also declare menu components in `CyApp.components`, which the host mounted as rows. A row unmounts when the menu closes, so such a component could not show UI of its own (#784), and the field was removed (#786). An app record that still carries it contributes nothing to the menu.
 
 - **Separation of Concerns**
   - `AppMenu` focuses on wiring UI to stores and dialogs.

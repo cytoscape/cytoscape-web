@@ -2,17 +2,12 @@ import {
   loadRemote as mfLoadRemote,
   registerRemotes as mfRegisterRemotes,
 } from '@module-federation/runtime'
-import { ComponentType, lazy } from 'react'
 
 import { logApp } from '../../debug'
-
-const lazyComponentCache = new Map<string, ReturnType<typeof lazy>>()
 
 // scope -> currently-registered remoteEntry URL, so we only (re)register a
 // remote when its URL actually changes.
 const registeredRemotes = new Map<string, string>()
-
-const DisabledExternalComponent: ComponentType = () => null
 
 // We deliberately use the GLOBAL Module Federation runtime functions (rather
 // than createInstance) so external apps are loaded through the very same host
@@ -39,11 +34,10 @@ export const __setRuntime = (fake: FederationRuntime): void => {
   runtime = fake
 }
 
-/** Test seam: reset the runtime, registry, and component cache. */
+/** Test seam: reset the runtime and the registry. */
 export const __resetRemoteState = (): void => {
   runtime = defaultRuntime
   registeredRemotes.clear()
-  lazyComponentCache.clear()
 }
 
 /**
@@ -83,44 +77,6 @@ export const loadRemoteEntry = async (
   ensureRemoteRegistered(scope, url)
 }
 
-export const loadComponent = (scope: string, module: string) => {
-  return async () => {
-    try {
-      const componentModule = await loadModule(scope, module)
-      const component =
-        typeof componentModule === 'object' &&
-        componentModule !== null &&
-        'default' in componentModule
-          ? (componentModule.default as ComponentType)
-          : (componentModule as ComponentType)
-
-      return {
-        default: component,
-      }
-    } catch (error) {
-      logApp.warn(
-        `[ExternalComponent]: Failed to load external component "${scope}/${module}":`,
-        error,
-      )
-
-      return {
-        default: DisabledExternalComponent,
-      }
-    }
-  }
-}
-
-export const ExternalComponent = (scope: string, module: string) => {
-  const key = `${scope}::${module}`
-  const cached = lazyComponentCache.get(key)
-  if (cached !== undefined) {
-    return cached
-  }
-  const component = lazy(loadComponent(scope, module))
-  lazyComponentCache.set(key, component)
-  return component
-}
-
 /**
  * Load a remote exposed module through the Module Federation runtime.
  *
@@ -149,5 +105,3 @@ export const loadModule = async (
   }
   return loaded
 }
-
-export default ExternalComponent
