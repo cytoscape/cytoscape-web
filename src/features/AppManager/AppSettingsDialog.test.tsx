@@ -44,7 +44,7 @@ const commands = {
   refreshCatalog: vi.fn(async () => undefined),
 } as unknown as Parameters<typeof AppManagerCommandsProvider>[0]['value']
 
-const renderDialog = (): void => {
+const renderDialog = (): { setOpen: (open: boolean) => void } => {
   const config = { ...defaultAppConfig, allowsLocalhostAppsOn: DEV1 }
   const wrapper = ({ children }: { children: ReactNode }) =>
     createElement(
@@ -52,13 +52,10 @@ const renderDialog = (): void => {
       { value: config },
       createElement(AppManagerCommandsProvider, { value: commands }, children),
     )
-  render(
-    createElement(AppSettingsDialog, {
-      openDialog: true,
-      setOpenDialog: vi.fn(),
-    }),
-    { wrapper },
-  )
+  const dialog = (openDialog: boolean) =>
+    createElement(AppSettingsDialog, { openDialog, setOpenDialog: vi.fn() })
+  const { rerender } = render(dialog(true), { wrapper })
+  return { setOpen: (open) => rerender(dialog(open)) }
 }
 
 describe('AppSettingsDialog — localhost opt-in wiring', () => {
@@ -167,5 +164,44 @@ describe('AppSettingsDialog — advanced section', () => {
       expect(screen.queryByLabelText('Custom manifest URL')).toBeNull(),
     )
     expect(advanced.textContent).toMatch(/^advanced$/i)
+  })
+})
+
+// The App menu keeps this dialog mounted and only toggles `openDialog`, so
+// everything typed or chosen used to survive Close and reappear on reopen.
+describe('AppSettingsDialog — reopening', () => {
+  const selectedTab = (): string | null =>
+    screen
+      .getAllByRole('tab')
+      .find((tab) => tab.getAttribute('aria-selected') === 'true')
+      ?.textContent ?? null
+
+  it('starts every open on the Apps tab with empty fields', async () => {
+    const { setOpen } = renderDialog()
+
+    fireEvent.change(screen.getByTestId('install-from-url-input'), {
+      target: { value: 'https://example.org/app.json' },
+    })
+    fireEvent.click(screen.getByTestId('app-settings-advanced-button'))
+    fireEvent.change(screen.getByLabelText('Custom manifest URL'), {
+      target: { value: 'https://example.org/manifest.json' },
+    })
+    // The service URL field lives in ServiceListPanel, which mounts only on
+    // this tab: starting on Apps is what resets it.
+    fireEvent.click(screen.getByRole('tab', { name: 'Service Apps' }))
+    expect(selectedTab()).toBe('Service Apps')
+
+    setOpen(false)
+    setOpen(true)
+
+    expect(selectedTab()).toBe('Apps')
+    expect(
+      (screen.getByTestId('install-from-url-input') as HTMLInputElement).value,
+    ).toBe('')
+    expect(screen.queryByLabelText('Custom manifest URL')).toBeNull()
+    fireEvent.click(screen.getByTestId('app-settings-advanced-button'))
+    expect(
+      (screen.getByLabelText('Custom manifest URL') as HTMLInputElement).value,
+    ).toBe('')
   })
 })
