@@ -3,10 +3,14 @@ import UploadIcon from '@mui/icons-material/Upload'
 import { ToolbarMenuItem as MenuItem } from '@/features/ToolBar/menuItemModel'
 import { lazy, Suspense, useCallback, useState } from 'react'
 
+import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { useCytoscapeDesktopPermissionNotice } from '../../../data/hooks/useCytoscapeDesktopPermissionNotice'
+import { useOpenNetworkInCytoscapeFromStores } from '../../../data/hooks/useOpenInCytoscapeDesktop'
 import { useResetWorkspace } from '../../../data/hooks/useResetWorkspace'
 import { useDeleteCyNetwork } from '../../../data/hooks/useDeleteCyNetwork'
 import { RootMenu } from '../../../models/AppModel/RootMenu'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
+import { CytoscapeDesktopPermissionDialog } from '../../CytoscapeDesktopPermissionDialog'
 import { JoinTableToNetworkMenuItem } from '../../TableDataLoader/components/JoinTableToNetwork/JoinTableToNetworkMenuItem'
 import { appendServiceMenuItems } from '../AppMenu/appendServiceMenuItems'
 import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
@@ -128,6 +132,20 @@ export const DataMenu = () => {
     setOpenExportImage(true)
   }
 
+  // Open in Cytoscape Desktop: on first use, the permission notice explains
+  // the browser's local-network prompt before anything reaches localhost.
+  const currentNetworkId = useWorkspaceStore(
+    (state) => state.workspace.currentNetworkId,
+  )
+  const openNetworkInCytoscape = useOpenNetworkInCytoscapeFromStores()
+  const desktopNotice = useCytoscapeDesktopPermissionNotice()
+  const handleOpenNetworkInCytoscape = (): void => {
+    handleClose()
+    desktopNotice.run(() => {
+      void openNetworkInCytoscape(currentNetworkId)
+    })
+  }
+
   // Delete network handlers
   const handleOpenDeleteNetworkDialog = (): void => {
     handleClose()
@@ -204,7 +222,11 @@ export const DataMenu = () => {
       template: <LoadDemoNetworksMenuItem onClick={handleClose} />,
     },
     {
-      template: <OpenNetworkInCytoscapeMenuItem onClick={handleClose} />,
+      template: (
+        <OpenNetworkInCytoscapeMenuItem
+          onClick={handleOpenNetworkInCytoscape}
+        />
+      ),
     },
     {
       label: 'Import',
@@ -302,6 +324,11 @@ export const DataMenu = () => {
           />
         </Suspense>
       )}
+      <CytoscapeDesktopPermissionDialog
+        open={desktopNotice.open}
+        onConfirm={desktopNotice.onConfirm}
+        onCancel={desktopNotice.onCancel}
+      />
       {hasOpenedExportImage && (
         <Suspense fallback={null}>
           <ExportImage
