@@ -220,4 +220,33 @@ test.describe('empty workspace call to action (#651)', () => {
       .toBe(0)
     await expect(page.locator(PANEL)).toBeVisible({ timeout: 15000 })
   })
+
+  // Remove All Networks used to leave the deleted sample's id in the URL, so
+  // reopening the samples navigated to the same path, the URL-keyed load never
+  // ran, and the canvas said "Loading network data..." forever.
+  test('Open Sample Networks loads again after Remove All Networks', async ({
+    page,
+  }) => {
+    await mockNdexSampleLoad(page)
+    await gotoAndWaitReady(page)
+    const canvas = page.locator('[data-testid="cyjs-renderer"] canvas').first()
+
+    await page.locator(OPEN_SAMPLES).click()
+    await expect(canvas).toBeVisible({ timeout: 15000 })
+
+    await page.locator('[data-testid="toolbar-data-menu-menu-button"]').click()
+    await page.getByRole('menuitem', { name: 'Remove All Networks' }).click()
+    await page.locator('[data-testid="confirmation-dialog-confirm"]').click()
+    await expect(page.locator(PANEL)).toBeVisible({ timeout: 15000 })
+    await expect(page).not.toHaveURL(new RegExp(FIRST_SAMPLE_ID))
+
+    // urlManager drops a navigation within 300 ms of the previous one
+    // (documented in urlManager.test.ts). A person plus a real NDEx round
+    // trip never gets under that; the instantly answered mock does.
+    await page.waitForTimeout(400)
+    await page.locator(OPEN_SAMPLES).click()
+    await expect(page).toHaveURL(new RegExp(`/networks/${FIRST_SAMPLE_ID}`))
+    await expect(canvas).toBeVisible({ timeout: 15000 })
+    await expect(page.getByText('Loading network data...')).toHaveCount(0)
+  })
 })

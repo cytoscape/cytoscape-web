@@ -31,9 +31,13 @@ vi.mock('../db', async (importOriginal) => {
   return mocked
 })
 
+const { navigateToNetwork } = vi.hoisted(() => ({
+  navigateToNetwork: vi.fn(),
+}))
+
 vi.mock('./navigation/useUrlNavigation', () => ({
   useUrlNavigation: () => ({
-    navigateToNetwork: vi.fn(),
+    navigateToNetwork,
   }),
 }))
 
@@ -57,6 +61,7 @@ const seedNetwork = (networkId: string): void => {
 
 describe('useDeleteCyNetwork', () => {
   beforeEach(() => {
+    navigateToNetwork.mockClear()
     act(() => {
       useNetworkStore.getState().deleteAll()
       useTableStore.getState().deleteAll()
@@ -202,5 +207,26 @@ describe('useDeleteCyNetwork', () => {
     expect(
       useFilterStore.getState().getIndex('net-1', GraphObjectType.NODE),
     ).toBeUndefined()
+  })
+  // WorkspaceEditor loads a network only when the URL's network id changes.
+  // Deleting everything without leaving the URL let Open Sample Networks
+  // navigate to the same, already-current path, so the re-added sample never
+  // loaded ("Loading network data..." forever).
+  it('deleteAllNetworks navigates off the deleted network (regression: sample reload never loads)', () => {
+    act(() => {
+      seedNetwork('net-1')
+      useWorkspaceStore.getState().setCurrentNetworkId('net-1')
+    })
+    const workspaceId = useWorkspaceStore.getState().workspace.id
+
+    const { result } = renderHook(() => useDeleteCyNetwork())
+    act(() => {
+      result.current.deleteAllNetworks()
+    })
+
+    expect(navigateToNetwork).toHaveBeenCalledTimes(1)
+    expect(navigateToNetwork).toHaveBeenCalledWith(
+      expect.objectContaining({ workspaceId, networkId: '', replace: true }),
+    )
   })
 })
