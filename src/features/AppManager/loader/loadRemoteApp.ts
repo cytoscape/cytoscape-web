@@ -63,7 +63,11 @@ export async function loadRemoteApp(
 
     // The bundle is untyped at runtime, so an app built against an older
     // api-types can still carry the field removed in 1.0.0-beta.5 (#786).
-    if (Object.hasOwn(remoteApp, 'components')) {
+    // Only a non-empty array loses anything: the example apps carried
+    // `components: []` as a placeholder, and warning about that would ask the
+    // author to migrate nothing.
+    const { components } = remoteApp as { components?: unknown }
+    if (Array.isArray(components) && components.length > 0) {
       logApp.warn(
         `[loadRemoteApp]: App "${id}" declares \`components\`, which was removed in App API 1.0.0-beta.5 and is ignored. ` +
           "Declare panels and menu items in `resources` ('right-panel', 'apps-menu') instead.",

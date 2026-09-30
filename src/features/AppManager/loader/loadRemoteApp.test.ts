@@ -68,6 +68,21 @@ describe('loadRemoteApp', () => {
     warn.mockRestore()
   })
 
+  // The example apps carried `components: []` as a placeholder until their
+  // beta.4 migration. It declares nothing, so nothing is lost and there is
+  // nothing to tell the author to migrate.
+  it('does not warn for an empty components array', async () => {
+    const warn = vi.spyOn(logApp, 'warn').mockImplementation(() => {})
+    const placeholder = { ...remoteApp, components: [] } as unknown as CyApp
+    mockedLoadModule.mockResolvedValue({ default: placeholder })
+
+    const result = await loadRemoteApp('myApp', URL, appRegistry)
+
+    expect(result).toEqual({ ok: true, app: placeholder })
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
   // #719: each failure returns its own code, so the caller can store a reason
   // instead of an undefined it cannot interpret.
   it('reports id-mismatch with both ids when the bundle id differs', async () => {
