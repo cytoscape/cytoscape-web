@@ -226,7 +226,12 @@ describe('useDeleteCyNetwork', () => {
 
     expect(navigateToNetwork).toHaveBeenCalledTimes(1)
     expect(navigateToNetwork).toHaveBeenCalledWith(
-      expect.objectContaining({ workspaceId, networkId: '', replace: true }),
+      expect.objectContaining({
+        workspaceId,
+        networkId: '',
+        replace: true,
+        force: true,
+      }),
     )
   })
 })
