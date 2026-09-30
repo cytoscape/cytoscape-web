@@ -332,16 +332,16 @@ describe('db validator - ServiceApp & CyApp', () => {
     expect(() => validateCyApp(nameless)).toThrow()
   })
 
-  it('accepts a record saved before #786 and drops its components', () => {
+  // Only acceptance matters here. Read-path validation discards the parsed
+  // value, so asserting that parsing drops `components` would describe
+  // something no caller of getAppFromDb sees.
+  it('accepts a record saved before #786 that still has components', () => {
     const legacy = {
       ...validCyApp(),
       components: [{ id: 'app-1-component', type: 'Menu' }],
     }
 
-    const parsed = validateCyApp(legacy)
-
-    expect(parsed).toMatchObject({ id: 'app-1' })
-    expect(parsed).not.toHaveProperty('components')
+    expect(validateCyApp(legacy)).toMatchObject({ id: 'app-1' })
   })
 })
 

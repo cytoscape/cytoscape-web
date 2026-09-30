@@ -337,8 +337,11 @@ const FilterConfigWithRecordsSchema = FilterConfigSchema.extend({
 })
 
 // No `components`: the field was removed in App API 1.0.0-beta.5 (#786). A
-// record saved before that still carries it; zod drops unknown keys, so such a
-// record parses and comes back without it.
+// record saved before that still carries it and must still validate, which it
+// does because zod ignores unknown keys. This does not clean the record:
+// read-path validation (`observeValidation` in db/index.ts) discards the
+// parsed value, so callers get the raw record with the field still on it.
+// `toStoredApp` in appStoreImpl.ts is what keeps it out of AppStore.
 const CyAppSchema = z.object({
   id: z.string(),
   name: z.string(),
