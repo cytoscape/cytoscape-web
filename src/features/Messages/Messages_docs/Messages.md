@@ -51,8 +51,18 @@ The Messages feature consists of:
 1. Message added to store
 2. Message displayed in Snackbar
 3. Auto-hide timer starts (if temporary)
-4. Message removed from store after display
-5. Next message in queue displayed
+4. The message closes (timeout, its Close button, Escape, or a click on a
+   persistent message) and animates out with its text and severity intact
+5. Once the exit transition ends, the next message in the queue is displayed
+
+Messages stay in the store; the list keeps an index of the one on screen and
+moves it only in the exit transition's `onExited`. Only the message on screen
+can be dismissed, and a `timeout` close is ignored for a persistent message:
+MUI keeps the Snackbar mounted while it animates out, a pointer leaving it (or
+a blur) during that exit restarts its auto-hide timer, and nothing clears the
+timer, so it reports a stray `timeout` close seconds later. Treating that close
+as a dismissal skipped the next message (closing an import error with its X
+hid the next import error).
 
 ## Integration Points
 

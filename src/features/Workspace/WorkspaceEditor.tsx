@@ -32,6 +32,8 @@ import { NetworkBrowserPanel } from './NetworkBrowserPanel/NetworkBrowserPanel'
 import { OpenRightPanelButton } from './SidePanel/OpenRightPanelButton'
 import { SidePanel } from './SidePanel/SidePanel'
 import { toVerticalPaneSizes } from './splitPaneSizes'
+import { useUrlFollowsNetworkRemoval } from './useUrlFollowsNetworkRemoval'
+import { useUrlNetworkLoad } from './useUrlNetworkLoad'
 // Lazy load heavy TableDataLoader forms
 const CreateNetworkFromTableForm = lazy(() =>
   import(
@@ -106,9 +108,6 @@ const WorkSpaceEditor = (): JSX.Element => {
   if (isJoinFormOpen) hasOpenedJoinFormRef.current = true
   const hasOpenedCreateFormRef = useRef<boolean>(false)
   if (isCreateFormOpen) hasOpenedCreateFormRef.current = true
-
-  // Block multiple loading
-  const isLoadingRef = useRef<boolean>(false)
 
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
@@ -197,12 +196,15 @@ const WorkSpaceEditor = (): JSX.Element => {
    * Loads a network by ID and populates all related stores
    * Handles network data, visual styles, tables, views, validation, and layout
    * @param networkId - The ID of the network to load
-   * @returns true when the network loaded; false when it failed. Failures are
-   *   reported through `setFailedToLoad` rather than thrown, so the caller has
-   *   no other way to tell the two apart.
+   * @param isRemoved - True once the network has left the workspace during
+   *   the load; its data is then discarded rather than put back in the stores
+   * @returns true when the network loaded; false when it failed or was
+   *   discarded. Failures are reported through `setFailedToLoad` rather than
+   *   thrown, so the caller has no other way to tell them apart.
    */
   const loadCurrentNetworkById = async (
     networkId: IdType,
+    isRemoved: () => boolean,
   ): Promise<boolean> => {
     try {
       // Cached summaries/content resolve immediately; the loaders only wait
@@ -210,6 +212,10 @@ const WorkSpaceEditor = (): JSX.Element => {
       const summaryMap = await loadNetworkSummaries([networkId])
       const summary = summaryMap[networkId]
       const cyNetworkData: CyNetwork = await loadCyNetwork(networkId)
+      // Deleted while it loaded: adding it now would bring it back
+      if (isRemoved()) {
+        return false
+      }
       const {
         network,
         nodeTable,
@@ -290,6 +296,9 @@ const WorkSpaceEditor = (): JSX.Element => {
       logUi.error(
         `[${WorkSpaceEditor.name}]:[${loadCurrentNetworkById.name}]: Failed to load network: ${error}`,
       )
+      if (isRemoved()) {
+        return false
+      }
       // Show the message but not raw internals: `String(error)` can surface
       // stack-ish text, internal URLs, or response bodies. The detail is logged
       // just above for anyone debugging.
@@ -305,69 +314,36 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   const params = useParams()
 
-  /**
-   * Swaps the current network when URL parameter changes
-   * This is an expensive operation that loads network data, styles, tables, and views
-   * Uses a loading ref to prevent concurrent loads
-   *
-   * NOTE: This effect is intentionally keyed only on params.networkId
-   * (URL-driven network swap). A param change triggers a re-render first,
-   * so the effect always runs with a fresh closure over
-   * loadCurrentNetworkById and the store actions. Adding those functions
-   * to the deps would re-trigger this expensive full reload on unrelated
-   * re-renders (loadCurrentNetworkById reads render-scoped values such as
-   * layoutEngines), so they are deliberately omitted.
-   */
-  useEffect(
-    function swapCurrentNetworkHook() {
-      const networkIdFromParams = params.networkId
-      if (networkIdFromParams === '' || networkIdFromParams === undefined) {
-        // No need to load new network
-        return
-      }
+  // The swap effect below is the only thing that loads a network, and it
+  // follows the URL. Removals that do not navigate (the App API's deletes)
+  // must still move the URL off the removed network.
+  useUrlFollowsNetworkRemoval(params.networkId)
 
-      if (isLoadingRef.current) {
-        return
-      }
-
-      isLoadingRef.current = true
+  // Loads the network the URL names: an expensive operation that fills the
+  // network data, styles, tables and views. The hook runs one load at a time
+  // and discards a load that went stale while it ran.
+  useUrlNetworkLoad(params.networkId, {
+    load: (networkId, isRemoved) => {
       setFailedToLoad('')
-      logUi.info(
-        `[${WorkSpaceEditor.name}]:[${swapCurrentNetworkHook.name}]: Loading network: ${networkIdFromParams}`,
-      )
-
-      loadCurrentNetworkById(networkIdFromParams)
-        .then((loaded) => {
-          // Handle the case where the back/forward button is pressed
-          setCurrentNetworkId(networkIdFromParams)
-          if (!loaded) {
-            // Only on success. This is the network a cross-tab reload restores,
-            // and recording one that just failed to load makes the failure
-            // survive the reload (CW-722).
-            return
-          }
-          // Remember this tab's active network so a cross-tab reload restores it
-          // even if the URL loses its network segment (CW-722).
-          setTabNetworkId(networkIdFromParams)
-          // Synchronize activeNetworkView with currentNetworkId
-          if (networkIdFromParams === '') {
-            setActiveNetworkView('')
-          } else {
-            setActiveNetworkView(networkIdFromParams)
-          }
-        })
-        .catch((error) => {
-          logUi.error(
-            `[${WorkSpaceEditor.name}]:[${swapCurrentNetworkHook.name}]: Failed to load network: ${error}`,
-          )
-        })
-        .finally(() => {
-          isLoadingRef.current = false
-        })
+      logUi.info(`[${WorkSpaceEditor.name}]: Loading network: ${networkId}`)
+      return loadCurrentNetworkById(networkId, isRemoved)
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional key-driven network swap (see comment above)
-    [params.networkId],
-  )
+    onLoaded: (networkId, loaded) => {
+      // Handle the case where the back/forward button is pressed
+      setCurrentNetworkId(networkId)
+      if (!loaded) {
+        // Only on success. This is the network a cross-tab reload restores,
+        // and recording one that just failed to load makes the failure
+        // survive the reload (CW-722).
+        return
+      }
+      // Remember this tab's active network so a cross-tab reload restores it
+      // even if the URL loses its network segment (CW-722).
+      setTabNetworkId(networkId)
+      // Synchronize activeNetworkView with currentNetworkId
+      setActiveNetworkView(networkId)
+    },
+  })
 
   // Return the main component including the network panel, network view, and the table browser
   return (
