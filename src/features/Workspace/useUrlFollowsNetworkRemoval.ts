@@ -43,16 +43,22 @@ export const useUrlFollowsNetworkRemoval = (
     let attempts = 0
     let retryTimer: ReturnType<typeof setTimeout> | undefined
 
-    const followRemoval = (): void => {
+    const followRemoval = (removedId: IdType): void => {
       retryTimer = undefined
+      // Only while the URL still names the removed network: once it moved on
+      // (this navigation landed, or the user opened something else) the
+      // route is no longer this removal's business.
+      if (urlNetworkIdRef.current !== removedId) {
+        return
+      }
       const { workspace } = useWorkspaceStore.getState()
-      const target = redirectAfterRemoval(urlNetworkIdRef.current, workspace)
+      const target = redirectAfterRemoval(removedId, workspace)
       if (target === undefined || attempts >= MAX_ATTEMPTS) {
         return
       }
       attempts += 1
       logUi.info(
-        `[useUrlFollowsNetworkRemoval]: ${urlNetworkIdRef.current} left the workspace, navigating to ${target === '' ? 'the network list' : target}`,
+        `[useUrlFollowsNetworkRemoval]: ${removedId} left the workspace, navigating to ${target === '' ? 'the network list' : target}`,
       )
       navigateRef.current({
         workspaceId: workspace.id,
@@ -61,11 +67,10 @@ export const useUrlFollowsNetworkRemoval = (
         replace: true,
       })
       // urlManager silently drops a navigation within 300 ms of the previous
-      // one. Look again once that window has passed; after a navigation that
-      // did land, the URL no longer names a removed network and this stops.
+      // one. Look again once that window has passed.
       // Not `force`: the URL ref lags a render behind, so a forced navigation
       // would override a caller that navigated elsewhere in the same tick.
-      retryTimer = setTimeout(followRemoval, RETRY_DELAY_MS)
+      retryTimer = setTimeout(() => followRemoval(removedId), RETRY_DELAY_MS)
     }
 
     const unsubscribe = useWorkspaceStore.subscribe((state, prevState) => {
@@ -85,7 +90,7 @@ export const useUrlFollowsNetworkRemoval = (
       clearTimeout(retryTimer)
       // The delete cascade drops the id from the workspace before it repairs
       // currentNetworkId, so wait for the synchronous cascade to finish.
-      queueMicrotask(followRemoval)
+      queueMicrotask(() => followRemoval(urlId))
     })
 
     return () => {

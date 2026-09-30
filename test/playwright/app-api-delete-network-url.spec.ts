@@ -65,8 +65,15 @@ const summaryFor = (externalId: string) => ({
   edgeCount: 2,
 })
 
-const mockNdexSamples = async (page: Page): Promise<void> => {
-  await page.route(/ndexbio\.org/, (route) => {
+/**
+ * @param holdFirstMs - Delay the first sample's CX2, so a test can act while
+ *   that network is still loading
+ */
+const mockNdexSamples = async (
+  page: Page,
+  holdFirstMs: number = 0,
+): Promise<void> => {
+  await page.route(/ndexbio\.org/, async (route) => {
     const request = route.request()
     const url = request.url()
     if (url.includes('batch/network/summary')) {
@@ -76,6 +83,9 @@ const mockNdexSamples = async (page: Page): Promise<void> => {
     const id = SAMPLE_IDS.find((sample) => url.includes(sample))
     const fixture = id === undefined ? undefined : fixtureFor(id)
     if (request.method() === 'GET' && fixture !== undefined) {
+      if (id === FIRST_SAMPLE_ID && holdFirstMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, holdFirstMs))
+      }
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -106,6 +116,19 @@ const callApi = async (
 
 const currentNetworkId = async (page: Page): Promise<string> =>
   (await callApi(page, 'workspace', 'getWorkspaceInfo')).data.currentNetworkId
+
+const HOLD_MS = 2000
+
+/** Open the samples with the first one's data held back, and return at once */
+const openSamplesStillLoading = async (page: Page): Promise<void> => {
+  await mockNdexSamples(page, HOLD_MS)
+  await gotoAndWaitReady(page)
+  await page.locator(OPEN_SAMPLES).click()
+  await expect(page).toHaveURL(new RegExp(`/networks/${FIRST_SAMPLE_ID}`))
+  await expect(page.getByText(LOADING)).toBeVisible()
+  // Clear of urlManager's 300 ms throttle, still well inside the hold
+  await page.waitForTimeout(400)
+}
 
 const openSamples = async (page: Page): Promise<void> => {
   await page.locator(OPEN_SAMPLES).click()
@@ -161,5 +184,42 @@ test.describe('App API deletes move the URL off the deleted network', () => {
       page.locator('[data-testid="cyjs-renderer"] canvas').first(),
     ).toBeVisible({ timeout: 15000 })
     await expect(page).toHaveURL(new RegExp(`/networks/${SECOND_SAMPLE_ID}`))
+  })
+
+  // WorkspaceEditor ignored the URL while a load was running, and a load that
+  // settled after its network was deleted put the network back and made it
+  // current again.
+  test('a network deleted while it loads stays deleted', async ({ page }) => {
+    await openSamplesStillLoading(page)
+
+    expect((await callApi(page, 'network', 'deleteAllNetworks')).success).toBe(
+      true,
+    )
+    await expect(page.locator(PANEL)).toBeVisible({ timeout: 15000 })
+
+    // Let the held load settle
+    await page.waitForTimeout(HOLD_MS + 1000)
+    expect(await currentNetworkId(page)).toBe('')
+    await expect(page.locator(PANEL)).toBeVisible()
+    await expect(page).not.toHaveURL(new RegExp(FIRST_SAMPLE_ID))
+  })
+
+  test('the next network loads when the current one is deleted mid-load', async ({
+    page,
+  }) => {
+    await openSamplesStillLoading(page)
+
+    await page.locator('[data-testid="toolbar-data-menu-menu-button"]').click()
+    await page.getByRole('menuitem', { name: 'Remove Current Network' }).click()
+    await page.locator('[data-testid="confirmation-dialog-confirm"]').click()
+
+    await expect(page).toHaveURL(new RegExp(`/networks/${SECOND_SAMPLE_ID}`))
+    await expect(page.getByText(LOADING)).toHaveCount(0, {
+      timeout: HOLD_MS + 15000,
+    })
+    await expect(
+      page.locator('[data-testid="cyjs-renderer"] canvas').first(),
+    ).toBeVisible({ timeout: 15000 })
+    expect(await currentNetworkId(page)).toBe(SECOND_SAMPLE_ID)
   })
 })

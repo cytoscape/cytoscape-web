@@ -4,6 +4,7 @@ import {
   Route,
   Routes,
   useLocation,
+  useNavigate,
   useNavigationType,
   useParams,
 } from 'react-router-dom'
@@ -43,6 +44,9 @@ const WS = 'ws-1'
 /** What the router shows, refreshed on every render of the probe */
 const seen = { pathname: '', navigationType: '' }
 
+/** The router's own navigate, standing in for the user following a link */
+let routerNavigate: (path: string) => void = () => undefined
+
 /**
  * Mounted where WorkspaceEditor is — on the `:workspaceId` route, reading the
  * child route's `networkId` — so the hook sees the params the editor sees.
@@ -52,6 +56,7 @@ const Probe = (): null => {
   useUrlFollowsNetworkRemoval(networkId)
   seen.pathname = useLocation().pathname
   seen.navigationType = useNavigationType()
+  routerNavigate = useNavigate()
   return null
 }
 
@@ -240,5 +245,34 @@ describe('useUrlFollowsNetworkRemoval', () => {
 
     await advance(400)
     expect(seen.pathname).toBe(`/${WS}/networks/net-2`)
+  })
+
+  // The retry used to re-read whatever the URL named when it fired, so a
+  // route opened in the meantime was bounced to the current network.
+  it('stops retrying once the route leaves the removed network', async () => {
+    seedLoaded('net-1')
+    useWorkspaceStore.getState().addNetworkIds('net-2')
+    useWorkspaceStore.getState().setCurrentNetworkId('net-1')
+    renderAt(`/${WS}/networks/net-1`)
+    navigateToNetwork(
+      { workspaceId: WS, networkId: 'unrelated', replace: true },
+      () => undefined,
+    )
+    await advance(100)
+
+    act(() => {
+      expect(networkApi.deleteCurrentNetwork().success).toBe(true)
+    })
+    await settle()
+    // Throttled: still on the removed network, a retry is pending
+    expect(seen.pathname).toBe(`/${WS}/networks/net-1`)
+
+    // A network the workspace does not list yet, opened before the retry
+    act(() => {
+      routerNavigate(`/${WS}/networks/not-listed-yet`)
+    })
+    await advance(1000)
+
+    expect(seen.pathname).toBe(`/${WS}/networks/not-listed-yet`)
   })
 })
