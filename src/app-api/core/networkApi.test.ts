@@ -722,12 +722,43 @@ describe('networkApi', () => {
       expect(mockWorkspaceActions.setCurrentNetworkId).not.toHaveBeenCalled()
     })
 
+    // A workspace network that has never been shown (every sample but the
+    // first after Open Sample Networks, every network after a reload) is
+    // only a summary: it is in workspace.networkIds but not in NetworkStore
+    // until it becomes current and WorkspaceEditor loads it.
+    it('deletes a workspace network that has not been loaded yet', () => {
+      // net2 is in the workspace but not in NetworkStore
+      const result = networkApi.deleteNetwork('net2')
+      expect(result.success).toBe(true)
+      expect(mockSummaryActions.delete).toHaveBeenCalledWith('net2')
+      expect(mockTableActions.delete).toHaveBeenCalledWith('net2')
+      expect(mockWorkspaceActions.deleteNetwork).toHaveBeenCalledWith('net2')
+      expect(mockWorkspaceState.networkIds).toEqual(['net1'])
+    })
+
+    it('deletes a network created with addToWorkspace: false', () => {
+      mockNetworks.set('detached', { id: 'detached' })
+      const result = networkApi.deleteNetwork('detached')
+      expect(result.success).toBe(true)
+      expect(mockNetworkActions.delete).toHaveBeenCalledWith('detached')
+      // The workspace and its current network are left alone
+      expect(mockWorkspaceState.networkIds).toEqual(['net1', 'net2'])
+      expect(mockWorkspaceActions.setCurrentNetworkId).not.toHaveBeenCalled()
+    })
+
     it('returns fail(NetworkNotFound) when network does not exist', () => {
       const result = networkApi.deleteNetwork('missing')
       expect(result.success).toBe(false)
       if (!result.success) {
         expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
       }
+      // Nothing is deleted
+      expect(mockNetworkActions.delete).not.toHaveBeenCalled()
+      expect(mockSummaryActions.delete).not.toHaveBeenCalled()
+      expect(mockTableActions.delete).not.toHaveBeenCalled()
+      expect(mockWorkspaceActions.deleteNetwork).not.toHaveBeenCalled()
+      expect(mockWorkspaceState.networkIds).toEqual(['net1', 'net2'])
+      expect(mockWorkspaceActions.setCurrentNetworkId).not.toHaveBeenCalled()
     })
 
     it('clears HCX validation result if present', () => {

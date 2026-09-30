@@ -466,7 +466,13 @@ export const networkApi: NetworkApi = {
   // first remaining network even when deleting a non-current one).
   deleteNetwork(networkId, _options) {
     try {
-      const networkExists = useNetworkStore.getState().networks.has(networkId)
+      // A workspace network is deletable before it has ever been shown: until
+      // it becomes current it is only a summary, absent from NetworkStore.
+      // NetworkStore still counts for networks created with
+      // addToWorkspace: false, which are in no workspace.
+      const networkExists =
+        useWorkspaceStore.getState().workspace.networkIds.includes(networkId) ||
+        useNetworkStore.getState().networks.has(networkId)
       if (!networkExists) {
         return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
