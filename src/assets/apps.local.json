@@ -17,7 +17,7 @@
   {
     "id": "networkWorkflows",
     "name": "Network Workflow Examples",
-    "url": "http://localhost:7000/remoteEntry.js",
+    "url": "http://localhost:7001/remoteEntry.js",
     "author": "Cytoscape Core Team",
     "description": "Network creation, CX2 import, and external integration examples.",
     "version": "1.0.0",

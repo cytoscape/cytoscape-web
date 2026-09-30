@@ -535,7 +535,7 @@ The manifest is an array of objects. Two formats are accepted:
     "repository": "https://github.com/cytoscape/cytoscape-web-app-examples",
     "compatibleHostVersions": ">=1.0.0"
   },
-  { "name": "networkWorkflows", "url": "http://localhost:7000/remoteEntry.js" }
+  { "name": "networkWorkflows", "url": "http://localhost:7001/remoteEntry.js" }
 ]
 ```
 
