@@ -2,7 +2,7 @@ import { IdType } from '../../IdType'
 import { GraphObjectType } from '../../NetworkModel'
 import { DiscreteRange } from '../../PropertyModel/DiscreteRange'
 import { NumberRange } from '../../PropertyModel/NumberRange'
-import { ValueType } from '../../TableModel'
+import { DiscreteFilterValue } from '../DiscreteFilterValue'
 import { FilterConfig } from '../FilterConfig'
 import { IndexedColumns, Indices, Search, SearchOptions } from '../Search'
 import { SearchState } from '../SearchState'
@@ -268,7 +268,7 @@ export const updateFilterConfig = <T>(
 export const updateRange = <T>(
   state: FilterState<T>,
   name: string,
-  range: NumberRange | DiscreteRange<ValueType>,
+  range: NumberRange | DiscreteRange<DiscreteFilterValue>,
 ): FilterState<T> => {
   const filter = state.filterConfigs[name]
   if (filter === undefined) {

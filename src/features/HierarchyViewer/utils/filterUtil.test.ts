@@ -24,6 +24,89 @@ describe('getAllDiscreteValues', () => {
   it('returns an empty array for empty rows', () => {
     expect(getAllDiscreteValues(new Map(), 'type')).toEqual([])
   })
+
+  it('adds one null option, last, for null values and rows without the attribute', () => {
+    const rows = new Map<string, Record<string, ValueType>>([
+      ['e1', { type: 'binds' }],
+      ['e2', { type: null as unknown as ValueType }],
+      ['e3', {}],
+      ['e4', { type: 'activates' }],
+    ])
+
+    expect(getAllDiscreteValues(rows, 'type')).toEqual([
+      'activates',
+      'binds',
+      null,
+    ])
+  })
+
+  it('counts an empty or blank string as a missing value', () => {
+    // The table browser writes '' when a string cell is cleared
+    const rows = new Map<string, Record<string, ValueType>>([
+      ['e1', { type: 'binds' }],
+      ['e2', { type: '' }],
+      ['e3', { type: '   ' }],
+    ])
+
+    expect(getAllDiscreteValues(rows, 'type')).toEqual(['binds', null])
+  })
+
+  it('returns only the null option when no row has a value', () => {
+    const rows = new Map<string, Record<string, ValueType>>([
+      ['e1', {}],
+      ['e2', { type: null as unknown as ValueType }],
+    ])
+
+    expect(getAllDiscreteValues(rows, 'type')).toEqual([null])
+  })
+
+  it('adds no null option when every row has a value', () => {
+    const rows = new Map<string, Record<string, ValueType>>([
+      ['e1', { type: 'binds' }],
+    ])
+
+    expect(getAllDiscreteValues(rows, 'type')).toEqual(['binds'])
+  })
+
+  it('sorts numbers numerically, not as strings', () => {
+    const rows = new Map<string, Record<string, ValueType>>([
+      ['n1', { size: 10 }],
+      ['n2', { size: 9 }],
+      ['n3', { size: -1.5 }],
+      ['n4', { size: 100 }],
+      ['n5', { size: 9 }],
+    ])
+
+    expect(getAllDiscreteValues(rows, 'size')).toEqual([-1.5, 9, 10, 100])
+  })
+
+  it('keeps boolean values as booleans, false first', () => {
+    const rows = new Map<string, Record<string, ValueType>>([
+      ['n1', { querynode: true }],
+      ['n2', { querynode: false }],
+      ['n3', { querynode: true }],
+    ])
+
+    expect(getAllDiscreteValues(rows, 'querynode')).toEqual([false, true])
+  })
+
+  it('keeps sorting strings by code unit', () => {
+    const rows = new Map<string, Record<string, ValueType>>([
+      ['e1', { type: 'b' }],
+      ['e2', { type: 'B' }],
+      ['e3', { type: 'a' }],
+      ['e4', { type: '10' }],
+      ['e5', { type: '9' }],
+    ])
+
+    expect(getAllDiscreteValues(rows, 'type')).toEqual([
+      '10',
+      '9',
+      'B',
+      'a',
+      'b',
+    ])
+  })
 })
 
 describe('getDefaultCheckboxFilterConfig', () => {
@@ -70,6 +153,20 @@ describe('restoreFilterState', () => {
       range: { values: ['binds'] },
       enabled: false,
     })
+  })
+
+  it('keeps a saved null option while the table still has missing values', () => {
+    const withMissing: FilterConfig = {
+      ...fresh,
+      range: { values: ['activates', 'binds', null] },
+    }
+    const saved: FilterConfig = { ...fresh, range: { values: [null] } }
+
+    expect(restoreFilterState(withMissing, saved).range).toEqual({
+      values: [null],
+    })
+    // No missing values any more: the null option is gone
+    expect(restoreFilterState(fresh, saved).range).toEqual({ values: [] })
   })
 
   it('drops saved values that are no longer in the table', () => {

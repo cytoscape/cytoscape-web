@@ -298,8 +298,9 @@ const NumberRangeSchema = z.object({
   max: z.number(),
 })
 
+// null is the option for elements without a value (DiscreteFilterValue, #796)
 const DiscreteRangeSchema = z.object({
-  values: z.array(ValueTypeSchema),
+  values: z.array(ValueTypeSchema.nullable()),
 })
 
 const FilterConfigSchema = z.object({

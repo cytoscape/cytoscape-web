@@ -8,6 +8,7 @@ import {
   deserializeValueList,
   getListTypeFromSingle,
   getSingleTypeFromList,
+  isMissingValue,
   serializedStringIsValid,
   serializeValue,
   serializeValueList,
@@ -310,5 +311,22 @@ describe('compareNumbers comparator contract (regression: R2-17)', () => {
     expect(compareNumbers(1, 2, 'asc')).toBeLessThan(0)
     expect(compareNumbers(1, 2, 'desc')).toBeGreaterThan(0)
     expect(compareNumbers(3, 3, 'asc')).toBe(0)
+  })
+})
+
+describe('isMissingValue', () => {
+  it('is true for null, undefined and blank strings', () => {
+    expect(isMissingValue(null)).toBe(true)
+    expect(isMissingValue(undefined)).toBe(true)
+    expect(isMissingValue('')).toBe(true)
+    expect(isMissingValue(' \t ')).toBe(true)
+  })
+
+  it('is false for any other value, including falsy ones and empty lists', () => {
+    expect(isMissingValue('a')).toBe(false)
+    expect(isMissingValue(' a ')).toBe(false)
+    expect(isMissingValue(0)).toBe(false)
+    expect(isMissingValue(false)).toBe(false)
+    expect(isMissingValue([])).toBe(false)
   })
 })

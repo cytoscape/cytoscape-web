@@ -1,14 +1,16 @@
 import { Box, Checkbox, FormControlLabel, FormGroup } from '@mui/material'
 import Tooltip from '@mui/material/Tooltip'
-import { useCallback, useEffect, useState } from 'react'
+import { ReactNode, useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import { useFilterStore } from '../../../../data/hooks/stores/FilterStore'
 import { useVisualStyleStore } from '../../../../data/hooks/stores/VisualStyleStore'
 import {
+  DiscreteFilterValue,
   Filter,
   FilterConfig,
   getBasicFilter,
+  toDiscreteFilterValue,
 } from '../../../../models/FilterModel'
 import { DiscreteFilterDetails } from '../../../../models/FilterModel/DiscreteFilterDetails'
 import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
@@ -25,7 +27,9 @@ import {
   NodeVisualPropertyName,
 } from '../../../../models/VisualStyleModel/VisualPropertyName'
 import { VisibilityType } from '../../../../models/VisualStyleModel/VisualPropertyValue/VisibilityType'
+import { formatValueText } from '../../utils/attributeValueDisplay'
 import { getAllDiscreteValues } from '../../utils/filterUtil'
+import { NoValueLabel } from '../PropertyPanel/AttributeValue'
 
 interface CheckboxFilterProps {
   // The network to be filtered
@@ -63,10 +67,11 @@ export const CheckboxFilter = ({
   })
   const updateRange = useFilterStore((state) => state.updateRange)
 
-  const [allOptions, setAllOptions] = useState<string[]>([])
+  const [allOptions, setAllOptions] = useState<DiscreteFilterValue[]>([])
 
   // Check if all options are selected
-  const currentSelectedOptions = filterConfig.range as DiscreteRange<ValueType>
+  const currentSelectedOptions =
+    filterConfig.range as DiscreteRange<DiscreteFilterValue>
 
   // The visual property the filter writes its bypass to
   const vpName =
@@ -85,15 +90,15 @@ export const CheckboxFilter = ({
     }
 
     // Current range stored in the config
-    const discreteRange: DiscreteRange<ValueType> =
-      filterConfig.range as DiscreteRange<ValueType>
+    const discreteRange: DiscreteRange<DiscreteFilterValue> =
+      filterConfig.range as DiscreteRange<DiscreteFilterValue>
     const basicFilter: Filter = getBasicFilter()
     basicFilter.applyDiscreteFilter(discreteRange, table, attributeName)
 
     const idsToFilter: IdType[] = []
     const idsToExclude: IdType[] = []
 
-    const rangeSet = new Set<ValueType>(discreteRange.values)
+    const rangeSet = new Set<DiscreteFilterValue>(discreteRange.values)
 
     if (rangeSet.size === 0) {
       // No options checked - hide all items
@@ -113,9 +118,12 @@ export const CheckboxFilter = ({
 
     ids.forEach((id: string) => {
       const row = rows.get(id)
-      const value = row?.[attributeName]
+      // A missing value (null, no attribute, blank) matches the null option
+      const value: DiscreteFilterValue = toDiscreteFilterValue(
+        row?.[attributeName],
+      )
 
-      if (value !== undefined && rangeSet.has(value)) {
+      if (rangeSet.has(value)) {
         idsToFilter.push(id)
       } else {
         idsToExclude.push(id)
@@ -162,8 +170,9 @@ export const CheckboxFilter = ({
    *
    * @param value
    */
-  const handleToggle = (value: string) => {
-    const discreteRange = filterConfig.range as DiscreteRange<ValueType>
+  const handleToggle = (value: DiscreteFilterValue) => {
+    const discreteRange =
+      filterConfig.range as DiscreteRange<DiscreteFilterValue>
     const currentSelection = discreteRange.values
     const currentIndex = currentSelection.indexOf(value)
     const newChecked = [...currentSelection]
@@ -183,7 +192,7 @@ export const CheckboxFilter = ({
     updateUrl(newChecked)
   }
 
-  const updateUrl = (checked: ValueType[]): void => {
+  const updateUrl = (checked: DiscreteFilterValue[]): void => {
     if (checked.length !== 0) {
       searchParams.set(FilterUrlParams.FILTER_RANGE, checked.join(',') || '')
       // setSearchParams(searchParams)
@@ -269,16 +278,30 @@ export const CheckboxFilter = ({
           }
           label={isAllSelected ? 'Deselect All' : 'Select All'}
         />
-        {allOptions.map((option: string) => {
-          const color: string = colorMap.get(option) as string
+        {allOptions.map((option: DiscreteFilterValue) => {
+          const color: string | undefined =
+            option === null ? undefined : (colorMap.get(option) as string)
+          // Criteria in the filterWidgets aspect are strings, whatever the
+          // column type. React renders nothing for a boolean, so the label is
+          // always text; the null option (no value) gets a placeholder.
+          const label: ReactNode =
+            option === null ? (
+              <NoValueLabel />
+            ) : (
+              (name2label.get(String(option)) ?? formatValueText(option) ?? '')
+            )
 
           return (
             <FormControlLabel
-              key={option}
+              key={`${typeof option}:${String(option)}`}
               sx={{ m: 0 }}
               control={
                 <Checkbox
-                  data-testid={`checkbox-filter-option-${option}`}
+                  data-testid={
+                    option === null
+                      ? 'checkbox-filter-option-no-value'
+                      : `checkbox-filter-option-${String(option)}`
+                  }
                   disabled={!enableFilter}
                   checked={currentSelectedOptions.values.includes(option)}
                   onChange={() => handleToggle(option)}
@@ -299,7 +322,7 @@ export const CheckboxFilter = ({
                       mr: 0.5,
                     }}
                   />
-                  {name2label.get(option) ?? option}
+                  {label}
                 </Box>
               }
             />

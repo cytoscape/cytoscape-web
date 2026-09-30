@@ -1,7 +1,9 @@
 import {
+  DiscreteFilterValue,
   DisplayMode,
   FilterConfig,
   FilterWidgetType,
+  toDiscreteFilterValue,
 } from '../../../models/FilterModel'
 import { IdType } from '../../../models/IdType'
 import { GraphObjectType } from '../../../models/NetworkModel'
@@ -13,7 +15,7 @@ export const getDefaultCheckboxFilterConfig = (
   name: string,
   attributeName: string,
   target: GraphObjectType,
-  values: string[],
+  values: DiscreteFilterValue[],
   visualMapping?: VisualMappingFunction,
 ): FilterConfig => {
   const filterConfig: FilterConfig = {
@@ -32,12 +34,12 @@ export const getDefaultCheckboxFilterConfig = (
 
 const isDiscreteRange = (
   range: FilterConfig['range'],
-): range is DiscreteRange<ValueType> =>
-  Array.isArray((range as DiscreteRange<ValueType>).values)
+): range is DiscreteRange<DiscreteFilterValue> =>
+  Array.isArray((range as DiscreteRange<DiscreteFilterValue>).values)
 
 // Comparable key for a discrete value: typed, so 7 and '7' stay distinct,
 // and by content for lists
-const valueKey = (value: ValueType): string =>
+const valueKey = (value: DiscreteFilterValue): string =>
   Array.isArray(value)
     ? `list:${JSON.stringify(value)}`
     : `${typeof value}:${String(value)}`
@@ -72,10 +74,10 @@ export const restoreFilterState = (
     // Match by content, and keep the fresh value: a list-valued attribute's
     // saved arrays are copies after the database round trip, while
     // CheckboxFilter matches row values against the range by identity.
-    const available = new Map<string, ValueType>(
+    const available = new Map<string, DiscreteFilterValue>(
       fresh.range.values.map((value) => [valueKey(value), value]),
     )
-    const values: ValueType[] = []
+    const values: DiscreteFilterValue[] = []
     saved.range.values.forEach((value) => {
       const freshValue = available.get(valueKey(value))
       if (freshValue !== undefined) {
@@ -92,8 +94,30 @@ export const restoreFilterState = (
   }
 }
 
+// Orders discrete values: numbers numerically, false before true, strings by
+// code unit (as the default Array sort did). A column holds one type, but
+// mixed values are grouped by type rather than left in an unstable order.
+const compareDiscreteValues = (a: ValueType, b: ValueType): number => {
+  const typeA = typeof a
+  const typeB = typeof b
+  if (typeA !== typeB) {
+    return typeA < typeB ? -1 : 1
+  }
+  if (typeA === 'number') {
+    return (a as number) - (b as number)
+  }
+  if (typeA === 'boolean') {
+    return Number(a) - Number(b)
+  }
+  const textA = String(a)
+  const textB = String(b)
+  return textA < textB ? -1 : textA > textB ? 1 : 0
+}
+
 /**
- * Get all unique discrete values of the given attribute in the table.
+ * Get all unique discrete values of the given attribute in the table,
+ * sorted. Rows without a value (null, no such attribute, or a blank string)
+ * share one option, null, which comes last.
  *
  * @param table
  * @param attributeName
@@ -101,16 +125,23 @@ export const restoreFilterState = (
 export const getAllDiscreteValues = (
   rows: Map<IdType, Record<string, ValueType>>,
   attributeName: string,
-): string[] => {
-  const ids: IdType[] = [...rows.keys()]
-  if (ids.length === 0) return []
-
-  const valueSet = new Set<string>()
-  ids.forEach((id: IdType) => {
-    const row: Record<string, ValueType> = rows.get(id) ?? {}
-    valueSet.add(row[attributeName] as string)
+): DiscreteFilterValue[] => {
+  const valueSet = new Set<ValueType>()
+  let hasMissing = false
+  rows.forEach((row: Record<string, ValueType>) => {
+    const value: DiscreteFilterValue = toDiscreteFilterValue(row[attributeName])
+    if (value === null) {
+      hasMissing = true
+    } else {
+      valueSet.add(value)
+    }
   })
 
-  // Convert set to array and sort
-  return Array.from(valueSet).sort()
+  const values: DiscreteFilterValue[] = Array.from(valueSet).sort(
+    compareDiscreteValues,
+  )
+  if (hasMissing) {
+    values.push(null)
+  }
+  return values
 }

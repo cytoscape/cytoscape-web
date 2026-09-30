@@ -147,6 +147,7 @@ Provides filtering capabilities for interaction networks.
 
 - Attribute selection (node or edge attributes)
 - Checkbox filter with select all/clear functionality
+- Options are the column's distinct values, sorted by type (numbers numerically, `false` before `true`). Elements with a null, absent or blank-string value (`isMissingValue`; clearing a string cell in the table browser writes `''`) share one last option, labelled with a muted, italic `N/A` and stored as `null` in the range (`DiscreteFilterValue`); Select All checks it too
 - Visual mapping integration (colors from visual styles)
 - Visibility-based filtering (uses visual style bypass maps to control element visibility)
 - URL parameter synchronization
@@ -167,9 +168,11 @@ Displays properties of selected nodes in the interaction network.
 
 **Behavior:**
 
-- Shows all properties of a single selected node
+- Shows all properties of a single selected node: one row per node table column, like the Nodes table
 - Displays property name-value pairs in a scrollable list
 - Shows appropriate messages when no node is selected or multiple nodes are selected
+- Values render through `AttributeValue` (formatting in `utils/attributeValueDisplay.ts`): list items are separated by `, `; a null, absent, blank-string or empty-list value shows a muted, italic `N/A`
+- A string value (or list item) that is entirely an `http(s)` URL, or an Ensembl gene id with the `ensembl:` prefix (case-insensitive, optional version suffix), renders as a link opening in a new tab. Ensembl ids link to NCBI Gene; more identifier types go in the `IDENTIFIER_LINKS` table
 
 **Key Features:**
 

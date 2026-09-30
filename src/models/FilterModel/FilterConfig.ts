@@ -3,9 +3,10 @@
 import { GraphObjectType } from '@/models/NetworkModel/GraphObjectType'
 import { DiscreteRange } from '../PropertyModel/DiscreteRange'
 import { NumberRange } from '../PropertyModel/NumberRange'
-import { AttributeName, ValueType } from '../TableModel'
+import { AttributeName } from '../TableModel'
 import { VisualMappingFunction } from '../VisualStyleModel'
 import { DiscreteFilterDetails } from './DiscreteFilterDetails'
+import { DiscreteFilterValue } from './DiscreteFilterValue'
 import { DisplayMode } from './DisplayMode'
 import { FilterWidgetType } from './FilterWidgetType'
 import { SelectionType } from './SelectionType'
@@ -49,8 +50,9 @@ export interface FilterConfig {
 
   // Range of the values for the filter. If the widget type is "checkbox", then
   // the range is a DiscreteRange. If the widget type is "slider", then the
-  // range is a NumberRange.
-  range: NumberRange | DiscreteRange<ValueType>
+  // range is a NumberRange. A discrete range may hold null, the option for
+  // elements without a value.
+  range: NumberRange | DiscreteRange<DiscreteFilterValue>
 
   // Whether the filter is switched on. Stored here, next to the range, so the
   // state survives the filter UI unmounting (#772). Undefined means on:
