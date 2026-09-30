@@ -71,6 +71,7 @@
 - [2026-03-04] No `console.log`: Production builds strip direct `console.*()` calls through Vite's Oxc minifier. Use the `debug` logger from `src/debug.ts`.
 
 ## Testing
+- [2026-09-30] `NetworkSummaryStore.addAll` never writes IndexedDB (only `add` and `update` do). Its callers are the boot step `publishWorkspace` (rows it just read) and Open Sample Networks (`useLoadDemoNetworks`, via a hook alias `addSummaries`), so a sample's summary has NO `summaries` row until something `update`s it; boot refetches any missing summary from NDEx (`loadNetworkSummaries`). An e2e that proves a delete by probing the `summaries` row therefore times out before the delete even runs. Assert on what persists (the workspace row's `networkIds`, via a reload) instead.
 
 - [2026-09-28] A message snackbar that covers a click target never hides on its own during the click: MUI pauses `autoHideDuration` while the pointer is over it, and Playwright's actionability retries keep the pointer there, so the click times out after 60 s instead of waiting 5 s. `SnackbarMessageList` now sits bottom-center (#782) — it used to cover the network tab strip (Firefox flake in `hierarchy-cell-view.spec.ts`). If a spec must click under it (table rows, the cookie-consent banner), close the message through its Alert's Close button (scoped to `snackbar-message-list`, `exact: true`) and assert it hidden first; never `force` the click.
 
