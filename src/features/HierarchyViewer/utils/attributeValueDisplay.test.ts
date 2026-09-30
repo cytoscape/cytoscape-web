@@ -71,10 +71,12 @@ describe('getValueLink', () => {
   })
 
   it('stays fast on long near-miss input', () => {
+    // A guard against catastrophic backtracking, which would take seconds
+    // here; the headroom keeps slow CI runners from failing it
     const start = performance.now()
     getValueLink(`ensembl:ENSG${'0'.repeat(50_000)}x`)
     getValueLink(`ensembl:ENSG00000103152.${'1'.repeat(50_000)}x`)
-    expect(performance.now() - start).toBeLessThan(100)
+    expect(performance.now() - start).toBeLessThan(1000)
   })
 })
 

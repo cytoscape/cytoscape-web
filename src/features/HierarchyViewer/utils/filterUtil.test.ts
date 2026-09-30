@@ -169,6 +169,22 @@ describe('restoreFilterState', () => {
     expect(restoreFilterState(fresh, saved).range).toEqual({ values: [] })
   })
 
+  it('restores a saved blank-string selection as the null option, once', () => {
+    // Saved before blank strings joined the null option (#796)
+    const withMissing: FilterConfig = {
+      ...fresh,
+      range: { values: ['activates', 'binds', null] },
+    }
+    const saved: FilterConfig = {
+      ...fresh,
+      range: { values: ['', 'binds', '  ', null] },
+    }
+
+    expect(restoreFilterState(withMissing, saved).range).toEqual({
+      values: [null, 'binds'],
+    })
+  })
+
   it('drops saved values that are no longer in the table', () => {
     const saved: FilterConfig = {
       ...fresh,

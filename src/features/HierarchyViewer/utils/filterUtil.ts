@@ -74,13 +74,19 @@ export const restoreFilterState = (
     // Match by content, and keep the fresh value: a list-valued attribute's
     // saved arrays are copies after the database round trip, while
     // CheckboxFilter matches row values against the range by identity.
+    // Saved values are normalized first, since a blank string saved before
+    // #796 now belongs to the null option; several can map to it, so each
+    // fresh value is restored once.
     const available = new Map<string, DiscreteFilterValue>(
       fresh.range.values.map((value) => [valueKey(value), value]),
     )
+    const restored = new Set<string>()
     const values: DiscreteFilterValue[] = []
     saved.range.values.forEach((value) => {
-      const freshValue = available.get(valueKey(value))
-      if (freshValue !== undefined) {
+      const key = valueKey(toDiscreteFilterValue(value))
+      const freshValue = available.get(key)
+      if (freshValue !== undefined && !restored.has(key)) {
+        restored.add(key)
         values.push(freshValue)
       }
     })
