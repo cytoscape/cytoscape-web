@@ -359,6 +359,16 @@ describe('db validator - FilterConfig', () => {
     })
   })
 
+  it('accepts null, the no-value option, in a discrete range', () => {
+    const config = {
+      ...validFilterConfig(),
+      range: { values: ['active', null] },
+    }
+    expect(validateFilterConfig(config).range).toEqual({
+      values: ['active', null],
+    })
+  })
+
   it('rejects a filter config with an invalid range shape', () => {
     expect(() =>
       validateFilterConfig({ ...validFilterConfig(), range: { foo: 'bar' } }),

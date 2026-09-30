@@ -74,7 +74,9 @@ built from this aspect, so other widget types are rejected.
 
 A filter item labels one checkbox: the checkbox for the value `criterion` is
 shown as `description`. The checkbox values themselves come from the
-`attributeName` column of the target table.
+`attributeName` column of the target table. Elements whose value is null,
+absent or a blank string share one extra checkbox, labelled `N/A`, which no filter item can
+relabel.
 
 ## Validation behavior
 

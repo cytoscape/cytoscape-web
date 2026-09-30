@@ -1,4 +1,8 @@
-import { DisplayMode, FilterConfig } from '../../../models/FilterModel'
+import {
+  DiscreteFilterValue,
+  DisplayMode,
+  FilterConfig,
+} from '../../../models/FilterModel'
 import { IdType } from '../../../models/IdType'
 import { GraphObjectType } from '../../../models/NetworkModel'
 import { Table } from '../../../models/TableModel'
@@ -47,7 +51,7 @@ export const createFilterFromAspect = (
     const { filter, label } = filterAspect
     const table: Table =
       filterAspect.appliesTo === GraphObjectType.NODE ? nodeTable : edgeTable
-    const allValues: string[] = getAllDiscreteValues(
+    const allValues: DiscreteFilterValue[] = getAllDiscreteValues(
       table.rows,
       filterAspect.attributeName,
     )
