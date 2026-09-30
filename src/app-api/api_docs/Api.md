@@ -542,9 +542,13 @@ the history entry) to the repaired current network, or to
 `/<workspace>/networks` when none is left. The URL is what loads a network, so
 this is what shows the network that becomes current.
 
-| Error Code | Condition                  |
-| ---------- | -------------------------- |
-| `APP1`     | `networkId` does not exist |
+Any network in the workspace can be deleted, including one that has never been
+opened (only its summary is in memory until it becomes current). A network
+created with `addToWorkspace: false` can be deleted too.
+
+| Error Code | Condition                                                                   |
+| ---------- | --------------------------------------------------------------------------- |
+| `APP1`     | `networkId` is neither in the workspace nor a network created outside of it |
 
 #### `deleteCurrentNetwork(options?): ApiResult`
 

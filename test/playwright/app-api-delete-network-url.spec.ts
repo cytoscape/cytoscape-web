@@ -204,6 +204,39 @@ test.describe('App API deletes move the URL off the deleted network', () => {
     await expect(page).not.toHaveURL(new RegExp(FIRST_SAMPLE_ID))
   })
 
+  // Every sample but the first is only a summary until it is first shown, so
+  // deleteNetwork, which checked NetworkStore, reported APP1 for a network the
+  // workspace listed.
+  test('deleteNetwork deletes a sample that has never been shown', async ({
+    page,
+  }) => {
+    await mockNdexSamples(page)
+    await gotoAndWaitReady(page)
+    await openSamples(page)
+
+    const networkIds = async (): Promise<string[]> =>
+      (await callApi(page, 'workspace', 'getNetworkIds')).data.networkIds
+    expect(await networkIds()).toContain(SECOND_SAMPLE_ID)
+
+    await page.waitForTimeout(400)
+    const result = await callApi(
+      page,
+      'network',
+      'deleteNetwork',
+      SECOND_SAMPLE_ID,
+    )
+    expect(result.success).toBe(true)
+    expect(await networkIds()).not.toContain(SECOND_SAMPLE_ID)
+    // A non-current network: the current one and the URL stay put
+    expect(await currentNetworkId(page)).toBe(FIRST_SAMPLE_ID)
+    await expect(page).toHaveURL(new RegExp(`/networks/${FIRST_SAMPLE_ID}`))
+
+    // The workspace row in IndexedDB no longer lists it after a reload
+    await gotoAndWaitReady(page, page.url())
+    expect(await networkIds()).not.toContain(SECOND_SAMPLE_ID)
+    expect(await networkIds()).toContain(FIRST_SAMPLE_ID)
+  })
+
   test('the next network loads when the current one is deleted mid-load', async ({
     page,
   }) => {
