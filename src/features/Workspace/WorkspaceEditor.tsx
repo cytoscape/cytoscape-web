@@ -32,6 +32,7 @@ import { NetworkBrowserPanel } from './NetworkBrowserPanel/NetworkBrowserPanel'
 import { OpenRightPanelButton } from './SidePanel/OpenRightPanelButton'
 import { SidePanel } from './SidePanel/SidePanel'
 import { toVerticalPaneSizes } from './splitPaneSizes'
+import { useUrlFollowsNetworkRemoval } from './useUrlFollowsNetworkRemoval'
 // Lazy load heavy TableDataLoader forms
 const CreateNetworkFromTableForm = lazy(() =>
   import(
@@ -304,6 +305,11 @@ const WorkSpaceEditor = (): JSX.Element => {
   }
 
   const params = useParams()
+
+  // The swap effect below is the only thing that loads a network, and it
+  // follows the URL. Removals that do not navigate (the App API's deletes)
+  // must still move the URL off the removed network.
+  useUrlFollowsNetworkRemoval(params.networkId)
 
   /**
    * Swaps the current network when URL parameter changes
