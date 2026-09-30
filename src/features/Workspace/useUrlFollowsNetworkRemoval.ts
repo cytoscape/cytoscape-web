@@ -63,6 +63,8 @@ export const useUrlFollowsNetworkRemoval = (
       // urlManager silently drops a navigation within 300 ms of the previous
       // one. Look again once that window has passed; after a navigation that
       // did land, the URL no longer names a removed network and this stops.
+      // Not `force`: the URL ref lags a render behind, so a forced navigation
+      // would override a caller that navigated elsewhere in the same tick.
       retryTimer = setTimeout(followRemoval, RETRY_DELAY_MS)
     }
 
