@@ -85,6 +85,53 @@ describe('urlManager', () => {
       expect(navigate).toHaveBeenCalledTimes(1)
     })
 
+    it('force bypasses the throttle and in-progress guards (#790)', () => {
+      const navigate = vi.fn()
+
+      navigateToNetwork(
+        {
+          workspaceId: 'ws-1',
+          networkId: 'net-1',
+          searchParams: new URLSearchParams(),
+          replace: false,
+        },
+        navigate,
+      )
+      // Within both the 300 ms throttle and the 100 ms in-progress window:
+      // a reset that must leave a deleted network's URL is never dropped.
+      navigateToNetwork(
+        {
+          workspaceId: 'ws-1',
+          networkId: '',
+          searchParams: new URLSearchParams(),
+          replace: true,
+          force: true,
+        },
+        navigate,
+      )
+
+      expect(navigate).toHaveBeenCalledTimes(2)
+      expect(navigate).toHaveBeenLastCalledWith('/ws-1/networks', {
+        replace: true,
+      })
+    })
+
+    it('force also navigates when the tracked path is unchanged', () => {
+      const navigate = vi.fn()
+      const config = {
+        workspaceId: 'ws-1',
+        networkId: '',
+        searchParams: new URLSearchParams(),
+        replace: true,
+      }
+
+      navigateToNetwork(config, navigate)
+      advance(400)
+      navigateToNetwork({ ...config, force: true }, navigate)
+
+      expect(navigate).toHaveBeenCalledTimes(2)
+    })
+
     it('allows navigation again after the throttle window', () => {
       const navigate = vi.fn()
       const config = (networkId: string) => ({
