@@ -59,12 +59,14 @@ export const useDeleteCyNetwork = (): UseDeleteCyNetworkReturn => {
     // The URL must leave the deleted network too: WorkspaceEditor loads a
     // network only when the URL's network id changes, so re-adding the same
     // network (Open Sample Networks) would navigate to an unchanged path and
-    // never load it.
+    // never load it. Forced, because urlManager's throttle would otherwise
+    // drop this reset if another navigation landed just before it.
     navigateToNetwork({
       workspaceId: useWorkspaceStore.getState().workspace.id,
       networkId: '',
       searchParams: new URLSearchParams(location.search),
       replace: true,
+      force: true,
     })
   }
 

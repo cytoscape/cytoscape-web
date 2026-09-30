@@ -17,4 +17,10 @@ export interface NavigationConfig {
   networkId?: IdType // Current network ID
   searchParams?: URLSearchParams // Optional search parameters for additional state
   replace?: boolean // Whether to replace the current history entry (default: false)
+  /**
+   * Navigate even when urlManager's guards would drop the call (throttle,
+   * in-progress, same path). Only for navigations whose loss leaves the URL
+   * naming state that no longer exists, e.g. a network that was just deleted.
+   */
+  force?: boolean
 }
