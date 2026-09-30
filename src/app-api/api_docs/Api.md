@@ -537,6 +537,11 @@ always repairs `currentNetworkId`, while deleting a non-current network never
 switches the active network. Fires `network:deleted`; deleting the current
 network also fires `network:switched` when the repaired ID differs.
 
+When the address bar names the deleted network, the host moves it (replacing
+the history entry) to the repaired current network, or to
+`/<workspace>/networks` when none is left. The URL is what loads a network, so
+this is what shows the network that becomes current.
+
 | Error Code | Condition                  |
 | ---------- | -------------------------- |
 | `APP1`     | `networkId` does not exist |
@@ -551,7 +556,8 @@ Deletes the currently active network. Delegates to `deleteNetwork`.
 
 #### `deleteAllNetworks(): ApiResult`
 
-Deletes all networks from all stores. Clears workspace state.
+Deletes all networks from all stores. Clears workspace state. The address bar
+moves to `/<workspace>/networks`, as for `deleteNetwork`.
 
 ---
 

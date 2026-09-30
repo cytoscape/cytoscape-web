@@ -82,7 +82,7 @@ The main workspace editor component that provides layout and network management.
 
 **Design Decisions:**
 
-1. **Loading Prevention:** Uses `isLoadingRef` to prevent concurrent network loads, avoiding race conditions and duplicate API calls
+1. **One Load at a Time:** `useUrlNetworkLoad` runs one network load at a time. A load whose network was removed meanwhile leaves the stores alone, a load whose URL moved on does not change the current network, and the network the URL names when a load settles is loaded next. `useUrlFollowsNetworkRemoval` moves the URL off a network that leaves the workspace, because the URL is the only network-load trigger
 
 2. **Modification Detection:** Excludes selection state (selectedNodes, selectedEdges) from modification detection because selection changes are temporary UI state, not network modifications
 
