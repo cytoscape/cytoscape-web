@@ -100,10 +100,14 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
   with its menu, so a component mounted there cannot show UI of its own
   (#784). Its panel half is removed with it, so there is one way to
   contribute a panel. The host no longer renders anything from the field. An
-  app that still exports it loads and mounts as before, its `resources` and
-  `mount()` unaffected, and the host logs a warning naming the app; the
-  entries themselves are ignored. Migrate each entry to a declaration in
-  `resources` (or a registration in `mount()`):
+  app that still exports it with string `type` values loads and mounts as
+  before, its `resources` and `mount()` unaffected, and the host logs a
+  warning naming the app (shown by default only in development builds); the
+  entries themselves are ignored. An app that references the `ComponentType`
+  const at runtime (`type: ComponentType.Panel`) does not load at all:
+  `cyweb/ApiTypes` no longer exports it, so evaluating the app's
+  `./AppConfig` throws. Migrate each entry to a declaration in `resources`
+  (or a registration in `mount()`):
 
   | Removed entry | Replacement |
   | --- | --- |
@@ -113,7 +117,8 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
   A panel that was loaded by name from the app's own Module Federation
   `exposes` (an entry without `component`) needs no `exposes` entry any more:
   only `./AppConfig` is loaded. Workspaces saved by an older host keep
-  working; the field is dropped from their app records when they are read.
+  working: the field is dropped when an app enters the AppStore, though an
+  app record in IndexedDB may keep it, unused.
 
 ## 1.0.0-beta.4 (2026-09-11)
 
