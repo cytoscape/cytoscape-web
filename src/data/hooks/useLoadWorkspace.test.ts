@@ -57,7 +57,6 @@ const createCyApp = (
     id,
     name: `App ${id}`,
     description: 'Test application',
-    components: [],
     status,
   }
 }

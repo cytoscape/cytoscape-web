@@ -1,6 +1,4 @@
 import { AppStatus } from '../../AppModel/AppStatus'
-import { ComponentMetadata } from '../../AppModel/ComponentMetadata'
-import { ComponentType } from '../../AppModel/ComponentType'
 import { CyApp } from '../../AppModel/CyApp'
 import { RegisteredAppResource } from '../../AppModel/RegisteredAppResource'
 import { IdType } from '../../IdType'
@@ -20,16 +18,12 @@ export const rightPanelResourceId = (appId: string, id: string): string =>
 export const BUILTIN_SUB_NETWORK_RESOURCE_ID =
   '__builtin__::right-panel::sub-network-viewer'
 
-/**
- * An app tab shown in the right pane, from either source. Exactly one of
- * `resource` (runtime registration) and `manifest` (`CyApp.components`) is set.
- */
+/** An app tab shown in the right pane: a registered 'right-panel' resource. */
 export interface RightPanelAppTab {
   readonly resourceId: string
   readonly appId: string
   readonly id: string
-  readonly resource?: RegisteredAppResource
-  readonly manifest?: ComponentMetadata
+  readonly resource: RegisteredAppResource
 }
 
 /**
@@ -56,17 +50,15 @@ export const listBottomPanelTabs = (): PanelTab[] => [
 ]
 
 /**
- * The app tabs the right pane shows, in strip order: runtime registrations
- * merged with manifest panels, filtered by visibility, sorted by `order`.
- *
- * A runtime registration shadows a manifest panel with the same identity.
+ * The app tabs the right pane shows, in strip order: the registered
+ * 'right-panel' resources, filtered by visibility, sorted by `order`.
  */
 export const listRightPanelAppTabs = (
   apps: Record<string, CyApp>,
   resources: readonly RegisteredAppResource[],
   currentNetworkId: IdType,
 ): RightPanelAppTab[] => {
-  const runtimeTabs: RightPanelAppTab[] = resources
+  const tabs: RightPanelAppTab[] = resources
     .filter((r) => {
       if (r.slot !== 'right-panel') return false
       if (apps[r.appId]?.status !== AppStatus.Active) return false
@@ -80,30 +72,11 @@ export const listRightPanelAppTabs = (
       resource: r,
     }))
 
-  const runtimeIds = new Set(runtimeTabs.map((t) => t.resourceId))
-
-  const manifestTabs: RightPanelAppTab[] = []
-  Object.keys(apps).forEach((appId) => {
-    const app = apps[appId]
-    if (app.status !== AppStatus.Active) return
-    ;(app.components ?? []).forEach((component) => {
-      if (component.type !== ComponentType.Panel) return
-      const resourceId = rightPanelResourceId(appId, component.id)
-      if (runtimeIds.has(resourceId)) return
-      manifestTabs.push({
-        resourceId,
-        appId,
-        id: component.id,
-        manifest: component,
-      })
-    })
-  })
-
   // Ascending `order`, undefined last. The sort is stable, so ties keep
-  // registration order and manifest panels stay behind runtime ones.
+  // registration order.
   const orderOf = (tab: RightPanelAppTab): number =>
-    tab.resource?.order ?? Infinity
-  return [...runtimeTabs, ...manifestTabs].sort((a, b) => {
+    tab.resource.order ?? Infinity
+  return tabs.sort((a, b) => {
     const orderA = orderOf(a)
     const orderB = orderOf(b)
     return orderA === orderB ? 0 : orderA - orderB

@@ -46,7 +46,6 @@ function makeApp(resources: unknown[]): CyApp {
   return {
     id: 'app1',
     name: 'app1',
-    components: [],
     resources,
   } as unknown as CyApp
 }

@@ -1,5 +1,4 @@
 import { AppStatus } from './AppStatus'
-import { ComponentMetadata } from './ComponentMetadata'
 
 /**
  * Base interface to define the app object
@@ -32,12 +31,6 @@ export interface CyApp {
    * (already enabled in all example apps).
    */
   version?: string
-
-  /**
-   * Name of components to be exposed via Module Federation.
-   * @deprecated Prefer `resources` (declarative) or runtime registration via mount().
-   */
-  components?: ComponentMetadata[]
 
   // Current status of the app. Default is 'active', which is set by the host
   status?: AppStatus

@@ -85,6 +85,19 @@ describe('AppStoreImpl', () => {
       )
       expect(result).not.toBe(state) // Immutability check
     })
+
+    it('drops legacy components from a restored record', () => {
+      // A workspace saved before #786 still has the field on its app records.
+      const state = createDefaultState()
+      const legacy = {
+        ...createTestApp('app-1'),
+        components: [{ id: 'Panel', type: 'panel' }],
+      }
+
+      const result = restore(state, [legacy as any], [])
+
+      expect(result.apps['app-1']).toEqual(createTestApp('app-1'))
+    })
   })
 
   describe('add', () => {
@@ -99,65 +112,71 @@ describe('AppStoreImpl', () => {
       expect(result).not.toBe(state) // Immutability check
     })
 
-    it('should use cached app status but fresh components (without lazy refs)', () => {
+    // `CyApp.components` was removed in App API 1.0.0-beta.5 (#786). An app
+    // bundle is untyped at runtime and an old workspace record still carries
+    // the field, so the store drops it wherever an app record comes in.
+    const legacyComponents = [
+      { id: 'Panel', type: 'panel', component: () => null },
+      { id: 'MenuItem', type: 'menu', component: () => null },
+    ]
+
+    it('drops legacy components a brand-new app still declares', () => {
       const state = createDefaultState()
-      const freshComponents = [
-        { id: 'Panel', type: 'panel', component: () => null },
-        { id: 'MenuItem', type: 'menu', component: () => null },
-      ]
-      const app = { ...createTestApp('app-1'), components: freshComponents }
+      const app = { ...createTestApp('app-1'), components: legacyComponents }
+
+      const result = add(state, app as any, undefined)
+
+      expect(result.apps['app-1']).toBeDefined()
+      expect(result.apps['app-1']).not.toHaveProperty('components')
+    })
+
+    it('uses the cached app status and drops its legacy components', () => {
+      const state = createDefaultState()
+      const app = { ...createTestApp('app-1'), components: legacyComponents }
       const cachedApp = {
         ...createTestApp('app-1'),
         components: [{ id: 'Panel', type: 'panel' }],
+        status: AppStatus.Active,
       }
-      cachedApp.status = AppStatus.Active
 
       const result = add(state, app as any, cachedApp as any)
 
-      // Status preserved from cache
       expect(result.apps['app-1'].status).toBe(AppStatus.Active)
-      // Components taken from fresh module (includes new MenuItem)
-      // but React.lazy refs are stripped for Immer safety
-      expect(result.apps['app-1'].components).toEqual([
-        { id: 'Panel', type: 'panel' },
-        { id: 'MenuItem', type: 'menu' },
-      ])
+      expect(result.apps['app-1']).not.toHaveProperty('components')
     })
 
-    it('should refresh components when app already exists in store', () => {
-      const state = createDefaultState()
-      const oldComponents = [{ id: 'Panel', type: 'panel' }]
-      const newComponents = [
-        { id: 'Panel', type: 'panel', component: () => null },
-        { id: 'MenuItem', type: 'menu', component: () => null },
-      ]
-      const app = { ...createTestApp('app-1'), components: oldComponents }
+    it('drops legacy components from an app already in the store', () => {
+      const restored = {
+        ...createTestApp('app-1'),
+        components: [{ id: 'Panel', type: 'panel' }],
+      }
+      const state = {
+        ...createDefaultState(),
+        apps: { 'app-1': restored as any },
+      }
+      const app = {
+        ...createTestApp('app-1'),
+        version: '2.0.0',
+        components: legacyComponents,
+      }
 
-      let result = add(state, app as any, undefined)
-      expect(result.apps['app-1'].components).toEqual(oldComponents)
-
-      // Second add with updated components (simulates re-registration)
-      const updatedApp = { ...app, components: newComponents }
-      result = add(result, updatedApp as any, undefined)
+      const result = add(state, app as any, undefined)
 
       expect(Object.keys(result.apps)).toHaveLength(1)
-      // Lazy refs stripped
-      expect(result.apps['app-1'].components).toEqual([
-        { id: 'Panel', type: 'panel' },
-        { id: 'MenuItem', type: 'menu' },
-      ])
+      expect(result.apps['app-1'].version).toBe('2.0.0')
+      expect(result.apps['app-1']).not.toHaveProperty('components')
     })
 
-    it('should strip React.lazy refs from brand-new app components', () => {
+    it('never stores the resources of an app', () => {
       const state = createDefaultState()
-      const components = [{ id: 'Panel', type: 'panel', component: () => null }]
-      const app = { ...createTestApp('app-1'), components } as any
+      const app = {
+        ...createTestApp('app-1'),
+        resources: [{ slot: 'right-panel', id: 'P', component: () => null }],
+      }
 
-      const result = add(state, app, undefined)
+      const result = add(state, app as any, undefined)
 
-      expect(result.apps['app-1'].components).toEqual([
-        { id: 'Panel', type: 'panel' },
-      ])
+      expect(result.apps['app-1']).not.toHaveProperty('resources')
     })
 
     it('should not add duplicate app (preserves single entry)', () => {

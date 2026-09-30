@@ -112,7 +112,6 @@ const validCyApp = () => ({
   id: 'app-1',
   name: 'App 1',
   description: 'Test application',
-  components: [{ id: 'app-1-component', type: 'Menu' }],
   status: 'Active',
 })
 
@@ -328,10 +327,21 @@ describe('db validator - ServiceApp & CyApp', () => {
     expect(validateCyApp(validCyApp())).toMatchObject({ id: 'app-1' })
   })
 
-  it('rejects a CyApp whose components are not an array', () => {
-    expect(() =>
-      validateCyApp({ ...validCyApp(), components: 'menu' }),
-    ).toThrow()
+  it('rejects a CyApp without a name', () => {
+    const { name: _name, ...nameless } = validCyApp()
+    expect(() => validateCyApp(nameless)).toThrow()
+  })
+
+  // Only acceptance matters here. Read-path validation discards the parsed
+  // value, so asserting that parsing drops `components` would describe
+  // something no caller of getAppFromDb sees.
+  it('accepts a record saved before #786 that still has components', () => {
+    const legacy = {
+      ...validCyApp(),
+      components: [{ id: 'app-1-component', type: 'Menu' }],
+    }
+
+    expect(validateCyApp(legacy)).toMatchObject({ id: 'app-1' })
   })
 })
 

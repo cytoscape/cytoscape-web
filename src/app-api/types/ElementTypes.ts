@@ -49,5 +49,3 @@ export { ValidationType } from '../../models/AppModel/ValidationType'
 export type { Cx2 } from '../../models/CxModel/Cx2'
 
 // ── App registration types ───────────────────────────────────────
-export type { ComponentMetadata } from '../../models/AppModel/ComponentMetadata'
-export { ComponentType } from '../../models/AppModel/ComponentType'

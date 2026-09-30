@@ -33,7 +33,7 @@ export const mountApp = async (
   const lifecycle = cyApp as CyAppWithLifecycle
   if (typeof lifecycle.mount !== 'function') {
     // No lifecycle callback — treat as mounted immediately so renderers
-    // show CyApp.components resources without waiting.
+    // show its declared resources without waiting.
     mountedApps.add(cyApp.id)
     return
   }

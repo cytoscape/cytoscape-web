@@ -2,7 +2,6 @@
 import { describe, expect, it } from 'vitest'
 
 import { AppStatus } from '../../AppModel/AppStatus'
-import { ComponentType } from '../../AppModel/ComponentType'
 import { CyApp } from '../../AppModel/CyApp'
 import { RegisteredAppResource } from '../../AppModel/RegisteredAppResource'
 import { Panel } from '../Panel'
@@ -81,23 +80,19 @@ describe('listRightPanelAppTabs', () => {
     ).toHaveLength(1)
   })
 
-  it('merges manifest panels, shadowed by a runtime tab of the same identity', () => {
-    const apps = {
-      a: app('a', {
-        components: [
-          { id: 'P1', type: ComponentType.Panel },
-          { id: 'P2', type: ComponentType.Panel },
-          { id: 'Menu', type: ComponentType.Menu },
-        ],
-      }),
-    }
+  it('ignores the removed CyApp.components field', () => {
+    // #786: an old app record may still carry it; it contributes no tab.
+    const legacy = {
+      ...app('a'),
+      components: [
+        { id: 'P1', type: 'panel' },
+        { id: 'P2', type: 'panel' },
+      ],
+    } as CyApp
 
-    const tabs = listRightPanelAppTabs(apps, [panel('a', 'P1')], 'net1')
+    const tabs = listRightPanelAppTabs({ a: legacy }, [panel('a', 'P1')], 'net1')
 
-    expect(tabs.map((t) => [t.id, t.resource !== undefined])).toEqual([
-      ['P1', true],
-      ['P2', false],
-    ])
+    expect(tabs.map((t) => t.resourceId)).toEqual(['a::right-panel::P1'])
   })
 
   it('sorts by order, undefined last, keeping registration order on ties', () => {
