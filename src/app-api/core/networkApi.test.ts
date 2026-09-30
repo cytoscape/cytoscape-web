@@ -741,6 +741,9 @@ describe('networkApi', () => {
       const result = networkApi.deleteNetwork('detached')
       expect(result.success).toBe(true)
       expect(mockNetworkActions.delete).toHaveBeenCalledWith('detached')
+      // The workspace and its current network are left alone
+      expect(mockWorkspaceState.networkIds).toEqual(['net1', 'net2'])
+      expect(mockWorkspaceActions.setCurrentNetworkId).not.toHaveBeenCalled()
     })
 
     it('returns fail(NetworkNotFound) when network does not exist', () => {
@@ -749,6 +752,13 @@ describe('networkApi', () => {
       if (!result.success) {
         expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
       }
+      // Nothing is deleted
+      expect(mockNetworkActions.delete).not.toHaveBeenCalled()
+      expect(mockSummaryActions.delete).not.toHaveBeenCalled()
+      expect(mockTableActions.delete).not.toHaveBeenCalled()
+      expect(mockWorkspaceActions.deleteNetwork).not.toHaveBeenCalled()
+      expect(mockWorkspaceState.networkIds).toEqual(['net1', 'net2'])
+      expect(mockWorkspaceActions.setCurrentNetworkId).not.toHaveBeenCalled()
     })
 
     it('clears HCX validation result if present', () => {
