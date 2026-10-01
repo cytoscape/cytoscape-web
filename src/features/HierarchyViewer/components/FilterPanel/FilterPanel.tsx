@@ -172,7 +172,7 @@ export const FilterPanel = ({ networkId }: FilterPanelProps) => {
       >
         <Typography>
           <FormLabel component="span" sx={{ mr: 2 }}>
-            Visibility Toggle:
+            Filter:
           </FormLabel>{' '}
           {selectedFilter.label}
         </Typography>

@@ -302,6 +302,8 @@ describe('FilterPanel', () => {
       setupNodeFilter()
       renderPanel()
 
+      expect(screen.getByText('Filter:')).toBeTruthy()
+      expect(screen.queryByText(/Visibility Toggle/)).toBeNull()
       expect(screen.getByText('Image file')).toBeTruthy()
       expect(screen.queryByTestId('attribute-selector-dropdown')).toBeNull()
       expect(screen.queryByTestId('attribute-selector-node-radio')).toBeNull()
