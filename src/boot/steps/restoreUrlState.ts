@@ -2,7 +2,6 @@ import { useFilterStore } from '@/data/hooks/stores/FilterStore'
 import { useUiStateStore } from '@/data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '@/data/hooks/stores/ViewModelStore'
 import { SelectionStates } from '@/features/FloatingToolBar/ShareNetworkButton'
-import { DEFAULT_FILTER_NAME } from '@/features/HierarchyViewer/components/FilterPanel/FilterPanel'
 import {
   DisplayMode,
   FilterConfig,
@@ -21,6 +20,9 @@ const VIEW_MODEL_RETRY_DELAY_MS = 500
 
 /** Networks load asynchronously, so the active view is restored a beat later. */
 const NETWORK_VIEW_RESTORE_DELAY_MS = 1000
+
+/** Name of the filter config built from the filter URL parameters. */
+const DEFAULT_FILTER_NAME = 'checkboxFilter'
 
 const splitIds = (value: string): IdType[] =>
   value === '' ? [] : value.split(' ')

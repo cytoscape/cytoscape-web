@@ -9,16 +9,19 @@ import { FilterPanel } from './FilterPanel'
 import { DisplayMode } from '../../../../models/FilterModel/DisplayMode'
 import { GraphObjectType } from '../../../../models/NetworkModel'
 
-// Mock child components to isolate the test to FilterPanel's useEffect behavior
-vi.mock('./AttributeSelector', () => ({
-  AttributeSelector: () => <div data-testid="mock-attr-selector" />,
-}))
-
+// Mock the child component to isolate the test to FilterPanel's behavior
 vi.mock('./CheckboxFilter', () => ({
-  CheckboxFilter: ({ enableFilter }: { enableFilter: boolean }) => (
+  CheckboxFilter: ({
+    enableFilter,
+    table,
+  }: {
+    enableFilter: boolean
+    table: { rows: Map<string, unknown> }
+  }) => (
     <div
       data-testid="mock-checkbox-filter"
       data-enabled={String(enableFilter)}
+      data-table-rows={[...table.rows.keys()].join(',')}
     />
   ),
 }))
@@ -52,10 +55,11 @@ describe('FilterPanel', () => {
         [targetNetworkId]: {
           name: targetNetworkId,
           label: 'Test Filter',
-          attribute: 'interaction',
-          type: 'checkbox',
+          attributeName: 'interaction',
+          target: GraphObjectType.EDGE,
+          widgetType: 'checkbox',
           displayMode: DisplayMode.SELECT,
-          targetObjectType: GraphObjectType.EDGE,
+          range: { values: [] },
           visualMapping: visualMappingForStore,
         } as any,
       },
@@ -74,6 +78,7 @@ describe('FilterPanel', () => {
       visualStyles: {
         [targetNetworkId]: {
           edgeLineColor: {
+            group: 'edge',
             mapping: visualMappingForStyle,
           },
         } as any,
@@ -219,6 +224,116 @@ describe('FilterPanel', () => {
       renderPanel('/?filterEnabled=false')
 
       expect(switchInput().checked).toBe(true)
+    })
+  })
+
+  // #798: the filter is the one the subnetwork's filterWidgets aspect
+  // defines. There is no attribute switcher, and the panel takes the target
+  // table and the color mapping from the stored config.
+  describe('filter defined by the aspect', () => {
+    const networkId = 'net1_sub1'
+
+    const nodeMapping = {
+      type: 'discrete',
+      attribute: 'filename',
+      vpValueMap: new Map(),
+    } as any
+
+    const setupNodeFilter = (): void => {
+      useFilterStore.setState({
+        filterConfigs: {
+          [networkId]: {
+            name: networkId,
+            label: 'Image file',
+            description: 'Filter by image file',
+            attributeName: 'filename',
+            target: GraphObjectType.NODE,
+            widgetType: 'checkbox',
+            displayMode: DisplayMode.SELECT,
+            range: { values: ['a.jpg', 'b.jpg'] },
+          } as any,
+        },
+      })
+      useTableStore.setState({
+        tables: {
+          [networkId]: {
+            nodeTable: {
+              rows: new Map([
+                ['n1', { filename: 'a.jpg' }],
+                ['n2', { filename: 'b.jpg' }],
+              ]),
+              columns: [],
+            } as any,
+            edgeTable: {
+              rows: new Map([['e1', { interaction: 'pp' }]]),
+              columns: [],
+            } as any,
+          },
+        },
+      })
+      useVisualStyleStore.setState({
+        visualStyles: {
+          [networkId]: {
+            nodeBackgroundColor: { group: 'node', mapping: nodeMapping },
+          } as any,
+        },
+      })
+    }
+
+    const renderPanel = () =>
+      render(
+        <MemoryRouter>
+          <FilterPanel networkId={networkId} />
+        </MemoryRouter>,
+      )
+
+    it('passes the table of the config target to CheckboxFilter', () => {
+      setupNodeFilter()
+      renderPanel()
+
+      expect(
+        screen
+          .getByTestId('mock-checkbox-filter')
+          .getAttribute('data-table-rows'),
+      ).toBe('n1,n2')
+    })
+
+    it('shows the label without an attribute switcher or options button', () => {
+      setupNodeFilter()
+      renderPanel()
+
+      expect(screen.getByText('Filter:')).toBeTruthy()
+      expect(screen.queryByText(/Visibility Toggle/)).toBeNull()
+      expect(screen.getByText('Image file')).toBeTruthy()
+      expect(screen.queryByTestId('attribute-selector-dropdown')).toBeNull()
+      expect(screen.queryByTestId('attribute-selector-node-radio')).toBeNull()
+      expect(screen.queryByTestId('SettingsIcon')).toBeNull()
+      expect(screen.queryByTestId('ExpandLessIcon')).toBeNull()
+    })
+
+    it('takes the color mapping for the config attribute', () => {
+      setupNodeFilter()
+      renderPanel()
+
+      expect(
+        useFilterStore.getState().filterConfigs[networkId].visualMapping,
+      ).toEqual(nodeMapping)
+    })
+
+    it('ignores a mapping of the same attribute on the other target', () => {
+      setupNodeFilter()
+      useVisualStyleStore.setState({
+        visualStyles: {
+          [networkId]: {
+            edgeLineColor: { group: 'edge', mapping: nodeMapping },
+          } as any,
+        },
+      })
+      renderPanel()
+
+      expect(
+        useFilterStore.getState().filterConfigs[networkId].visualMapping,
+      ).toBeUndefined()
     })
   })
 })

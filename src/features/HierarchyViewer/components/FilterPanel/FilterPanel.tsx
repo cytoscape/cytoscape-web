@@ -1,18 +1,6 @@
-import ExpandLessIcon from '@mui/icons-material/ExpandLess'
-import SettingsIcon from '@mui/icons-material/Settings'
-import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
-  Box,
-  Container,
-  FormLabel,
-  Switch,
-  Typography,
-} from '@mui/material'
-import Grid from '@mui/material/Grid'
+import { Box, Container, FormLabel, Switch, Typography } from '@mui/material'
 import isEqual from 'lodash/isEqual'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import { useFilterStore } from '../../../../data/hooks/stores/FilterStore'
@@ -29,21 +17,9 @@ import {
   VisualPropertyValueType,
   VisualStyle,
 } from '../../../../models/VisualStyleModel'
-import {
-  getAllDiscreteValues,
-  getDefaultCheckboxFilterConfig,
-} from '../../utils/filterUtil'
-import { AttributeSelector } from './AttributeSelector'
+import { isSubnetwork } from '../../utils/hierarchyUtil'
 import { CheckboxFilter } from './CheckboxFilter'
 import { CompatibleVisualProperties } from './CompatibleVisualMappings'
-
-// Default filter name if none exists
-export const DEFAULT_FILTER_NAME = 'checkboxFilter'
-
-// TODO: Import from CX
-const DEFAULT_EDGE_ATTR_NAME = 'interaction'
-
-import { isSubnetwork } from '../../utils/hierarchyUtil'
 
 interface FilterPanelProps {
   // The subnetwork to filter. Passed in rather than read from the active view
@@ -51,29 +27,51 @@ interface FilterPanelProps {
   networkId: IdType
 }
 
+/**
+ * The color mapping of the style that colors the filter's elements by its
+ * attribute, used for the checkboxes' swatches
+ */
+const getMapping = (
+  style: VisualStyle,
+  target: GraphObjectType,
+  attrName: string,
+): VisualMappingFunction | undefined => {
+  let matchedMapping: VisualMappingFunction | undefined
+  Object.values(CompatibleVisualProperties).forEach((propName: string) => {
+    const vp: VisualProperty<VisualPropertyValueType> | undefined =
+      style[propName as keyof VisualStyle]
+    if (vp === undefined || vp.group !== target) return
+    const { mapping } = vp
+    if (mapping !== undefined && mapping.attribute === attrName) {
+      matchedMapping = mapping
+    }
+  })
+  return matchedMapping
+}
+
+/**
+ * The subnetwork's filter, as defined by the `filterWidgets` aspect of its
+ * interaction network (#798). The aspect fixes the attribute and the target,
+ * so the panel offers no way to change them, only to switch the filter on
+ * and off and to pick values.
+ */
 export const FilterPanel = ({ networkId }: FilterPanelProps) => {
-  const filterConfigs = useFilterStore((state) => state.filterConfigs)
-  const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
+  const selectedFilter: FilterConfig | undefined = useFilterStore(
+    (state) => state.filterConfigs[networkId],
+  )
   const updateFilterConfig = useFilterStore((state) => state.updateFilterConfig)
   const setFilterEnabled = useFilterStore((state) => state.setFilterEnabled)
-
-  // Show or hide the advanced options
-  const [showOptions, setShowOptions] = useState<boolean>(false)
 
   // URL search parameters
   const [searchParams] = useSearchParams()
 
   // Pick style for color coding
-  const styles = useVisualStyleStore((state) => state.visualStyles)
-
-  const targetNetworkId: IdType = networkId
+  const vs: VisualStyle | undefined = useVisualStyleStore(
+    (state) => state.visualStyles[networkId],
+  )
 
   // Hide the entire filter if it is not the main network
-  const shouldApplyFilter: boolean = isSubnetwork(targetNetworkId)
-
-  const vs: VisualStyle = styles[targetNetworkId]
-
-  const selectedFilter: FilterConfig = filterConfigs[targetNetworkId]
+  const shouldApplyFilter: boolean = isSubnetwork(networkId)
 
   // Whether the filter is switched on. Stored on the subnetwork's filter
   // config rather than in component state, because this panel (and
@@ -84,106 +82,58 @@ export const FilterPanel = ({ networkId }: FilterPanelProps) => {
     selectedFilter?.enabled ??
     searchParams.get(FilterUrlParams.FILTER_ENABLED) !== 'false'
   const setIsFilterEnabled = (enabled: boolean): void => {
-    setFilterEnabled(targetNetworkId, enabled)
+    setFilterEnabled(networkId, enabled)
   }
 
   // Get target table from the store
-  const tablePair = useTableStore((state) => state.tables[targetNetworkId])
+  const tablePair = useTableStore((state) => state.tables[networkId])
 
-  const [nodeAttrName, setNodeAttrName] = useState<string>('')
-  const [edgeAttrName, setEdgeAttrName] = useState<string>(
-    DEFAULT_EDGE_ATTR_NAME,
-  )
+  const target: GraphObjectType | undefined = selectedFilter?.target
+  const attributeName: string | undefined = selectedFilter?.attributeName
 
-  const [selectedObjectType, setSelectedObjectType] = useState<GraphObjectType>(
-    GraphObjectType.EDGE,
-  )
-
-  const targetAttrName: string =
-    selectedObjectType === GraphObjectType.NODE ? nodeAttrName : edgeAttrName
-
-  const setFunction =
-    selectedObjectType === GraphObjectType.NODE
-      ? setNodeAttrName
-      : setEdgeAttrName
-
+  // The table of the elements the filter applies to. It must match the
+  // config's target: CheckboxFilter reads the config's attribute from it and
+  // writes the visibility bypass of that target for its rows.
   let table: Table | undefined
-  if (tablePair !== undefined) {
+  if (tablePair !== undefined && target !== undefined) {
     table =
-      selectedObjectType === GraphObjectType.NODE
+      target === GraphObjectType.NODE
         ? tablePair.nodeTable
         : tablePair.edgeTable
   }
 
-  const getMapping = (
-    style: VisualStyle,
-    attrName: string,
-  ): VisualMappingFunction | undefined => {
-    if (style === undefined) return
-
-    let matchedMapping: VisualMappingFunction | undefined
-    Object.values(CompatibleVisualProperties).forEach((propName: string) => {
-      const vp: VisualProperty<VisualPropertyValueType> =
-        style[propName as keyof VisualStyle]
-      if (vp !== undefined) {
-        const { mapping } = vp
-        if (mapping !== undefined) {
-          if (mapping.attribute === attrName) {
-            matchedMapping = mapping
-          }
-        }
-      }
-    })
-    return matchedMapping
-  }
-
   /**
-   * Register the default filter on mount.
+   * Keep the config's color mapping in sync with the visual style
    */
   useEffect(() => {
-    const visualMapping = getMapping(vs, targetAttrName)
-
-    const allValues =
-      table !== undefined
-        ? getAllDiscreteValues(table.rows, targetAttrName)
-        : []
-    const filterConfig: FilterConfig = getDefaultCheckboxFilterConfig(
-      DEFAULT_FILTER_NAME,
-      targetAttrName,
-      selectedObjectType,
-      allValues,
-      visualMapping,
+    if (
+      !shouldApplyFilter ||
+      vs === undefined ||
+      target === undefined ||
+      attributeName === undefined
     )
+      return
 
-    if (filterConfigs[DEFAULT_FILTER_NAME] === undefined) {
-      // New filter. Add it to the store
-      addFilterConfig(filterConfig)
+    // Read the config at execution time: this effect writes it back, so a
+    // reactive dependency would loop.
+    const currentConfig = useFilterStore.getState().filterConfigs[networkId]
+    if (currentConfig === undefined) return
 
-      // Encode the filter settings into the URL
-      searchParams.set(FilterUrlParams.FILTER_FOR, selectedObjectType)
-      searchParams.set(FilterUrlParams.FILTER_BY, targetAttrName)
-      searchParams.set(
-        FilterUrlParams.FILTER_ENABLED,
-        isFilterEnabled.toString(),
-      )
-      // setSearchParams(searchParams)
+    const visualMapping = getMapping(vs, target, attributeName)
+    if (!isEqual(currentConfig.visualMapping, visualMapping)) {
+      updateFilterConfig(currentConfig.name, {
+        ...currentConfig,
+        visualMapping,
+      })
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only URL-param init; re-runs would clobber the toggle
-  }, [])
-
-  useEffect(() => {
-    if (selectedFilter === undefined) return
-
-    const visualMapping = getMapping(vs, targetAttrName)
-
-    if (visualMapping === undefined) return
-
-    if (!isEqual(selectedFilter.visualMapping, visualMapping)) {
-      const newFilterConfig = { ...selectedFilter, visualMapping }
-      updateFilterConfig(newFilterConfig.name, newFilterConfig)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- vs trigger only; selectedFilter is written here (loop)
-  }, [vs])
+  }, [
+    vs,
+    target,
+    attributeName,
+    networkId,
+    shouldApplyFilter,
+    updateFilterConfig,
+  ])
 
   /**
    * Set the URL parameters when the filter is enabled or disabled
@@ -193,74 +143,6 @@ export const FilterPanel = ({ networkId }: FilterPanelProps) => {
     // setSearchParams(searchParams)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the toggle; searchParams is fresh each render
   }, [isFilterEnabled])
-
-  useEffect(() => {
-    if (!shouldApplyFilter) return
-
-    // Read filterConfigs at execution time: this effect writes it back via
-    // updateFilterConfig/addFilterConfig, so a reactive dep would loop.
-    const { filterConfigs: currentFilterConfigs } = useFilterStore.getState()
-
-    // Create a filter for the selected attribute if it does not exist
-    const currentConfig = currentFilterConfigs[targetNetworkId]
-
-    const visualMapping = getMapping(vs, targetAttrName)
-
-    if (currentConfig !== undefined) {
-      if (!isEqual(currentConfig.visualMapping, visualMapping)) {
-        const newConfig = { ...currentConfig, visualMapping }
-        updateFilterConfig(newConfig.name, newConfig)
-      }
-
-      searchParams.set(FilterUrlParams.FILTER_FOR, selectedObjectType)
-      searchParams.set(FilterUrlParams.FILTER_BY, targetAttrName)
-      searchParams.set(
-        FilterUrlParams.FILTER_ENABLED,
-        isFilterEnabled.toString(),
-      )
-      // setSearchParams(searchParams)
-      return
-    }
-
-    // Specified filter is not available. Create a new filter
-
-    const allValues =
-      table !== undefined
-        ? getAllDiscreteValues(table.rows, targetAttrName)
-        : []
-    const filterConfig: FilterConfig = getDefaultCheckboxFilterConfig(
-      DEFAULT_FILTER_NAME,
-      targetAttrName,
-      selectedObjectType,
-      allValues,
-      visualMapping,
-    )
-
-    if (currentFilterConfigs[DEFAULT_FILTER_NAME] === undefined) {
-      addFilterConfig(filterConfig)
-      // Encode the filter settings into the URL
-      searchParams.set(FilterUrlParams.FILTER_FOR, selectedObjectType)
-      searchParams.set(FilterUrlParams.FILTER_BY, targetAttrName)
-      searchParams.set(
-        FilterUrlParams.FILTER_ENABLED,
-        isFilterEnabled.toString(),
-      )
-      // setSearchParams(searchParams)
-    } else {
-      // updateFilterConfig(DEFAULT_FILTER_NAME, filterConfig)
-    }
-  }, [
-    targetAttrName,
-    selectedObjectType,
-    vs,
-    shouldApplyFilter,
-    addFilterConfig,
-    updateFilterConfig,
-    table,
-    targetNetworkId,
-    searchParams,
-    isFilterEnabled,
-  ])
 
   if (!shouldApplyFilter || selectedFilter === undefined || table === undefined)
     return null
@@ -277,112 +159,47 @@ export const FilterPanel = ({ networkId }: FilterPanelProps) => {
         flexDirection: 'column',
       }}
     >
-      <Grid item sx={{ flex: 1, borderBottom: (theme) => `1px solid ${theme.palette.divider}` }}>
-        <Accordion
-          disableGutters={true}
-          sx={{
-            boxShadow: 'none',
-            px: 1,
-            py: 0,
-            m: 0,
+      <Box
+        sx={{
+          flex: '0 0 auto',
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          minHeight: 48,
+          px: 1,
+          borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
+        }}
+      >
+        <Typography>
+          <FormLabel component="span" sx={{ mr: 2 }}>
+            Filter:
+          </FormLabel>{' '}
+          {selectedFilter.label}
+        </Typography>
+        <Switch
+          data-testid="filter-enable-switch"
+          checked={isFilterEnabled}
+          onChange={() => {
+            setIsFilterEnabled(!isFilterEnabled)
           }}
-          expanded={showOptions}
-          onChange={(event, isExpanded) => {
-            if (!isFilterEnabled) {
-              event.stopPropagation()
-              // setSwitchClicked(false)
-            } else {
-              setShowOptions(isExpanded)
-            }
-          }}
-        >
-          <AccordionSummary
-            expandIcon={
-              showOptions ? (
-                <ExpandLessIcon />
-              ) : (
-                <SettingsIcon
-                  color={isFilterEnabled ? 'inherit' : 'disabled'}
-                />
-              )
-            }
-            aria-controls="filter-option-panel"
-            id="filter-option-header"
-            sx={{ m: 0, p: 0 }}
-          >
-            <Grid
-              item
-              sx={{
-                display: 'flex',
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                p: 0,
-                m: 0,
-              }}
-            >
-              <Typography>
-                <FormLabel component="span" sx={{ mr: 2 }}>
-                  Visibility Toggle:
-                </FormLabel>{' '}
-                {selectedFilter.label}
-              </Typography>
-              <Switch
-                data-testid="filter-enable-switch"
-                checked={isFilterEnabled}
-                onClick={(event) => {
-                  event.stopPropagation()
-                  // setSwitchClicked(true)
-                }}
-                onChange={(event) => {
-                  event.stopPropagation()
-                  setIsFilterEnabled(!isFilterEnabled)
-                }}
-              />
-            </Grid>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Grid item sx={{ flex: 1 }}>
-              <AttributeSelector
-                enableFilter={true}
-                nodeTable={tablePair.nodeTable}
-                edgeTable={tablePair.edgeTable}
-                selectedValue={targetAttrName}
-                selectedType={selectedObjectType}
-                setSelectedValue={setFunction}
-                setSelectedType={setSelectedObjectType}
-              />
-            </Grid>
-          </AccordionDetails>
-        </Accordion>
-      </Grid>
-      <Grid
-        item
+        />
+      </Box>
+      <Box
         sx={{
           flexGrow: 1,
+          minHeight: 0,
           boxSizing: 'border-box',
           width: '100%',
-          height: '100%',
           overflow: 'auto',
         }}
       >
-        {selectedFilter === undefined ? null : (
-          <Box
-            style={{
-              width: '100%',
-              height: '100%',
-              overflow: 'auto',
-            }}
-          >
-            <CheckboxFilter
-              targetNetworkId={targetNetworkId}
-              table={table}
-              filterConfig={selectedFilter}
-              enableFilter={isFilterEnabled}
-            />
-          </Box>
-        )}
-      </Grid>
+        <CheckboxFilter
+          targetNetworkId={networkId}
+          table={table}
+          filterConfig={selectedFilter}
+          enableFilter={isFilterEnabled}
+        />
+      </Box>
     </Container>
   )
 }

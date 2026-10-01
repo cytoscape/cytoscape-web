@@ -1,6 +1,7 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { logApi } from '../../../debug'
 import { GraphObjectType } from '../../../models/NetworkModel'
 import type { Table } from '../../../models/TableModel'
 import type { FilterAspects } from '../model/FilterAspects'
@@ -19,7 +20,36 @@ const edgeTable = tableWith({
 })
 
 describe('createFilterFromAspect', () => {
-  it('builds a config per aspect, pulling values from the matching table', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('builds a config from the entry, pulling values from the matching table', () => {
+    const aspects = [
+      {
+        attributeName: 'type',
+        appliesTo: GraphObjectType.EDGE,
+        label: 'Edge type',
+        filter: [],
+      },
+    ] as unknown as FilterAspects
+
+    expect(
+      createFilterFromAspect('net-1', aspects, nodeTable, edgeTable),
+    ).toMatchObject({
+      name: 'net-1',
+      attributeName: 'type',
+      target: GraphObjectType.EDGE,
+      label: 'Edge type',
+      range: { values: ['activates', 'binds'] },
+    })
+  })
+
+  // #798: the panel shows one filter per subnetwork. Every entry used to be
+  // registered under the subnetwork id, so each overwrote the previous one
+  // and the LAST entry won without a warning.
+  it('uses only the first entry and warns about the others', () => {
+    const warn = vi.spyOn(logApi, 'warn').mockImplementation(() => undefined)
     const aspects = [
       {
         attributeName: 'type',
@@ -35,36 +65,38 @@ describe('createFilterFromAspect', () => {
       },
     ] as unknown as FilterAspects
 
-    const configs = createFilterFromAspect(
-      'net-1',
-      aspects,
-      nodeTable,
-      edgeTable,
-    )
-
-    expect(configs).toHaveLength(2)
-    expect(configs[0]).toMatchObject({
+    expect(
+      createFilterFromAspect('net-1', aspects, nodeTable, edgeTable),
+    ).toMatchObject({
       name: 'net-1',
       attributeName: 'type',
       target: GraphObjectType.EDGE,
       label: 'Edge type',
-      range: { values: ['activates', 'binds'] },
     })
-    expect(configs[1]).toMatchObject({
-      attributeName: 'category',
-      target: GraphObjectType.NODE,
-      range: { values: ['drug', 'gene'] },
-    })
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0][0]).toContain('category')
+  })
+
+  it('does not warn for a single entry', () => {
+    const warn = vi.spyOn(logApi, 'warn').mockImplementation(() => undefined)
+    createFilterFromAspect(
+      'net-1',
+      [{ appliesTo: 'edges', attributeName: 'type', filter: [] }],
+      nodeTable,
+      edgeTable,
+    )
+    expect(warn).not.toHaveBeenCalled()
   })
 
   it('does not throw on a non-array aspect', () => {
-    expect(createFilterFromAspect('net-1', {}, nodeTable, edgeTable)).toEqual(
-      [],
-    )
+    vi.spyOn(logApi, 'warn').mockImplementation(() => undefined)
+    expect(
+      createFilterFromAspect('net-1', {}, nodeTable, edgeTable),
+    ).toBeUndefined()
   })
 
   it('reads a "nodes" filter from the node table', () => {
-    const configs = createFilterFromAspect(
+    const config = createFilterFromAspect(
       'net-1',
       [
         {
@@ -80,15 +112,15 @@ describe('createFilterFromAspect', () => {
       edgeTable,
     )
 
-    expect(configs).toHaveLength(1)
-    expect(configs[0]).toMatchObject({
+    expect(config).toMatchObject({
       target: GraphObjectType.NODE,
       range: { values: ['drug', 'gene'] },
     })
   })
 
-  it('skips invalid entries and keeps the valid ones', () => {
-    const configs = createFilterFromAspect(
+  it('skips invalid entries and uses the first valid one', () => {
+    vi.spyOn(logApi, 'warn').mockImplementation(() => undefined)
+    const config = createFilterFromAspect(
       'net-1',
       [
         { invalid: 'structure' },
@@ -98,14 +130,13 @@ describe('createFilterFromAspect', () => {
       edgeTable,
     )
 
-    expect(configs).toHaveLength(1)
-    expect(configs[0]).toMatchObject({
+    expect(config).toMatchObject({
       attributeName: 'type',
       target: GraphObjectType.EDGE,
     })
   })
 
-  it('returns an empty list for no aspects', () => {
+  it('returns undefined for no entries', () => {
     expect(
       createFilterFromAspect(
         'net-1',
@@ -113,7 +144,7 @@ describe('createFilterFromAspect', () => {
         nodeTable,
         edgeTable,
       ),
-    ).toEqual([])
+    ).toBeUndefined()
   })
 })
 
