@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
 import { logStore } from '../../../debug'
-import { FilterConfig } from '../../../models/FilterModel'
+import { DiscreteFilterValue, FilterConfig } from '../../../models/FilterModel'
 import * as FilterStoreImpl from '../../../models/FilterModel/impl/filterStoreImpl'
 import { Search, SearchOptions } from '../../../models/FilterModel/Search'
 import { SearchState } from '../../../models/FilterModel/SearchState'
@@ -10,7 +10,6 @@ import { IdType } from '../../../models/IdType'
 import { GraphObjectType } from '../../../models/NetworkModel'
 import { DiscreteRange } from '../../../models/PropertyModel/DiscreteRange'
 import { NumberRange } from '../../../models/PropertyModel/NumberRange'
-import { ValueType } from '../../../models/TableModel'
 import {
   clearFiltersFromDb,
   deleteFilterFromDb,
@@ -52,7 +51,7 @@ interface FilterAction {
 
   updateRange: (
     name: string,
-    range: NumberRange | DiscreteRange<ValueType>,
+    range: NumberRange | DiscreteRange<DiscreteFilterValue>,
   ) => void
   setFilterEnabled: (name: string, enabled: boolean) => void
 
@@ -214,7 +213,7 @@ export const useFilterStore = create(
     },
     updateRange: (
       name: string,
-      range: NumberRange | DiscreteRange<ValueType>,
+      range: NumberRange | DiscreteRange<DiscreteFilterValue>,
     ) => {
       set((state) => {
         const newState = FilterStoreImpl.updateRange(state, name, range)

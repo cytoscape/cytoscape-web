@@ -89,6 +89,37 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
   `OpenPanelResult`. Non-breaking; on an older host `apis.panel` is
   `undefined`, so call it as `apis.panel?.open(...)`.
 
+### Removed — BREAKING
+
+- **BREAKING — `CyApp.components` is removed** (#786), with the
+  `ComponentMetadata` type and the `ComponentType` const that described it.
+  The field was the original, manifest-style way to contribute UI — a list of
+  `{ id, type: 'menu' | 'panel', component? }` entries — and has been
+  `@deprecated` since `resources` and runtime registration arrived. Its menu
+  half stopped being usable when the host took over menu rows: a row unmounts
+  with its menu, so a component mounted there cannot show UI of its own
+  (#784). Its panel half is removed with it, so there is one way to
+  contribute a panel. The host no longer renders anything from the field. An
+  app that still exports it with string `type` values loads and mounts as
+  before, its `resources` and `mount()` unaffected, and the host logs a
+  warning naming the app (shown by default only in development builds); the
+  entries themselves are ignored. An app that references the `ComponentType`
+  const at runtime (`type: ComponentType.Panel`) does not load at all:
+  `cyweb/ApiTypes` no longer exports it, so evaluating the app's
+  `./AppConfig` throws. Migrate each entry to a declaration in `resources`
+  (or a registration in `mount()`):
+
+  | Removed entry | Replacement |
+  | --- | --- |
+  | `{ id, type: ComponentType.Panel, component }` | `{ slot: 'right-panel', id, title, component }` |
+  | `{ id, type: ComponentType.Menu, component }` | `{ slot: 'apps-menu', id, label, onClick(apis) }`, with any UI opened from `onClick` through `apis.dialog.open({ render })` |
+
+  A panel that was loaded by name from the app's own Module Federation
+  `exposes` (an entry without `component`) needs no `exposes` entry any more:
+  only `./AppConfig` is loaded. Workspaces saved by an older host keep
+  working: the field is dropped when an app enters the AppStore, though an
+  app record in IndexedDB may keep it, unused.
+
 ## 1.0.0-beta.4 (2026-09-11)
 
 > **Host compatibility.** This release documents the App API as implemented by

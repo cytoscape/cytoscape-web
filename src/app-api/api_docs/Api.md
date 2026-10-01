@@ -1466,7 +1466,7 @@ interface OpenPanelResult {
 | Pane       | Holds                                 | Tab ids                                                                                                                                         |
 | ---------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `'left'`   | Workspace / Style (network browser)   | `'workspace'`, `'style'`, `'llm-query'` (only while the current network is a hierarchy)                                                         |
-| `'right'`  | Side panel — `'right-panel'` app tabs | `'sub-network-viewer'`, plus the `id` each app tab was registered with (`registerPanel`, a resource declaration, or a manifest panel component) |
+| `'right'`  | Side panel — `'right-panel'` app tabs | `'sub-network-viewer'`, plus the `id` each app tab was registered with (`registerPanel` or a resource declaration) |
 | `'bottom'` | Table browser                         | `'nodes'`, `'edges'`, `'network'`                                                                                                               |
 
 The built-in ids are exported as the `LeftPanelTabId`, `RightPanelTabId` and
@@ -3124,8 +3124,6 @@ interface CyApp {
   name: string // human-readable display name
   description?: string // short description shown in the App Settings panel
   version?: string // app's own semantic version (e.g. '1.2.0')
-  /** @deprecated Prefer `resources` or runtime registration via mount(). */
-  components?: ComponentMetadata[]
   status?: AppStatus // managed by host; do not set manually
 }
 ```

@@ -5,6 +5,8 @@ import { useViewModelStore } from '../../../../data/hooks/stores/ViewModelStore'
 import { ValueType } from '../../../../models/TableModel'
 import { NetworkView } from '../../../../models/ViewModel'
 import { MessagePanel } from '../../../Messages'
+import { formatValueText } from '../../utils/attributeValueDisplay'
+import { AttributeValue } from './AttributeValue'
 
 interface PropertyPanelProps {
   networkId: string
@@ -47,9 +49,17 @@ export const PropertyPanel = ({
   const { rows } = nodeTable
   const row: Record<string, ValueType> = rows.get(selectedNodeId) ?? {}
 
-  const name: ValueType = row.name ?? selectedNodeId
+  const name: string = formatValueText(row.name) ?? selectedNodeId
 
-  const keys: string[] = Object.keys(row).sort()
+  // Every column of the table, like the Nodes table, so a value the row
+  // lacks shows a placeholder instead of disappearing. Row keys are kept too
+  // in case a row holds an undeclared attribute.
+  const keys: string[] = [
+    ...new Set([
+      ...nodeTable.columns.map((column) => column.name),
+      ...Object.keys(row),
+    ]),
+  ].sort()
 
   return (
     <Box
@@ -78,7 +88,7 @@ export const PropertyPanel = ({
             key !== 'name' && (
               <ListItem key={key}>
                 <ListItemText
-                  primary={row[key]}
+                  primary={<AttributeValue value={row[key]} />}
                   secondary={key + ':'}
                   // Flip the visual stack layout
                   sx={{ display: 'flex', flexDirection: 'column-reverse' }}

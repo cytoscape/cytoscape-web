@@ -6,7 +6,6 @@ import { getTabId } from '@/data/tabState/tabId'
 import { logDb } from '../../debug'
 
 import { AppStatus } from '../../models/AppModel/AppStatus'
-import { ComponentType } from '../../models/AppModel/ComponentType'
 import type { CyApp } from '../../models/AppModel/CyApp'
 import { RootMenu } from '../../models/AppModel/RootMenu'
 import type { ServiceApp } from '../../models/AppModel/ServiceApp'
@@ -339,12 +338,6 @@ const createCyAppModel = (id: string): CyApp => {
     id,
     name: `App ${id}`,
     description: 'Test application',
-    components: [
-      {
-        id: `${id}-component`,
-        type: ComponentType.Menu,
-      },
-    ],
     status: AppStatus.Active,
   }
 }

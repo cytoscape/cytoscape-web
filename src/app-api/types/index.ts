@@ -149,7 +149,6 @@ export type { ScopedCyWebApi } from '../core/scopedApi'
 export type {
   AttributeName,
   Column,
-  ComponentMetadata,
   Cx2,
   CyNetwork,
   Edge,
@@ -165,7 +164,6 @@ export type {
 export type { AppParameter, ParameterValue } from './ElementTypes'
 export {
   ColumnTypeFilter,
-  ComponentType,
   LayoutAlgorithmType,
   MAX_STYLES_PER_NETWORK,
   ParameterUiType,

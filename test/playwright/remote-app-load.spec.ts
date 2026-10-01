@@ -3,7 +3,7 @@ import { expect, test } from './fixtures'
 // Tier 3.2 — the gold-standard federation test. A SEPARATELY-built Module
 // Federation remote (test/fixtures/remote-app/, served on :4191) is registered
 // with the host at runtime via a custom manifest URL, then activated. This
-// exercises the full path the Vite migration rewrote in ExternalComponent.tsx:
+// exercises the full path the Vite migration rewrote in loader/remoteModuleLoader.ts:
 // script injection → container.init(shareScope) → container.get('./AppConfig')
 // → loadRemoteApp → mount(). The remote renders a React (hooks) marker, which
 // also demonstrates the shared-React singleton wiring works across two

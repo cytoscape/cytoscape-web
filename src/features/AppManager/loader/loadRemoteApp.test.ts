@@ -1,11 +1,12 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { logApp } from '../../../debug'
 import { CyApp } from '../../../models/AppModel/CyApp'
-import { loadModule } from '../ExternalComponent'
+import { loadModule } from './remoteModuleLoader'
 import { loadRemoteApp } from './loadRemoteApp'
 
-vi.mock('../ExternalComponent', () => ({
+vi.mock('./remoteModuleLoader', () => ({
   loadModule: vi.fn(),
 }))
 
@@ -21,7 +22,6 @@ describe('loadRemoteApp', () => {
     description: 'test app',
     version: '1.0.0',
     author: 'Test',
-    components: [],
   } as unknown as CyApp
 
   beforeEach(() => {
@@ -37,6 +37,50 @@ describe('loadRemoteApp', () => {
     expect(mockedLoadModule).toHaveBeenCalledWith('myApp', './AppConfig', URL)
     expect(result).toEqual({ ok: true, app: remoteApp })
     expect(appRegistry.get('myApp')).toBe(remoteApp)
+  })
+
+  // #786: the field was removed in App API 1.0.0-beta.5. The app still loads —
+  // its `resources` and mount() are unaffected — but the author has to be told
+  // why the panels and menu items it declared that way are gone.
+  it('loads an app that still declares components, and warns', async () => {
+    const warn = vi.spyOn(logApp, 'warn').mockImplementation(() => {})
+    const legacy = {
+      ...remoteApp,
+      components: [{ id: 'MyPanel', type: 'panel' }],
+    } as unknown as CyApp
+    mockedLoadModule.mockResolvedValue({ default: legacy })
+
+    const result = await loadRemoteApp('myApp', URL, appRegistry)
+
+    expect(result).toEqual({ ok: true, app: legacy })
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn.mock.calls[0][0]).toContain('components')
+    warn.mockRestore()
+  })
+
+  it('does not warn for an app without components', async () => {
+    const warn = vi.spyOn(logApp, 'warn').mockImplementation(() => {})
+    mockedLoadModule.mockResolvedValue({ default: remoteApp })
+
+    await loadRemoteApp('myApp', URL, appRegistry)
+
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  // The example apps carried `components: []` as a placeholder until their
+  // beta.4 migration. It declares nothing, so nothing is lost and there is
+  // nothing to tell the author to migrate.
+  it('does not warn for an empty components array', async () => {
+    const warn = vi.spyOn(logApp, 'warn').mockImplementation(() => {})
+    const placeholder = { ...remoteApp, components: [] } as unknown as CyApp
+    mockedLoadModule.mockResolvedValue({ default: placeholder })
+
+    const result = await loadRemoteApp('myApp', URL, appRegistry)
+
+    expect(result).toEqual({ ok: true, app: placeholder })
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
   })
 
   // #719: each failure returns its own code, so the caller can store a reason

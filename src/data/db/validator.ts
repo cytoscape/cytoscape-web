@@ -298,8 +298,9 @@ const NumberRangeSchema = z.object({
   max: z.number(),
 })
 
+// null is the option for elements without a value (DiscreteFilterValue, #796)
 const DiscreteRangeSchema = z.object({
-  values: z.array(ValueTypeSchema),
+  values: z.array(ValueTypeSchema.nullable()),
 })
 
 const FilterConfigSchema = z.object({
@@ -336,16 +337,16 @@ const FilterConfigWithRecordsSchema = FilterConfigSchema.extend({
     .optional(),
 })
 
-const ComponentMetadataSchema = z.object({
-  id: z.string(),
-  type: z.string(),
-})
-
+// No `components`: the field was removed in App API 1.0.0-beta.5 (#786). A
+// record saved before that still carries it and must still validate, which it
+// does because zod ignores unknown keys. This does not clean the record:
+// read-path validation (`observeValidation` in db/index.ts) discards the
+// parsed value, so callers get the raw record with the field still on it.
+// `toStoredApp` in appStoreImpl.ts is what keeps it out of AppStore.
 const CyAppSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string().optional(),
-  components: z.array(ComponentMetadataSchema),
   status: z.string().optional(),
 })
 

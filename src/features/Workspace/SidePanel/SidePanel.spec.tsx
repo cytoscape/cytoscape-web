@@ -25,10 +25,6 @@ vi.mock('@/data/hooks/stores/AppStore', async () => {
   }
 })
 
-// The registry import would otherwise pull in the whole app manager.
-vi.mock('../../../data/hooks/stores/useAppManager', () => ({
-  appRegistry: new Map(),
-}))
 vi.mock('../../../app-api/core/perAppApis', () => ({
   buildPerAppApis: () => ({}),
 }))

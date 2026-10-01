@@ -2,7 +2,6 @@ import { lazy, Suspense } from 'react'
 
 import { useAppResourceStore } from '../../../data/hooks/stores/AppResourceStore'
 import { useAppStore } from '../../../data/hooks/stores/AppStore'
-import { appRegistry } from '../../../data/hooks/stores/useAppManager'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { CyApp } from '../../../models/AppModel'
 import {
@@ -11,7 +10,6 @@ import {
 } from '../../../models/UiModel/impl/panelTabs'
 import { AppIdProvider } from '../.././../app-api/AppIdContext'
 import { buildPerAppApis } from '../../../app-api/core/perAppApis'
-import ExternalComponent from '../../AppManager/ExternalComponent'
 import { PluginErrorBoundary } from '../../AppManager/PluginErrorBoundary'
 // Lazy, directly from MainPanel (not the barrel): the hierarchy viewer pulls
 // d3-hierarchy/-selection/-zoom and react-query, which would otherwise ship
@@ -23,7 +21,7 @@ const ViewerPanel = lazy(() =>
 )
 import { TabPanel } from './TabPanel'
 
-// ── Merged panel entry (manifest + runtime) ──────────────────────
+// ── Panel entry ──────────────────────────────────────────────────
 
 export interface PanelEntry {
   resourceId: string
@@ -34,8 +32,8 @@ export interface PanelEntry {
 }
 
 /**
- * Build an ordered, visibility-filtered array of panel entries by merging
- * CyApp.components (manifest) and AppResourceStore (runtime).
+ * Build an ordered, visibility-filtered array of panel entries from the
+ * 'right-panel' resources in AppResourceStore.
  *
  * Returns entries ready for rendering, including the built-in Sub Network
  * Viewer at the front.
@@ -53,35 +51,15 @@ export function usePanelEntries(): PanelEntry[] {
     apps,
     runtimeResources,
     currentNetworkId,
-  ).map((tab): PanelEntry => {
-    const { resource, manifest } = tab
-    if (resource !== undefined) {
-      return {
-        resourceId: tab.resourceId,
-        label: resource.title ?? resource.id,
-        component: resource.component as React.ComponentType<any>,
-        appId: tab.appId,
-        errorFallback: resource.errorFallback,
-      }
-    }
-
-    // Manifest panel. Prefer the lazy component from appRegistry (survives
-    // DB restore).
-    const freshComponent = appRegistry
-      .get(tab.appId)
-      ?.components?.find((c) => c.id === tab.id)
-    const PanelComponent: any =
-      freshComponent?.component ??
-      manifest?.component ??
-      ExternalComponent(tab.appId, './' + tab.id)
-
-    return {
-      resourceId: tab.resourceId,
-      label: tab.id,
-      component: PanelComponent,
-      appId: tab.appId,
-    }
-  })
+  ).map(
+    ({ resource, resourceId, appId }): PanelEntry => ({
+      resourceId,
+      label: resource.title ?? resource.id,
+      component: resource.component as React.ComponentType<any>,
+      appId,
+      errorFallback: resource.errorFallback,
+    }),
+  )
 
   // Prepend built-in Sub Network Viewer
   return [

@@ -26,11 +26,6 @@ vi.mock('@/data/hooks/stores/AppStore', async () => {
   }
 })
 
-// The manifest-driven legacy path and the app registry are out of scope
-// here; the registry import would otherwise pull in the whole app manager.
-vi.mock('../../../data/hooks/stores/useAppManager', () => ({
-  appRegistry: new Map(),
-}))
 vi.mock('../../AppManager/AppSettingsDialog', () => ({
   AppSettingsDialog: () => null,
 }))
@@ -102,6 +97,26 @@ describe('AppMenu runtime resources', () => {
       'Runs the analysis',
     )
     expect(row.getAttribute('aria-disabled')).toBeNull()
+  })
+
+  it('renders nothing for the removed CyApp.components field', () => {
+    // #786: an app record may still carry legacy menu components. They used
+    // to be mounted as rows; only 'apps-menu' resources are rows now.
+    const LegacyRow = vi.fn(() => <div data-testid="legacy-row" />)
+    useAppStore.setState({
+      apps: {
+        legacy: {
+          status: AppStatus.Active,
+          components: [{ id: 'Menu', type: 'menu', component: LegacyRow }],
+        },
+      },
+    } as any)
+    render(<AppMenu />)
+    openMenu()
+
+    expect(screen.queryByTestId('legacy-row')).toBeNull()
+    expect(LegacyRow).not.toHaveBeenCalled()
+    expect(screen.getByText('Manage Apps...')).toBeTruthy()
   })
 
   it('renders a raster icon URI unchanged as an <img>', () => {

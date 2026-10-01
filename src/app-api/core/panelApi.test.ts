@@ -83,17 +83,21 @@ describe('panelApi.open', () => {
       expect(panels().bottom).toBe(PanelState.CLOSED)
     })
 
-    it('selects a manifest panel component', () => {
+    it('does not find a panel declared in the removed CyApp.components', () => {
+      // #786: only registered 'right-panel' resources are tabs.
       useAppStore.setState({
         apps: {
-          a: { ...app('a'), components: [{ id: 'Legacy', type: 'panel' }] },
+          a: {
+            ...app('a'),
+            components: [{ id: 'Legacy', type: 'panel' }],
+          } as CyApp,
         },
       })
 
       const result = panelApi.open('right', 'Legacy')
 
-      expect(result.success).toBe(true)
-      expect(selectedRightTab()).toBe('a::right-panel::Legacy')
+      expect(result.success).toBe(false)
+      expect(selectedRightTab()).toBeNull()
     })
 
     it('selects the built-in viewer without an appId', () => {

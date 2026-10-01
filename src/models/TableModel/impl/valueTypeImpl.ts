@@ -162,6 +162,14 @@ export const isSingleType = (type: ValueTypeName): boolean => {
   return singleTypes.includes(type)
 }
 
+/**
+ * Whether a cell holds no value: null, undefined (the row lacks the column),
+ * or a blank string. The table browser shows all of them as an empty cell,
+ * and clearing a string cell there writes ''.
+ */
+export const isMissingValue = (value: unknown): boolean =>
+  value == null || (typeof value === 'string' && value.trim() === '')
+
 export const isListType = (type: ValueTypeName): boolean => {
   const listTypes = [
     ValueTypeName.ListString,

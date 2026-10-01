@@ -2,7 +2,6 @@ import { AppCatalogEntry } from '../../AppModel/AppCatalogEntry'
 import { AppLoadFailure } from '../../AppModel/AppLoadFailure'
 import { AppLoadState, SettableAppLoadState } from '../../AppModel/AppLoadState'
 import { AppStatus } from '../../AppModel/AppStatus'
-import { ComponentMetadata } from '../../AppModel/ComponentMetadata'
 import { CyApp } from '../../AppModel/CyApp'
 import { AppSource } from '../../AppModel/InstalledApp'
 import { ManifestSource } from '../../AppModel/ManifestSource'
@@ -11,39 +10,24 @@ import { ServiceApp } from '../../AppModel/ServiceApp'
 import { ServiceAppTask } from '../../AppModel/ServiceAppTask'
 
 /**
- * Return a copy of the components array with the `component` field
- * (React.lazy instance) removed.  React.lazy objects are plain JS objects
- * that React mutates internally (`_status`, `_result`).  If they end up
- * inside an Immer-managed state tree, Immer will `Object.freeze()` them
- * and React will crash with "Cannot assign to read only property".
+ * Return the copy of a CyApp that is safe to keep in the store: without
+ * `resources`, and without the legacy `components`.
  *
- * The live React.lazy refs remain available in `appRegistry` (the
- * module-level Map exported from useAppManager.ts) and are looked up at
- * render time by AppMenu and TabContents.
+ * `resources` contains React.lazy() components. React mutates those
+ * internally (`_status`, `_result`), so once Immer freezes them React crashes
+ * with "Cannot assign to read only property". The live `resources` array is
+ * available from the original CyApp in `appRegistry` and is processed by
+ * `processDeclarativeResources` in useAppManager.ts (which stores them in the
+ * Immer-free AppResourceStore).
+ *
+ * `components` was removed in App API 1.0.0-beta.5 (#786), but the type does
+ * not hold at runtime: an app built against older types still exports it,
+ * lazy refs included, and an app record saved by an older host still has it.
  */
-const stripLazyRefs = (
-  components: ComponentMetadata[],
-): ComponentMetadata[] => {
-  if (components === undefined || components === null) {
-    return []
-  }
-  return components.map((component) => {
-    const rest = { ...component }
-    delete (rest as any).component
-    return rest
-  })
-}
-
-/**
- * Return a copy of the CyApp with `resources` removed.
- * `resources` contains React.lazy() components that must not be frozen
- * by Immer. The live `resources` array is available from the original
- * CyApp in `appRegistry` and is processed by `processDeclarativeResources`
- * in useAppManager.ts (which stores them in the Immer-free AppResourceStore).
- */
-const stripResources = (app: CyApp): Omit<CyApp, 'resources'> => {
+const toStoredApp = (app: CyApp): CyApp => {
   const rest = { ...(app as any) }
   delete rest.resources
+  delete rest.components
   return rest
 }
 
@@ -72,7 +56,7 @@ export const restore = (
 ): AppState => {
   const newApps = { ...state.apps }
   apps.forEach((app) => {
-    newApps[app.id] = app
+    newApps[app.id] = toStoredApp(app)
   })
 
   const newServiceApps = { ...state.serviceApps }
@@ -91,49 +75,37 @@ export const restore = (
  * Add an app.
  *
  * When the app already exists in the store (e.g. after restore()), refresh
- * `components` and `version` from the live module.  DB-restored entries lose
- * React.lazy refs (stripped by toPlainObject) and may be missing components
- * that were added since the last persist.
+ * `version` from the live module.
  *
  * When a cachedApp from IndexedDB is provided for a brand-new registration,
- * use the cached status (so user-toggled Active/Inactive survives) but still
- * take `components` from the freshly loaded module for the same reasons.
+ * use the cached record, so user-toggled Active/Inactive survives.
  */
 export const add = (
   state: AppState,
   app: CyApp,
   cachedApp: CyApp | undefined,
 ): AppState => {
-  // Strip React.lazy refs and resources so Immer never freezes them
-  const safeComponents = stripLazyRefs(app.components ?? [])
-  const safeApp = stripResources(app)
-
-  // Already in store — refresh components & version from the live module
+  // Already in store — refresh version from the live module
   if (state.apps[app.id] !== undefined) {
     return {
       ...state,
       apps: {
         ...state.apps,
         [app.id]: {
-          ...state.apps[app.id],
-          components: safeComponents,
+          ...toStoredApp(state.apps[app.id]),
           version: app.version,
         },
       },
     }
   }
 
-  // First registration: use DB cache for persisted fields (status) but
-  // always take components from the fresh module
+  // First registration: use DB cache for persisted fields (status)
   if (cachedApp !== undefined) {
     return {
       ...state,
       apps: {
         ...state.apps,
-        [app.id]: {
-          ...cachedApp,
-          components: safeComponents,
-        },
+        [app.id]: toStoredApp(cachedApp),
       },
     }
   }
@@ -144,8 +116,7 @@ export const add = (
     apps: {
       ...state.apps,
       [app.id]: {
-        ...safeApp,
-        components: safeComponents,
+        ...toStoredApp(app),
         status: app.status || AppStatus.Inactive,
       },
     },

@@ -21,7 +21,7 @@ function makeApp(
   id: string,
   extra?: { mount?: import('vitest').Mock; unmount?: import('vitest').Mock },
 ): CyApp {
-  return { id, name: id, components: [], ...extra } as CyApp
+  return { id, name: id, ...extra } as CyApp
 }
 
 // ─── mountApp ────────────────────────────────────────────────────────────────
