@@ -26,7 +26,6 @@ HierarchyViewer/
 │   ├── FilterPanel/                     # Network filtering controls
 │   │   ├── FilterPanel.tsx
 │   │   ├── CheckboxFilter.tsx
-│   │   ├── AttributeSelector.tsx
 │   │   └── ModeSelector.tsx            # (Removed - see note below)
 │   ├── PropertyPanel/                   # Node property inspector
 │   │   └── PropertyPanel.tsx
@@ -136,7 +135,7 @@ Provides filtering capabilities for interaction networks.
 
 **Behavior:**
 
-- Allows filtering by node or edge attributes
+- Shows the one filter the interaction network's `filterWidgets` aspect defines: its attribute and target (nodes or edges) are fixed, and the user can only switch it on and off and pick values (#798)
 - Supports checkbox-based discrete filtering
 - Uses visibility bypass maps to show/hide filtered elements (replaces show/hide mode)
 - Integrates with visual style mappings for color coding
@@ -145,7 +144,7 @@ Provides filtering capabilities for interaction networks.
 
 **Key Features:**
 
-- Attribute selection (node or edge attributes)
+- Visibility toggle (on/off switch, stored on the filter config)
 - Checkbox filter with select all/clear functionality
 - Visual mapping integration (colors from visual styles)
 - Visibility-based filtering (uses visual style bypass maps to control element visibility)

@@ -1,3 +1,4 @@
+import { logApi } from '../../../debug'
 import { DisplayMode, FilterConfig } from '../../../models/FilterModel'
 import { IdType } from '../../../models/IdType'
 import { GraphObjectType } from '../../../models/NetworkModel'
@@ -28,43 +29,53 @@ export const findFilterAspect = (
 }
 
 /**
- * Build FilterConfig objects from the `filterWidgets` aspect
+ * Build the subnetwork's FilterConfig from the `filterWidgets` aspect
  *
  * The aspect comes straight from the CX2 document, so it is validated and
  * normalized here (`parseFilterAspects`); invalid entries are dropped.
  *
+ * The filter panel shows one filter per subnetwork, so only the first valid
+ * entry is used and any others are ignored with a warning (#798). They used
+ * to be registered under the same name, so each overwrote the previous one.
+ *
+ * @param sourceNetworkId The subnetwork id, used as the config name
  * @param filterAspects The raw, untrusted aspect value
+ * @returns The config, or undefined when the aspect has no valid entry
  */
 export const createFilterFromAspect = (
   sourceNetworkId: IdType,
   filterAspects: unknown,
   nodeTable: Table,
   edgeTable: Table,
-): FilterConfig[] => {
-  const filterConfigs: FilterConfig[] = []
-
-  parseFilterAspects(filterAspects).forEach((filterAspect: FilterAspect) => {
-    const { filter, label } = filterAspect
-    const table: Table =
-      filterAspect.appliesTo === GraphObjectType.NODE ? nodeTable : edgeTable
-    const allValues: string[] = getAllDiscreteValues(
-      table.rows,
-      filterAspect.attributeName,
+): FilterConfig | undefined => {
+  const [filterAspect, ...ignored] = parseFilterAspects(filterAspects)
+  if (filterAspect === undefined) {
+    return undefined
+  }
+  if (ignored.length > 0) {
+    logApi.warn(
+      `[createFilterFromAspect]: ${sourceNetworkId}: using the first '${FILTER_ASPECT_TAG}' entry (${filterAspect.attributeName}) and ignoring ${ignored.length} more: ${ignored
+        .map((aspect: FilterAspect) => aspect.attributeName)
+        .join(', ')}`,
     )
-    const config: FilterConfig = {
-      name: sourceNetworkId,
-      attributeName: filterAspect.attributeName,
-      target: filterAspect.appliesTo,
-      widgetType: filterAspect.widgetType,
-      description: 'Filter nodes / edges by selected values',
-      label,
-      range: { values: allValues },
-      displayMode: DisplayMode.SELECT,
-      discreteFilterDetails: filter,
-    }
+  }
 
-    filterConfigs.push(config)
-  })
-
-  return filterConfigs
+  const { filter, label } = filterAspect
+  const table: Table =
+    filterAspect.appliesTo === GraphObjectType.NODE ? nodeTable : edgeTable
+  const allValues: string[] = getAllDiscreteValues(
+    table.rows,
+    filterAspect.attributeName,
+  )
+  return {
+    name: sourceNetworkId,
+    attributeName: filterAspect.attributeName,
+    target: filterAspect.appliesTo,
+    widgetType: filterAspect.widgetType,
+    description: 'Filter nodes / edges by selected values',
+    label,
+    range: { values: allValues },
+    displayMode: DisplayMode.SELECT,
+    discreteFilterDetails: filter,
+  }
 }

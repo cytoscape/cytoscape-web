@@ -41,6 +41,12 @@ The aspect is an array of filter widget entries:
 }
 ```
 
+Cytoscape Web shows **one filter per subnetwork** and has no control for
+switching between filters, so it uses only the **first valid entry**. Any
+further valid entries are ignored with a `logApi.warn` naming them (#798).
+Invalid entries are dropped before this choice (see below), so an invalid
+first entry does not hide a valid second one.
+
 A real example is
 `test/fixtures/ndex/d3030388-dcb7-11ee-867c-005056aecf54.valid.filters.cx2`
 (MuSIC interaction network).

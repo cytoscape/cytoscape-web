@@ -648,22 +648,15 @@ export const SubNetworkPanel = ({
             const filterAspects: unknown = filterConfigAspect.value
 
             const sourceNetworkId: IdType = network.id
-            const filterConfigs: FilterConfig[] = createFilterFromAspect(
-              sourceNetworkId,
-              filterAspects,
-              nodeTable,
-              edgeTable,
-            )
-
-            // Process filters in chunks to avoid UI blocking
-            const batchSize = 5
-            for (let i = 0; i < filterConfigs.length; i += batchSize) {
-              const batch = filterConfigs.slice(i, i + batchSize)
-              batch.forEach((filterConfig: FilterConfig) => {
-                registerFilterConfig(filterConfig)
-              })
-
-              await yieldToUI()
+            const filterConfig: FilterConfig | undefined =
+              createFilterFromAspect(
+                sourceNetworkId,
+                filterAspects,
+                nodeTable,
+                edgeTable,
+              )
+            if (filterConfig !== undefined) {
+              registerFilterConfig(filterConfig)
             }
           }
         }
