@@ -567,16 +567,25 @@ const serializeCondition = (node: FilterNode): Record<string, unknown> => {
 }
 
 /**
- * Write filters as a Cytoscape Desktop filter file. Each filter is one entry
- * holding its root group, as Cytoscape Desktop's Filter panel exports it.
- * CW-only state, such as the display mode, is not written.
+ * One entry of a Cytoscape Desktop filter file, as plain JSON data
+ */
+export interface CyFilterEntry {
+  readonly name: string
+  readonly transformers: Record<string, unknown>[]
+}
+
+/**
+ * A filter as one entry of a filter file: its name and its root group, as
+ * Cytoscape Desktop's Filter panel exports it. CW-only state, such as the
+ * display mode, is left out.
+ */
+export const toCyFilterEntry = (filter: NamedFilter): CyFilterEntry => ({
+  name: filter.name,
+  transformers: [serializeCondition(filter.root)],
+})
+
+/**
+ * Write filters as a Cytoscape Desktop filter file, one entry per filter
  */
 export const serializeCyFilters = (filters: readonly NamedFilter[]): string =>
-  JSON.stringify(
-    filters.map((filter) => ({
-      name: filter.name,
-      transformers: [serializeCondition(filter.root)],
-    })),
-    null,
-    2,
-  )
+  JSON.stringify(filters.map(toCyFilterEntry), null, 2)

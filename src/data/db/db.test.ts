@@ -12,6 +12,12 @@ import type { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { DisplayMode } from '../../models/FilterModel/DisplayMode'
 import type { FilterConfig } from '../../models/FilterModel/FilterConfig'
 import { FilterWidgetType } from '../../models/FilterModel/FilterWidgetType'
+import { MatchType } from '../../models/FilterModel/FilterTree'
+import {
+  createCompositeFilter,
+  createDegreeFilter,
+  createWorkspaceFilter,
+} from '../../models/FilterModel/impl/filterTreeImpl'
 import { SelectionType } from '../../models/FilterModel/SelectionType'
 import { IdType } from '../../models/IdType'
 import type { Edge, Network, Node } from '../../models/NetworkModel'
@@ -68,8 +74,10 @@ import {
   deleteUiStateFromDb,
   deleteUndoRedoStackFromDb,
   deleteVisualStyleFromDb,
+  deleteWorkspaceFilterFromDb,
   deleteNetworkScopedAppDataFromDb,
   getAllAppDataFromDb,
+  getAllWorkspaceFiltersFromDb,
   getAllNetworkKeys,
   getAllServiceAppsFromDb,
   getAllStyleTemplatesFromDb,
@@ -93,6 +101,7 @@ import {
   getStyleSetMetadataFromDb,
   getVisualStyleSetFromDb,
   LEGACY_STYLE_ID,
+  getWorkspaceFilterFromDb,
   getWorkspaceFromDb,
   initializeDb,
   putAppDataToDb,
@@ -112,6 +121,7 @@ import {
   putViewSelectionToDb,
   putVisualStyleSetToDb,
   putVisualStyleToDb,
+  putWorkspaceFilterToDb,
   putWorkspaceToDb,
   updateWorkspaceDb,
   verifyTransactionSourceStamp,
@@ -1663,5 +1673,75 @@ describe('app data storage (DB v12)', () => {
     await clearAppDataFromDb()
 
     expect(await getAllAppDataFromDb()).toEqual([])
+  })
+})
+
+describe('workspace filter storage (DB v13)', () => {
+  const hubs = {
+    ...createWorkspaceFilter('f1', 'Hubs', DisplayMode.SHOW_HIDE),
+    root: createCompositeFilter(MatchType.ANY, [createDegreeFilter()]),
+  }
+
+  it('round-trips a filter and reads every filter back', async () => {
+    await setupFreshDb()
+    expect(await getAllWorkspaceFiltersFromDb()).toEqual([])
+
+    await putWorkspaceFilterToDb(hubs)
+    await putWorkspaceFilterToDb(createWorkspaceFilter('f2', 'Kinases'))
+
+    expect(await getWorkspaceFilterFromDb('f1')).toEqual(hubs)
+    expect(await getWorkspaceFilterFromDb('nope')).toBeUndefined()
+    expect(
+      (await getAllWorkspaceFiltersFromDb()).map((filter) => filter.name),
+    ).toEqual(['Hubs', 'Kinases'])
+  })
+
+  it('stores the filter as an entry of a Cytoscape Desktop filter file', async () => {
+    await setupFreshDb()
+    await putWorkspaceFilterToDb(hubs)
+    const db = await getDb()
+    const row = await db.workspaceFilters.get('f1')
+    expect(row?.filter).toEqual({
+      name: 'Hubs',
+      transformers: [
+        {
+          id: 'org.cytoscape.CompositeFilter',
+          parameters: { type: 'ANY' },
+          transformers: [
+            {
+              id: 'org.cytoscape.DegreeFilter',
+              parameters: {
+                predicate: 'BETWEEN',
+                criterion: null,
+                edgeType: 'ANY',
+              },
+            },
+          ],
+        },
+      ],
+    })
+  })
+
+  it('drops a malformed row on read instead of failing the whole hydration', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+    await putWorkspaceFilterToDb(hubs)
+    await db.workspaceFilters.put({
+      id: 'bad',
+      displayMode: 'select',
+      filter: { name: 'Bad', transformers: [{ id: 'com.example.Foo' }] },
+    } as any)
+
+    expect(
+      (await getAllWorkspaceFiltersFromDb()).map((filter) => filter.id),
+    ).toEqual(['f1'])
+    expect(await getWorkspaceFilterFromDb('bad')).toBeUndefined()
+  })
+
+  it('deletes a filter', async () => {
+    await setupFreshDb()
+    await putWorkspaceFilterToDb(hubs)
+    await deleteWorkspaceFilterFromDb('f1')
+    expect(await getAllWorkspaceFiltersFromDb()).toEqual([])
   })
 })

@@ -37,6 +37,9 @@ const WORKSPACE_WIDE_TABLES = new Set([
   // not by network id, so the per-network check below can never match one and
   // filter changes would never reach the hydration case at all.
   'filters',
+  // The FILTER tab's filters belong to the workspace; rows are keyed by
+  // filter id
+  'workspaceFilters',
 ])
 
 /**

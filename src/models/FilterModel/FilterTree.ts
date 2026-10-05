@@ -189,6 +189,8 @@ export interface NamedFilter {
  * CW state only: filter files never carry it.
  */
 export interface WorkspaceFilter extends NamedFilter {
+  // Stable key: names change on rename, ids never do
+  readonly id: IdType
   readonly displayMode: DisplayMode
 }
 

@@ -1,3 +1,4 @@
+import type { IdType } from '../../IdType'
 import type { Network } from '../../NetworkModel/Network'
 import type { NumberRange } from '../../PropertyModel/NumberRange'
 import type { Column } from '../../TableModel/Column'
@@ -84,9 +85,11 @@ export const createNamedFilter = (name: string): NamedFilter => ({
 })
 
 export const createWorkspaceFilter = (
+  id: IdType,
   name: string,
   displayMode: DisplayMode = DisplayMode.SELECT,
 ): WorkspaceFilter => ({
+  id,
   ...createNamedFilter(name),
   displayMode,
 })

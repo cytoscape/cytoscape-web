@@ -9,6 +9,7 @@ import { CyApp } from '../../models/AppModel/CyApp'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { CyNetwork } from '../../models/CyNetworkModel'
 import { FilterConfig } from '../../models/FilterModel/FilterConfig'
+import type { WorkspaceFilter } from '../../models/FilterModel/FilterTree'
 import { IdType } from '../../models/IdType'
 // Type-only: the NetworkModel implementation is built on cytoscape.js, and a
 // value import here would put cytoscape on the boot-critical DATABASE phase.
@@ -63,6 +64,11 @@ import {
   serializeTable,
   serializeVisualStyle,
 } from './serialization/mapSerialization'
+import {
+  deserializeWorkspaceFilter,
+  serializeWorkspaceFilter,
+  WorkspaceFilterRow,
+} from './serialization/workspaceFilter'
 // Unique, fixed DB name for the Cytoscape Web
 export const DB_NAME: string = 'cyweb-db'
 
@@ -76,7 +82,9 @@ export const DB_NAME: string = 'cyweb-db'
 // will not re-run a version whose number a client already has on disk.
 // v12 adds the `appData` store (the app API's local per-app data tier — see
 // AppDataStore).
-export const currentVersion: number = 12
+// v13 adds the `workspaceFilters` store (the FILTER tab's filters — see
+// FilterStore).
+export const currentVersion: number = 13
 
 /**
  * Predefined object store names.
@@ -115,6 +123,9 @@ export const ObjectStoreNames = {
 
   // From v12
   AppData: 'appData',
+
+  // From v13
+  WorkspaceFilters: 'workspaceFilters',
 } as const
 
 // The type derived from the names of object stores
@@ -154,6 +165,9 @@ const Keys = {
   // Rows are keyed by appDataRowId(appId, networkId, key); `networkId` is
   // indexed so a network deletion can sweep every app's entries in one query.
   [ObjectStoreNames.AppData]: 'id, networkId',
+
+  // Rows are keyed by the filter's id, which a rename does not change
+  [ObjectStoreNames.WorkspaceFilters]: 'id',
 } as const
 
 /**
@@ -232,7 +246,10 @@ class CyDB extends Dexie {
   [ObjectStoreNames.ViewSelections]!: DxTable<any>;
 
   // From v12
-  [ObjectStoreNames.AppData]!: DxTable<AppDataRow>
+  [ObjectStoreNames.AppData]!: DxTable<AppDataRow>;
+
+  // From v13
+  [ObjectStoreNames.WorkspaceFilters]!: DxTable<WorkspaceFilterRow>
 
   constructor(dbName: string) {
     super(dbName)
@@ -1499,6 +1516,76 @@ export const deleteFiltersFromDb = async (
 export const clearFiltersFromDb = async (): Promise<void> => {
   await db.transaction('rw', db.filters, async () => {
     await db.filters.clear()
+  })
+}
+
+// Workspace filters (the FILTER tab — see FilterStore)
+
+export const putWorkspaceFilterToDb = async (
+  filter: WorkspaceFilter,
+): Promise<void> => {
+  try {
+    const row = serializeWorkspaceFilter(toPlainObject(filter))
+    await db.transaction('rw', db.workspaceFilters, async () => {
+      await db.workspaceFilters.put(row)
+    })
+  } catch (e) {
+    logDb.error('[putWorkspaceFilterToDb] error:', e, filter.id)
+    throw e
+  }
+}
+
+/**
+ * Read one workspace filter, or undefined when it is missing or malformed
+ */
+export const getWorkspaceFilterFromDb = async (
+  id: IdType,
+): Promise<WorkspaceFilter | undefined> => {
+  const row = await db.workspaceFilters.get(id)
+  if (row === undefined) {
+    return undefined
+  }
+  try {
+    return deserializeWorkspaceFilter(row)
+  } catch (e) {
+    logDb.warn('[getWorkspaceFilterFromDb] ignoring malformed row:', id, e)
+    return undefined
+  }
+}
+
+/**
+ * Every stored workspace filter, to hydrate FilterStore at startup. A
+ * malformed row is logged and dropped rather than failing the boot.
+ */
+export const getAllWorkspaceFiltersFromDb = async (): Promise<
+  WorkspaceFilter[]
+> => {
+  try {
+    const rows = await db.workspaceFilters.toArray()
+    const filters: WorkspaceFilter[] = []
+    rows.forEach((row) => {
+      try {
+        filters.push(deserializeWorkspaceFilter(row))
+      } catch (e) {
+        logDb.warn(
+          '[getAllWorkspaceFiltersFromDb] dropping malformed row:',
+          row,
+          e,
+        )
+      }
+    })
+    return filters
+  } catch (e) {
+    logDb.warn('[getAllWorkspaceFiltersFromDb] Failed to read filters', e)
+    return []
+  }
+}
+
+export const deleteWorkspaceFilterFromDb = async (
+  id: IdType,
+): Promise<void> => {
+  await db.transaction('rw', db.workspaceFilters, async () => {
+    await db.workspaceFilters.delete(id)
   })
 }
 

@@ -94,6 +94,8 @@ export const deleteAllNetworksFromAllStores = (): void => {
   useHcxValidatorStore.getState().deleteAllValidationResults()
   useUiStateStore.getState().deleteAllNetworkUiState()
   useFilterStore.getState().deleteAllNetworkIndexes()
+  // Subnetwork filter configs only: the FILTER tab's workspace filters are
+  // not tied to a network and survive an emptied workspace
   useFilterStore.getState().deleteAllFilterConfigs()
 
   useWorkspaceStore.getState().deleteAllNetworks()

@@ -58,7 +58,8 @@ describe('new conditions', () => {
   })
 
   it('start a workspace filter empty, in select mode', () => {
-    expect(createWorkspaceFilter('My filter')).toEqual({
+    expect(createWorkspaceFilter('f1', 'My filter')).toEqual({
+      id: 'f1',
       name: 'My filter',
       root: createCompositeFilter(),
       displayMode: DisplayMode.SELECT,

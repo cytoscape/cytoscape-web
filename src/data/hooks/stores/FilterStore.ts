@@ -1,9 +1,22 @@
+import { castDraft } from 'immer'
+import { v4 as uuidv4 } from 'uuid'
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
 import { logStore } from '../../../debug'
 import { DiscreteFilterValue, FilterConfig } from '../../../models/FilterModel'
+import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
+import {
+  CompositeFilterNode,
+  NamedFilter,
+  WorkspaceFilter,
+} from '../../../models/FilterModel/FilterTree'
 import * as FilterStoreImpl from '../../../models/FilterModel/impl/filterStoreImpl'
+import * as WorkspaceFiltersImpl from '../../../models/FilterModel/impl/workspaceFiltersImpl'
+import {
+  RenameFilterResult,
+  WorkspaceFilters,
+} from '../../../models/FilterModel/impl/workspaceFiltersImpl'
 import { Search, SearchOptions } from '../../../models/FilterModel/Search'
 import { SearchState } from '../../../models/FilterModel/SearchState'
 import { IdType } from '../../../models/IdType'
@@ -15,10 +28,13 @@ import {
   deleteFilterFromDb,
   deleteFiltersFromDb,
   deleteNetworkFiltersFromDb,
+  deleteWorkspaceFilterFromDb,
   putFilterToDb,
+  putWorkspaceFilterToDb,
 } from '../../db'
 import { toPlainObject } from '../../db/serialization'
 import { isHydrating } from './hydrationContext'
+import { cancelWrite, scheduleWrite } from './persistenceScheduler'
 
 /**
  * The store for both search and filter.
@@ -27,6 +43,9 @@ import { isHydrating } from './hydrationContext'
 interface FilterState<T> {
   search: Search<T>
   filterConfigs: Record<string, FilterConfig>
+  // The FILTER tab's filters, by id. They belong to the workspace, not to a
+  // network (docs/specifications/FILTER_SPECIFICATION.md).
+  workspaceFilters: WorkspaceFilters
 }
 
 interface FilterAction {
@@ -61,13 +80,53 @@ interface FilterAction {
   // Delete the configs of a network and its subnetworks (delete cascade)
   deleteNetworkFilterConfigs: (networkId: IdType) => void
   deleteAllFilterConfigs: () => void
+
+  // FILTER tab filters. Each change is written to the database after a short
+  // delay, so a burst of edits (typing a criterion) makes one write.
+
+  // A new, empty filter. A blank name becomes the default name, and a taken
+  // one is numbered ("My filter 2").
+  createWorkspaceFilter: (name: string) => WorkspaceFilter
+  // Add filters read from a file, under new ids and free names
+  addWorkspaceFilters: (filters: readonly NamedFilter[]) => WorkspaceFilter[]
+  // Refused when the name is blank or taken (ignoring case)
+  renameWorkspaceFilter: (id: IdType, name: string) => RenameFilterResult
+  copyWorkspaceFilter: (id: IdType) => WorkspaceFilter | undefined
+  deleteWorkspaceFilter: (id: IdType) => void
+  setWorkspaceFilterRoot: (id: IdType, root: CompositeFilterNode) => void
+  setWorkspaceFilterDisplayMode: (id: IdType, displayMode: DisplayMode) => void
+  // Store a filter as is, e.g. one another tab changed
+  putWorkspaceFilter: (filter: WorkspaceFilter) => void
+  // Restore the filters saved in the database at startup (no write back)
+  hydrateWorkspaceFilters: (filters: readonly WorkspaceFilter[]) => void
 }
 
 type FilterStore = FilterState<any> & FilterAction
 
+const workspaceFilterWriteKey = (id: IdType): string => `WorkspaceFilter:${id}`
+
+/**
+ * Write a workspace filter to the database after the coalescing delay. The
+ * write reads the filter at flush time, so it stores the latest edit, and
+ * does nothing when the filter was deleted meanwhile.
+ */
+const persistWorkspaceFilter = (id: IdType): void => {
+  if (isHydrating()) return
+  scheduleWrite(workspaceFilterWriteKey(id), useFilterStore.name, async () => {
+    const filter = WorkspaceFiltersImpl.getWorkspaceFilter(
+      useFilterStore.getState().workspaceFilters,
+      id,
+    )
+    if (filter !== undefined) {
+      await putWorkspaceFilterToDb(filter)
+    }
+  })
+}
+
 export const useFilterStore = create(
   immer<FilterStore>((set, get) => ({
     filterConfigs: {},
+    workspaceFilters: {},
     search: {
       state: SearchState.READY,
       query: '',
@@ -314,6 +373,120 @@ export const useFilterStore = create(
           )
         })
       }
+    },
+
+    createWorkspaceFilter: (name: string) => {
+      const filter = WorkspaceFiltersImpl.newWorkspaceFilter(
+        get().workspaceFilters,
+        uuidv4(),
+        name,
+      )
+      set((state) => {
+        state.workspaceFilters[filter.id] = castDraft(filter)
+      })
+      persistWorkspaceFilter(filter.id)
+      return filter
+    },
+    addWorkspaceFilters: (filters: readonly NamedFilter[]) => {
+      const added = WorkspaceFiltersImpl.importWorkspaceFilters(
+        get().workspaceFilters,
+        filters,
+        uuidv4,
+      )
+      set((state) => {
+        added.forEach((filter) => {
+          state.workspaceFilters[filter.id] = castDraft(filter)
+        })
+      })
+      added.forEach((filter) => persistWorkspaceFilter(filter.id))
+      return added
+    },
+    renameWorkspaceFilter: (id: IdType, name: string) => {
+      const result = WorkspaceFiltersImpl.renameWorkspaceFilter(
+        get().workspaceFilters,
+        id,
+        name,
+      )
+      if (result.success) {
+        set((state) => {
+          state.workspaceFilters[id] = castDraft(result.filter)
+        })
+        persistWorkspaceFilter(id)
+      }
+      return result
+    },
+    copyWorkspaceFilter: (id: IdType) => {
+      const copy = WorkspaceFiltersImpl.copyWorkspaceFilter(
+        get().workspaceFilters,
+        id,
+        uuidv4(),
+      )
+      if (copy !== undefined) {
+        set((state) => {
+          state.workspaceFilters[copy.id] = castDraft(copy)
+        })
+        persistWorkspaceFilter(copy.id)
+      }
+      return copy
+    },
+    deleteWorkspaceFilter: (id: IdType) => {
+      if (
+        WorkspaceFiltersImpl.getWorkspaceFilter(get().workspaceFilters, id) ===
+        undefined
+      ) {
+        return
+      }
+      set((state) => {
+        delete state.workspaceFilters[id]
+      })
+      // A pending write would put the filter back
+      cancelWrite(workspaceFilterWriteKey(id))
+      if (!isHydrating()) {
+        void deleteWorkspaceFilterFromDb(id).catch((e) => {
+          logStore.error(
+            `[${useFilterStore.name}]: Failed to delete workspace filter ${id} from db`,
+            e,
+          )
+        })
+      }
+    },
+    setWorkspaceFilterRoot: (id: IdType, root: CompositeFilterNode) => {
+      if (
+        WorkspaceFiltersImpl.getWorkspaceFilter(get().workspaceFilters, id) ===
+        undefined
+      ) {
+        return
+      }
+      set((state) => {
+        state.workspaceFilters[id].root = castDraft(root)
+      })
+      persistWorkspaceFilter(id)
+    },
+    setWorkspaceFilterDisplayMode: (id: IdType, displayMode: DisplayMode) => {
+      if (
+        WorkspaceFiltersImpl.getWorkspaceFilter(get().workspaceFilters, id) ===
+        undefined
+      ) {
+        return
+      }
+      set((state) => {
+        state.workspaceFilters[id].displayMode = displayMode
+      })
+      persistWorkspaceFilter(id)
+    },
+    putWorkspaceFilter: (filter: WorkspaceFilter) => {
+      set((state) => {
+        state.workspaceFilters[filter.id] = castDraft(filter)
+      })
+      persistWorkspaceFilter(filter.id)
+    },
+    hydrateWorkspaceFilters: (filters: readonly WorkspaceFilter[]) => {
+      // The filters come from the database, so they are not written back
+      set((state) => {
+        filters.forEach((filter) => {
+          state.workspaceFilters[filter.id] = castDraft(filter)
+        })
+      })
     },
   })),
 )

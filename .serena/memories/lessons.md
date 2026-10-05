@@ -91,6 +91,7 @@
 
 ## Agent Workflow
 
+- [2026-10-05] Prettier scope: run `npx prettier --write` on the files you touched, never on a directory. Many committed `.md` docs and some tests under `src/` are not Prettier-clean, so `prettier --write src/data` rewrites a dozen unrelated files into the diff.
 - [2026-09-06] Brainstorming: Do not commit brainstorming notes or exploratory design reports unless the user explicitly requests a commit. This overrides the automatic commit cadence below for brainstorming work.
 - [2026-09-07] Architecture reviews: Inventory existing host implementations and bridge contracts before proposing new integration layers. Verify where configuration thresholds are enforced before describing them as public API or rendering limits.
 

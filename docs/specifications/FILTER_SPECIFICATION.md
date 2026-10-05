@@ -34,8 +34,9 @@ startup bundle.
   aspect (`HIERARCHY_FILTER_WIDGETS_ASPECT.md`), stays separate. It keeps its
   own `FilterConfig` and is never listed in the FILTER tab. The two meet in
   one place only: applying a workspace filter to a subnetwork that has a
-  `filterWidgets` filter switches that filter off. Switching the
-  `filterWidgets` filter on again changes nothing in the FILTER tab.
+  `filterWidgets` filter switches that filter off, in select mode as well as
+  in show mode. Switching the `filterWidgets` filter on again changes nothing
+  in the FILTER tab.
 
 ## Filter tree
 
@@ -158,6 +159,36 @@ conditions, and any child for a group (an empty group: neither).
   edge; an edge whose node is hidden is not drawn anyway.
 
 A `FilterContext` holds the caches of one run. Make a new one per run.
+
+## Storage
+
+Workspace filters live in `FilterStore.workspaceFilters`, keyed by a stable
+id (a rename does not change it), next to the subnetwork `filterConfigs`.
+
+| Action                          | Behavior                                                                         |
+| ------------------------------- | -------------------------------------------------------------------------------- |
+| `createWorkspaceFilter`         | New empty filter; a blank name becomes "Default filter", a taken one is numbered |
+| `addWorkspaceFilters`           | Imported filters, under new ids and free names; never replaces                   |
+| `renameWorkspaceFilter`         | Refused when blank or taken (ignoring case)                                      |
+| `copyWorkspaceFilter`           | Same conditions, numbered name ("X 2")                                           |
+| `deleteWorkspaceFilter`         | Removes the filter and its row                                                   |
+| `setWorkspaceFilterRoot`        | Replaces the conditions                                                          |
+| `setWorkspaceFilterDisplayMode` | Select or show                                                                   |
+
+- They persist to the `workspaceFilters` IndexedDB table (DB v13), one row
+  per filter: `{ id, displayMode, filter }`, where `filter` is the filter as
+  an entry of a Cytoscape Desktop filter file. Rows are read back through the
+  file parser, so a stored row gets the same limits and whitelist as an
+  imported file; a malformed row is dropped with a warning.
+- Writes go through the 300 ms persistence coalescer, so a burst of edits
+  (typing a criterion) writes once. Deleting a filter cancels its pending
+  write.
+- Changes reach other tabs through cross-tab sync (`workspaceFilters` is a
+  workspace-wide table). Changes applied from another tab are not written
+  back.
+- Deleting networks, even all of them, keeps workspace filters. Resetting the
+  workspace or loading a remote workspace deletes the database, and with it
+  the filters.
 
 ## Applying (FILTER tab)
 

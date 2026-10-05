@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type { AppDataRow } from '@/models/AppDataModel/AppData'
 import type { CyApp } from '../../models/AppModel/CyApp'
 import type { ServiceApp } from '../../models/AppModel/ServiceApp'
+import { DisplayMode } from '../../models/FilterModel/DisplayMode'
 import type { FilterConfig } from '../../models/FilterModel/FilterConfig'
 import type { Network } from '../../models/NetworkModel'
 import type { NetworkSummary } from '../../models/NetworkSummaryModel/NetworkSummary'
@@ -326,6 +327,18 @@ const FilterConfigSchema = z.object({
   enabled: z.boolean().optional(),
 })
 
+// Row shape of the `workspaceFilters` store (added in DB v13). The filter is
+// kept in Cytoscape Desktop's file format and read back with that format's
+// parser (`deserializeWorkspaceFilter`), so only the envelope is checked here.
+const WorkspaceFilterRowSchema = z.object({
+  // FilterStore keys workspace filters by id in a plain object
+  id: IdTypeSchema.refine((id) => id !== '__proto__', {
+    message: 'id "__proto__" is reserved',
+  }),
+  displayMode: z.enum([DisplayMode.SELECT, DisplayMode.SHOW_HIDE]),
+  filter: z.unknown(),
+})
+
 const FilterConfigWithRecordsSchema = FilterConfigSchema.extend({
   visualMapping: z
     .union([
@@ -567,6 +580,11 @@ export const validateSerializedFilterConfig = (
   value: unknown,
 ): FilterConfigWithRecords =>
   FilterConfigWithRecordsSchema.parse(value) as FilterConfigWithRecords
+
+export const validateWorkspaceFilterRow = (
+  value: unknown,
+): z.infer<typeof WorkspaceFilterRowSchema> =>
+  WorkspaceFilterRowSchema.parse(value)
 
 export const validateCyApp = (value: unknown): CyApp =>
   CyAppSchema.parse(value) as CyApp

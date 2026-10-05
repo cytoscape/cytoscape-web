@@ -14,6 +14,9 @@ vi.mock('@/data/db', () => ({
   getWorkspaceFromDb: vi.fn(),
   getUiStateFromDb: vi.fn(),
   getVisualStyleSetFromDb: vi.fn(),
+  getWorkspaceFilterFromDb: vi.fn(),
+  putWorkspaceFilterToDb: vi.fn().mockResolvedValue(undefined),
+  deleteWorkspaceFilterFromDb: vi.fn().mockResolvedValue(undefined),
   putUiStateToDb: vi.fn().mockResolvedValue(undefined),
   putWorkspaceToDb: vi.fn().mockResolvedValue(undefined),
   putVisualStyleSetToDb: vi.fn().mockResolvedValue(undefined),
@@ -21,10 +24,16 @@ vi.mock('@/data/db', () => ({
 }))
 
 import {
+  deleteWorkspaceFilterFromDb,
+  getWorkspaceFilterFromDb,
   getWorkspaceFromDb,
   getUiStateFromDb,
   getVisualStyleSetFromDb,
+  putWorkspaceFilterToDb,
 } from '@/data/db'
+import { useFilterStore } from '@/data/hooks/stores/FilterStore'
+import { flushPendingWrites } from '@/data/hooks/stores/persistenceScheduler'
+import { createWorkspaceFilter } from '@/models/FilterModel/impl/filterTreeImpl'
 import { Panel } from '@/models/UiModel/Panel'
 import VisualStyleFn from '@/models/VisualStyleModel'
 
@@ -269,5 +278,32 @@ describe('@/data/sync/crossTabHydration', () => {
     expect(
       useVisualStyleStore.getState().styleSets['net-2'].styles.s1.name,
     ).toBe('Local')
+  })
+
+  it('applies a workspace filter another tab changed, without writing it back', async () => {
+    useFilterStore.setState({ workspaceFilters: {} })
+    const peer = createWorkspaceFilter('f1', 'From peer')
+    vi.mocked(getWorkspaceFilterFromDb).mockResolvedValueOnce(peer)
+
+    await hydrateFromCrossTabChange([
+      { type: 2, table: 'workspaceFilters', key: 'f1' },
+    ])
+    await flushPendingWrites()
+
+    expect(useFilterStore.getState().workspaceFilters).toEqual({ f1: peer })
+    expect(putWorkspaceFilterToDb).not.toHaveBeenCalled()
+  })
+
+  it('removes a workspace filter another tab deleted, without writing', async () => {
+    useFilterStore.setState({
+      workspaceFilters: { f1: createWorkspaceFilter('f1', 'Local') },
+    })
+
+    await hydrateFromCrossTabChange([
+      { type: 3, table: 'workspaceFilters', key: 'f1' },
+    ])
+
+    expect(useFilterStore.getState().workspaceFilters).toEqual({})
+    expect(deleteWorkspaceFilterFromDb).not.toHaveBeenCalled()
   })
 })
