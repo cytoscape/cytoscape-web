@@ -29,7 +29,11 @@ vi.mock('./CheckboxFilter', () => ({
 describe('FilterPanel', () => {
   beforeEach(() => {
     // Reset stores
-    useFilterStore.setState({ filterConfigs: {}, search: {} as any })
+    useFilterStore.setState({
+      filterConfigs: {},
+      appliedWorkspaceFilters: {},
+      search: {} as any,
+    })
     useTableStore.setState({ tables: {} })
     useVisualStyleStore.setState({ visualStyles: {} })
 
@@ -186,6 +190,32 @@ describe('FilterPanel', () => {
 
       expect(switchInput().checked).toBe(false)
       expect(checkboxFilterEnabled()).toBe('false')
+    })
+
+    it('releases a FILTER tab filter when switched back on, and only then', () => {
+      setupFilter(false)
+      useFilterStore.setState({
+        appliedWorkspaceFilters: {
+          [networkId]: { filterId: 'f1', displayMode: DisplayMode.SHOW_HIDE },
+        },
+      })
+      renderPanel()
+
+      fireEvent.click(switchInput())
+
+      expect(useFilterStore.getState().appliedWorkspaceFilters).toEqual({})
+      expect(checkboxFilterEnabled()).toBe('true')
+
+      // Switching off again does not touch the FILTER tab's state
+      useFilterStore.setState({
+        appliedWorkspaceFilters: {
+          [networkId]: { filterId: 'f1', displayMode: DisplayMode.SELECT },
+        },
+      })
+      fireEvent.click(switchInput())
+      expect(
+        useFilterStore.getState().appliedWorkspaceFilters[networkId],
+      ).toBeDefined()
     })
 
     it('keeps the switch of each subnetwork separate', () => {

@@ -51,6 +51,8 @@ export const deleteNetworkFromAllStores = (
   useFilterStore.getState().deleteNetworkIndex(networkId)
   // Filter configs are keyed by the network's subnetwork ids (#774)
   useFilterStore.getState().deleteNetworkFilterConfigs(networkId)
+  // Which workspace filter was applied to it (and its subnetworks)
+  useFilterStore.getState().deleteNetworkAppliedWorkspaceFilters(networkId)
 
   if (useUiStateStore.getState().ui.activeNetworkView === networkId) {
     useUiStateStore.getState().setActiveNetworkView('')
@@ -97,6 +99,7 @@ export const deleteAllNetworksFromAllStores = (): void => {
   // Subnetwork filter configs only: the FILTER tab's workspace filters are
   // not tied to a network and survive an emptied workspace
   useFilterStore.getState().deleteAllFilterConfigs()
+  useFilterStore.getState().deleteAllAppliedWorkspaceFilters()
 
   useWorkspaceStore.getState().deleteAllNetworks()
 }

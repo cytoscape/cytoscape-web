@@ -60,3 +60,33 @@ describe('network delete cascade: filter configs', () => {
     expect(clearFiltersFromDb).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('network delete cascade: applied workspace filters', () => {
+  const applied = { filterId: 'f1', displayMode: DisplayMode.SHOW_HIDE }
+
+  beforeEach(() => {
+    deleteNetworkFiltersFromDb.mockReset().mockResolvedValue(undefined)
+    clearFiltersFromDb.mockReset().mockResolvedValue(undefined)
+    useFilterStore.setState({
+      appliedWorkspaceFilters: {
+        net1: applied,
+        net1_1: applied,
+        net2: applied,
+      },
+    })
+  })
+
+  it('forgets the filter applied to the network and its subnetworks', () => {
+    deleteNetworkFromAllStores('net1')
+
+    expect(
+      Object.keys(useFilterStore.getState().appliedWorkspaceFilters),
+    ).toEqual(['net2'])
+  })
+
+  it('forgets every applied filter when the workspace is emptied', () => {
+    deleteAllNetworksFromAllStores()
+
+    expect(useFilterStore.getState().appliedWorkspaceFilters).toEqual({})
+  })
+})

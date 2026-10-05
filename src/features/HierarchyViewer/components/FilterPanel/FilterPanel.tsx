@@ -3,6 +3,7 @@ import isEqual from 'lodash/isEqual'
 import { useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
+import { releaseWorkspaceFilter } from '../../../../data/filter/applyWorkspaceFilter'
 import { useFilterStore } from '../../../../data/hooks/stores/FilterStore'
 import { useTableStore } from '../../../../data/hooks/stores/TableStore'
 import { useVisualStyleStore } from '../../../../data/hooks/stores/VisualStyleStore'
@@ -82,6 +83,12 @@ export const FilterPanel = ({ networkId }: FilterPanelProps) => {
     selectedFilter?.enabled ??
     searchParams.get(FilterUrlParams.FILTER_ENABLED) !== 'false'
   const setIsFilterEnabled = (enabled: boolean): void => {
+    // Switched back on, this filter owns the subnetwork's visibility again: a
+    // FILTER tab filter applied in show mode lets go of it (the FILTER tab's
+    // filters themselves do not change)
+    if (enabled) {
+      releaseWorkspaceFilter(networkId)
+    }
     setFilterEnabled(networkId, enabled)
   }
 

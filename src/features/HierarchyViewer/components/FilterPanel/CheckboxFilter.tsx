@@ -3,6 +3,7 @@ import Tooltip from '@mui/material/Tooltip'
 import { ReactNode, useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
+import { isWorkspaceFilterShown } from '../../../../data/filter/applyWorkspaceFilter'
 import { useFilterStore } from '../../../../data/hooks/stores/FilterStore'
 import { useVisualStyleStore } from '../../../../data/hooks/stores/VisualStyleStore'
 import {
@@ -66,6 +67,12 @@ export const CheckboxFilter = ({
     name2label.set(details.criterion, details.description)
   })
   const updateRange = useFilterStore((state) => state.updateRange)
+  // A FILTER tab filter applied in show mode owns the network's visibility
+  // while this filter is off: removing "this filter's" bypass would show what
+  // that filter hides
+  const workspaceFilterShown: boolean = useFilterStore((state) =>
+    isWorkspaceFilterShown(state.appliedWorkspaceFilters, targetNetworkId),
+  )
 
   const [allOptions, setAllOptions] = useState<DiscreteFilterValue[]>([])
 
@@ -228,17 +235,19 @@ export const CheckboxFilter = ({
    * selected range changes, or applyFilter's inputs (table, config, a
    * late-loading visual style) change. This also covers the initial apply
    * on mount. When disabled, remove the filter's bypass so the hidden
-   * elements are shown again; the stored range is kept and reapplied once
-   * the filter is enabled again.
+   * elements are shown again, unless a FILTER tab filter in show mode now
+   * owns the visibility; the stored range is kept and reapplied once the
+   * filter is enabled again.
    */
   useEffect(() => {
     if (enableFilter) {
       applyFilter()
-    } else {
+    } else if (!workspaceFilterShown) {
       removeFilter()
     }
   }, [
     enableFilter,
+    workspaceFilterShown,
     targetNetworkId,
     currentSelectedOptions.values,
     applyFilter,

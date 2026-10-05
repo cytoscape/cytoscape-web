@@ -145,6 +145,8 @@ const mockFilterActions = {
   deleteAllNetworkIndexes: vi.fn(),
   deleteNetworkFilterConfigs: vi.fn(),
   deleteAllFilterConfigs: vi.fn(),
+  deleteNetworkAppliedWorkspaceFilters: vi.fn(),
+  deleteAllAppliedWorkspaceFilters: vi.fn(),
 }
 
 vi.mock('../../data/hooks/stores/FilterStore', () => ({

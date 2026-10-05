@@ -7,6 +7,7 @@ import { logStore } from '../../../debug'
 import { DiscreteFilterValue, FilterConfig } from '../../../models/FilterModel'
 import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
 import {
+  AppliedWorkspaceFilter,
   CompositeFilterNode,
   NamedFilter,
   WorkspaceFilter,
@@ -46,6 +47,9 @@ interface FilterState<T> {
   // The FILTER tab's filters, by id. They belong to the workspace, not to a
   // network (docs/specifications/FILTER_SPECIFICATION.md).
   workspaceFilters: WorkspaceFilters
+  // The workspace filter last applied to each network, by network id. Kept
+  // in memory only, like the subnetworks it mostly concerns.
+  appliedWorkspaceFilters: Record<IdType, AppliedWorkspaceFilter>
 }
 
 interface FilterAction {
@@ -99,6 +103,17 @@ interface FilterAction {
   putWorkspaceFilter: (filter: WorkspaceFilter) => void
   // Restore the filters saved in the database at startup (no write back)
   hydrateWorkspaceFilters: (filters: readonly WorkspaceFilter[]) => void
+
+  // Bookkeeping for applyWorkspaceFilter (src/data/filter); it does not
+  // change the network itself
+  setAppliedWorkspaceFilter: (
+    networkId: IdType,
+    applied: AppliedWorkspaceFilter,
+  ) => void
+  deleteAppliedWorkspaceFilter: (networkId: IdType) => void
+  // Network delete cascade: the network and its subnetworks
+  deleteNetworkAppliedWorkspaceFilters: (networkId: IdType) => void
+  deleteAllAppliedWorkspaceFilters: () => void
 }
 
 type FilterStore = FilterState<any> & FilterAction
@@ -127,6 +142,7 @@ export const useFilterStore = create(
   immer<FilterStore>((set, get) => ({
     filterConfigs: {},
     workspaceFilters: {},
+    appliedWorkspaceFilters: {},
     search: {
       state: SearchState.READY,
       query: '',
@@ -479,6 +495,33 @@ export const useFilterStore = create(
         state.workspaceFilters[filter.id] = castDraft(filter)
       })
       persistWorkspaceFilter(filter.id)
+    },
+    setAppliedWorkspaceFilter: (
+      networkId: IdType,
+      applied: AppliedWorkspaceFilter,
+    ) => {
+      set((state) => {
+        state.appliedWorkspaceFilters[networkId] = applied
+      })
+    },
+    deleteAppliedWorkspaceFilter: (networkId: IdType) => {
+      set((state) => {
+        delete state.appliedWorkspaceFilters[networkId]
+      })
+    },
+    deleteNetworkAppliedWorkspaceFilters: (networkId: IdType) => {
+      set((state) => {
+        Object.keys(state.appliedWorkspaceFilters).forEach((id) => {
+          if (FilterStoreImpl.isFilterOwnedBy(id, networkId)) {
+            delete state.appliedWorkspaceFilters[id]
+          }
+        })
+      })
+    },
+    deleteAllAppliedWorkspaceFilters: () => {
+      set((state) => {
+        state.appliedWorkspaceFilters = {}
+      })
     },
     hydrateWorkspaceFilters: (filters: readonly WorkspaceFilter[]) => {
       // The filters come from the database, so they are not written back

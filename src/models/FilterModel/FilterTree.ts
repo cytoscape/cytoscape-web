@@ -212,3 +212,13 @@ export interface FilterResult {
   readonly nodeIds: IdType[]
   readonly edgeIds: IdType[]
 }
+
+/**
+ * The workspace filter last applied to a network, and how. A network has at
+ * most one: applying another replaces it. In show mode it owns the network's
+ * node and edge visibility bypasses.
+ */
+export interface AppliedWorkspaceFilter {
+  readonly filterId: IdType
+  readonly displayMode: DisplayMode
+}

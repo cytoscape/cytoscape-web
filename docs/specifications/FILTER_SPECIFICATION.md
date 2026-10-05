@@ -192,12 +192,35 @@ id (a rename does not change it), next to the subnetwork `filterConfigs`.
 
 ## Applying (FILTER tab)
 
-- **Select** replaces the network's selection.
-- **Show** writes the node and edge visibility bypasses of the network's
-  visual style: none for the elements to keep, hidden for the others. They
-  are saved with the style, like any bypass.
-- Switching from show to select removes the filter's visibility bypasses.
+`applyWorkspaceFilter(networkId, filterId)` in
+`src/data/filter/applyWorkspaceFilter.ts` applies a filter in its display
+mode. It uses no React and returns a result instead of throwing (counts and
+elapsed time, or `filter-not-found`, `network-not-found`,
+`style-not-found`), so a future filter App API can wrap it.
+
+- **Select** replaces the network's selection with the elements that pass.
+- **Show** rewrites the network's node and edge visibility bypasses: hidden
+  (`none`) for the elements that fail, no bypass for the others. Elements
+  hidden before, by any bypass, are shown again if they pass, as in Cytoscape
+  Desktop. The bypasses belong to the network's active visual style and are
+  saved with it, like any bypass. The selection is left alone.
+- A filter without conditions changes nothing.
 - Applying a filter creates no undo entry, as in Cytoscape Desktop.
+
+**One applied filter per network.** `FilterStore.appliedWorkspaceFilters`
+records the filter last applied to each network and its mode (in memory
+only). Applying a select filter where a show filter was applied first shows
+every element again (Cytoscape Desktop's "show all" when switching from show
+to select). `setWorkspaceFilterDisplayModeAndApply` changes a filter's mode
+and applies it at once, as Cytoscape Desktop's select/show radio buttons do.
+
+**The subnetwork's `filterWidgets` filter.** Applying a workspace filter (with
+conditions) to a subnetwork switches its `filterWidgets` filter off, in either
+mode, and removes that filter's visibility bypass. While a workspace filter in
+show mode is applied, the switched-off filter leaves the visibility alone.
+Switching it back on calls `releaseWorkspaceFilter`: the workspace filter's
+visibility bypasses are removed (show mode only) and its record dropped, then
+the `filterWidgets` filter applies its own. No workspace filter is changed.
 
 ## File format
 

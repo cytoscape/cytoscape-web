@@ -16,6 +16,7 @@ export {
   MatchType,
 } from './FilterTree'
 export type {
+  AppliedWorkspaceFilter,
   ColumnFilterCriterion,
   ColumnFilterNode,
   CompositeFilterNode,
