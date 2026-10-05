@@ -119,8 +119,11 @@ const withFakeGh = (
 /**
  * One answer from the fake `npm view <spec> ...`: the version the spec
  * resolves to, or the error code npm reports (E404 for "no such version").
+ * `stallMs` holds the answer back first — a registry call that hangs.
  */
-type NpmAnswer = { version: string } | { code: string }
+type NpmAnswer = ({ version: string } | { code: string }) & {
+  stallMs?: number
+}
 
 /**
  * A stand-in for the `npm` CLI that answers `npm view <spec>` from a script.
@@ -156,6 +159,7 @@ const withFakeNpm = (
       'counts[spec] = n + 1',
       'fs.writeFileSync(countsFile, JSON.stringify(counts))',
       'const answer = answers[Math.min(n, answers.length - 1)]',
+      'if (answer.stallMs) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, answer.stallMs)',
       'if ("code" in answer) {',
       '  process.stdout.write(JSON.stringify({ error: { code: answer.code, summary: `fake ${answer.code}` } }))',
       '  process.exit(1)',
@@ -244,6 +248,15 @@ describe('decide-registry-action', () => {
     },
     NETWORK_TIMEOUT,
   )
+
+  it('names missing arguments by their flags', () => {
+    // The internal keys are `pkg` and `distTag`; "--pkg is required" names a
+    // flag that does not exist.
+    expect(run(DECIDE, []).stderr).toContain('--package is required')
+    expect(
+      run(DECIDE, decideArgs().slice(0, -2)).stderr, // drops --dist-tag
+    ).toContain('--dist-tag is required')
+  })
 
   registryIt(
     'says publish when the version is absent',
@@ -424,11 +437,39 @@ describe('wait-for-registry', () => {
     '0.05',
   ]
 
-  it('requires every argument it depends on', () => {
+  it('requires every argument it depends on, named by its flag', () => {
     const result = run(WAIT, ['--package', PKG])
     expect(result.status).toBe(1)
-    expect(result.stderr).toContain('is required')
+    expect(result.stderr).toContain('--version is required')
+    expect(run(WAIT, []).stderr).toContain('--package is required')
+    expect(
+      run(WAIT, ['--package', PKG, '--version', VERSION]).stderr,
+    ).toContain('--dist-tag is required')
   })
+
+  it(
+    'holds its deadline when a registry call hangs',
+    () => {
+      // execFileSync has no timeout of its own. Without one, a stalled npm
+      // call outlives the deadline, and in CI the job's hard timeout kills the
+      // run before it can print the recovery instructions.
+      withFakeNpm(
+        {
+          [`${PKG}@${VERSION}`]: [{ code: 'E404', stallMs: 8000 }],
+          [`${PKG}@latest`]: [{ version: '1.0.0-beta.8', stallMs: 8000 }],
+        },
+        (env) => {
+          const started = Date.now()
+          const result = run(WAIT, waitArgs('1'), env)
+          expect(result.status).toBe(1)
+          expect(result.stderr).toContain('timed out')
+          expect(result.stderr).toContain('do NOT delete or move the tag')
+          expect(Date.now() - started).toBeLessThan(5000)
+        },
+      )
+    },
+    SUBPROCESS_TIMEOUT,
+  )
 
   it(
     'returns at once when the version is visible and the dist-tag names it',

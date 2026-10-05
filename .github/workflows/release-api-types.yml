@@ -381,7 +381,7 @@ jobs:
             --dist-tag "${DIST_TAG}" \
             --timeout 600 \
             --interval 15 \
-            --rerun-command "gh workflow run release-api-types.yml --ref ${GITHUB_REF_NAME} -f dry_run=false"
+            --rerun-command "gh workflow run release-api-types.yml --ref ${GITHUB_REF_NAME} -f dry_run=false -f dist_tag=${DIST_TAG}"
 
           # Re-uses the decision script: at this point the published artifact
           # must match this run's tarball, provenance and commit exactly — which

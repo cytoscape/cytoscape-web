@@ -551,8 +551,13 @@ If the publish succeeded but a later step failed, **do not delete or move the
 tag**. Re-run the workflow against the existing tag:
 
 ```bash
-gh workflow run release-api-types.yml --ref "api-types-v$VERSION" -f dry_run=false
+gh workflow run release-api-types.yml --ref "api-types-v$VERSION" \
+  -f dry_run=false -f dist_tag=latest
 ```
+
+Pass the dist-tag the release was published under — `latest` for the current
+beta stream. A dispatch that omits it gets `latest`, so a release published to
+`next` would be verified against the wrong tag.
 
 It compares the registry against the tarball it just built, including the
 provenance commit, and resumes at verification instead of refusing.

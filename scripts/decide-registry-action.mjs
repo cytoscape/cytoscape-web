@@ -54,16 +54,18 @@ const parseArgs = (argv) => {
     else if (arg === '--expect-published') options.expectPublished = true
     else fail(`unknown argument ${arg}`)
   }
-  for (const key of [
-    'pkg',
-    'version',
-    'integrity',
-    'repository',
-    'workflow',
-    'sha',
-    'distTag',
-  ]) {
-    if (!options[key]) fail(`--${key} is required`)
+  // Keyed by option, valued by flag: `pkg` and `distTag` are not the flags'
+  // spellings, and the message has to name something the caller can type.
+  for (const [key, flag] of Object.entries({
+    pkg: '--package',
+    version: '--version',
+    integrity: '--integrity',
+    repository: '--repository',
+    workflow: '--workflow',
+    sha: '--sha',
+    distTag: '--dist-tag',
+  })) {
+    if (!options[key]) fail(`${flag} is required`)
   }
   return options
 }

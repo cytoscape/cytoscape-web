@@ -22,6 +22,16 @@ import { execFileSync } from 'node:child_process'
 // Overridable so releaseGuards.test.ts can script the registry's answers.
 const NPM = process.env.CYWEB_NPM_CLI ?? 'npm'
 
+// Every npm call gets a budget: the time left before the deadline, at least a
+// second (so the last poll can still answer) and at most a minute. Without
+// one, execFileSync waits as long as npm does — its own fetch timeout is five
+// minutes with retries — so a stalled registry call outlived the deadline and
+// the job's hard timeout killed the run before it could print what to do.
+const MIN_CALL_MS = 1_000
+const MAX_CALL_MS = 60_000
+
+const FLAGS = { pkg: '--package', version: '--version', distTag: '--dist-tag' }
+
 const fail = (message) => {
   console.error(`wait-for-registry: ${message}`)
   process.exit(1)
@@ -39,8 +49,8 @@ const parseArgs = (argv) => {
     else if (arg === '--rerun-command') options.rerunCommand = argv[(i += 1)]
     else fail(`unknown argument ${arg}`)
   }
-  for (const key of ['pkg', 'version', 'distTag']) {
-    if (!options[key]) fail(`--${key} is required`)
+  for (const [key, flag] of Object.entries(FLAGS)) {
+    if (!options[key]) fail(`${flag} is required`)
   }
   for (const key of ['timeout', 'interval']) {
     if (!(options[key] > 0))
@@ -51,19 +61,24 @@ const parseArgs = (argv) => {
 
 /**
  * What `npm view <spec> version --json` answers for an exact version or a
- * dist-tag: `{ version }`, or `{ error }` naming the npm error code.
+ * dist-tag within `budgetMs`: `{ version }`, or `{ error }` naming the npm
+ * error code, or the timeout.
  */
-const view = (spec) => {
+const view = (spec, budgetMs) => {
   try {
     const stdout = execFileSync(NPM, ['view', spec, 'version', '--json'], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
+      timeout: budgetMs,
     })
     const parsed = JSON.parse(stdout)
     return typeof parsed === 'string'
       ? { version: parsed }
       : { error: `unexpected answer ${stdout.trim()}` }
   } catch (error) {
+    if (error.code === 'ETIMEDOUT') {
+      return { error: `timed out after ${Math.round(budgetMs / 1000)}s` }
+    }
     let parsed
     try {
       parsed = JSON.parse(error.stdout ?? '')
@@ -86,11 +101,13 @@ const main = async () => {
   const started = Date.now()
   const deadline = started + options.timeout * 1000
   const seconds = () => Math.round((Date.now() - started) / 1000)
+  const budget = () =>
+    Math.min(MAX_CALL_MS, Math.max(MIN_CALL_MS, deadline - Date.now()))
 
   let last = ''
   for (let attempt = 1; ; attempt += 1) {
-    const published = view(`${pkg}@${version}`)
-    const tagged = view(`${pkg}@${distTag}`)
+    const published = view(`${pkg}@${version}`, budget())
+    const tagged = view(`${pkg}@${distTag}`, budget())
 
     if (published.version === version && tagged.version === version) {
       console.log(
