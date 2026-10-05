@@ -69,15 +69,25 @@ like `import { useElementApi } from 'cyweb/ElementApi'` resolve correctly in Typ
 > [dev1.ndexbio.org/cytoscape](https://dev1.ndexbio.org/cytoscape) once
 > `development` has been deployed there (done by hand, so it can lag);
 > production stays on the 1.0.x line until Cytoscape Web 1.1.0. **Help → About**
-> shows a deployment's build commit as a seven-character prefix; a deployment at
-> or after `git rev-parse --short=7 'api-types-v1.0.0-beta.5^{commit}'` has this
-> API.
+> shows a deployment's build commit as a seven-character prefix. A hash says
+> nothing about order, so check ancestry in a clone of
+> [cytoscape-web](https://github.com/cytoscape/cytoscape-web): the deployment
+> has this API when the release tag is an ancestor of its commit.
+>
+> ```bash
+> git fetch --tags origin development
+> git merge-base --is-ancestor api-types-v1.0.0-beta.5 <prefix> && echo yes
+> ```
 
-`1.0.0-beta.5` has one breaking change; the rest is additive.
+`1.0.0-beta.5` removes one field, and two of its additions can also stop
+existing code from compiling:
 
 - **`CyApp.components` is removed**, with the `ComponentMetadata` type and the
   `ComponentType` const. The host renders nothing from the field. Move each
-  entry to `resources` (or register it in `mount()`):
+  entry to `resources` (or register it in `mount()`). Both are declared on
+  `CyAppWithLifecycle`, the app type to annotate with — this package does not
+  export `CyApp`, so an app that typed itself with a local `CyApp` declaration
+  switches to it:
   - `{ id, type: ComponentType.Panel, component }` →
     `{ slot: 'right-panel', id, title, component }`
   - `{ id, type: ComponentType.Menu, component }` →
@@ -93,17 +103,20 @@ like `import { useElementApi } from 'cyweb/ElementApi'` resolve correctly in Typ
   throws. A panel that was loaded by name from the app's own Module Federation
   `exposes` needs no `exposes` entry any more.
 
-- **Two additions can still stop code from compiling.** `CyWebApiType` and
-  `AppContextApis` gain a required `panel` member, so a test double typed as
-  either needs one; and `ResourceSlot` gains `'layout-algorithm'`, so an
-  exhaustive `switch` over it needs a new case.
+- **Source-breaking additions.** `CyWebApiType` and `AppContextApis` gain a
+  `panel` member that the types declare as required, so a test double or any
+  other object typed as either needs one. `ResourceSlot` gains
+  `'layout-algorithm'`, so an exhaustive `switch` over it needs a new case.
 
-New in beta.5 — see the bundled [CHANGELOG](./CHANGELOG.md) for details:
+Also in beta.5 — see the bundled [CHANGELOG](./CHANGELOG.md) for details:
 
 - **`apis.panel.open(panel, tabId?)`** brings a `'left'`, `'right'` or
   `'bottom'` pane into view and selects a tab in it — also `usePanelApi()` from
-  `cyweb/PanelApi` and `window.CyWebApi.panel`. On an older host `apis.panel`
-  is `undefined`, so call it as `apis.panel?.open(...)`.
+  `cyweb/PanelApi` and `window.CyWebApi.panel`. The types declare `panel` as
+  required, but on a host older than this release it is `undefined` at
+  runtime. An app that must also run on such a host calls
+  `apis.panel?.open(...)`, which TypeScript accepts and which does nothing
+  there.
 - **The `'layout-algorithm'` slot.** `resource.registerLayout(options)` adds a
   layout algorithm that the host runs through its own layout engine and lists
   in the Layout menu, with parameters declared in the same `AppParameter` spec
@@ -111,6 +124,9 @@ New in beta.5 — see the bundled [CHANGELOG](./CHANGELOG.md) for details:
 - **The `network:loaded` event.** Networks in a reloaded workspace are loaded
   lazily, so a read made on `network:switched` can fail with `APP1`; re-read on
   `network:loaded`.
+- **`deleteNetwork` fixes.** It now deletes a workspace network that has never
+  been opened instead of failing with `APP1`, and deleting the network the
+  address bar names moves the URL off it.
 
 ## `1.0.0-beta.4` migration notes
 
@@ -394,7 +410,10 @@ step 4 before you tag anything.
    heading must read `## <version> (YYYY-MM-DD)`, not `(unpublished)`, or the
    release workflow refuses to publish. State which host build implements the
    release and where it is deployed; `apiVersion` does not yet carry that.
-   These changes belong in the same pull request as the API change.
+   Point the **App API Reference** link under [Documentation](#documentation)
+   at the new release tag — the README ships in the tarball and cannot be
+   changed afterwards. These changes belong in the same pull request as the API
+   change.
 
    A unit test (`src/app-api/federation/apiTypesRelease.test.ts`) already checks
    that the version, the lockfile and the changelog agree, so a forgotten
@@ -538,7 +557,7 @@ provenance commit, and resumes at verification instead of refusing.
 
 ## Documentation
 
-- [App API Reference](https://github.com/cytoscape/cytoscape-web/blob/development/src/app-api/api_docs/Api.md) — Every API, resource slot and event, kept current with this package
+- [App API Reference for `1.0.0-beta.5`](https://github.com/cytoscape/cytoscape-web/blob/api-types-v1.0.0-beta.5/src/app-api/api_docs/Api.md) — Every API, resource slot and event in this release, pinned to its tag ([`development`](https://github.com/cytoscape/cytoscape-web/blob/development/src/app-api/api_docs/Api.md) may document newer APIs)
 - [App API Specification](https://github.com/cytoscape/cytoscape-web/blob/development/docs/design/module-federation/specifications/app-api-specification.md) — Design specification; it predates beta.4, so use the reference above for the current surface
 - [Event Bus Specification](https://github.com/cytoscape/cytoscape-web/blob/development/docs/design/module-federation/specifications/event-bus-specification.md) — Event bus design and subscription patterns; the reference above lists the current events
 - [ADR 0001 — ApiResult design](https://github.com/cytoscape/cytoscape-web/blob/development/docs/design/module-federation/adr/0001-api-result-discriminated-union.md) (error code/severity shape superseded by ADR 0005)
