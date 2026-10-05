@@ -1,0 +1,22 @@
+[ {
+  "name" : "__proto__",
+  "__proto__" : { "polluted" : true },
+  "transformers" : [ {
+    "id" : "org.cytoscape.CompositeFilter",
+    "parameters" : {
+      "type" : "ALL",
+      "__proto__" : { "polluted" : true },
+      "constructor" : { "prototype" : { "polluted" : true } }
+    },
+    "transformers" : [ {
+      "id" : "org.cytoscape.ColumnFilter",
+      "parameters" : {
+        "predicate" : "IS",
+        "criterion" : "x",
+        "type" : "nodes",
+        "columnName" : "__proto__",
+        "__proto__" : { "polluted" : true }
+      }
+    } ]
+  } ]
+} ]

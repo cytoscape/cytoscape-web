@@ -1,0 +1,82 @@
+[ {
+  "name" : "Hubs with high score",
+  "transformers" : [ {
+    "id" : "org.cytoscape.CompositeFilter",
+    "parameters" : {
+      "type" : "ALL"
+    },
+    "transformers" : [ {
+      "id" : "org.cytoscape.ColumnFilter",
+      "parameters" : {
+        "predicate" : "BETWEEN",
+        "criterion" : [ 0.5, 2.75 ],
+        "caseSensitive" : false,
+        "type" : "nodes",
+        "anyMatch" : true,
+        "columnName" : "score"
+      }
+    }, {
+      "id" : "org.cytoscape.ColumnFilter",
+      "parameters" : {
+        "predicate" : "CONTAINS",
+        "criterion" : "kinase",
+        "caseSensitive" : false,
+        "type" : "nodes",
+        "anyMatch" : true,
+        "columnName" : "name"
+      }
+    }, {
+      "id" : "org.cytoscape.DegreeFilter",
+      "parameters" : {
+        "predicate" : "BETWEEN",
+        "criterion" : [ 3, 12 ],
+        "edgeType" : "ANY"
+      }
+    }, {
+      "id" : "org.cytoscape.TopologyFilter",
+      "parameters" : {
+        "predicate" : "GREATER_THAN_OR_EQUAL",
+        "distance" : 2,
+        "threshold" : 3,
+        "type" : "ALL"
+      },
+      "transformers" : [ {
+        "id" : "org.cytoscape.ColumnFilter",
+        "parameters" : {
+          "predicate" : "IS",
+          "criterion" : true,
+          "caseSensitive" : false,
+          "type" : "nodes",
+          "anyMatch" : true,
+          "columnName" : "isTF"
+        }
+      } ]
+    }, {
+      "id" : "org.cytoscape.CompositeFilter",
+      "parameters" : {
+        "type" : "ANY"
+      },
+      "transformers" : [ {
+        "id" : "org.cytoscape.ColumnFilter",
+        "parameters" : {
+          "predicate" : "IS_NOT_BETWEEN",
+          "criterion" : [ 1, 5 ],
+          "caseSensitive" : false,
+          "type" : "edges",
+          "anyMatch" : false,
+          "columnName" : "weights"
+        }
+      }, {
+        "id" : "org.cytoscape.ColumnFilter",
+        "parameters" : {
+          "predicate" : "REGEX",
+          "criterion" : "pp.*",
+          "caseSensitive" : false,
+          "type" : "edges",
+          "anyMatch" : true,
+          "columnName" : "interaction"
+        }
+      } ]
+    } ]
+  } ]
+} ]

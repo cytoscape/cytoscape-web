@@ -228,6 +228,7 @@ Read these before working in related areas:
 - `docs/specifications/MULTIPLE_VISUAL_STYLES.md` — Named visual style sets per network, `cyWebVisualStyles` CX2 aspect, workspace styles (style library)
 - `docs/specifications/EXTERNAL_INPUT_VALIDATION_POLICY.md` — CX2 validation requirements for external data
 - `docs/specifications/HIERARCHY_FILTER_WIDGETS_ASPECT.md` — Hierarchy Viewer `filterWidgets` aspect format and validation
+- `docs/specifications/FILTER_SPECIFICATION.md` — FILTER tab: filter tree, evaluation rules, Cytoscape Desktop filter file format
 - `docs/specifications/DIALOG_DISMISS_POLICY.md` — button-only dialog dismissal, the `CyDialog` wrapper, modal form popovers
 - `docs/specifications/DEBUG_GUIDE.MD` — Structured logging policy and debug namespace usage
 - `docs/specifications/FEATURE_MODULE_CREATION_PATTERN.md` — How to create new feature modules

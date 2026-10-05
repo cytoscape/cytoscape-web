@@ -1,0 +1,20 @@
+[ {
+  "name" : "Starts with",
+  "transformers" : [ {
+    "id" : "org.cytoscape.CompositeFilter",
+    "parameters" : {
+      "type" : "ALL"
+    },
+    "transformers" : [ {
+      "id" : "org.cytoscape.ColumnFilter",
+      "parameters" : {
+        "predicate" : "STARTS_WITH",
+        "criterion" : "a",
+        "caseSensitive" : false,
+        "type" : "nodes",
+        "anyMatch" : true,
+        "columnName" : "name"
+      }
+    } ]
+  } ]
+} ]

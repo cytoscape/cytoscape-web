@@ -1,0 +1,36 @@
+[ {
+  "name" : "Fresh conditions",
+  "transformers" : [ {
+    "id" : "org.cytoscape.CompositeFilter",
+    "parameters" : {
+      "type" : "ALL"
+    },
+    "transformers" : [ {
+      "id" : "org.cytoscape.ColumnFilter",
+      "parameters" : {
+        "predicate" : null,
+        "criterion" : null,
+        "caseSensitive" : false,
+        "type" : "nodes",
+        "anyMatch" : true,
+        "columnName" : null
+      }
+    }, {
+      "id" : "org.cytoscape.DegreeFilter",
+      "parameters" : {
+        "predicate" : "BETWEEN",
+        "criterion" : null,
+        "edgeType" : "ANY"
+      }
+    }, {
+      "id" : "org.cytoscape.TopologyFilter",
+      "parameters" : {
+        "predicate" : "GREATER_THAN_OR_EQUAL",
+        "distance" : null,
+        "threshold" : null,
+        "type" : "ALL"
+      },
+      "transformers" : [ ]
+    } ]
+  } ]
+} ]
