@@ -24,6 +24,7 @@ import { describe, expect, it } from 'vitest'
 
 const DECIDE = resolve(__dirname, '../../../scripts/decide-registry-action.mjs')
 const CHECKS = resolve(__dirname, '../../../scripts/check-required-checks.mjs')
+const WAIT = resolve(__dirname, '../../../scripts/wait-for-registry.mjs')
 
 interface RunResult {
   status: number
@@ -114,6 +115,66 @@ const withFakeGh = (
     rmSync(dir, { recursive: true, force: true })
   }
 }
+
+/**
+ * One answer from the fake `npm view <spec> ...`: the version the spec
+ * resolves to, or the error code npm reports (E404 for "no such version").
+ */
+type NpmAnswer = { version: string } | { code: string }
+
+/**
+ * A stand-in for the `npm` CLI that answers `npm view <spec>` from a script.
+ *
+ * Each spec (`pkg@1.2.3`, `pkg@latest`) has a sequence of answers; every call
+ * consumes the next one and the last repeats. That is what lets a test say
+ * "a 404 twice, then the version" — the shape of a publish npm is still
+ * processing. The call counts live in a file because every call is a separate
+ * process.
+ *
+ * The answers mirror real npm 11 output under `--json`: a JSON string on
+ * stdout and exit 0, or `{ "error": { "code": ... } }` on stdout and exit 1.
+ */
+const withFakeNpm = (
+  plan: Record<string, NpmAnswer[]>,
+  body: (env: NodeJS.ProcessEnv) => void,
+): void => {
+  const dir = mkdtempSync(join(tmpdir(), 'fake-npm-'))
+  const bin = join(dir, 'npm')
+  const counts = join(dir, 'counts.json')
+
+  writeFileSync(
+    bin,
+    [
+      '#!/usr/bin/env node',
+      'const fs = require("node:fs")',
+      `const plan = ${JSON.stringify(plan)}`,
+      `const countsFile = ${JSON.stringify(counts)}`,
+      'const counts = fs.existsSync(countsFile) ? JSON.parse(fs.readFileSync(countsFile, "utf8")) : {}',
+      'const spec = process.argv[3]',
+      'const answers = plan[spec] ?? [{ code: "E404" }]',
+      'const n = counts[spec] ?? 0',
+      'counts[spec] = n + 1',
+      'fs.writeFileSync(countsFile, JSON.stringify(counts))',
+      'const answer = answers[Math.min(n, answers.length - 1)]',
+      'if ("code" in answer) {',
+      '  process.stdout.write(JSON.stringify({ error: { code: answer.code, summary: `fake ${answer.code}` } }))',
+      '  process.exit(1)',
+      '}',
+      'process.stdout.write(JSON.stringify(answer.version))',
+      '',
+    ].join('\n'),
+  )
+  chmodSync(bin, 0o755)
+  try {
+    body({ CYWEB_NPM_CLI: bin })
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+}
+
+// Each case spawns the script, which spawns the fake npm twice per poll —
+// a few hundred milliseconds, too close to the suite's 1-second default.
+const SUBPROCESS_TIMEOUT = 10_000
 
 const REQUIRED = ['Lint', 'Build', 'Unit Tests', 'API Types Package']
 const green = (name: string): Job => ({
@@ -310,6 +371,177 @@ describe('decide-registry-action', () => {
       expect(result.stderr).toContain('commit:')
     },
     NETWORK_TIMEOUT,
+  )
+
+  // Offline: the fake npm answers E404 for both the dist-tag and the version.
+  it(
+    'says publish when the version is absent (offline)',
+    () => {
+      withFakeNpm({}, (env) => {
+        const result = run(DECIDE, decideArgs(), env)
+        expect(result.status).toBe(0)
+        expect(result.stdout).toContain('action=publish')
+      })
+    },
+    SUBPROCESS_TIMEOUT,
+  )
+
+  it(
+    'fails under --expect-published when the version is absent',
+    () => {
+      // The post-publish read-back. Without this flag an absent version exits
+      // 0 with action=publish, and the beta.5 read-back went on to fail on the
+      // dist-tag instead, with a message that pointed nowhere near the cause.
+      withFakeNpm({}, (env) => {
+        const result = run(DECIDE, [...decideArgs(), '--expect-published'], env)
+        expect(result.status).toBe(1)
+        expect(result.stdout).not.toContain('action=')
+        expect(result.stderr).toContain('is not on the registry')
+        expect(result.stderr).toContain('expected it to be published')
+      })
+    },
+    SUBPROCESS_TIMEOUT,
+  )
+})
+
+describe('wait-for-registry', () => {
+  const PKG = '@cytoscape-web/api-types'
+  const VERSION = '1.0.0-beta.9'
+  const at = (v: string): NpmAnswer => ({ version: v })
+  const E404: NpmAnswer = { code: 'E404' }
+
+  // Short polls keep each case well under a second of waiting.
+  const waitArgs = (timeout = '0.6'): string[] => [
+    '--package',
+    PKG,
+    '--version',
+    VERSION,
+    '--dist-tag',
+    'latest',
+    '--timeout',
+    timeout,
+    '--interval',
+    '0.05',
+  ]
+
+  it('requires every argument it depends on', () => {
+    const result = run(WAIT, ['--package', PKG])
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('is required')
+  })
+
+  it(
+    'returns at once when the version is visible and the dist-tag names it',
+    () => {
+      withFakeNpm(
+        {
+          [`${PKG}@${VERSION}`]: [at(VERSION)],
+          [`${PKG}@latest`]: [at(VERSION)],
+        },
+        (env) => {
+          const result = run(WAIT, waitArgs(), env)
+          expect(result.status).toBe(0)
+          expect(result.stdout).toContain('attempt 1')
+          expect(result.stdout).not.toContain('not visible yet')
+        },
+      )
+    },
+    SUBPROCESS_TIMEOUT,
+  )
+
+  it(
+    'keeps waiting while the version is still a 404',
+    () => {
+      // What beta.5 looked like: npm accepted the publish, then answered E404
+      // for the version for over three minutes while it processed it.
+      withFakeNpm(
+        {
+          [`${PKG}@${VERSION}`]: [E404, E404, at(VERSION)],
+          [`${PKG}@latest`]: [
+            at('1.0.0-beta.8'),
+            at('1.0.0-beta.8'),
+            at(VERSION),
+          ],
+        },
+        (env) => {
+          const result = run(WAIT, waitArgs('5'), env)
+          expect(result.status).toBe(0)
+          expect(result.stdout).toContain('not visible yet')
+          expect(result.stdout).toContain('E404')
+          expect(result.stdout).toContain('attempt 3')
+        },
+      )
+    },
+    SUBPROCESS_TIMEOUT,
+  )
+
+  it(
+    'keeps waiting while the dist-tag still names the previous release',
+    () => {
+      // The version and the dist-tag are separate reads, and either can lag.
+      withFakeNpm(
+        {
+          [`${PKG}@${VERSION}`]: [at(VERSION)],
+          [`${PKG}@latest`]: [at('1.0.0-beta.8'), at(VERSION)],
+        },
+        (env) => {
+          const result = run(WAIT, waitArgs('5'), env)
+          expect(result.status).toBe(0)
+          expect(result.stdout).toContain('latest → 1.0.0-beta.8')
+          expect(result.stdout).toContain('attempt 2')
+        },
+      )
+    },
+    SUBPROCESS_TIMEOUT,
+  )
+
+  it(
+    'retries a registry error instead of treating it as a verdict',
+    () => {
+      withFakeNpm(
+        {
+          [`${PKG}@${VERSION}`]: [{ code: 'E503' }, at(VERSION)],
+          [`${PKG}@latest`]: [at(VERSION)],
+        },
+        (env) => {
+          const result = run(WAIT, waitArgs('5'), env)
+          expect(result.status).toBe(0)
+          expect(result.stdout).toContain('E503')
+        },
+      )
+    },
+    SUBPROCESS_TIMEOUT,
+  )
+
+  it(
+    'times out with a message that says not to undo the publish',
+    () => {
+      withFakeNpm(
+        {
+          [`${PKG}@${VERSION}`]: [E404],
+          [`${PKG}@latest`]: [at('1.0.0-beta.8')],
+        },
+        (env) => {
+          const result = run(
+            WAIT,
+            [
+              ...waitArgs('0.3'),
+              '--rerun-command',
+              'gh workflow run release-api-types.yml --ref api-types-v1.0.0-beta.9 -f dry_run=false',
+            ],
+            env,
+          )
+          expect(result.status).toBe(1)
+          expect(result.stderr).toContain('not visible')
+          expect(result.stderr).toContain('asynchronously')
+          expect(result.stderr).toContain('do NOT delete or move the tag')
+          expect(result.stderr).toContain(
+            'gh workflow run release-api-types.yml --ref api-types-v1.0.0-beta.9 -f dry_run=false',
+          )
+        },
+      )
+    },
+    SUBPROCESS_TIMEOUT,
   )
 })
 

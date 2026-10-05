@@ -17,6 +17,12 @@
 // "already done" and the run would resume onto someone else's bytes.
 //
 // Outputs `action` (publish | skip) to GITHUB_OUTPUT. "Stop" is a non-zero exit.
+//
+// --expect-published is the post-publish read-back: there the only acceptable
+// answer is `skip`, so an absent version stops instead of saying `publish`.
+// Without it, the beta.5 read-back exited 0 on a version npm had not finished
+// processing and failed two lines later on the dist-tag, which named the wrong
+// cause.
 
 import { execFileSync } from 'node:child_process'
 import { appendFileSync } from 'node:fs'
@@ -24,13 +30,17 @@ import semver from 'semver'
 
 const SLSA_PREDICATE = 'https://slsa.dev/provenance/v1'
 
+// Overridable so releaseGuards.test.ts can run the absent-version paths
+// offline against a fake npm, as it does for gh in check-required-checks.mjs.
+const NPM = process.env.CYWEB_NPM_CLI ?? 'npm'
+
 const fail = (message) => {
   console.error(`decide-registry-action: ${message}`)
   process.exit(1)
 }
 
 const parseArgs = (argv) => {
-  const options = { dryRun: false }
+  const options = { dryRun: false, expectPublished: false }
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i]
     if (arg === '--package') options.pkg = argv[(i += 1)]
@@ -41,6 +51,7 @@ const parseArgs = (argv) => {
     else if (arg === '--sha') options.sha = argv[(i += 1)]
     else if (arg === '--dist-tag') options.distTag = argv[(i += 1)]
     else if (arg === '--dry-run') options.dryRun = true
+    else if (arg === '--expect-published') options.expectPublished = true
     else fail(`unknown argument ${arg}`)
   }
   for (const key of [
@@ -68,7 +79,7 @@ const parseArgs = (argv) => {
 const readVersion = (pkg, version) => {
   let stdout = ''
   try {
-    stdout = execFileSync('npm', ['view', `${pkg}@${version}`, '--json'], {
+    stdout = execFileSync(NPM, ['view', `${pkg}@${version}`, '--json'], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     })
@@ -136,7 +147,7 @@ const checkDistTag = (pkg, distTag, version) => {
     // `version --json` and not a bare `--json`: without the field, npm returns
     // the whole manifest and the parsed result is an object, which silently
     // skipped this guard when it was first written.
-    current = execFileSync('npm', ['view', `${pkg}@${distTag}`, 'version', '--json'], {
+    current = execFileSync(NPM, ['view', `${pkg}@${distTag}`, 'version', '--json'], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     })
@@ -195,6 +206,13 @@ const main = async () => {
 
   const found = readVersion(options.pkg, options.version)
   if (found.state === 'absent') {
+    if (options.expectPublished) {
+      fail(
+        `${options.pkg}@${options.version} is not on the registry, but this run expected it to be published\n` +
+          '  npm processes a publish asynchronously; wait-for-registry.mjs should have waited for it.\n' +
+          '  If the publish step succeeded, do not delete or move the tag — re-run against it once npm view shows the version.',
+      )
+    }
     console.log(
       `${options.pkg}@${options.version} is not on the registry — publish`,
     )

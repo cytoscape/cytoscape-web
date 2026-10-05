@@ -435,7 +435,14 @@ too. So the flow that really builds once is:
    `--tag` is required rather than optional: npm refuses to publish a
    prerelease version without one
 6. Assert the registry's `dist.integrity` equals the local `.tgz`'s integrity,
-   and that its provenance names this repository, workflow and commit
+   and that its provenance names this repository, workflow and commit — after
+   waiting for the version to appear. npm processes a publish asynchronously:
+   `npm publish` returns while `npm view` still answers E404, and
+   `1.0.0-beta.5` took 3m14s to become visible. The original 60-second poll
+   failed that release's run after a successful publish, so
+   `scripts/wait-for-registry.mjs` now waits up to ten minutes, and the
+   read-back runs `decide-registry-action.mjs --expect-published`, where any
+   answer but `skip` stops the run
 
 Step 6 is an equality assertion, not a log line. Recording a shasum that nobody
 compares proves nothing — and provenance belongs here, in the automated check,
