@@ -222,6 +222,33 @@ Switching it back on calls `releaseWorkspaceFilter`: the workspace filter's
 visibility bypasses are removed (show mode only) and its record dropped, then
 the `filterWidgets` filter applies its own. No workspace filter is changed.
 
+## FILTER tab
+
+The tab (`src/features/Filter/`, see `Filter_docs/Filter.md`) follows
+Cytoscape Desktop's Filter tab:
+
+- A filter picker (sorted by name) and an options menu: New filter, Rename,
+  Copy, Remove (with confirmation; not the last filter), Export filters,
+  Import filters. A new filter is suggested "My filter"; a rename to a taken
+  name is refused. There is always a filter ("Default filter").
+- The conditions of the filter, with "Match all (AND)" / "Match any (OR)" once
+  there are two, and a "+" menu: Column filter, Degree filter, Topology
+  filter, Group. Nested groups always show how they combine.
+- A column condition lists the node columns, then the edge columns ("Node:
+  name", "Edge: weight"); its comparison follows the column type: text
+  predicates and a text field, a numeric predicate with a range (slider plus
+  fields) or a single value, or `is true / false`. List columns add "any
+  element / every element". Picking a column sets Cytoscape Desktop's
+  defaults (`columnFilterFor`).
+- "Apply when filter changes" (default on below 100,000 nodes and edges),
+  select / show, Apply, and a status line ("Selected 2 nodes and 0 edges in
+  3 ms", or "Showing ..." in show mode).
+- Export writes every workspace filter to `cytoscape-filters.json`. Import
+  adds the filters of a file under free names and reports what it skipped.
+
+The tab is `'filter'` in the App API's left pane (`panel.open('left',
+'filter')`); LLM QUERY moved to position 3.
+
 ## File format
 
 A filter file is what Cytoscape Desktop writes with Filter › Options ›

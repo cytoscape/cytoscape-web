@@ -91,6 +91,20 @@ const CASES: DialogCase[] = [
     },
   },
   {
+    name: 'New filter (FILTER tab)',
+    testId: 'filter-name-dialog',
+    open: async (page) => {
+      await page
+        .locator('[data-testid="network-browser-panel-filter-tab"]')
+        .click()
+      await page.locator('[data-testid="filter-options-button"]').click()
+      await page.locator('[data-testid="filter-new-menu-item"]').click()
+    },
+    close: async (page) => {
+      await page.locator('[data-testid="filter-name-cancel-button"]').click()
+    },
+  },
+  {
     name: 'NDEx Network Browser',
     testId: 'load-from-ndex-dialog',
     open: openNdexBrowser,

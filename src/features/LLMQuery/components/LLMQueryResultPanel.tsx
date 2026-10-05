@@ -13,6 +13,7 @@ import { MessageSeverity } from '../../../models/MessageModel'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
 import { isLLMConfigured, selectApiKey } from '../model/LLMProvider'
 import { useLLMQueryStore } from '../store'
+import { LLM_QUERY_TAB_INDEX } from '@/models/UiModel/impl/panelTabs'
 
 export const LLMQueryResultPanel = (props: {
   height?: number
@@ -47,7 +48,7 @@ export const LLMQueryResultPanel = (props: {
   const runLLMQuery = async (): Promise<void> => {
     setLoading(true)
     setPanelState('left', 'open')
-    setActiveNetworkBrowserPanelIndex(2)
+    setActiveNetworkBrowserPanelIndex(LLM_QUERY_TAB_INDEX)
 
     if (localQueryValue === '') {
       addMessage({

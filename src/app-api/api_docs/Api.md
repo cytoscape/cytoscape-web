@@ -1465,7 +1465,7 @@ interface OpenPanelResult {
 
 | Pane       | Holds                                 | Tab ids                                                                                                                                         |
 | ---------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `'left'`   | Workspace / Style (network browser)   | `'workspace'`, `'style'`, `'llm-query'` (only while the current network is a hierarchy)                                                         |
+| `'left'`   | Workspace / Style / Filter (network browser) | `'workspace'`, `'style'`, `'filter'`, `'llm-query'` (only while the current network is a hierarchy)                                      |
 | `'right'`  | Side panel — `'right-panel'` app tabs | `'sub-network-viewer'`, plus the `id` each app tab was registered with (`registerPanel` or a resource declaration) |
 | `'bottom'` | Table browser                         | `'nodes'`, `'edges'`, `'network'`                                                                                                               |
 

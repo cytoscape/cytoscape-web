@@ -191,6 +191,13 @@ describe('panelApi.open', () => {
       expect(panelApi.open('left', 'llm-query').success).toBe(true)
       expect(
         useUiStateStore.getState().ui.networkBrowserPanelUi.activeTabIndex,
+      ).toBe(3)
+    })
+
+    it('opens the FILTER tab', () => {
+      expect(panelApi.open('left', 'filter').success).toBe(true)
+      expect(
+        useUiStateStore.getState().ui.networkBrowserPanelUi.activeTabIndex,
       ).toBe(2)
     })
 

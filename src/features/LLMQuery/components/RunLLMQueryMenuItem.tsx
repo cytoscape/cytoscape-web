@@ -24,6 +24,7 @@ import { analyzeSubsystemGeneSet } from '../api/chatgpt'
 import { isLLMConfigured, selectApiKey } from '../model/LLMProvider'
 import { useLLMQueryStore } from '../store'
 import { HcxDisabledTooltip } from './HcxDisabledTooltip'
+import { LLM_QUERY_TAB_INDEX } from '@/models/UiModel/impl/panelTabs'
 
 export const RunLLMQueryMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const activeNetworkId: IdType = useUiStateStore(
@@ -126,7 +127,7 @@ export const RunLLMQueryMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const runLLMQuery = async (): Promise<void> => {
     setLoading(true)
     setPanelState('left', 'open')
-    setActiveNetworkBrowserPanelIndex(2)
+    setActiveNetworkBrowserPanelIndex(LLM_QUERY_TAB_INDEX)
 
     let geneNames: string[] = []
     try {

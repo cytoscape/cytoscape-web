@@ -10,6 +10,7 @@ import { Panel } from './Panel'
 export const LeftPanelTabId = {
   WORKSPACE: 'workspace',
   STYLE: 'style',
+  FILTER: 'filter',
   /** Only present while the current network is a hierarchy (HCX). */
   LLM_QUERY: 'llm-query',
 } as const

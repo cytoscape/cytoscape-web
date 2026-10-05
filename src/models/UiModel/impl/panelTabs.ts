@@ -26,6 +26,9 @@ export interface RightPanelAppTab {
   readonly resource: RegisteredAppResource
 }
 
+/** Position of the LLM QUERY tab in the left pane, when it is present */
+export const LLM_QUERY_TAB_INDEX = 3
+
 /**
  * The left pane's tabs, in strip order. `hasLlmQueryTab` is the caller's
  * call (the tab exists only for a hierarchy network) — models do not know
@@ -35,9 +38,14 @@ export const listLeftPanelTabs = (hasLlmQueryTab: boolean): PanelTab[] => {
   const tabs: PanelTab[] = [
     { panel: Panel.LEFT, tabId: LeftPanelTabId.WORKSPACE, index: 0 },
     { panel: Panel.LEFT, tabId: LeftPanelTabId.STYLE, index: 1 },
+    { panel: Panel.LEFT, tabId: LeftPanelTabId.FILTER, index: 2 },
   ]
   if (hasLlmQueryTab) {
-    tabs.push({ panel: Panel.LEFT, tabId: LeftPanelTabId.LLM_QUERY, index: 2 })
+    tabs.push({
+      panel: Panel.LEFT,
+      tabId: LeftPanelTabId.LLM_QUERY,
+      index: LLM_QUERY_TAB_INDEX,
+    })
   }
   return tabs
 }

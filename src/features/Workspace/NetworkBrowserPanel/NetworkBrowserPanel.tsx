@@ -1,5 +1,6 @@
 import ChevronLeft from '@mui/icons-material/ChevronLeft'
 import ChevronRight from '@mui/icons-material/ChevronRight'
+import FilterAltIcon from '@mui/icons-material/FilterAlt'
 import PaletteIcon from '@mui/icons-material/Palette'
 import ShareIcon from '@mui/icons-material/Share'
 import {
@@ -19,6 +20,7 @@ import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { IdType } from '../../../models/IdType'
 import { NetworkSummary } from '../../../models/NetworkSummaryModel'
 import { Ui } from '../../../models/UiModel'
+import { LLM_QUERY_TAB_INDEX } from '../../../models/UiModel/impl/panelTabs'
 import { Panel } from '../../../models/UiModel/Panel'
 import { PanelState } from '../../../models/UiModel/PanelState'
 import { isHCX } from '../../HierarchyViewer/utils/hierarchyUtil'
@@ -32,6 +34,7 @@ import { WorkspaceNamePanel } from './WorkspaceNamePanel'
 // cold-load wins. Module scope keeps component identity stable.
 const loadVizmapper = () => import('@/features/Vizmapper')
 const VizmapperView = lazy(loadVizmapper)
+const FilterTab = lazy(() => import('@/features/Filter'))
 const LLMQueryResultPanel = lazy(() =>
   import('@/features/LLMQuery/components/LLMQueryResultPanel').then((m) => ({
     default: m.LLMQueryResultPanel,
@@ -163,6 +166,10 @@ export const NetworkBrowserPanel = ({
             }}
             value={currentTabIndex}
             onChange={changeTab}
+            // Four tabs (with LLM QUERY) do not fit a narrow panel: scroll
+            // rather than cut off the first tab
+            variant="scrollable"
+            scrollButtons="auto"
           >
             <Tab
               data-testid="network-browser-panel-workspace-tab"
@@ -175,6 +182,12 @@ export const NetworkBrowserPanel = ({
               icon={<PaletteIcon />}
               iconPosition="start"
               label="STYLE"
+            />
+            <Tab
+              data-testid="network-browser-panel-filter-tab"
+              icon={<FilterAltIcon />}
+              iconPosition="start"
+              label="FILTER"
             />
             {showLLMQueryPanel && (
               <Tab
@@ -266,8 +279,22 @@ export const NetworkBrowserPanel = ({
             </Suspense>
           )}
         </Box>
-        <Box hidden={currentTabIndex !== 2}>
+        <Box
+          hidden={currentTabIndex !== 2}
+          sx={{
+            flexGrow: 1,
+            minHeight: 0,
+            width: '100%',
+          }}
+        >
           {currentTabIndex === 2 && (
+            <Suspense fallback={tabContentFallback}>
+              <FilterTab networkId={targetNetworkId} />
+            </Suspense>
+          )}
+        </Box>
+        <Box hidden={currentTabIndex !== LLM_QUERY_TAB_INDEX}>
+          {currentTabIndex === LLM_QUERY_TAB_INDEX && (
             <Suspense fallback={tabContentFallback}>
               <LLMQueryResultPanel height={allotmentDimensions[0]} />
             </Suspense>

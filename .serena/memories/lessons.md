@@ -91,6 +91,7 @@
 
 ## Agent Workflow
 
+- [2026-10-05] Browser pane checks: after creating a network with `CyWebApi.network.createNetworkFromEdgeList` (or switching with `workspace.switchCurrentNetwork`), navigate to `/<workspaceId>/networks/<newId>`. The URL otherwise still names the old network, and the app keeps loading that one back, re-rendering panels and closing open menus. Screenshots in the pane also often miss open MUI popovers (Select listboxes, Menus); confirm them with `find` / the DOM instead.
 - [2026-10-05] Prettier scope: run `npx prettier --write` on the files you touched, never on a directory. Many committed `.md` docs and some tests under `src/` are not Prettier-clean, so `prettier --write src/data` rewrites a dozen unrelated files into the diff.
 - [2026-09-06] Brainstorming: Do not commit brainstorming notes or exploratory design reports unless the user explicitly requests a commit. This overrides the automatic commit cadence below for brainstorming work.
 - [2026-09-07] Architecture reviews: Inventory existing host implementations and bridge contracts before proposing new integration layers. Verify where configuration thresholds are enforced before describing them as public API or rendering limits.

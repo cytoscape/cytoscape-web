@@ -50,6 +50,10 @@ interface FilterState<T> {
   // The workspace filter last applied to each network, by network id. Kept
   // in memory only, like the subnetworks it mostly concerns.
   appliedWorkspaceFilters: Record<IdType, AppliedWorkspaceFilter>
+  // FILTER tab UI state of this browser tab, in memory only: the filter the
+  // tab shows, and "Apply when filter changes" by network id
+  selectedWorkspaceFilterId?: IdType
+  workspaceFilterAutoApply: Record<IdType, boolean>
 }
 
 interface FilterAction {
@@ -114,6 +118,9 @@ interface FilterAction {
   // Network delete cascade: the network and its subnetworks
   deleteNetworkAppliedWorkspaceFilters: (networkId: IdType) => void
   deleteAllAppliedWorkspaceFilters: () => void
+
+  setSelectedWorkspaceFilterId: (id: IdType | undefined) => void
+  setWorkspaceFilterAutoApply: (networkId: IdType, autoApply: boolean) => void
 }
 
 type FilterStore = FilterState<any> & FilterAction
@@ -143,6 +150,8 @@ export const useFilterStore = create(
     filterConfigs: {},
     workspaceFilters: {},
     appliedWorkspaceFilters: {},
+    selectedWorkspaceFilterId: undefined,
+    workspaceFilterAutoApply: {},
     search: {
       state: SearchState.READY,
       query: '',
@@ -521,6 +530,16 @@ export const useFilterStore = create(
     deleteAllAppliedWorkspaceFilters: () => {
       set((state) => {
         state.appliedWorkspaceFilters = {}
+      })
+    },
+    setSelectedWorkspaceFilterId: (id: IdType | undefined) => {
+      set((state) => {
+        state.selectedWorkspaceFilterId = id
+      })
+    },
+    setWorkspaceFilterAutoApply: (networkId: IdType, autoApply: boolean) => {
+      set((state) => {
+        state.workspaceFilterAutoApply[networkId] = autoApply
       })
     },
     hydrateWorkspaceFilters: (filters: readonly WorkspaceFilter[]) => {
