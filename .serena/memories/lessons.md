@@ -67,6 +67,7 @@
 ## Build & CI
 
 - [2026-08-28] npm comment keys: A `"//foo": [...]` comment key INSIDE a `dependencies`/`devDependencies` block makes `npm install` fail with "must provide string spec" — dependency values must be strings. Put comment arrays at the package.json top level (the psicquic-cw `"//devDependencies"` convention).
+- [2026-10-05] npm publishes are asynchronous: a version can stay E404 on `npm view` for minutes after `npm publish` succeeds. If the api-types release fails in **Verify the registry**, never touch the tag — wait until `npm view` shows the version, then re-run against the tag with `dry_run=false` and the same `dist_tag`; it resumes with `action=skip`. Re-running earlier tries to publish again. History in lessons-archive.md.
 
 - [2026-03-04] Import sorting: Import sorting is no longer lint-enforced after the oxlint migration; keep imports sorted by convention.
 - [2026-03-04] No `console.log`: Production builds strip direct `console.*()` calls through Vite's Oxc minifier. Use the `debug` logger from `src/debug.ts`.
