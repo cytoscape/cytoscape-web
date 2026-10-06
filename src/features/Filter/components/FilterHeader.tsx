@@ -1,4 +1,4 @@
-import MenuIcon from '@mui/icons-material/Menu'
+import MoreVertIcon from '@mui/icons-material/MoreVert'
 import {
   Box,
   Divider,
@@ -197,7 +197,7 @@ export const FilterHeader = ({
           data-testid="filter-options-button"
           onClick={(event) => setMenuAnchor(event.currentTarget)}
         >
-          <MenuIcon fontSize="small" />
+          <MoreVertIcon fontSize="small" />
         </IconButton>
       </Tooltip>
       <Menu
