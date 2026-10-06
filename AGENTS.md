@@ -16,6 +16,7 @@
 - **Test-Driven Fixes:** Before writing implementation code, write a failing regression test. Follow `vitest-setup.ts` conventions (including `enableMapSet()`) and test stores via `@testing-library/react` hooks. Prove it fails, apply the fix, then prove it passes.
 - **Verification Before Done:** NEVER mark a task complete without proving it works. Run `npm run test:checks:quiet` (lint ∥ unit), plus the one or few e2e specs covering the change, and diff the behavior. Always use the `:quiet` variants — see [Section 5](#5-development-operations).
 - **Fix Root Causes:** Fix root causes, not symptoms. Never apply band-aid fixes. Fix failing CI tests proactively.
+- **Docs Change With Behavior:** A change that alters behavior updates, in the same change, the docs that describe it: the feature's co-located `<Feature>_docs/` and any spec in `docs/specifications/`. After adding, moving or renaming a file, grep for its old path and fix every list that names it (§6, `docs/README.md`, `docs/guides/README.md`). The next agent reads a stale doc as current.
 
 **Safety:**
 
@@ -78,7 +79,7 @@ Modals close through their own buttons only — backdrop click and Esc are inert
 **Logging:**
 Use the structured `debug` logger from `src/debug.ts`, not `console.log`. Production builds use Vite's Oxc minifier to strip direct `console.*()` calls.
 Available loggers (each has `.info`, `.warn`, `.error`): `logDb`, `logStore`, `logApi`, `logApp`, `logUi`, `logStartup`, `logPerformance`, `logHistory`, `logModel`.
-See `docs/specifications/DEBUG_GUIDE.MD` for the full policy.
+See `docs/specifications/DEBUG_GUIDE.md` for the full policy.
 
 ---
 
@@ -229,7 +230,7 @@ Read these before working in related areas:
 - `docs/specifications/EXTERNAL_INPUT_VALIDATION_POLICY.md` — CX2 validation requirements for external data
 - `docs/specifications/HIERARCHY_FILTER_WIDGETS_ASPECT.md` — Hierarchy Viewer `filterWidgets` aspect format and validation
 - `docs/specifications/DIALOG_DISMISS_POLICY.md` — button-only dialog dismissal, the `CyDialog` wrapper, modal form popovers
-- `docs/specifications/DEBUG_GUIDE.MD` — Structured logging policy and debug namespace usage
+- `docs/specifications/DEBUG_GUIDE.md` — Structured logging policy and debug namespace usage
 - `docs/specifications/FEATURE_MODULE_CREATION_PATTERN.md` — How to create new feature modules
 - `docs/specifications/MODEL_CREATION_PATTERN.md` — How to create new model domains
 - `docs/specifications/STORE_CREATION_PATTERN.md` — How to create new Zustand stores

@@ -13,6 +13,10 @@ When completing a coding task in this project:
    specs covering the change. Never the whole suite locally: CI owns it, and
    both the deny list and `scripts/run-playwright.mjs` refuse it.
 4. **Build, if the change could affect bundling** — `npm run build`.
+5. **Docs, if behavior changed** — update the feature's `<Feature>_docs/` and
+   any spec that describes it. After adding, moving or renaming a file, grep
+   for its old path and fix the lists that name it (AGENTS.md §6,
+   `docs/README.md`, `docs/guides/README.md`).
 
 Regression test first, then the fix: prove the test fails, apply the fix, prove
 it passes.
