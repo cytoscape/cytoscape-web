@@ -493,7 +493,9 @@ step 4 before you tag anything.
    date, the `repository` field provenance is validated against, that the
    commit is on `development`, and that `ci.yml` passed for that exact commit.
    Then it builds once, packs one tarball, verifies it, type-checks a consumer
-   against it, publishes **that** tarball, and reads the registry back.
+   against it, publishes **that** tarball, and reads the registry back. npm
+   processes a publish asynchronously — the version can take minutes to appear
+   (beta.5 took over three) — so the read-back waits up to ten minutes for it.
 
    The active beta stream uses the `latest` dist-tag. That is a decision with an
    end: once `1.0.0` ships, `latest` means stable and prereleases move to
@@ -549,11 +551,24 @@ If the publish succeeded but a later step failed, **do not delete or move the
 tag**. Re-run the workflow against the existing tag:
 
 ```bash
-gh workflow run release-api-types.yml --ref "api-types-v$VERSION" -f dry_run=false
+gh workflow run release-api-types.yml --ref "api-types-v$VERSION" \
+  -f dry_run=false -f dist_tag=latest
 ```
+
+Pass the dist-tag the release was published under — `latest` for the current
+beta stream. A dispatch that omits it gets `latest`, so a release published to
+`next` would be verified against the wrong tag.
 
 It compares the registry against the tarball it just built, including the
 provenance commit, and resumes at verification instead of refusing.
+
+The likeliest case is **Verify the registry** timing out right after **Publish
+to npm** succeeded: npm accepted the package and has not finished processing
+it. The step's error prints the re-run command. Wait until
+`npm view "@cytoscape-web/api-types@$VERSION" version` answers and the
+dist-tag resolves to it, then re-run. Re-running before that does not help: the
+decision step reads a version npm has not finished processing as unpublished
+and tries to publish it again.
 
 ## Documentation
 
