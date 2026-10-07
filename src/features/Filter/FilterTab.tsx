@@ -21,6 +21,7 @@ import {
 import { FilterHeader } from './components/FilterHeader'
 import {
   defaultAutoApply,
+  EMPTY_FILTER_STATUS,
   formatApplyStatus,
   sortFiltersByName,
   warningsByPath,
@@ -168,7 +169,16 @@ export const FilterTab = ({ networkId }: FilterTabProps): JSX.Element => {
       <ApplyPanel
         displayMode={selected.displayMode}
         autoApply={autoApply}
-        status={status}
+        status={
+          // A filter without conditions asks for one, whether or not it was
+          // applied (a fresh start, the last condition removed); a filter
+          // with conditions shows the result of the last run, if any
+          selected.root.children.length === 0
+            ? EMPTY_FILTER_STATUS
+            : status === EMPTY_FILTER_STATUS
+              ? undefined
+              : status
+        }
         disabled={context === undefined}
         onDisplayModeChange={(displayMode) =>
           setStatus(

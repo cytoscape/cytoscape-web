@@ -180,6 +180,9 @@ export const warningsByPath = (
 const plural = (count: number, noun: string): string =>
   `${count} ${noun}${count === 1 ? '' : 's'}`
 
+/** The status line while the filter has no condition: applying does nothing */
+export const EMPTY_FILTER_STATUS = 'Add a condition to apply the filter.'
+
 /**
  * The status line under the Apply button, after a filter was applied
  */
@@ -197,7 +200,7 @@ export const formatApplyStatus = (
     }
   }
   if (!result.applied) {
-    return 'Add a condition to apply the filter.'
+    return EMPTY_FILTER_STATUS
   }
   const verb =
     result.displayMode === DisplayMode.SHOW_HIDE ? 'Showing' : 'Selected'

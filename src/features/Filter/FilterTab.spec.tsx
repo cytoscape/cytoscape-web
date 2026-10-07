@@ -109,8 +109,32 @@ describe('FilterTab', () => {
         (filter) => filter.name,
       ),
     ).toEqual(['Default filter'])
-    expect(screen.getByTestId('filter-status').textContent).toBe('')
+    expect(screen.getByTestId('filter-status').textContent).toBe(
+      'Add a condition to apply the filter.',
+    )
     expect(selectedNodes()).toEqual([])
+  })
+
+  it('asks for a condition again once the last one is removed', () => {
+    useFilterStore.setState({
+      workspaceFilters: { f1: nameContains('a') },
+      selectedWorkspaceFilterId: 'f1',
+      // Nothing re-applies on its own: the hint must not depend on a run
+      workspaceFilterAutoApply: { [NET]: false },
+    })
+    render(<FilterTab networkId={NET} />)
+    // Blank (ApplyPanel keeps the line's height with a no-break space)
+    expect(screen.getByTestId('filter-status').textContent?.trim()).toBe('')
+
+    fireEvent.click(screen.getByTestId('filter-apply-button'))
+    expect(screen.getByTestId('filter-status').textContent).toMatch(
+      /^Selected 3 nodes/,
+    )
+
+    fireEvent.click(screen.getByTestId('filter-condition-0-remove'))
+    expect(screen.getByTestId('filter-status').textContent).toBe(
+      'Add a condition to apply the filter.',
+    )
   })
 
   it('builds a column condition and applies it when the filter changes', () => {
