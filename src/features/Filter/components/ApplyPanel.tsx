@@ -44,7 +44,7 @@ export const ApplyPanel = ({
       gap: 0.5,
       px: 1,
       py: 1,
-      borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+      backgroundColor: 'background.default',
     }}
   >
     <Tooltip

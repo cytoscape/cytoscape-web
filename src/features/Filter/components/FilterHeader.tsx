@@ -173,7 +173,7 @@ export const FilterHeader = ({
       <Select
         size="small"
         value={selected.id}
-        sx={{ flex: 1, minWidth: 0 }}
+        sx={{ flex: 1, minWidth: 0, backgroundColor: 'background.paper' }}
         inputProps={{
           'aria-label': 'Filter',
           'data-testid': 'filter-select',
@@ -197,7 +197,7 @@ export const FilterHeader = ({
           data-testid="filter-options-button"
           onClick={(event) => setMenuAnchor(event.currentTarget)}
         >
-          <MoreVertIcon fontSize="small" />
+          <MoreVertIcon />
         </IconButton>
       </Tooltip>
       <Menu
