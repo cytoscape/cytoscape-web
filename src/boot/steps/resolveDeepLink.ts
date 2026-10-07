@@ -1,4 +1,5 @@
 import { fetchNdexSummaries } from '@/data/external-api/ndex'
+import { rememberNdexAccessKey } from '@/data/external-api/ndex/accessKeys'
 import { useCredentialStore } from '@/data/hooks/stores/CredentialStore'
 import { logStartup } from '@/debug'
 import type { AppShellBootContext, WorkspaceDraft } from './appShellBootContext'
@@ -11,6 +12,9 @@ import type { AppShellBootContext, WorkspaceDraft } from './appShellBootContext'
  * pending forever — and boot with it, on a blank screen.
  */
 const DEEP_LINK_TIMEOUT_MS = 30000
+
+/** NDEx share links carry this param; NDEx's own name, lowercase. */
+const ACCESS_KEY_QUERY_KEY = 'accesskey'
 
 /**
  * Reject after `ms` if `promise` has not settled.
@@ -46,6 +50,10 @@ const withTimeout = async <T>(
  *
  * This is the one boot path that genuinely waits on the SSO check — a
  * deep-linked network can be private, so it needs the gated token.
+ *
+ * A private network can also be opened without a login through an NDEx share
+ * link, `?accesskey=<key>`. The key is remembered in memory for the CX2 fetch,
+ * which runs after ROUTE has stripped it from the URL.
  */
 export const resolveDeepLink = async (
   ctx: AppShellBootContext,
@@ -65,12 +73,14 @@ export const resolveDeepLink = async (
     return
   }
 
+  const accessKey = ctx.search.get(ACCESS_KEY_QUERY_KEY) || undefined
+
   let summary
   try {
     const token = await useCredentialStore.getState().getToken()
     summary = (
       await withTimeout(
-        fetchNdexSummaries(networkIdParam, token),
+        fetchNdexSummaries(networkIdParam, token, undefined, accessKey),
         DEEP_LINK_TIMEOUT_MS,
         `NDEx did not respond within ${DEEP_LINK_TIMEOUT_MS / 1000}s`,
       )
@@ -101,6 +111,9 @@ export const resolveDeepLink = async (
     return
   }
 
+  if (accessKey !== undefined) {
+    rememberNdexAccessKey(networkIdParam, accessKey)
+  }
   summaries[networkIdParam] = summary
   workspace.currentNetworkId = networkIdParam
   workspace.networkIds.push(networkIdParam)

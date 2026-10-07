@@ -4,6 +4,10 @@ import { useAppStore } from '@/data/hooks/stores/AppStore'
 import { useMessageStore } from '@/data/hooks/stores/MessageStore'
 import { useNetworkSummaryStore } from '@/data/hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
+import {
+  clearNdexAccessKeysForTesting,
+  getNdexAccessKey,
+} from '@/data/external-api/ndex/accessKeys'
 import { resetBootStateForTesting } from '../bootState'
 import { resetBootMetricsForTesting } from '../metrics/bootMarks'
 import { resetBootRunnerForTesting } from '../runBoot'
@@ -104,6 +108,7 @@ afterEach(() => {
   resetBootRunnerForTesting()
   resetBootStateForTesting()
   resetBootMetricsForTesting()
+  clearNdexAccessKeysForTesting()
   vi.clearAllMocks()
   // Unconditional, unlike a manual call at the end of a test body: an
   // assertion that throws first would otherwise leak a stubbed global fetch
@@ -219,6 +224,48 @@ describe('runAppShellBoot: deep links and imports', () => {
     expect(workspace.networkIds).toContain('net-2')
     expect(workspace.currentNetworkId).toBe('net-2')
     expect(useNetworkSummaryStore.getState().summaries['net-2']).toBeDefined()
+  })
+
+  it('resolves a deep link with the share-link access key and keeps it for the CX2 fetch', async () => {
+    fetchNdexSummaries.mockResolvedValue([
+      { externalId: 'net-2', name: 'Net 2' },
+    ])
+    const ctx = makeContext({
+      networkIdParam: 'net-2',
+      pathname: '/ws-1/networks/net-2',
+      search: new URLSearchParams('accesskey=key-123'),
+    })
+
+    await runAppShellBoot(ctx)
+
+    expect(fetchNdexSummaries).toHaveBeenCalledWith(
+      'net-2',
+      expect.anything(),
+      undefined,
+      'key-123',
+    )
+    expect(getNdexAccessKey('net-2')).toBe('key-123')
+    expect(useWorkspaceStore.getState().workspace.currentNetworkId).toBe(
+      'net-2',
+    )
+    // The key leaves the address bar with every other consumed param.
+    expect(ctx.navigate).toHaveBeenCalledWith(
+      { pathname: '/ws-1/networks/net-2', search: '' },
+      { replace: true },
+    )
+  })
+
+  it('does not keep the access key when the deep link fails to resolve', async () => {
+    fetchNdexSummaries.mockRejectedValue(new Error('401 Unauthorized'))
+    const ctx = makeContext({
+      networkIdParam: 'net-2',
+      pathname: '/ws-1/networks/net-2',
+      search: new URLSearchParams('accesskey=wrong-key'),
+    })
+
+    await runAppShellBoot(ctx)
+
+    expect(getNdexAccessKey('net-2')).toBeUndefined()
   })
 
   it('keeps importing after one URL fails', async () => {

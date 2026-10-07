@@ -3,6 +3,7 @@ import { IdType } from '../../models/IdType'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
 import { getNetworkSummariesFromDb, putNetworkSummaryToDb } from '../db'
 import { fetchNdexSummaries } from '../external-api/ndex'
+import { getNdexAccessKey } from '../external-api/ndex/accessKeys'
 import { useCredentialStore } from './stores/CredentialStore'
 
 /**
@@ -45,7 +46,23 @@ export const useLoadNetworkSummaries = () => {
       if (nonCachedIds.size > 0) {
         const token =
           accessToken ?? (await useCredentialStore.getState().getToken())
-        newSummaries = await fetchNdexSummaries(Array.from(nonCachedIds), token)
+        // A share-link deep link can reach here before its summary is cached
+        // (#807). NDEx takes one access key per request, so each network with
+        // a remembered key is fetched on its own; the rest share one batch.
+        const idsToFetch = Array.from(nonCachedIds)
+        const keyedIds = idsToFetch.filter(
+          (id) => getNdexAccessKey(id) !== undefined,
+        )
+        const batchIds = idsToFetch.filter(
+          (id) => getNdexAccessKey(id) === undefined,
+        )
+        const results = await Promise.all([
+          batchIds.length > 0 ? fetchNdexSummaries(batchIds, token) : [],
+          ...keyedIds.map((id) =>
+            fetchNdexSummaries(id, token, undefined, getNdexAccessKey(id)),
+          ),
+        ])
+        newSummaries = results.flat()
       }
       const validNewSummaries = newSummaries.filter((s) => s !== undefined)
       validNewSummaries.forEach(async (summary: NetworkSummary) => {
