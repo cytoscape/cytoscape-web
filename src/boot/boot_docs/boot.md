@@ -35,7 +35,7 @@ index.html
             └─ import('./boot/bootstrap')
                  ├─ markBoot('init-exec')                      [init-exec]
                  ├─ createRoot(#root)
-                 ├─ phase RUNTIME    enableMapSet, debug, tabManager
+                 ├─ phase RUNTIME    enableMapSet, debug, share-link key, tabManager
                  ├─ startAuthentication()  ← not awaited; overlaps the DB open
                  │    └─ releaseTokenGate()  ← on SSO settle, any time later  [auth-settled]
                  ├─ phase DATABASE   openDatabaseForStartup()   ← the gate; fatal
@@ -104,6 +104,14 @@ let a phase rejection escape and skip the phases after it. This is the guarantee
 that keeps `PUBLISH` and `ROUTE` running when an import fails — previously a
 throw there left the workspace unpublished and the URL un-cleaned, so reloading
 reproduced the same failure while the shell stayed up forever.
+
+**The share-link key is captured before render.** A deep link,
+`/:workspaceId/networks/:networkId`, renders `WorkspaceEditor` at once, and its
+load effect fires before AppShell's boot effect, because React runs child
+effects first. So the editor's first NDEx fetch races `resolveDeepLink`, which
+also waits on the SSO check. RUNTIME reads `?accesskey=` from
+`window.location` into memory (`rememberNdexAccessKeyFromUrl`), so every fetch
+for that network carries the key whichever side wins (#807).
 
 **`DATABASE` is the only fatal phase.** Everything else degrades: a failed
 workspace read still reaches an empty workspace, a failed import still reaches

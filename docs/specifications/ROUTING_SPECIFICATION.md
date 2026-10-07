@@ -108,9 +108,9 @@ Query paramters will set the initial ui state and subsequently removed from the 
 - `activeNetworkView`: Active network view identifier (can be hierarchy network or subnetwork ID)
 - `activeNetworkViewTab`: Network view tab index (0, 1, 2, ...)
 - `activeTableBrowserTab`: Table browser tab index
-- `accesskey`: NDEx share-link key for a private network. Applies only when
-  `:networkId` is not already in the workspace. Passed to the NDEx summary and
-  CX2 fetches, and held in memory only
+- `accesskey`: NDEx share-link key for a private network. Read from the URL
+  in the boot RUNTIME phase, before render, and passed to every NDEx summary
+  and CX2 fetch for `:networkId`. Held in memory only
   (`src/data/external-api/ndex/accessKeys.ts`), never in IndexedDB. Once the
   CX2 is cached, later loads need no key.
 
