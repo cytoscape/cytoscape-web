@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { DisplayMode } from '@/models/FilterModel/DisplayMode'
+import { FilterPredicate } from '@/models/FilterModel/FilterTree'
 import { createWorkspaceFilter } from '@/models/FilterModel/impl/filterTreeImpl'
 import type { Table } from '@/models/TableModel/Table'
 
@@ -10,8 +11,10 @@ import {
   defaultAutoApply,
   formatApplyStatus,
   listColumnOptions,
+  numericPredicateOptions,
   roundForDisplay,
   sortFiltersByName,
+  toRangeCriterion,
   warningsByPath,
 } from './filterTabUtil'
 
@@ -108,5 +111,51 @@ describe('roundForDisplay', () => {
   it('drops floating-point noise', () => {
     expect(roundForDisplay(0.1 + 0.2)).toBe(0.3)
     expect(roundForDisplay(123456789)).toBe(123457000)
+  })
+})
+
+describe('numericPredicateOptions', () => {
+  it('offers "is" and "is not" a range, as Cytoscape Desktop does', () => {
+    expect(numericPredicateOptions(FilterPredicate.BETWEEN)).toEqual([
+      [FilterPredicate.BETWEEN, 'is'],
+      [FilterPredicate.IS_NOT_BETWEEN, 'is not'],
+    ])
+    expect(numericPredicateOptions(null)).toHaveLength(2)
+  })
+
+  it('keeps the single-value predicate of an imported condition listed', () => {
+    expect(numericPredicateOptions(FilterPredicate.GREATER_THAN)).toEqual([
+      [FilterPredicate.BETWEEN, 'is'],
+      [FilterPredicate.IS_NOT_BETWEEN, 'is not'],
+      [FilterPredicate.GREATER_THAN, 'is greater than'],
+    ])
+    // A text predicate on a numeric column is listed by its name
+    expect(numericPredicateOptions(FilterPredicate.CONTAINS)[2]).toEqual([
+      FilterPredicate.CONTAINS,
+      'CONTAINS',
+    ])
+  })
+})
+
+describe('toRangeCriterion', () => {
+  const bounds = { min: 0, max: 10 }
+
+  it('keeps the side of the value a single-value condition accepted', () => {
+    expect(toRangeCriterion(FilterPredicate.GREATER_THAN, 4, bounds)).toEqual([
+      4, 10,
+    ])
+    expect(
+      toRangeCriterion(FilterPredicate.LESS_THAN_OR_EQUAL, 4, bounds),
+    ).toEqual([0, 4])
+    expect(toRangeCriterion(FilterPredicate.IS, 4, bounds)).toEqual([4, 4])
+  })
+
+  it('stretches the range to a value outside the column bounds', () => {
+    expect(
+      toRangeCriterion(FilterPredicate.GREATER_THAN_OR_EQUAL, 12, bounds),
+    ).toEqual([12, 12])
+    expect(toRangeCriterion(FilterPredicate.LESS_THAN, -3, bounds)).toEqual([
+      -3, -3,
+    ])
   })
 })

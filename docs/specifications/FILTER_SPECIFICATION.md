@@ -236,10 +236,18 @@ Cytoscape Desktop's Filter tab:
   filter, Group. Nested groups always show how they combine.
 - A column condition lists the node columns, then the edge columns ("Node:
   name", "Edge: weight"); its comparison follows the column type: text
-  predicates and a text field, a numeric predicate with a range (slider plus
-  fields) or a single value, or `is true / false`. List columns add "any
-  element / every element". Picking a column sets Cytoscape Desktop's
-  defaults (`columnFilterFor`).
+  predicates and a text field, "is / is not" a range (slider plus fields) for
+  numbers, or `is true / false`. List columns add "any element / every
+  element". Picking a column sets Cytoscape Desktop's defaults
+  (`columnFilterFor`).
+- Numbers get only `BETWEEN` ("is") and `IS_NOT_BETWEEN` ("is not"), as in
+  Cytoscape Desktop, whose Filter panel can neither create nor show the other
+  numeric predicates (it reads a single-number criterion as a range and
+  fails). Those predicates still come from filter files and Cytoscape Desktop
+  commands: such a condition is shown as it is, its predicate listed after
+  "is / is not" with a single number field. Switching it to "is" / "is not"
+  turns it into the nearest inclusive range: "at least n" becomes
+  `[n, max]`, "at most n" `[min, n]`, "equal to n" `[n, n]`.
 - "Apply when filter changes" (default on below 100,000 nodes and edges),
   select / show, Apply, and a status line ("Selected 2 nodes and 0 edges in
   3 ms", or "Showing ..." in show mode).

@@ -21,8 +21,9 @@ import {
   columnOptionKey,
   isRangePredicate,
   listColumnOptions,
-  NUMERIC_PREDICATE_LABELS,
+  numericPredicateOptions,
   STRING_PREDICATE_LABELS,
+  toRangeCriterion,
 } from '../utils/filterTabUtil'
 import { NumberField, RangeInput } from './RangeInput'
 
@@ -219,11 +220,14 @@ export const ColumnConditionEditor = ({
       bounds.max,
     ]
     const predicate = node.predicate ?? FilterPredicate.BETWEEN
+    const isRange = isRangePredicate(predicate)
+    // Only "is" / "is not" can be picked; the condition's own single-value
+    // predicate stays listed while it uses one (see numericPredicateOptions)
     const setPredicate = (next: FilterPredicate): void => {
-      // A range keeps its bounds; a single value starts at the lower bound
-      const criterion = isRangePredicate(next)
-        ? ([current[0], current[1]] as const)
-        : current[0]
+      if (next === predicate) return
+      const criterion = isRange
+        ? current
+        : toRangeCriterion(predicate, current[0], bounds)
       onChange({ ...node, predicate: next, criterion })
     }
     comparison = (
@@ -239,13 +243,13 @@ export const ColumnConditionEditor = ({
             setPredicate(event.target.value as FilterPredicate)
           }
         >
-          {NUMERIC_PREDICATE_LABELS.map(([value, label]) => (
+          {numericPredicateOptions(predicate).map(([value, label]) => (
             <MenuItem key={value} value={value}>
               {label}
             </MenuItem>
           ))}
         </Select>
-        {isRangePredicate(predicate) ? (
+        {isRange ? (
           <RangeInput
             value={current}
             bounds={bounds}

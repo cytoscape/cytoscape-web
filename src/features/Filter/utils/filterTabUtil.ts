@@ -4,10 +4,12 @@ import {
   ColumnFilterTarget,
   FilterNodePath,
   FilterPredicate,
+  NumberRangeCriterion,
   WorkspaceFilter,
 } from '@/models/FilterModel/FilterTree'
 import type { FilterValidationWarning } from '@/models/FilterModel/impl/validateFilter'
 import type { Network } from '@/models/NetworkModel/Network'
+import type { NumberRange } from '@/models/PropertyModel/NumberRange'
 import type { Column } from '@/models/TableModel/Column'
 import type { Table } from '@/models/TableModel/Table'
 
@@ -87,21 +89,70 @@ export const STRING_PREDICATE_LABELS: ReadonlyArray<
 ]
 
 /**
- * Labels of the numeric predicates. Cytoscape Desktop's UI offers only the
- * two range predicates; the others can come from imported files.
+ * The numeric comparisons the editor offers, as Cytoscape Desktop's Filter
+ * panel does: the value "is" or "is not" within a range. The range covers
+ * "at least" and "at most" too (one bound at the column's minimum or
+ * maximum).
  */
-export const NUMERIC_PREDICATE_LABELS: ReadonlyArray<
+export const RANGE_PREDICATE_LABELS: ReadonlyArray<
   readonly [FilterPredicate, string]
 > = [
-  [FilterPredicate.BETWEEN, 'is between'],
-  [FilterPredicate.IS_NOT_BETWEEN, 'is not between'],
-  [FilterPredicate.IS, 'is'],
-  [FilterPredicate.IS_NOT, 'is not'],
-  [FilterPredicate.GREATER_THAN, 'is greater than'],
-  [FilterPredicate.GREATER_THAN_OR_EQUAL, 'is at least'],
-  [FilterPredicate.LESS_THAN, 'is less than'],
-  [FilterPredicate.LESS_THAN_OR_EQUAL, 'is at most'],
+  [FilterPredicate.BETWEEN, 'is'],
+  [FilterPredicate.IS_NOT_BETWEEN, 'is not'],
 ]
+
+/**
+ * Labels of the single-value numeric predicates. Cytoscape Desktop's panel
+ * cannot create them (only its commands and filter files can), and cannot
+ * show them either, so the editor offers one only to show an imported
+ * condition that already uses it.
+ */
+export const SINGLE_VALUE_PREDICATE_LABELS: Readonly<
+  Partial<Record<FilterPredicate, string>>
+> = {
+  [FilterPredicate.IS]: 'is equal to',
+  [FilterPredicate.IS_NOT]: 'is not equal to',
+  [FilterPredicate.GREATER_THAN]: 'is greater than',
+  [FilterPredicate.GREATER_THAN_OR_EQUAL]: 'is at least',
+  [FilterPredicate.LESS_THAN]: 'is less than',
+  [FilterPredicate.LESS_THAN_OR_EQUAL]: 'is at most',
+}
+
+/**
+ * The options of a numeric condition's comparison: "is" / "is not", plus the
+ * condition's own predicate when it is another one
+ */
+export const numericPredicateOptions = (
+  current: FilterPredicate | null,
+): ReadonlyArray<readonly [FilterPredicate, string]> =>
+  current === null || isRangePredicate(current)
+    ? RANGE_PREDICATE_LABELS
+    : [
+        ...RANGE_PREDICATE_LABELS,
+        [current, SINGLE_VALUE_PREDICATE_LABELS[current] ?? current],
+      ]
+
+/**
+ * The range that keeps the meaning of a single-value condition as closely as
+ * an inclusive range can, when the user switches it to "is" / "is not":
+ * "at least 5" becomes [5, max], "at most 5" [min, 5], "equal to 5" [5, 5]
+ */
+export const toRangeCriterion = (
+  predicate: FilterPredicate | null,
+  value: number,
+  bounds: NumberRange,
+): NumberRangeCriterion => {
+  switch (predicate) {
+    case FilterPredicate.GREATER_THAN:
+    case FilterPredicate.GREATER_THAN_OR_EQUAL:
+      return [value, Math.max(bounds.max, value)]
+    case FilterPredicate.LESS_THAN:
+    case FilterPredicate.LESS_THAN_OR_EQUAL:
+      return [Math.min(bounds.min, value), value]
+    default:
+      return [value, value]
+  }
+}
 
 export const isRangePredicate = (predicate: FilterPredicate | null): boolean =>
   predicate === FilterPredicate.BETWEEN ||
