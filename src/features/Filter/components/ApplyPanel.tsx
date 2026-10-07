@@ -41,7 +41,6 @@ export const ApplyPanel = ({
     sx={{
       display: 'flex',
       flexDirection: 'column',
-      gap: 0.5,
       px: 1,
       py: 1,
       backgroundColor: 'background.default',
@@ -68,7 +67,7 @@ export const ApplyPanel = ({
         }
       />
     </Tooltip>
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 1.5 }}>
       <RadioGroup
         row
         value={displayMode}
@@ -109,9 +108,9 @@ export const ApplyPanel = ({
       variant="caption"
       color="text.secondary"
       data-testid="filter-status"
-      sx={{ minHeight: '1.5em' }}
+      sx={{ minHeight: '1.5em', mt: 0.5, ml: 1.5, pt: 0.25, borderTop: '1px solid', borderColor: 'divider' }}
     >
-      {status ?? ''}
+      {status ?? '\u00A0'}
     </Typography>
   </Box>
 )
