@@ -14,8 +14,8 @@ import {
  * without a login. Boot reads the key, resolves the summary with it, and the
  * editor fetches the CX2 with it after ROUTE has stripped it from the URL.
  *
- * NDEx is route-mocked as a private network: every request without the right
- * key gets the 401 NDEx sends for a private network.
+ * NDEx is route-mocked as a private network, matching production NDEx's
+ * responses to a request without the key.
  */
 
 const NETWORK_ID = 'e2e00807-0000-4000-8000-000000000807'
@@ -47,13 +47,21 @@ const PRIVATE_SUMMARY = {
   edgeCount: 2,
 }
 
-/** Records every NDEx request URL; answers 401 unless the key is present. */
+/**
+ * Records every NDEx request URL. Without the key, answers as production NDEx
+ * does for a private network: the batch summary endpoint omits it (200, `[]`),
+ * and the CX2 endpoint returns 401.
+ */
 const mockPrivateNetwork = async (page: Page): Promise<string[]> => {
   const requests: string[] = []
   await page.route(/ndexbio\.org/, async (route) => {
     const url = route.request().url()
     requests.push(url)
-    if (new URL(url).searchParams.get('accesskey') !== ACCESS_KEY) {
+    const hasKey = new URL(url).searchParams.get('accesskey') === ACCESS_KEY
+    if (url.includes('batch/network/summary')) {
+      return route.fulfill({ json: hasKey ? [PRIVATE_SUMMARY] : [] })
+    }
+    if (!hasKey) {
       return route.fulfill({
         status: 401,
         json: {
@@ -61,9 +69,6 @@ const mockPrivateNetwork = async (page: Page): Promise<string[]> => {
           message: `Unauthorized access to network ${NETWORK_ID}`,
         },
       })
-    }
-    if (url.includes('batch/network/summary')) {
-      return route.fulfill({ json: [PRIVATE_SUMMARY] })
     }
     if (url.includes(`networks/${NETWORK_ID}`)) {
       return route.fulfill({
