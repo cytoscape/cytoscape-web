@@ -1,46 +1,20 @@
+import { Typography } from '@mui/material'
+
 import {
-  Button,
-  Group,
-  MantineProvider,
-  Modal,
-  Stack,
-  Text,
-  Title,
-} from '@mantine/core'
-import { Dropzone, FileWithPath } from '@mantine/dropzone'
-import { ModalsProvider } from '@mantine/modals'
-import { PrimeReactProvider } from 'primereact/api'
+  DropzoneHint,
+  FileDropzoneDialog,
+  FileRejection,
+} from '@/features/FileDropzoneDialog'
 
-export interface GenericFileUploadDialogProps {
-  show: boolean
-  handleClose: () => void
-  onFileSelect: (file: File) => void | Promise<void>
-  acceptedFileTypes: string[]
-  title: string
-  description: string
-  supportedFileTypesText: string
-  maxFileSizeMB?: number
-  validator?: (file: File) => { code: string; message: string } | null
-  onFileError?: (rejectedFiles: any) => void
-}
+export const DEFAULT_MAX_FILE_SIZE_MB = 5
 
-export function GenericFileUploadDialog(
-  props: GenericFileUploadDialogProps,
-): JSX.Element {
-  const {
-    show,
-    handleClose,
-    onFileSelect,
-    acceptedFileTypes,
-    title,
-    description,
-    supportedFileTypesText,
-    maxFileSizeMB = 5,
-    validator,
-    onFileError,
-  } = props
-
-  const defaultValidator = (file: File) => {
+/**
+ * Extension + size validator shared by every upload dropzone, so the rejection
+ * messages and the size limit cannot drift between callers.
+ */
+export const createFileValidator =
+  (acceptedFileTypes: string[], maxFileSizeMB: number) =>
+  (file: File): { code: string; message: string } | null => {
     // Do not validate if the object is not a file
     if (!file.name) {
       return null
@@ -54,7 +28,7 @@ export function GenericFileUploadDialog(
       }
     }
 
-    if (maxFileSizeMB && file.size > maxFileSizeMB * 1024 * 1024) {
+    if (maxFileSizeMB > 0 && file.size > maxFileSizeMB * 1024 * 1024) {
       return {
         code: 'file-too-large',
         message: `File ${file.name} exceeds the maximum size of ${maxFileSizeMB}MB.`,
@@ -64,75 +38,66 @@ export function GenericFileUploadDialog(
     return null
   }
 
-  const fileValidator = validator || defaultValidator
+export interface GenericFileUploadDialogProps {
+  show: boolean
+  handleClose: () => void
+  onFileSelect: (file: File) => void | Promise<void>
+  acceptedFileTypes: string[]
+  title: string
+  description: string
+  supportedFileTypesText: string
+  maxFileSizeMB?: number
+  validator?: (file: File) => { code: string; message: string } | null
+  onFileError?: (rejectedFiles: FileRejection[]) => void
+  /** Override any subset to give a caller's dialog unique selectors. */
+  testIds?: { modal?: string; dropzone?: string; browseButton?: string }
+}
 
-  const handleFileDrop = async (file: File): Promise<void> => {
-    await onFileSelect(file)
-  }
-
-  const handleFileError = (rejectedFiles: any): void => {
-    if (onFileError) {
-      onFileError(rejectedFiles)
-    }
-  }
+export function GenericFileUploadDialog(
+  props: GenericFileUploadDialogProps,
+): JSX.Element {
+  const {
+    show,
+    handleClose,
+    onFileSelect,
+    acceptedFileTypes,
+    title,
+    description,
+    supportedFileTypesText,
+    maxFileSizeMB = DEFAULT_MAX_FILE_SIZE_MB,
+    validator,
+    onFileError,
+    testIds,
+  } = props
 
   return (
-    <PrimeReactProvider>
-      <MantineProvider>
-        <ModalsProvider>
-          <Modal
-            data-testid="generic-file-upload-modal"
-            onClose={handleClose}
-            opened={show}
-            zIndex={2000}
-            centered
-            closeOnClickOutside={true}
-            closeOnEscape={true}
-            title={
-              <Title c="gray" order={4}>
-                {title}
-              </Title>
-            }
-          >
-            <Dropzone
-              data-testid="generic-file-upload-dropzone"
-              multiple={false}
-              maxFiles={1}
-              validator={fileValidator}
-              onDrop={(files: FileWithPath[]) => {
-                if (files && files.length > 0) {
-                  handleFileDrop(files[0])
-                }
-              }}
-              onReject={handleFileError}
-            >
-              <Group
-                justify="center"
-                gap="xl"
-                mih={220}
-                style={{ pointerEvents: 'stroke' }}
-              >
-                <Stack align="center">
-                  <Button data-testid="generic-file-upload-browse-button">
-                    Browse
-                  </Button>
-                  <Text size="xl" inline>
-                    {description}
-                  </Text>
-                  <Text size="sm" inline mt={7}>
-                    {supportedFileTypesText}
-                  </Text>
-                  {maxFileSizeMB && (
-                    <Text size="sm" c="dimmed" inline mt={7}>
-                      Files under {maxFileSizeMB}MB supported.
-                    </Text>
-                  )}
-                </Stack>
-              </Group>
-            </Dropzone>
-          </Modal>
-        </ModalsProvider>
-      </MantineProvider>
-    </PrimeReactProvider>
+    <FileDropzoneDialog
+      show={show}
+      handleClose={handleClose}
+      title={title}
+      testIds={{
+        modal: testIds?.modal ?? 'generic-file-upload-modal',
+        dropzone: testIds?.dropzone ?? 'generic-file-upload-dropzone',
+        browseButton:
+          testIds?.browseButton ?? 'generic-file-upload-browse-button',
+      }}
+      validator={
+        validator ?? createFileValidator(acceptedFileTypes, maxFileSizeMB)
+      }
+      onDrop={(file: File) => {
+        void onFileSelect(file)
+      }}
+      onReject={(rejectedFiles: FileRejection[]) => {
+        onFileError?.(rejectedFiles)
+      }}
+    >
+      <Typography variant="h6">{description}</Typography>
+      <DropzoneHint>{supportedFileTypesText}</DropzoneHint>
+      {maxFileSizeMB > 0 && (
+        <DropzoneHint dimmed>
+          Files under {maxFileSizeMB}MB supported.
+        </DropzoneHint>
+      )}
+    </FileDropzoneDialog>
   )
 }

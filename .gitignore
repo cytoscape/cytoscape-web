@@ -10,8 +10,20 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+# Bundle analyzer report (npm run build:analyze)
+/ba/
+# Vitest coverage output (npm run test:coverage)
+/coverage/
+# Module Federation (@module-federation/vite) generated cache/diagnostics
+/.mf/
 *.local
 yarn.lock
+
+# AI agent settings: shared team rules are tracked, everything else is local
+.claude/*
+!.claude/settings.json
+.agents/
+.codex/
 
 # Editor directories and files
 .vscode/*
@@ -28,3 +40,13 @@ yarn.lock
 /playwright/.cache/
 /notes/
 /_NOTES/
+# Build and Config
+src/assets/config.json.bak
+src/assets/config-dev3.json
+cyweb.tgz
+build-dev3.sh
+scratch
+
+# Local code-analysis tool state and generated output
+/.antigravitycli/
+/graphify-out/

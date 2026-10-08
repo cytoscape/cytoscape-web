@@ -5,12 +5,12 @@ This script analyzes exported application state JSON files and generates a visua
 ## Usage
 
 ```bash
-npx ts-node --compiler-options '{"module":"commonjs"}' scripts/generate-state-diagram/generate-state-diagram.ts <state-json-file>
+npx tsx scripts/generate-state-diagram/generate-state-diagram.ts <state-json-file>
 ```
 
 Example:
 ```bash
-npx ts-node --compiler-options '{"module":"commonjs"}' scripts/generate-state-diagram/generate-state-diagram.ts cyweb-app-state-1.0.4-2025-11-14.json
+npx tsx scripts/generate-state-diagram/generate-state-diagram.ts cyweb-app-state-1.0.4-2025-11-14.json
 ```
 
 Then generate PNG/SVG:
@@ -76,5 +76,5 @@ ApplicationState
 
 - Node.js
 - TypeScript
-- ts-node (for running the script)
+- tsx (for running the script)
 

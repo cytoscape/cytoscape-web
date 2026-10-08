@@ -1,47 +1,19 @@
 import { z } from 'zod'
 
-import type { ComponentMetadata } from '../../models/AppModel/ComponentMetadata'
+import type { AppDataRow } from '@/models/AppDataModel/AppData'
 import type { CyApp } from '../../models/AppModel/CyApp'
-import type { CyWebMenuItem } from '../../models/AppModel/CyWebMenuItem'
-import type { MenuPathElement } from '../../models/AppModel/MenuPathElement'
 import type { ServiceApp } from '../../models/AppModel/ServiceApp'
-import type { ServiceAppAction } from '../../models/AppModel/ServiceAppAction'
-import type { ServiceAppParameter } from '../../models/AppModel/ServiceAppParameter'
-import type {
-  InputColumn,
-  InputNetwork,
-  ServiceInputDefinition,
-} from '../../models/AppModel/ServiceInputDefinition'
 import type { FilterConfig } from '../../models/FilterModel/FilterConfig'
-import type { Edge, Network, Node } from '../../models/NetworkModel'
-import type { NetworkProperty } from '../../models/NetworkSummaryModel/NetworkProperty'
+import type { Network } from '../../models/NetworkModel'
 import type { NetworkSummary } from '../../models/NetworkSummaryModel/NetworkSummary'
 import type { OpaqueAspects } from '../../models/OpaqueAspectModel/OpaqueAspects'
-import type { Edit,UndoRedoStack } from '../../models/StoreModel/UndoStoreModel'
-import type { Column } from '../../models/TableModel/Column'
+import type { UndoRedoStack } from '../../models/StoreModel/UndoStoreModel'
 import type { Table } from '../../models/TableModel/Table'
-import type { NetworkBrowserPanelUIState } from '../../models/UiModel/NetworkBrowserPanelState'
-import type { NetworkViewUIState } from '../../models/UiModel/NetworkViewUI'
 import { Panel } from '../../models/UiModel/Panel'
-import type { ColumnUIState,TableUIState } from '../../models/UiModel/TableUi'
 import type { Ui } from '../../models/UiModel/Ui'
 import type { NetworkView } from '../../models/ViewModel/NetworkView'
-import type {
-  ContinuousFunctionControlPoint,
-  ContinuousMappingFunction,
-} from '../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
-import type { DiscreteMappingFunction } from '../../models/VisualStyleModel/VisualMappingFunction/DiscreteMappingFunction'
 import { MappingFunctionType } from '../../models/VisualStyleModel/VisualMappingFunction/MappingFunctionType'
-import type { VisualMappingFunction } from '../../models/VisualStyleModel/VisualMappingFunction/VisualMappingFunction'
-import type { VisualProperty } from '../../models/VisualStyleModel/VisualProperty'
 import type { VisualStyle } from '../../models/VisualStyleModel/VisualStyle'
-import type {
-  ColumnConfiguration,
-  TableConfig,
-  TableDisplayConfiguration,
-  VisualEditorProperties,
-  VisualStyleOptions,
-} from '../../models/VisualStyleModel/VisualStyleOptions'
 import type { Workspace } from '../../models/WorkspaceModel/Workspace'
 import type { OpaqueAspectsDB, UndoRedoStackDB } from './index'
 import type {
@@ -52,6 +24,12 @@ import type {
 } from './serialization/mapSerialization'
 
 const IdTypeSchema = z.string().min(1)
+
+// An empty id is a legitimate persisted state for pointer-style fields:
+// a workspace with no networks has currentNetworkId '', and no active
+// sub-network view is activeNetworkView ''. Requiring min(1) there would
+// flag every fresh workspace (round-1 review; reconciled in round 7).
+const IdTypeOrEmptySchema = z.string()
 
 const DateSchema = z.preprocess((value) => {
   if (value instanceof Date) {
@@ -238,7 +216,7 @@ const PanelsSchema = z.object({
 
 const UiSchema = z.object({
   panels: PanelsSchema,
-  activeNetworkView: IdTypeSchema,
+  activeNetworkView: IdTypeOrEmptySchema,
   enablePopup: z.boolean(),
   showErrorDialog: z.boolean(),
   errorMessage: z.string(),
@@ -293,7 +271,7 @@ const NetworkSummarySchema = z.object({
 const WorkspaceSchema = z.object({
   name: z.string(),
   id: IdTypeSchema,
-  currentNetworkId: IdTypeSchema,
+  currentNetworkId: IdTypeOrEmptySchema,
   networkIds: z.array(IdTypeSchema),
   localModificationTime: DateSchema,
   creationTime: DateSchema,
@@ -302,9 +280,10 @@ const WorkspaceSchema = z.object({
   options: z.unknown().optional(),
 })
 
-const TimestampSchema = z.object({
-  id: z.string(),
-  timestamp: z.number(),
+/** Row shape of the `viewSelections` store (added in DB v11). */
+const ViewSelectionSchema = z.object({
+  selectedNodes: z.array(IdTypeSchema),
+  selectedEdges: z.array(IdTypeSchema),
 })
 
 const DiscreteFilterDetailsSchema = z.object({
@@ -319,12 +298,21 @@ const NumberRangeSchema = z.object({
   max: z.number(),
 })
 
+// null is the option for elements without a value (DiscreteFilterValue, #796)
 const DiscreteRangeSchema = z.object({
-  values: z.array(ValueTypeSchema),
+  values: z.array(ValueTypeSchema.nullable()),
 })
 
 const FilterConfigSchema = z.object({
-  name: z.string(),
+  // The key FilterStore files the config under. Never '__proto__': hydration
+  // assigns configs into a plain object, where that name would replace the
+  // prototype instead of storing a value (#774).
+  name: z
+    .string()
+    .min(1)
+    .refine((name) => name !== '__proto__', {
+      message: 'name "__proto__" is reserved',
+    }),
   target: z.string(),
   attributeName: z.string(),
   label: z.string(),
@@ -335,6 +323,7 @@ const FilterConfigSchema = z.object({
   visualMapping: VisualMappingFunctionSchema.optional(),
   range: NumberRangeSchema.or(DiscreteRangeSchema),
   discreteFilterDetails: z.array(DiscreteFilterDetailsSchema).optional(),
+  enabled: z.boolean().optional(),
 })
 
 const FilterConfigWithRecordsSchema = FilterConfigSchema.extend({
@@ -348,16 +337,16 @@ const FilterConfigWithRecordsSchema = FilterConfigSchema.extend({
     .optional(),
 })
 
-const ComponentMetadataSchema = z.object({
-  id: z.string(),
-  type: z.string(),
-})
-
+// No `components`: the field was removed in App API 1.0.0-beta.5 (#786). A
+// record saved before that still carries it and must still validate, which it
+// does because zod ignores unknown keys. This does not clean the record:
+// read-path validation (`observeValidation` in db/index.ts) discards the
+// parsed value, so callers get the raw record with the field still on it.
+// `toStoredApp` in appStoreImpl.ts is what keeps it out of AppStore.
 const CyAppSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string().optional(),
-  components: z.array(ComponentMetadataSchema),
   status: z.string().optional(),
 })
 
@@ -381,11 +370,13 @@ const ServiceAppParameterSchema = z.object({
   defaultValue: z.string(),
   value: z.string().optional(),
   validationType: z.string(),
-  columnTypeFilter: z.string(),
+  // One filter or a list of filters; services send null for what does not apply.
+  columnTypeFilter: z.union([z.string(), z.array(z.string())]).nullish(),
   validationHelp: z.string(),
   validationRegex: z.string(),
-  minValue: z.number().optional(),
-  maxValue: z.number().optional(),
+  minValue: z.number().nullish(),
+  maxValue: z.number().nullish(),
+  groups: z.unknown().optional(),
 })
 
 const InputColumnSchema = z.object({
@@ -405,20 +396,25 @@ const InputNetworkSchema = z.object({
 const ServiceInputDefinitionSchema = z.object({
   type: z.string(),
   scope: z.string(),
-  inputColumns: z.array(InputColumnSchema),
-  inputNetwork: InputNetworkSchema,
+  // Null when the service requests no columns / no network (e.g. type 'none').
+  inputColumns: z.array(InputColumnSchema).nullable(),
+  inputNetwork: InputNetworkSchema.nullable(),
 })
 
 const ServiceAppSchema = z.object({
   url: z.string(),
   name: z.string(),
   description: z.string().optional(),
+  showDescriptionInDialog: z.boolean().optional(),
   version: z.string(),
   serviceInputDefinition: ServiceInputDefinitionSchema.optional(),
-  cyWebAction: z.array(ServiceAppActionSchema),
+  cyWebActions: z.array(ServiceAppActionSchema),
   cyWebMenuItem: CyWebMenuItemSchema,
-  author: z.string(),
-  citation: z.string(),
+  // Nullable: endpoints send null rather than omitting these. Requiring a string
+  // rejected a snapshot containing the cytocontainer example service, which
+  // sends null for both.
+  author: z.string().nullish(),
+  citation: z.string().nullish(),
   parameters: z.array(ServiceAppParameterSchema),
 })
 
@@ -428,6 +424,34 @@ const OpaqueAspectsDbSchema = z.object({
 })
 
 const OpaqueAspectsSchema = z.record(z.array(z.unknown()))
+
+// One local-tier app-data row. `networkId` is a plain string, not IdTypeSchema:
+// app-scoped entries use the empty id as their scope (APP_DATA_GLOBAL_SCOPE).
+// `value` is whatever the app stored — the app API guarantees only that it
+// survived a JSON round trip.
+const AppDataRowSchema = z
+  .object({
+    id: z.string().min(1),
+    appId: z.string().min(1),
+    networkId: z.string(),
+    // Never '__proto__' — hydration assigns rows into a plain object, where
+    // that name would replace the prototype instead of storing a value. The
+    // app API rejects it on write; this is the read-path half.
+    key: z
+      .string()
+      .min(1)
+      .refine((key) => key !== '__proto__', {
+        message: 'key "__proto__" is reserved',
+      }),
+    value: z.unknown(),
+  })
+  // z.unknown() is optional in Zod, so a row with no `value` at all would
+  // otherwise validate and hydrate as undefined — indistinguishable from the
+  // absent key that APP11 exists to report.
+  .refine((row) => row.value !== undefined, {
+    message: 'value must be defined',
+    path: ['value'],
+  })
 
 const EditSchema = z.object({
   undoCommand: z.string(),
@@ -465,8 +489,10 @@ const NetworkViewSchema = z.object({
   id: IdTypeSchema,
   nodeViews: z.record(NodeViewSchema),
   edgeViews: z.record(EdgeViewSchema),
-  selectedNodes: z.array(IdTypeSchema),
-  selectedEdges: z.array(IdTypeSchema),
+  // Optional from v11: selection moved to the `viewSelections` store, so rows
+  // written since then carry none. Pre-v11 rows still have it inline.
+  selectedNodes: z.array(IdTypeSchema).optional(),
+  selectedEdges: z.array(IdTypeSchema).optional(),
   type: z.string().optional(),
   viewId: IdTypeSchema.optional(),
   values: ViewValuesSchema,
@@ -489,8 +515,9 @@ const NetworkViewWithRecordsSchema = z.object({
   id: IdTypeSchema,
   nodeViews: z.record(NodeViewWithRecordsSchema),
   edgeViews: z.record(EdgeViewWithRecordsSchema),
-  selectedNodes: z.array(IdTypeSchema),
-  selectedEdges: z.array(IdTypeSchema),
+  // Optional from v11 — see NetworkViewSchema
+  selectedNodes: z.array(IdTypeSchema).optional(),
+  selectedEdges: z.array(IdTypeSchema).optional(),
   type: z.string().optional(),
   viewId: IdTypeSchema.optional(),
   values: MapEntriesSchema,
@@ -527,8 +554,11 @@ export const validateUiState = (value: unknown): Ui =>
 export const validateStoredUiState = (value: unknown) =>
   UiStateStoredSchema.parse(value) as Ui & { id: string }
 
-export const validateTimestampEntry = (value: unknown) =>
-  TimestampSchema.parse(value) as { id: string; timestamp: number }
+export const validateViewSelection = (value: unknown) =>
+  ViewSelectionSchema.parse(value) as {
+    selectedNodes: string[]
+    selectedEdges: string[]
+  }
 
 export const validateFilterConfig = (value: unknown): FilterConfig =>
   FilterConfigSchema.parse(value) as FilterConfig
@@ -549,6 +579,9 @@ export const validateOpaqueAspectsDb = (value: unknown): OpaqueAspectsDB =>
 
 export const validateOpaqueAspects = (value: unknown): OpaqueAspects =>
   OpaqueAspectsSchema.parse(value) as OpaqueAspects
+
+export const validateAppDataRow = (value: unknown): AppDataRow =>
+  AppDataRowSchema.parse(value) as AppDataRow
 
 export const validateUndoRedoStackDb = (value: unknown): UndoRedoStackDB =>
   UndoRedoStackDbSchema.parse(value) as UndoRedoStackDB

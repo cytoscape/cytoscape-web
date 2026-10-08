@@ -1,8 +1,52 @@
-import whyDidYouRender from '@welldone-software/why-did-you-render'
 import debug from 'debug'
-import React from 'react'
+import hotkeys from 'hotkeys-js'
 
-import config from './assets/config.json'
+const DEBUG_OVERRIDE_KEY = 'cyweb-debug-enabled'
+const DEBUG_SHORTCUT = '`,shift+`'
+
+type InitializeDebugOptions = {
+  defaultEnabled?: boolean
+  enableRenderTracking?: boolean
+}
+
+let debugEnabled = false
+const debugListeners = new Set<() => void>()
+const debugTools = new Map<string, unknown>()
+
+function syncDebugTools(): void {
+  window.debug ??= {}
+  for (const [name, value] of debugTools) {
+    if (debugEnabled) {
+      window.debug[name] = value
+    } else {
+      delete window.debug[name]
+    }
+  }
+}
+
+function readDebugOverride(): boolean | undefined {
+  const value = localStorage.getItem(DEBUG_OVERRIDE_KEY)
+  if (value === 'true') return true
+  if (value === 'false') return false
+  return undefined
+}
+
+function setDebugEnabled(enabled: boolean, persist: boolean): void {
+  debugEnabled = enabled
+  if (persist) {
+    localStorage.setItem(DEBUG_OVERRIDE_KEY, String(enabled))
+  }
+
+  if (enabled) {
+    debug.enable('*')
+    window.debug ??= {}
+  } else {
+    debug.disable()
+  }
+
+  syncDebugTools()
+  debugListeners.forEach((listener) => listener())
+}
 
 /**
  * Debug namespace types for organizing debug logs by feature area
@@ -45,22 +89,53 @@ export const logPerformance = createLoggers(DebugNamespaceType.PERFORMANCE)
 export const logHistory = createLoggers(DebugNamespaceType.HISTORY)
 export const logModel = createLoggers(DebugNamespaceType.MODEL)
 
-/**
- * Initializes debug logging and React component debugging
- * Enables debug logging if debug mode is enabled in config
- * Sets up why-did-you-render for React component debugging
- */
-export const initializeDebug = (): void => {
-  // Enable all debug namespaces if debug mode is enabled in config
-  if (config.debug) {
-    localStorage.debug = '*'
-    window.debug = {}
+export const isDebugEnabled = (): boolean => debugEnabled
 
-    whyDidYouRender(React, { trackAllPureComponents: false })
+export const subscribeDebug = (listener: () => void): (() => void) => {
+  debugListeners.add(listener)
+  return () => debugListeners.delete(listener)
+}
+
+export const registerDebugTool = (
+  name: string,
+  value: unknown,
+): (() => void) => {
+  debugTools.set(name, value)
+  syncDebugTools()
+
+  return () => {
+    debugTools.delete(name)
+    if (window.debug !== undefined) {
+      delete window.debug[name]
+    }
   }
-  console.log(
-    config.debug
-      ? '[DEBUG] Debug mode is enabled'
-      : '[DEBUG] Debug mode is disabled',
-  )
+}
+
+/**
+ * Initializes debug logging from the persisted user choice or build default.
+ * Pressing backtick/tilde toggles the setting immediately and persists it.
+ */
+export const initializeDebug = (
+  options: InitializeDebugOptions = {},
+): (() => void) => {
+  const defaultEnabled = options.defaultEnabled ?? import.meta.env.DEV
+  setDebugEnabled(readDebugOverride() ?? defaultEnabled, false)
+
+  const toggleDebug = (): void => {
+    setDebugEnabled(!debugEnabled, true)
+  }
+
+  hotkeys(DEBUG_SHORTCUT, toggleDebug)
+
+  // This branch is compiled away in production, including the profiler import.
+  if (import.meta.env.DEV && options.enableRenderTracking !== false) {
+    void Promise.all([
+      import('@welldone-software/why-did-you-render'),
+      import('react'),
+    ]).then(([{ default: whyDidYouRender }, { default: React }]) => {
+      whyDidYouRender(React, { trackAllPureComponents: false })
+    })
+  }
+
+  return () => hotkeys.unbind(DEBUG_SHORTCUT, toggleDebug)
 }

@@ -21,7 +21,7 @@ export const createTable = (
 export const columns = (table: Table): Column[] =>
   Array.from(table.columns.values())
 
-export const addColumn = (table: Table, columns: Column[]): Table => {
+export const addColumn = (table: Table): Table => {
   // const newColumns: Column[] = [...table.columns, ...columns]
   // table.columns = newColumns
   return table

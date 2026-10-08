@@ -2,6 +2,7 @@ import { ReactElement, useEffect, useState } from 'react'
 
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { useRendererStore } from '../../data/hooks/stores/RendererStore'
+import { useTableStore } from '../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
@@ -12,12 +13,13 @@ import { Renderer } from '../../models/RendererModel/Renderer'
 import { NetworkView } from '../../models/ViewModel'
 import { VisualStyle } from '../../models/VisualStyleModel'
 import { MessagePanel } from '../Messages'
+import { EmptyWorkspacePanel } from './EmptyWorkspacePanel'
 import { NetworkTab } from './NetworkTab'
 import { NetworkTabs } from './NetworkTabs'
 
 interface NetworkPanelProps {
   networkId: IdType
-  failedToLoad?: boolean
+  failedToLoad?: string
 }
 
 /**
@@ -28,7 +30,7 @@ interface NetworkPanelProps {
  */
 const NetworkPanel = ({
   networkId,
-  failedToLoad = false,
+  failedToLoad = '',
 }: NetworkPanelProps): ReactElement => {
   const [isActive, setIsActive] = useState<boolean>(false)
 
@@ -69,8 +71,12 @@ const NetworkPanel = ({
 
   const workspace = useWorkspaceStore((state) => state.workspace)
 
+  const tables = useTableStore((state) => state.tables)
+
   if (failedToLoad) {
-    return <MessagePanel message="Failed to load network data" />
+    return (
+      <MessagePanel message={`Failed to load network data: ${failedToLoad}`} />
+    )
   }
 
   // If we have a networkId prop, we're expecting a network to load
@@ -85,6 +91,21 @@ const NetworkPanel = ({
 
     // If network isn't loaded yet, show loading state
     if (targetNetwork.id === '') {
+      return <MessagePanel message="Loading network data..." />
+    }
+
+    // The renderer cannot draw without the node/edge tables — it reads
+    // `tables[id].nodeTable` unconditionally — and a network can legitimately be
+    // in NetworkStore before its tables arrive, because `cyNetworks` and
+    // `cyTables` are separate IndexedDB rows written in separate transactions.
+    // Cross-tab hydration can therefore deliver the network first. Waiting here
+    // keeps the renderer from mounting against incomplete data.
+    // Same for the visual style: `renderNetwork` reads it unconditionally and
+    // bails without it, so mounting early would only show a blank canvas.
+    if (
+      tables[networkId] === undefined ||
+      visualStyles[networkId] === undefined
+    ) {
       return <MessagePanel message="Loading network data..." />
     }
 
@@ -133,13 +154,21 @@ const NetworkPanel = ({
     return <MessagePanel message="Loading network data..." />
   }
 
-  // Workspace is initialized but no network is selected
+  // Workspace is initialized but holds no networks: the call to action
+  // (#651). State-driven, so it also returns after Data → Remove All Networks.
   if (workspace.networkIds.length === 0) {
-    return <MessagePanel message="No network selected" />
+    return <EmptyWorkspacePanel />
   }
 
-  // This should not be reached, but TypeScript needs it
-  return <MessagePanel message="No network selected" />
+  // Workspace has networks but none is current. A "load a network" CTA is
+  // the wrong copy here — point at the workspace panel instead.
+  return (
+    <MessagePanel
+      data-testid="no-network-selected-panel"
+      message="Select a network"
+      subMessage="Choose a network from the workspace panel on the left to view it here."
+    />
+  )
 }
 
 export default NetworkPanel

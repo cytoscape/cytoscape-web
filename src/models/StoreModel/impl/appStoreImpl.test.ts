@@ -1,3 +1,6 @@
+// @vitest-environment node
+import { describe, expect, it } from 'vitest'
+
 import { AppStatus } from '../../AppModel/AppStatus'
 import { CyApp } from '../../AppModel/CyApp'
 import { ServiceApp } from '../../AppModel/ServiceApp'
@@ -7,10 +10,13 @@ import {
   add,
   addService,
   AppState,
+  refreshService,
   clearCurrentTask,
   removeService,
   restore,
+  setCatalog,
   setCurrentTask,
+  setLoadFailed,
   setStatus,
   updateInputColumn,
   updateServiceParameter,
@@ -21,6 +27,12 @@ const createDefaultState = (): AppState => {
     apps: {},
     serviceApps: {},
     currentTask: undefined,
+    catalog: {},
+    catalogSources: {},
+    manifestIds: [],
+    loadStates: {},
+    loadErrors: {},
+    manifestSource: undefined,
   }
 }
 
@@ -39,7 +51,7 @@ const createTestServiceApp = (url: string): ServiceApp => {
     parameters: [],
     description: '',
     version: '',
-    cyWebAction: [],
+    cyWebActions: [],
     cyWebMenuItem: {} as any,
     author: '',
     citation: '',
@@ -52,10 +64,7 @@ describe('AppStoreImpl', () => {
       const state = createDefaultState()
       const app1 = createTestApp('app-1')
       const app2 = createTestApp('app-2')
-      const apps = [
-        { id: 'app-1', cached: app1 },
-        { id: 'app-2', cached: app2 },
-      ]
+      const apps = [app1, app2]
       const serviceApps: ServiceApp[] = []
 
       const result = restore(state, apps, serviceApps)
@@ -76,6 +85,19 @@ describe('AppStoreImpl', () => {
       )
       expect(result).not.toBe(state) // Immutability check
     })
+
+    it('drops legacy components from a restored record', () => {
+      // A workspace saved before #786 still has the field on its app records.
+      const state = createDefaultState()
+      const legacy = {
+        ...createTestApp('app-1'),
+        components: [{ id: 'Panel', type: 'panel' }],
+      }
+
+      const result = restore(state, [legacy as any], [])
+
+      expect(result.apps['app-1']).toEqual(createTestApp('app-1'))
+    })
   })
 
   describe('add', () => {
@@ -90,19 +112,74 @@ describe('AppStoreImpl', () => {
       expect(result).not.toBe(state) // Immutability check
     })
 
-    it('should use cached app if available', () => {
+    // `CyApp.components` was removed in App API 1.0.0-beta.5 (#786). An app
+    // bundle is untyped at runtime and an old workspace record still carries
+    // the field, so the store drops it wherever an app record comes in.
+    const legacyComponents = [
+      { id: 'Panel', type: 'panel', component: () => null },
+      { id: 'MenuItem', type: 'menu', component: () => null },
+    ]
+
+    it('drops legacy components a brand-new app still declares', () => {
       const state = createDefaultState()
-      const app = createTestApp('app-1')
-      const cachedApp = createTestApp('app-1')
-      cachedApp.status = AppStatus.Active
+      const app = { ...createTestApp('app-1'), components: legacyComponents }
 
-      const result = add(state, app, cachedApp)
+      const result = add(state, app as any, undefined)
 
-      expect(result.apps['app-1']).toEqual(cachedApp)
-      expect(result.apps['app-1'].status).toBe(AppStatus.Active)
+      expect(result.apps['app-1']).toBeDefined()
+      expect(result.apps['app-1']).not.toHaveProperty('components')
     })
 
-    it('should not add duplicate app', () => {
+    it('uses the cached app status and drops its legacy components', () => {
+      const state = createDefaultState()
+      const app = { ...createTestApp('app-1'), components: legacyComponents }
+      const cachedApp = {
+        ...createTestApp('app-1'),
+        components: [{ id: 'Panel', type: 'panel' }],
+        status: AppStatus.Active,
+      }
+
+      const result = add(state, app as any, cachedApp as any)
+
+      expect(result.apps['app-1'].status).toBe(AppStatus.Active)
+      expect(result.apps['app-1']).not.toHaveProperty('components')
+    })
+
+    it('drops legacy components from an app already in the store', () => {
+      const restored = {
+        ...createTestApp('app-1'),
+        components: [{ id: 'Panel', type: 'panel' }],
+      }
+      const state = {
+        ...createDefaultState(),
+        apps: { 'app-1': restored as any },
+      }
+      const app = {
+        ...createTestApp('app-1'),
+        version: '2.0.0',
+        components: legacyComponents,
+      }
+
+      const result = add(state, app as any, undefined)
+
+      expect(Object.keys(result.apps)).toHaveLength(1)
+      expect(result.apps['app-1'].version).toBe('2.0.0')
+      expect(result.apps['app-1']).not.toHaveProperty('components')
+    })
+
+    it('never stores the resources of an app', () => {
+      const state = createDefaultState()
+      const app = {
+        ...createTestApp('app-1'),
+        resources: [{ slot: 'right-panel', id: 'P', component: () => null }],
+      }
+
+      const result = add(state, app as any, undefined)
+
+      expect(result.apps['app-1']).not.toHaveProperty('resources')
+    })
+
+    it('should not add duplicate app (preserves single entry)', () => {
       const state = createDefaultState()
       const app = createTestApp('app-1')
 
@@ -147,6 +224,32 @@ describe('AppStoreImpl', () => {
 
       expect(result.serviceApps['https://example.com/service']).toBeUndefined()
       expect(result).not.toBe(state) // Immutability check
+    })
+  })
+
+  describe('refreshService', () => {
+    it('should overwrite an existing service app with new metadata', () => {
+      const url = 'https://example.com/service'
+      const state = createDefaultState()
+      const original = createTestServiceApp(url)
+      const added = addService(state, original)
+
+      const updated = { ...createTestServiceApp(url), name: 'Renamed Service' }
+      const result = refreshService(added, updated)
+
+      expect(result.serviceApps[url].name).toBe('Renamed Service')
+      expect(Object.keys(result.serviceApps)).toHaveLength(1)
+      expect(result).not.toBe(added) // Immutability check
+    })
+
+    it('should add the service app when it is not already present', () => {
+      const url = 'https://example.com/service'
+      const state = createDefaultState()
+      const serviceApp = createTestServiceApp(url)
+
+      const result = refreshService(state, serviceApp)
+
+      expect(result.serviceApps[url]).toEqual(serviceApp)
     })
   })
 
@@ -229,6 +332,28 @@ describe('AppStoreImpl', () => {
       )
       expect(param?.value).toBe('new-value')
       expect(result).not.toBe(state) // Immutability check
+    })
+
+    it('updates the last parameter when two share a key', () => {
+      // Same displayName and same groups collapse to one key; the form shows
+      // and the payload sends the last one's value, so the edit lands there.
+      const state = createDefaultState()
+      const url = 'https://example.com/service'
+      const serviceApp: ServiceApp = {
+        ...createTestServiceApp(url),
+        parameters: [
+          { displayName: 'dup', value: 'first' } as any,
+          { displayName: 'dup', value: 'second' } as any,
+        ],
+      }
+
+      let result = addService(state, serviceApp)
+      result = updateServiceParameter(result, url, 'dup', 'edited')
+
+      const values = result.serviceApps[url]?.parameters.map(
+        (p: any) => p.value,
+      )
+      expect(values).toEqual(['first', 'edited'])
     })
 
     it('should handle non-existent service gracefully', () => {
@@ -331,7 +456,10 @@ describe('AppStoreImpl', () => {
       const originalServiceApps = original.serviceApps
 
       let state = add(original, createTestApp('app-1'), undefined)
-      state = addService(state, createTestServiceApp('https://example.com/service'))
+      state = addService(
+        state,
+        createTestServiceApp('https://example.com/service'),
+      )
       state = setStatus(state, 'app-1', AppStatus.Active)
       state = setCurrentTask(state, {
         id: 'task-1',
@@ -342,6 +470,9 @@ describe('AppStoreImpl', () => {
       state = clearCurrentTask(state)
       state = removeService(state, 'https://example.com/service')
 
+      // The chained operations produce a new state object
+      expect(state).not.toBe(original)
+
       // Verify original is unchanged
       expect(original.apps).toBe(originalApps)
       expect(original.serviceApps).toBe(originalServiceApps)
@@ -350,5 +481,121 @@ describe('AppStoreImpl', () => {
       expect(original.currentTask).toBeUndefined()
     })
   })
-})
+  describe('setCatalog', () => {
+    const catalogEntry = (id: string) => ({
+      id,
+      url: `https://apps.cytoscape.org/web/${id}/remoteEntry.js`,
+      author: 'Test',
+    })
 
+    it('defaults every source to manifest when sources is omitted', () => {
+      const state = setCatalog(createDefaultState(), [
+        catalogEntry('a'),
+        catalogEntry('b'),
+      ])
+      expect(state.catalogSources).toEqual({ a: 'manifest', b: 'manifest' })
+    })
+
+    it('derives manifestIds from the manifest sources when omitted', () => {
+      const state = setCatalog(
+        createDefaultState(),
+        [catalogEntry('a'), catalogEntry('z')],
+        { a: 'manifest', z: 'appstore' },
+      )
+      expect(state.manifestIds).toEqual(['a'])
+    })
+
+    it('keeps an explicit manifestIds even when the source is shadowed', () => {
+      const state = setCatalog(
+        createDefaultState(),
+        [catalogEntry('hello')],
+        { hello: 'snapshot' },
+        ['hello'],
+      )
+      expect(state.catalogSources.hello).toBe('snapshot')
+      expect(state.manifestIds).toEqual(['hello'])
+    })
+
+    it('replaces the previous catalog and manifestIds', () => {
+      const first = setCatalog(createDefaultState(), [catalogEntry('a')])
+      const second = setCatalog(first, [catalogEntry('b')], undefined, ['b'])
+      expect(Object.keys(second.catalog)).toEqual(['b'])
+      expect(second.manifestIds).toEqual(['b'])
+    })
+
+    // A non-retryable failure leaves the row with no control at all, so a
+    // manifest refresh that corrects the URL has to retire it (#719).
+    it('drops a failure recorded against a URL the new entry replaced', () => {
+      const failed = setLoadFailed(
+        setCatalog(createDefaultState(), [catalogEntry('a')]),
+        'a',
+        {
+          code: 'id-mismatch',
+          url: catalogEntry('a').url,
+          expected: 'a',
+          received: 'A',
+        },
+      )
+
+      const refreshed = setCatalog(failed, [
+        { ...catalogEntry('a'), url: 'https://apps.example.org/a/entry.js' },
+      ])
+
+      expect(refreshed.loadErrors.a).toBeUndefined()
+      expect(refreshed.loadStates.a).toBeUndefined()
+    })
+
+    it('keeps the failure when the entry URL is unchanged', () => {
+      const failed = setLoadFailed(
+        setCatalog(createDefaultState(), [catalogEntry('a')]),
+        'a',
+        { code: 'no-app-config', url: catalogEntry('a').url },
+      )
+
+      const refreshed = setCatalog(failed, [catalogEntry('a')])
+
+      expect(refreshed.loadErrors.a).toEqual({
+        code: 'no-app-config',
+        url: catalogEntry('a').url,
+      })
+      expect(refreshed.loadStates.a).toBe('failed')
+    })
+
+    // A failure kept past a removal is invisible — the orphan row skips failed
+    // ids — until the manifest ships the app again, and then it resurrects on
+    // a row that has no control.
+    it('drops a failure when the catalog no longer carries the entry', () => {
+      const failed = setLoadFailed(
+        setCatalog(createDefaultState(), [catalogEntry('a')]),
+        'a',
+        { code: 'no-app-config', url: catalogEntry('a').url },
+      )
+
+      const removed = setCatalog(failed, [catalogEntry('b')])
+      expect(removed.loadErrors.a).toBeUndefined()
+      expect(removed.loadStates.a).toBeUndefined()
+
+      const restored = setCatalog(removed, [catalogEntry('a')])
+      expect(restored.loadStates.a).toBeUndefined()
+    })
+
+    // mount-failed names no URL, and it already keeps its Retry control.
+    it('keeps a mount failure across a catalog replacement', () => {
+      const failed = setLoadFailed(
+        setCatalog(createDefaultState(), [catalogEntry('a')]),
+        'a',
+        { code: 'mount-failed', message: 'boom' },
+      )
+
+      const refreshed = setCatalog(failed, [
+        { ...catalogEntry('a'), url: 'https://apps.example.org/a/entry.js' },
+      ])
+
+      expect(refreshed.loadErrors.a).toEqual({
+        code: 'mount-failed',
+        message: 'boom',
+      })
+      expect(refreshed.loadStates.a).toBe('failed')
+    })
+  })
+})

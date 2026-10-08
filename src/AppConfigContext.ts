@@ -17,7 +17,7 @@ export interface KeycloakConfig {
  */
 export interface AppConfig {
   ndexBaseUrl: string
-  options?: {}
+  options?: Record<string, unknown>
   defaultServices: string[]
   keycloakConfig: KeycloakConfig
   maxNetworkElementsThreshold: number
@@ -28,9 +28,21 @@ export interface AppConfig {
   openAIAPIKey: string
   googleAnalyticsId: string
   undoStackSize: number
-  debug: boolean
   errorReportEndpoint: string
   maxErrorReportSnapshotSizeMB: number
+  // Origins from which external apps may be installed (App Store CDN, etc.).
+  // localhost origins are additionally allowed when the host itself runs on localhost.
+  appInstallAllowedOrigins: string[]
+  /**
+   * Origin of the deployment that may install apps served from localhost, for
+   * app developers running a dev server against a shared host.
+   *
+   * Names the origin it applies to rather than being a boolean, and is honoured
+   * only when it matches the origin actually being served — see
+   * `isLocalhostAppOptIn`. Absent (the default) means off, so a deployment that
+   * says nothing behaves as if this field did not exist.
+   */
+  allowsLocalhostAppsOn?: string
 }
 
 export const defaultAppConfig: AppConfig = {
@@ -66,9 +78,9 @@ export const defaultAppConfig: AppConfig = {
   openAIAPIKey: '',
   googleAnalyticsId: '',
   undoStackSize: 20,
-  debug: true,
   errorReportEndpoint: '',
   maxErrorReportSnapshotSizeMB: 10,
+  appInstallAllowedOrigins: ['https://apps.cytoscape.org'],
 }
 
 export const AppConfigContext = createContext<AppConfig>(defaultAppConfig)

@@ -1,10 +1,9 @@
+import DeleteIcon from '@mui/icons-material/Delete'
 import {
   Box,
   Button,
-  Checkbox,
   Divider,
   FormControl,
-  FormControlLabel,
   InputLabel,
   MenuItem,
   Popover,
@@ -20,7 +19,7 @@ import { useVisualStyleStore } from '../../../../data/hooks/stores/VisualStyleSt
 import { useUndoStack } from '../../../../data/hooks/useUndoStack'
 import { IdType } from '../../../../models/IdType'
 import { UndoCommandType } from '../../../../models/StoreModel/UndoStoreModel'
-import { AttributeName, ValueTypeName } from '../../../../models/TableModel'
+import { AttributeName } from '../../../../models/TableModel'
 import {
   EdgeVisualPropertyName,
   NodeVisualPropertyName,
@@ -28,6 +27,7 @@ import {
   VisualPropertyValueType,
 } from '../../../../models/VisualStyleModel'
 import {
+  resolveMappingColumnChange,
   typesCanBeMapped,
   validMappingsForVP,
 } from '../../../../models/VisualStyleModel/impl/mappingFunctionImpl'
@@ -38,9 +38,9 @@ import {
   LockSizeCheckbox,
 } from '../../VisualPropertyRender/Checkbox'
 import {
-  ContinuousMappingFunctionIcon,
-  DiscreteMappingFunctionIcon,
-  PassthroughMappingFunctionIcon,
+  ContinuousMappingIcon,
+  DiscreteMappingIcon,
+  PassthroughMappingIcon,
 } from '../../VisualStyleIcons'
 import {
   EmptyVisualPropertyViewBox,
@@ -50,9 +50,9 @@ import { ContinuousMappingForm } from './ContinuousMappingForm'
 import { DiscreteMappingForm } from './DiscreteMappingForm'
 
 const mappingFnIconMap: Record<MappingFunctionType, React.ReactElement> = {
-  [MappingFunctionType.Passthrough]: <PassthroughMappingFunctionIcon />,
-  [MappingFunctionType.Discrete]: <DiscreteMappingFunctionIcon />,
-  [MappingFunctionType.Continuous]: <ContinuousMappingFunctionIcon />,
+  [MappingFunctionType.Passthrough]: <PassthroughMappingIcon />,
+  [MappingFunctionType.Discrete]: <DiscreteMappingIcon />,
+  [MappingFunctionType.Continuous]: <ContinuousMappingIcon />,
 }
 
 function MappingFormContent(props: {
@@ -72,17 +72,8 @@ function MappingFormContent(props: {
     columnValues: state.columnValues,
     tables: state.tables,
   }))
-  const {
-    removeMapping,
-    createContinuousMapping,
-    createDiscreteMapping,
-    createPassthroughMapping,
-    createMapping,
-  } = useVisualStyleStore((state) => ({
+  const { removeMapping, createMapping } = useVisualStyleStore((state) => ({
     removeMapping: state.removeMapping,
-    createContinuousMapping: state.createContinuousMapping,
-    createDiscreteMapping: state.createDiscreteMapping,
-    createPassthroughMapping: state.createPassthroughMapping,
     createMapping: state.createMapping,
   }))
 
@@ -202,101 +193,89 @@ function MappingFormContent(props: {
   }
 
   const handleColumnChange = (nextAttribute: AttributeName): void => {
-    const nextAttributeType = currentTable.columns.find(
-      (c) => c.name === column,
-    )?.type
+    // CW-616 / CW-651: resolve the action from the NEWLY selected attribute.
+    const change = resolveMappingColumnChange(
+      columns,
+      nextAttribute,
+      mappingType,
+      props.visualProperty.type,
+    )
 
-    if (
-      mappingType !== '' &&
-      nextAttribute !== '' &&
-      nextAttributeType != null
-    ) {
-      // if the user switches to a new attribute that is not compatible with the current mapping type, remove the mapping
-      if (
-        typesCanBeMapped(
-          mappingType,
-          nextAttributeType,
-          props.visualProperty.type,
-        )
-      ) {
-        const attributeDataType = currentTable.columns.find(
-          (c) => c.name === nextAttribute,
-        )?.type
-        const attributeValues = Array.from(
-          columnValues(
+    if (change.kind === 'create') {
+      const attributeDataType = change.attributeType
+      const nextMappingType = change.mappingType
+      const attributeValues = Array.from(
+        columnValues(
+          props.currentNetworkId,
+          props.visualProperty.group as 'node' | 'edge',
+          nextAttribute,
+        ),
+      ).sort((a, b) => (a as number) - (b as number))
+
+      if (props.visualProperty.mapping !== undefined) {
+        postEdit(
+          UndoCommandType.SET_MAPPING_COLUMN,
+          `Set ${props.visualProperty.displayName} mapping attribute to ${nextAttribute}`,
+          [
             props.currentNetworkId,
-            props.visualProperty.group as 'node' | 'edge',
-            nextAttribute,
-          ),
-        ).sort((a, b) => (a as number) - (b as number))
-
-        if (attributeDataType != null) {
-          if (props.visualProperty.mapping !== undefined) {
-            postEdit(
-              UndoCommandType.SET_MAPPING_COLUMN,
-              `Set ${props.visualProperty.displayName} mapping attribute to ${nextAttribute}`,
-              [
-                props.currentNetworkId,
-                props.visualProperty.name,
-                props.visualProperty.mapping,
-              ],
-              [
-                props.currentNetworkId,
-                props.visualProperty.name,
-                props.visualProperty.type,
-                mappingType,
-                nextAttribute,
-                attributeDataType,
-                attributeValues,
-              ],
-            )
-          } else {
-            postEdit(
-              UndoCommandType.CREATE_MAPPING,
-              `Create mapping for ${props.visualProperty.displayName} on attribute ${column}`,
-              [props.currentNetworkId, props.visualProperty.name],
-              [
-                props.currentNetworkId,
-                props.visualProperty.name,
-                props.visualProperty.type,
-                mappingType,
-                nextAttribute,
-                attributeDataType,
-                attributeValues,
-              ],
-            )
-          }
-          createMapping(
+            props.visualProperty.name,
+            props.visualProperty.mapping,
+          ],
+          [
             props.currentNetworkId,
             props.visualProperty.name,
             props.visualProperty.type,
-            mappingType,
+            nextMappingType,
             nextAttribute,
             attributeDataType,
             attributeValues,
-          )
-        }
-
-        setColumn(nextAttribute)
-      } else {
-        // if the user switches to a new mapping that is not compatible with the current attribute, remove the mapping
-        postEdit(
-          UndoCommandType.REMOVE_MAPPING,
-          `Remove mapping for ${props.visualProperty.displayName}`,
-          [
-            props.currentNetworkId,
-            props.visualProperty.name,
-            props.visualProperty.mapping,
-          ],
-          [
-            props.currentNetworkId,
-            props.visualProperty.name,
-            props.visualProperty.mapping,
           ],
         )
-        removeMapping(props.currentNetworkId, props.visualProperty.name)
-        setColumn('')
+      } else {
+        postEdit(
+          UndoCommandType.CREATE_MAPPING,
+          `Create mapping for ${props.visualProperty.displayName} on attribute ${nextAttribute}`,
+          [props.currentNetworkId, props.visualProperty.name],
+          [
+            props.currentNetworkId,
+            props.visualProperty.name,
+            props.visualProperty.type,
+            nextMappingType,
+            nextAttribute,
+            attributeDataType,
+            attributeValues,
+          ],
+        )
       }
+      createMapping(
+        props.currentNetworkId,
+        props.visualProperty.name,
+        props.visualProperty.type,
+        nextMappingType,
+        nextAttribute,
+        attributeDataType,
+        attributeValues,
+      )
+
+      setColumn(nextAttribute)
+    } else if (change.kind === 'remove') {
+      // The new attribute is not compatible with the current mapping type.
+      postEdit(
+        UndoCommandType.REMOVE_MAPPING,
+        `Remove mapping for ${props.visualProperty.displayName}`,
+        [
+          props.currentNetworkId,
+          props.visualProperty.name,
+          props.visualProperty.mapping,
+        ],
+        [
+          props.currentNetworkId,
+          props.visualProperty.name,
+          props.visualProperty.mapping,
+        ],
+      )
+      removeMapping(props.currentNetworkId, props.visualProperty.name)
+      setColumn('')
     } else {
       setColumn(nextAttribute)
     }
@@ -346,8 +325,8 @@ function MappingFormContent(props: {
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        width: mappingDimensions[mappingType][0],
-        height: mappingDimensions[mappingType][1],
+        width: (mappingDimensions[mappingType] || mappingDimensions[''])[0],
+        height: (mappingDimensions[mappingType] || mappingDimensions[''])[1],
         overflow: 'hidden',
         p: 2,
       }}
@@ -364,19 +343,11 @@ function MappingFormContent(props: {
         >{`${props.visualProperty.displayName} mapping`}</Typography>
         <Button
           data-testid="mapping-form-remove-button"
-          sx={{
-            color: '#F50157',
-            backgroundColor: 'transparent',
-            '&:hover': {
-              color: '#FFFFFF',
-              backgroundColor: '#F50157',
-            },
-            '&:disabled': {
-              backgroundColor: 'transparent',
-            },
-          }}
+          variant="contained"
+          color="error"
           disabled={props.visualProperty.mapping == null}
           size="small"
+          startIcon={<DeleteIcon />}
           onClick={() => {
             postEdit(
               UndoCommandType.REMOVE_MAPPING,
@@ -576,6 +547,8 @@ export function MappingForm(props: {
         data-testid="mapping-form-popover"
         open={formAnchorEl != null}
         anchorEl={formAnchorEl}
+        disableEscapeKeyDown={true}
+        hideBackdrop={true}
         onClose={() => showForm(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 55 }}
       >
@@ -594,6 +567,28 @@ export function MappingForm(props: {
             </Box>
           </Box>
         )}
+
+        {/* The only way out: this popover blocks click-away and Escape so a
+            half-built mapping is never lost to a stray click
+            (docs/specifications/DIALOG_DISMISS_POLICY.md). */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+            px: 2,
+            py: 1,
+          }}
+        >
+          <Button
+            data-testid="mapping-form-close-button"
+            variant="outlined"
+            size="small"
+            onClick={() => showForm(null)}
+          >
+            Close
+          </Button>
+        </Box>
       </Popover>
     </Box>
   )

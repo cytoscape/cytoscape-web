@@ -1,0 +1,3255 @@
+# App API — Behavioral Documentation
+
+## Overview
+
+The app API (`src/app-api/`) is the sole public API for external apps loaded via
+Module Federation. It provides a stable contract independent of internal store and
+hook implementations.
+
+`window.CyWebApi` contains **11 domain namespaces**, including its anonymous
+Context Menu and Node Graphics APIs. Plugin apps additionally receive per-app
+Context Menu, Node Graphics, and Resource Registration factories, the typed Event
+Bus (`useCyWebEvent`), and an App Lifecycle interface with declarative resource
+support.
+
+## Result Convention
+
+Fallible app API operations return `ApiResult<T>`, a discriminated union:
+
+- `{ success: true, data: T }` — operation succeeded
+- `{ success: false, error: { code, severity, message } }` — operation failed
+
+App API hooks **never** throw exceptions across the API boundary.
+
+The direct-value exceptions are `generateNextNodeId`, `generateNextEdgeId`,
+and the Resource API introspection methods `getSupportedSlots`,
+`getRegisteredResources`, and `getResourceVisibility`.
+
+## Error Codes
+
+Every failure carries a `code`, a `severity` (`'error'` or `'warning'` — see the
+[MI1/MI2/MI3 caveat](./ErrorCodes.md#mi1) for what `severity` means when a code is
+always blocking regardless), and a `message`. Codes that enforce a CX2 validation
+requirement reuse the CX2 code string directly (`FK1`, `BV1`, `MI3`, …); concepts
+with no CX2 equivalent (workspace/registry/runtime state) use a distinct `APP*`
+namespace that can never collide with a future CX2 code addition.
+
+See **[ErrorCodes.md](./ErrorCodes.md)** for the full catalog — one entry per code,
+with severity, message, which methods return it, and (for CX2-derived codes) the
+corresponding CX2 spec provenance.
+
+## Module Federation Entry
+
+External apps import types from `cyweb/ApiTypes`:
+
+```typescript
+import type { ApiResult, IdType } from 'cyweb/ApiTypes'
+import { AppCodes, ElementCodes, ok, fail, isOk, isFail } from 'cyweb/ApiTypes'
+```
+
+`ok()` / `fail()` construct results; `isOk(result)` / `isFail(result)` are type
+guards that narrow an `ApiResult<T>` to its success or failure branch (handy in
+`filter`/`map` chains where `result.success` narrowing is inconvenient).
+
+## App API Hooks
+
+| Module                 | Hook                  | Key on `window.CyWebApi` | Phase |
+| ---------------------- | --------------------- | ------------------------ | ----- |
+| `cyweb/ElementApi`     | `useElementApi()`     | `.element`               | 1a    |
+| `cyweb/NetworkApi`     | `useNetworkApi()`     | `.network`               | 1b    |
+| `cyweb/SelectionApi`   | `useSelectionApi()`   | `.selection`             | 1c    |
+| `cyweb/ViewportApi`    | `useViewportApi()`    | `.viewport`              | 1c    |
+| `cyweb/TableApi`       | `useTableApi()`       | `.table`                 | 1d    |
+| `cyweb/VisualStyleApi` | `useVisualStyleApi()` | `.visualStyle`           | 1d    |
+| `cyweb/LayoutApi`      | `useLayoutApi()`      | `.layout`                | 1e    |
+| `cyweb/ExportApi`      | `useExportApi()`      | `.export`                | 1e    |
+| `cyweb/WorkspaceApi`   | `useWorkspaceApi()`   | `.workspace`             | 1f    |
+| `cyweb/PanelApi`       | `usePanelApi()`       | `.panel`                 | —     |
+| `cyweb/ScopedApi`      | `useScopedApi(id?)`   | `.forNetwork(id?)`       | 1g    |
+| `cyweb/AppDataApi`     | `useAppDataApi()`     | _(per-app only)_         | 3     |
+| `cyweb/EventBus`       | `useCyWebEvent()`     | _(window events)_        | 1g    |
+
+All hooks are thin React wrappers around framework-agnostic core objects.
+The same objects are exposed on `window.CyWebApi` for Vanilla JS consumers.
+
+### Scoped (current-network) API — `CyWebApi.forNetwork(networkId?)`
+
+Every method on the network-scoped domains takes `networkId` as its first
+argument. `forNetwork(networkId?)` returns a view of those domains — `element`,
+`table`, `selection`, `viewport`, `visualStyle`, `export`, and `layout`
+(`applyLayout` only) — with the id pre-bound, so it never has to be passed on
+individual calls. Omit the argument to target the workspace's **current**
+network, resolved at call time.
+
+```typescript
+// Bind the current network (resolved per call)
+const net = window.CyWebApi.forNetwork()
+net.element.createNode([100, 200])
+net.selection.exclusiveSelect(['n1'], [])
+net.table.getTable('node')
+
+// Bind a specific network
+const other = window.CyWebApi.forNetwork('net-42')
+other.export.exportToCx2()
+```
+
+React apps get the same view from the `cyweb/ScopedApi` hook, memoized per
+networkId (stable across renders, safe in effect/callback deps):
+
+```typescript
+import { useScopedApi } from 'cyweb/ScopedApi'
+
+const net = useScopedApi() // current network
+const other = useScopedApi(id) // a specific network
+```
+
+Domains whose methods are not uniformly network-scoped — `network`, `workspace`,
+`contextMenu` — are excluded from the scoped view; call those on the top-level
+`CyWebApi`. `layout` appears in the scoped view with only its network-scoped
+`applyLayout` bound (read algorithms from `CyWebApi.layout.getAvailableLayouts()`).
+The scoped view is purely additive: it delegates to the same underlying domain
+objects.
+
+### Readiness — `CyWebApi.whenReady()` / `CyWebApi.isReady()`
+
+`window.CyWebApi` is assigned before the app finishes hydrating, so its
+stateful methods only work after startup completes. Rather than listen for the
+one-shot `cywebapi:ready` event and track whether it already fired, await the
+promise:
+
+```javascript
+const api = await window.CyWebApi.whenReady() // resolves immediately if ready
+api.forNetwork().element.createNode([0, 0])
+```
+
+`whenReady()` resolves with the `CyWebApi` object; `isReady()` returns the
+current boolean. The `cywebapi:ready` window event still fires for consumers
+that prefer events.
+
+> **Context Menu API:** `cyweb/ContextMenuApi` and `useContextMenuApi()` were removed in Phase 2.
+> Context menu access is now via `AppContext.apis.contextMenu` (per-app factory in `mount()`) or
+> `window.CyWebApi.contextMenu` (anonymous singleton for non-React consumers).
+> See `createContextMenuApi(appId)` in `src/app-api/core/contextMenuApi.ts`.
+
+---
+
+## ElementApi (`cyweb/ElementApi`)
+
+Provides CRUD operations on nodes and edges within a network.
+
+```typescript
+import { useElementApi } from 'cyweb/ElementApi'
+
+function MyComponent() {
+  const elementApi = useElementApi()
+  // ...
+}
+```
+
+### Types
+
+```typescript
+interface NodeData {
+  attributes: Record<AttributeName, ValueType>
+  position: [number, number, number?]
+}
+
+interface EdgeData {
+  sourceId: IdType
+  targetId: IdType
+  attributes: Record<AttributeName, ValueType>
+}
+
+interface CreateNodeOptions {
+  attributes?: Record<AttributeName, ValueType>
+  /** Visual property bypasses validated, then applied atomically at creation. */
+  bypass?: Partial<Record<VisualPropertyName, VisualPropertyValueType>>
+  autoSelect?: boolean // default: true
+}
+
+interface CreateEdgeOptions {
+  attributes?: Record<AttributeName, ValueType>
+  /** Visual property bypasses validated, then applied atomically at creation. */
+  bypass?: Partial<Record<VisualPropertyName, VisualPropertyValueType>>
+  autoSelect?: boolean // default: true
+}
+
+/** One node to create in a createNodes() batch. */
+interface NodeSpec {
+  position: [number, number, number?]
+  attributes?: Record<AttributeName, ValueType>
+  bypass?: Partial<Record<VisualPropertyName, VisualPropertyValueType>>
+}
+
+/** One edge to create in a createEdges() batch. */
+interface EdgeSpec {
+  sourceNodeId: IdType
+  targetNodeId: IdType
+  attributes?: Record<AttributeName, ValueType>
+  bypass?: Partial<Record<VisualPropertyName, VisualPropertyValueType>>
+}
+
+/** Options for the batch create operations. */
+interface BatchCreateOptions {
+  autoSelect?: boolean // default: true
+}
+```
+
+### Methods
+
+#### `getNode(networkId, nodeId): ApiResult<NodeData>`
+
+Returns a node's table attributes and its current position from the view model.
+
+| Error Code | Condition                              |
+| ---------- | -------------------------------------- |
+| `APP1`     | `networkId` does not exist             |
+| `GL1`      | `nodeId` does not exist in the network |
+
+#### `getEdge(networkId, edgeId): ApiResult<EdgeData>`
+
+Returns an edge's source/target IDs and table attributes.
+
+| Error Code | Condition                              |
+| ---------- | -------------------------------------- |
+| `APP1`     | `networkId` does not exist             |
+| `GL2`      | `edgeId` does not exist in the network |
+
+#### `getNodes(networkId, nodeIds?): ApiResult<{ nodes: Array<{ id } & NodeData>, missing: IdType[] }>`
+
+Batch-reads nodes with their attributes and positions. When `nodeIds` is
+omitted, every node in the network is returned. IDs that do not exist are
+reported in `missing` rather than failing the whole call.
+
+| Error Code | Condition                  |
+| ---------- | -------------------------- |
+| `APP1`     | `networkId` does not exist |
+
+#### `createNode(networkId, position, options?): ApiResult<{ nodeId: IdType; node: NodeData }>`
+
+Creates a new node at the given `[x, y, z?]` position. Adds an undo entry and,
+unless `autoSelect: false`, exclusively selects the new node.
+
+Returns the generated `nodeId` and a `node` object containing the final
+`attributes` and `position` that were written to the stores.
+
+If the node table has a `name` column and no `name` attribute is provided,
+defaults to `"Node <id>"`.
+
+If `options.bypass` is provided, each bypass is validated **before** the node is
+created (property existence, node scope, and value type — the same checks
+`setBypass` performs); an invalid bypass fails the call without creating the
+node. Valid bypasses are then applied atomically immediately after the node is
+created (single operation — no separate `setBypass` call required).
+
+| Error Code   | Condition                                                         |
+| ------------ | ----------------------------------------------------------------- |
+| `APP1`       | `networkId` does not exist                                        |
+| `N3`         | `options.attributes` contains an `id` key                         |
+| `APP9`       | `options.bypass` names an unknown visual property                 |
+| `BV2`        | A `options.bypass` property doesn't match node scope              |
+| `VP1`–`VP10` | A `options.bypass` value is invalid for its property's value type |
+
+#### `createEdge(networkId, sourceNodeId, targetNodeId, options?): ApiResult<{ edgeId: IdType; edge: EdgeData }>`
+
+Creates a new edge. Edge IDs use the pattern `e<n>`. Adds an undo entry and,
+unless `autoSelect: false`, exclusively selects the new edge.
+
+Returns the generated `edgeId` and an `edge` object containing `sourceId`,
+`targetId`, and the final `attributes` that were written to the stores.
+
+If the edge table has a `name` column and no `name` attribute is provided,
+defaults to `"<source> (interacts with) <target>"`.
+
+If `options.bypass` is provided, each bypass is validated **before** the edge is
+created (property existence, edge scope, and value type); an invalid bypass
+fails the call without creating the edge. Valid bypasses are then applied
+atomically immediately after the edge is created.
+
+| Error Code   | Condition                                                         |
+| ------------ | ----------------------------------------------------------------- |
+| `APP1`       | `networkId` does not exist                                        |
+| `E6`         | `options.attributes` contains an `id` key                         |
+| `GL1`        | `sourceNodeId` or `targetNodeId` not found                        |
+| `APP9`       | `options.bypass` names an unknown visual property                 |
+| `BV2`        | A `options.bypass` property doesn't match edge scope              |
+| `VP1`–`VP10` | A `options.bypass` value is invalid for its property's value type |
+
+#### `createNodes(networkId, nodes, options?): ApiResult<{ nodes: Array<{ nodeId, node }> }>`
+
+Creates many nodes in one operation that records a **single** undo entry
+(undoing removes them all at once). Each `NodeSpec` carries its own `position`,
+`attributes`, and `bypass`. Validation is all-or-nothing: everything is checked
+up front, and if any spec is invalid no node is created. Unless
+`options.autoSelect: false`, the created nodes are exclusively selected.
+
+Returns each created `nodeId` paired with its `node` (`{ attributes, position }`).
+
+| Error Code   | Condition                                                        |
+| ------------ | ---------------------------------------------------------------- |
+| `APP1`       | `networkId` does not exist                                       |
+| `N3`         | A spec's `attributes` contains an `id` key                       |
+| `APP9`       | A spec's `bypass` names an unknown visual property               |
+| `BV2`        | A spec's `bypass` property doesn't match node scope              |
+| `VP1`–`VP10` | A spec's `bypass` value is invalid for its property's value type |
+
+#### `createEdges(networkId, edges, options?): ApiResult<{ edges: Array<{ edgeId, edge }> }>`
+
+Creates many edges in one operation that records a **single** undo entry. Each
+`EdgeSpec` carries `sourceNodeId`, `targetNodeId`, `attributes`, and `bypass`.
+Validation is all-or-nothing: if any endpoint is missing or any bypass invalid,
+no edge is created. Unless `options.autoSelect: false`, the created edges are
+exclusively selected.
+
+Returns each created `edgeId` paired with its `edge`
+(`{ sourceId, targetId, attributes }`).
+
+| Error Code   | Condition                                                        |
+| ------------ | ---------------------------------------------------------------- |
+| `APP1`       | `networkId` does not exist                                       |
+| `E6`         | A spec's `attributes` contains an `id` key                       |
+| `GL1`        | A spec's `sourceNodeId` or `targetNodeId` not found              |
+| `APP9`       | A spec's `bypass` names an unknown visual property               |
+| `BV2`        | A spec's `bypass` property doesn't match edge scope              |
+| `VP1`–`VP10` | A spec's `bypass` value is invalid for its property's value type |
+
+#### `moveEdge(networkId, edgeId, newSourceId, newTargetId): ApiResult`
+
+Reconnects an existing edge to different endpoints. Updates `source`/`target`
+columns in the edge table if they exist. Adds an undo entry.
+
+| Error Code | Condition                                |
+| ---------- | ---------------------------------------- |
+| `APP1`     | `networkId` does not exist               |
+| `GL2`      | `edgeId` does not exist                  |
+| `GL1`      | `newSourceId` or `newTargetId` not found |
+
+#### `deleteNodes(networkId, nodeIds): ApiResult<{ deletedNodeCount, deletedEdgeCount, deletedNodes, deletedEdges, missing }>`
+
+Deletes the specified nodes and any incident edges. Visual style bypasses for the
+deleted elements are cleaned up. Adds an undo entry.
+
+Returns:
+
+- `deletedNodeCount` / `deletedEdgeCount` — counts of removed elements
+- `deletedNodes: Array<{ id, attributes, position }>` — full `NodeData` for each deleted node
+- `deletedEdges: Array<{ id, sourceId, targetId, attributes }>` — full `EdgeData` for each
+  incidentally-deleted edge (edges connected to the deleted nodes)
+- `missing: IdType[]` — requested node ids that did not exist (partial requests
+  still succeed; the op fails only when none of the ids exist)
+
+| Error Code | Condition                         |
+| ---------- | --------------------------------- |
+| `APP1`     | `networkId` does not exist        |
+| `APP9`     | `nodeIds` is empty                |
+| `GL1`      | None of the specified nodes exist |
+
+#### `deleteEdges(networkId, edgeIds): ApiResult<{ deletedEdgeCount, deletedEdges, missing }>`
+
+Deletes the specified edges. Visual style bypasses are cleaned up. Adds an undo entry.
+
+Returns:
+
+- `deletedEdgeCount` — number of removed edges
+- `deletedEdges: Array<{ id, sourceId, targetId, attributes }>` — full `EdgeData` for each deleted edge
+- `missing: IdType[]` — requested edge ids that did not exist
+
+| Error Code | Condition                         |
+| ---------- | --------------------------------- |
+| `APP1`     | `networkId` does not exist        |
+| `APP9`     | `edgeIds` is empty                |
+| `GL2`      | None of the specified edges exist |
+
+#### `generateNextNodeId(networkId): ApiResult<{ nodeId: IdType }>`
+
+Returns the ID the next created node in this network will receive, without
+creating a node.
+
+| Error Code | Condition                  |
+| ---------- | -------------------------- |
+| `APP1`     | `networkId` does not exist |
+
+#### `generateNextEdgeId(networkId): ApiResult<{ edgeId: IdType }>`
+
+Returns the ID the next created edge in this network will receive, without
+creating an edge.
+
+| Error Code | Condition                  |
+| ---------- | -------------------------- |
+| `APP1`     | `networkId` does not exist |
+
+### Graph Traversal
+
+Read-only methods wrapping the internal cytoscape.js graph engine. These are
+useful for apps that need adjacency queries, graph walking, or structural
+analysis (e.g., pathway expand/collapse).
+
+#### `getNodeIds(networkId): ApiResult<{ nodeIds: IdType[] }>`
+
+Returns all node IDs in the network.
+
+#### `getEdgeIds(networkId): ApiResult<{ edgeIds: IdType[] }>`
+
+Returns all edge IDs in the network.
+
+#### `getEdges(networkId, edgeIds?): ApiResult<{ edges: Array<{ id, sourceId, targetId, attributes }>; missing: IdType[] }>`
+
+Batch-reads edges with source/target and attributes in a single call. When
+`edgeIds` is omitted, every edge is returned; requested ids that don't exist
+are reported in `missing` (symmetric with `getNodes`). Use this instead of
+`getEdgeIds` + per-edge `getEdge()` when building topology — it avoids one API
+round-trip per edge, which matters on networks with thousands of edges.
+
+#### `getConnectedEdges(networkId, nodeId): ApiResult<{ edges: Array<{ id, sourceId, targetId, attributes }> }>`
+
+Returns all edges connected to the given node (both incoming and outgoing).
+Each edge includes its `id`, `sourceId`, `targetId`, and `attributes`, so the
+results can be selected or deleted directly.
+
+#### `getConnectedNodes(networkId, nodeId): ApiResult<{ nodeIds: IdType[] }>`
+
+Returns all nodes directly connected to the given node (undirected
+neighborhood, excluding the node itself).
+
+#### `getOutgoers(networkId, nodeId): ApiResult<{ nodeIds, edgeIds }>`
+
+Returns immediate outgoing neighbors and the edges connecting to them
+(directed, one hop). For undirected networks, returns all neighbors.
+
+#### `getIncomers(networkId, nodeId): ApiResult<{ nodeIds, edgeIds }>`
+
+Returns immediate incoming neighbors and the edges connecting from them
+(directed, one hop). For undirected networks, returns all neighbors.
+
+#### `getSuccessors(networkId, nodeId): ApiResult<{ nodeIds: IdType[] }>`
+
+Returns all downstream nodes reachable from the given node (transitive closure,
+directed). Does not include the starting node.
+
+#### `getPredecessors(networkId, nodeId): ApiResult<{ nodeIds: IdType[] }>`
+
+Returns all upstream nodes from which the given node is reachable (transitive
+closure, directed). Does not include the starting node.
+
+#### `getRoots(networkId): ApiResult<{ nodeIds: IdType[] }>`
+
+Returns nodes with no incoming edges (roots of the directed graph).
+
+#### `getLeaves(networkId): ApiResult<{ nodeIds: IdType[] }>`
+
+Returns nodes with no outgoing edges (leaves of the directed graph).
+
+**Common errors for graph traversal methods:**
+
+| Error Code | When                                            |
+| ---------- | ----------------------------------------------- |
+| `APP1`     | The specified network does not exist            |
+| `GL1`      | The specified node does not exist (node-scoped) |
+
+---
+
+## NetworkApi (`cyweb/NetworkApi`)
+
+Creates and deletes networks.
+
+```typescript
+import { useNetworkApi } from 'cyweb/NetworkApi'
+```
+
+### Types
+
+```typescript
+interface CreateNetworkFromEdgeListProps {
+  name: string
+  description?: string
+  edgeList: Array<[IdType, IdType, string?]> // [sourceLabel, targetLabel, edgeLabel?]
+  addToWorkspace?: boolean // default: true
+}
+
+interface CreateNetworkFromCx2Props {
+  cxData: Cx2
+  navigate?: boolean // default: true  — set as current network
+  addToWorkspace?: boolean // default: true
+}
+
+interface DeleteNetworkOptions {
+  /** Retained for source compatibility; currently ignored. */
+  navigate?: boolean
+}
+```
+
+### Methods
+
+#### `createNetworkFromEdgeList(props): ApiResult<{ networkId, cyNetwork }>`
+
+Creates a network from an edge list (pairs of node labels). Each unique label
+becomes a node with its label stored in the `name` column. A passthrough mapping
+for `nodeLabel → name` is created automatically.
+
+The resulting `CyNetwork` is added to NetworkStore, TableStore, VisualStyleStore,
+ViewModelStore, and NetworkSummaryStore. If `addToWorkspace: true` (the default),
+the network is added to WorkspaceStore and set as the current network (firing
+`network:created` and `network:switched` events). Pass `addToWorkspace: false` to
+create the network without adding it to the workspace.
+
+| Error Code | Condition                              |
+| ---------- | -------------------------------------- |
+| `APP9`     | `name` is empty or `edgeList` is empty |
+
+#### `createNetworkFromNodeList(networkId, nodeIds, edgeIds?, options?): ApiResult<{ networkId, cyNetwork }>`
+
+Creates a new network (subnetwork) from a subset of an existing network's
+nodes. Unlike `createNetworkFromEdgeList`, isolated (unconnected) nodes are
+allowed. Element IDs are preserved; table column schemas, the selected
+attribute rows, and node positions are copied from the source network.
+
+- `edgeIds` omitted or `'all'` → induced subgraph: every source edge whose
+  endpoints are both in `nodeIds` is included.
+- Explicit `edgeIds` → only those edges; each must connect nodes in `nodeIds`.
+- `options`: `{ name?, description?, addToWorkspace? }` — name defaults to
+  `Subnetwork of <source name>`; `addToWorkspace` defaults to `true` (pass
+  `false` to opt out, matching `createNetworkFromEdgeList`).
+
+| Error Code | Condition                                             |
+| ---------- | ----------------------------------------------------- |
+| `APP1`     | Source network does not exist                         |
+| `GL1`      | A nodeId is not in the source network                 |
+| `GL2`      | An edgeId is not in the source network                |
+| `APP9`     | `nodeIds` empty, or an edge endpoint not in `nodeIds` |
+
+#### `createNetworkFromCx2(props): ApiResult<{ networkId, cyNetwork }>`
+
+Creates a network from a CX2 document. Validates the CX2 structure before
+importing. Infers network name and description from CX2 `networkAttributes`.
+
+If `addToWorkspace: true`, adds to WorkspaceStore (fires `network:created`).
+If `navigate: true`, sets as current network (fires `network:switched`).
+
+| Error Code | Condition                        |
+| ---------- | -------------------------------- |
+| `APP8`     | CX2 structural validation failed |
+
+#### `deleteNetwork(networkId, options?): ApiResult`
+
+Deletes a network through the shared deletion orchestrator. `navigate` is
+retained for source compatibility but is ignored: deleting the current network
+always repairs `currentNetworkId`, while deleting a non-current network never
+switches the active network. Fires `network:deleted`; deleting the current
+network also fires `network:switched` when the repaired ID differs.
+
+When the address bar names the deleted network, the host moves it (replacing
+the history entry) to the repaired current network, or to
+`/<workspace>/networks` when none is left. The URL is what loads a network, so
+this is what shows the network that becomes current.
+
+Any network in the workspace can be deleted, including one that has never been
+opened (only its summary is in memory until it becomes current). A network
+created with `addToWorkspace: false` can be deleted too.
+
+| Error Code | Condition                                                                   |
+| ---------- | --------------------------------------------------------------------------- |
+| `APP1`     | `networkId` is neither in the workspace nor a network created outside of it |
+
+#### `deleteCurrentNetwork(options?): ApiResult`
+
+Deletes the currently active network. Delegates to `deleteNetwork`.
+
+| Error Code | Condition                        |
+| ---------- | -------------------------------- |
+| `APP2`     | No network is currently selected |
+
+#### `deleteAllNetworks(): ApiResult`
+
+Deletes all networks from all stores. Clears workspace state. The address bar
+moves to `/<workspace>/networks`, as for `deleteNetwork`.
+
+---
+
+## SelectionApi (`cyweb/SelectionApi`)
+
+Manages node and edge selection state in network view models.
+
+```typescript
+import { useSelectionApi } from 'cyweb/SelectionApi'
+```
+
+### Types
+
+```typescript
+interface SelectionState {
+  selectedNodes: IdType[]
+  selectedEdges: IdType[]
+}
+```
+
+All write methods trigger `selection:changed` via the Event Bus (the ViewModelStore
+subscription in `initEventBus` fires automatically on store mutation).
+
+### Methods
+
+#### `exclusiveSelect(networkId, nodeIds, edgeIds): ApiResult`
+
+Clears current selection and selects exactly the specified nodes and edges.
+
+#### `additiveSelect(networkId, nodeIds, edgeIds): ApiResult`
+
+Adds the specified nodes and edges to the current selection.
+
+#### `additiveDeselect(networkId, nodeIds, edgeIds): ApiResult`
+
+Removes the specified nodes and edges from the current selection.
+
+#### `toggleSelected(networkId, nodeIds, edgeIds): ApiResult`
+
+Toggles the selection state of each specified node and edge.
+
+#### `clearSelection(networkId): ApiResult`
+
+Clears the entire selection (deselects all nodes and edges).
+
+#### `getSelection(networkId): ApiResult<SelectionState>`
+
+Returns the current selection state.
+
+All methods return `APP1` if the view model for `networkId` is not found.
+
+---
+
+## ViewportApi (`cyweb/ViewportApi`)
+
+Controls the viewport and node positions in the renderer.
+
+```typescript
+import { useViewportApi } from 'cyweb/ViewportApi'
+```
+
+### Types
+
+```typescript
+/** JSON-serializable position map: nodeId → [x, y, z?] */
+type PositionRecord = Record<IdType, [number, number, number?]>
+```
+
+### Methods
+
+#### `fit(networkId): Promise<ApiResult>`
+
+Fits the viewport to show all elements. Calls the renderer's registered `fit`
+function. This is async because it delegates to the renderer.
+
+| Error Code | Condition                                     |
+| ---------- | --------------------------------------------- |
+| `APP1`     | `networkId` does not exist                    |
+| `APP5`     | Fit function not yet registered for this view |
+
+#### `getNodePositions(networkId, nodeIds?): ApiResult<{ positions: PositionRecord; missing: IdType[] }>`
+
+Returns current `[x, y, z?]` positions. When `nodeIds` is omitted, every node's
+position is returned. Requested ids with no view model entry are reported in
+`missing` rather than silently dropped (symmetric with `elementApi.getNodes`).
+
+| Error Code | Condition                  |
+| ---------- | -------------------------- |
+| `APP1`     | `networkId` does not exist |
+
+#### `updateNodePositions(networkId, positions): ApiResult`
+
+Bulk-updates node positions in the view model. Accepts a `PositionRecord`
+(plain object) and converts it internally to a `Map` before writing to the store.
+Rejects (does not partially apply) if any key is not a node ID in the network.
+
+| Error Code | Condition                                   |
+| ---------- | ------------------------------------------- |
+| `APP1`     | `networkId` does not exist                  |
+| `GL1`      | A position key is not a node in the network |
+
+---
+
+## TableApi (`cyweb/TableApi`)
+
+Reads and writes node/edge table data.
+
+```typescript
+import { useTableApi } from 'cyweb/TableApi'
+```
+
+### Types
+
+```typescript
+type AppTableType = 'node' | 'edge'
+
+interface CellEdit {
+  id: IdType // element ID (node or edge)
+  column: AttributeName
+  value: ValueType
+}
+```
+
+Write operations (`setValue`, `setValues`, `editRows`, etc.) trigger `data:changed`
+via the Event Bus (the TableStore subscription in `initEventBus` fires automatically).
+
+### Methods
+
+#### `getValue(networkId, tableType, elementId, column): ApiResult<{ value: ValueType }>`
+
+Returns the value of a single cell. On edge tables, the `source` and `target`
+pseudo-columns are resolved from the network model (matching `getTable` /
+`getColumns`).
+
+| Error Code  | Condition                                          |
+| ----------- | -------------------------------------------------- |
+| `APP1`      | `networkId` does not exist                         |
+| `GL1`/`GL2` | `elementId` row not found (`GL1` node, `GL2` edge) |
+| `APP10`     | `column` is not declared and absent from the row   |
+
+#### `getRow(networkId, tableType, elementId): ApiResult<{ row: Record<AttributeName, ValueType> }>`
+
+Returns the full attribute row for a single element. Same error codes as `getValue`.
+
+#### `createColumn(networkId, tableType, columnName, dataType, defaultValue): ApiResult`
+
+Creates a new column with the given data type and default value. The
+`defaultValue` is validated against the declared `dataType`. The
+`data:changed` event reports the name in `addedColumns` and includes any rows
+whose values changed.
+
+| Error Code  | Condition                                                   |
+| ----------- | ----------------------------------------------------------- |
+| `APP1`      | `networkId` does not exist                                  |
+| `FK1`/`FK2` | `columnName` is `"id"` (`FK1` node table, `FK2` edge table) |
+| `A8`        | `columnName` is `"s"`/`"t"` on an edge table                |
+| `AC6`       | `columnName` already exists on this table                   |
+| `A6`        | `defaultValue` is `null` or `undefined`                     |
+| `A1`        | `defaultValue` does not match the declared `dataType`       |
+
+#### `deleteColumn(networkId, tableType, columnName): ApiResult`
+
+Deletes a column. Cascades: removes any visual style mapping referencing the
+column, and removes the column from the Table Browser display config. The
+`data:changed` event reports the name in `removedColumns` and includes affected
+rows.
+
+| Error Code | Condition                                |
+| ---------- | ---------------------------------------- |
+| `APP1`     | `networkId` does not exist               |
+| `APP10`    | `columnName` does not exist in the table |
+
+#### `renameColumn(networkId, tableType, currentName, newName): ApiResult`
+
+Renames a column. Cascades: retargets any visual style mapping referencing the
+column, and updates the Table Browser display config. Renaming to the current
+name is a no-op, not a collision. The `data:changed` event reports the old name
+in `removedColumns`, the new name in `addedColumns`, and any affected rows.
+
+| Error Code  | Condition                                                |
+| ----------- | -------------------------------------------------------- |
+| `APP1`      | `networkId` does not exist                               |
+| `FK1`/`FK2` | `newName` is `"id"` (`FK1` node table, `FK2` edge table) |
+| `A8`        | `newName` is `"s"`/`"t"` on an edge table                |
+| `APP10`     | `currentName` does not exist in the table                |
+| `AC6`       | `newName` already exists and differs from `currentName`  |
+
+#### `setValue(networkId, tableType, elementId, column, value): ApiResult`
+
+Sets a single cell value. Triggers `data:changed`.
+
+| Error Code  | Condition                                            |
+| ----------- | ---------------------------------------------------- |
+| `APP1`      | `networkId` does not exist                           |
+| `GL1`/`GL2` | `elementId` not found (`GL1` node, `GL2` edge)       |
+| `A1`        | `value` does not match the declared type of `column` |
+
+#### `setValues(networkId, tableType, cellEdits): ApiResult`
+
+Bulk cell edit. Converts `CellEdit[]` (app format, uses `id`) to the store format
+(uses `row`) internally. Rejects the whole batch (no partial application) if
+any edit fails validation. Triggers `data:changed`.
+
+| Error Code  | Condition                                                    |
+| ----------- | ------------------------------------------------------------ |
+| `APP1`      | `networkId` does not exist                                   |
+| `GL1`/`GL2` | Any edit's `id` not found (`GL1` node, `GL2` edge)           |
+| `A1`        | Any edit's `value` does not match its column's declared type |
+
+#### `editRows(networkId, tableType, rows): ApiResult`
+
+Bulk row edit via a `Record<IdType, Record<AttributeName, ValueType>>`.
+Converts to `Map` internally. Rejects the whole batch if any value fails
+validation. Triggers `data:changed`.
+
+| Error Code  | Condition                                           |
+| ----------- | --------------------------------------------------- |
+| `APP1`      | `networkId` does not exist                          |
+| `GL1`/`GL2` | Any row's key not found (`GL1` node, `GL2` edge)    |
+| `A1`        | Any value does not match its column's declared type |
+
+#### `applyValueToElements(networkId, tableType, columnName, value, elementIds?): ApiResult`
+
+Sets the same value for all specified elements (or all elements if `elementIds`
+is omitted). Triggers `data:changed`.
+
+| Error Code  | Condition                                                |
+| ----------- | -------------------------------------------------------- |
+| `APP1`      | `networkId` does not exist                               |
+| `GL1`/`GL2` | An `elementIds` entry not found (`GL1` node, `GL2` edge) |
+| `A1`        | `value` does not match the declared type of `columnName` |
+
+### Bulk Read
+
+#### `getColumns(networkId, tableType): ApiResult<{ columns: ColumnInfo[] }>`
+
+Returns only the column definitions (the table schema) without loading any
+rows. Prefer this over `getTable` when you only need the schema — on large
+tables `getTable` materializes every row. Edge tables include the `source`
+and `target` pseudo-columns, matching `getTable`'s output.
+
+Both reads report `APP1` while the network's tables are not in the stores,
+which is the case after a page reload until the network is first shown. That
+window overlaps `network:switched`; read again on `network:loaded` (see the
+Event Bus section).
+
+#### `getTable(networkId, tableType, options?): ApiResult<{ columns, rows }>`
+
+Returns all columns (with type metadata) and all rows for the given table.
+By default a leading `id` column is prepended and every row carries an `id`
+field, so rows are round-trippable back to their nodes/edges. For edge tables,
+`source` and `target` columns follow (read from the network model, not from the
+table itself).
+
+**Options:**
+
+- `columns?: string[]` — return only these columns (omit = all)
+- `includeId?: boolean` — include the element `id` column and per-row `id`
+  field. Default: `true`. Set `false` for a data-only result.
+
+```typescript
+const result = tableApi.getTable(networkId, 'node')
+if (result.success) {
+  result.data.columns // [{ name: 'id', type: 'string' }, { name: 'name', type: 'string' }, { name: 'degree', type: 'long' }]
+  result.data.rows // [{ id: 'n1', name: 'TP53', degree: 42 }, ...]
+}
+```
+
+### TSV I/O
+
+#### `exportTableToTsv(networkId, tableType, options?): ApiResult<{ tsvText }>`
+
+Serializes the table to a tab-separated values string. Useful for interop with
+pandas, R, and other external tools.
+
+**Options:**
+
+- `columns?: string[]` — export only these columns
+- `includeTypeHeader?: boolean` — `true` → `name:string\tscore:double` (Cytoscape
+  Desktop format for lossless round-trip). Default: `false` (plain column names).
+- `includeId?: boolean` — emit a leading `id` column holding each element's id.
+  Default: `true`, so the export round-trips through `importTableFromTsv` (whose
+  default `keyColumn` is `id`) with no manual id insertion. Set `false` for a
+  data-only export.
+
+For edge tables, `source` and `target` columns are always included.
+
+```typescript
+const result = tableApi.exportTableToTsv(networkId, 'node')
+if (result.success) {
+  console.log(result.data.tsvText)
+  // id\tname\tscore
+  // n1\tTP53\t0.95
+  // n2\tBRCA1\t0.73
+}
+```
+
+#### `importTableFromTsv(networkId, tableType, tsvText, options?): ApiResult<{ rowCount, newColumns, skippedRows, skippedCells }>`
+
+Parses a TSV string and writes data into the table. New column names are
+validated up front (before anything is mutated), so a forbidden name fails the
+import cleanly instead of leaving some columns created; valid missing columns
+are then created as needed. Matches rows by resolving the key column's value to
+element IDs — TSV rows whose key value matches no element are skipped (never
+creating orphaned rows) and their key values are returned in `skippedRows`.
+
+Cell values are parsed strictly against the column's type, with no coercion
+(matching `setValue`/`setValues`):
+
+- A non-empty cell that cannot be parsed as its column type is **skipped** and
+  reported in `skippedCells` (as `{ key, column, value }`) rather than coerced
+  to `0`/`false`.
+- An empty cell for a non-string column is treated as "no value provided" and
+  leaves the existing attribute untouched.
+
+**Options:**
+
+- `keyColumn?: string` — column in the TSV to use as element ID (default: `'id'`)
+
+Auto-detects typed headers (`name:string\tscore:double`) if present. Otherwise
+infers types from the first few data rows.
+
+```typescript
+const tsv = 'id\tcluster\tpagerank\nn1\t0\t0.042\nn2\t1\t0.015'
+const result = tableApi.importTableFromTsv(networkId, 'node', tsv)
+if (result.success) {
+  console.log(result.data.newColumns) // ['cluster', 'pagerank']
+  console.log(result.data.rowCount) // 2
+  console.log(result.data.skippedRows) // [] — no unmatched key values
+  console.log(result.data.skippedCells) // [] — no unparseable cells
+}
+```
+
+| Error Code  | Condition                                             |
+| ----------- | ----------------------------------------------------- |
+| `APP1`      | Table record for `networkId` not found                |
+| `APP9`      | TSV has < 2 lines or key column missing               |
+| `FK1`/`FK2` | A new column is named `"id"` (`FK1` node, `FK2` edge) |
+| `A8`        | A new column is named `"s"`/`"t"` on an edge table    |
+
+All methods in this API return `APP1` if the table record for `networkId` is not found.
+
+---
+
+## VisualStyleApi (`cyweb/VisualStyleApi`)
+
+Reads and modifies visual style properties, one at a time or as a whole style.
+
+```typescript
+import { useVisualStyleApi } from 'cyweb/VisualStyleApi'
+import { VisualPropertyName } from 'cyweb/ApiTypes'
+```
+
+All write methods trigger `style:changed` via the Event Bus (the VisualStyleStore
+subscription in `initEventBus` fires on any property change).
+`applyVisualStyle` also fires `style:switched`.
+
+### A network owns several named styles
+
+A network's visual style is one entry in a set of named styles it owns; the
+active entry is the one rendered and edited, and it is what every per-property
+method here reads and writes. `getStyles` lists the set, `switchStyle` moves
+between styles the network already has, and `applyVisualStyle` adds one it does
+not. The set holds at most `MAX_STYLES_PER_NETWORK` (50) entries.
+
+Style ids are unique within one network's set and mean nothing outside it.
+There is no workspace-wide registry of styles, and no way to make two networks
+follow one live style — see the copy semantics under `applyVisualStyle`.
+
+Only a network whose style is loaded in memory can be read or written — a
+workspace network that has never been opened reports `APP1`.
+
+See `docs/specifications/MULTIPLE_VISUAL_STYLES.md` for the model.
+
+### Types
+
+```typescript
+/** One visual property's identity and scope, from getVisualProperties(). */
+interface VisualPropertyInfo {
+  name: VisualPropertyName
+  group: 'node' | 'edge' | 'network'
+  type: VisualPropertyValueTypeName // e.g. 'color', 'number', 'string'
+  hasMapping: boolean // true when the property has a mapping
+}
+
+/** Options bundle for applyVisualStyle. */
+interface ApplyVisualStyleOptions {
+  name?: string // name of the new named-style entry; default "Imported style"
+}
+
+/** One named style a network owns, from getStyles(). */
+interface NamedStyleInfo {
+  id: IdType // unique within this network's style set only
+  name: string // unique within the set, but not across networks
+  active: boolean // true for the one style rendered and edited
+}
+
+/** Options bundle for createContinuousMapping. */
+interface CreateContinuousMappingOptions {
+  vpType: VisualPropertyValueTypeName // property's value type
+  attribute: AttributeName // source table column
+  attributeValues: ValueType[] // numeric anchors (min…max)
+  attributeType: ValueTypeName // declared type of the column
+  controlPoints?: ContinuousFunctionControlPoint[] // override interpolation points
+  ltMinVpValue?: VisualPropertyValueType // value below the minimum anchor
+  gtMaxVpValue?: VisualPropertyValueType // value above the maximum anchor
+}
+```
+
+### Read Methods
+
+#### `getVisualProperties(networkId): ApiResult<{ properties: VisualPropertyInfo[] }>`
+
+Lists every visual property in the network's style, each with its `name`,
+`group` (node/edge/network), value `type`, and whether it currently has a
+mapping (`hasMapping`).
+
+#### `getDefault(networkId, vpName): ApiResult<{ value }>`
+
+Reads the default value of a visual property.
+
+#### `getBypass(networkId, vpName, elementId): ApiResult<{ value }>`
+
+Reads a single element's bypass for a property. `value` is `undefined` when the
+element has no bypass for that property.
+
+#### `getBypasses(networkId, vpName): ApiResult<{ bypasses: Record<elementId, value> }>`
+
+Reads every bypass set for a property, keyed by element id. Returns an empty
+object when the property has no bypasses.
+
+#### `getMapping(networkId, vpName): ApiResult<{ mapping }>`
+
+Reads the mapping installed on a property. `mapping` is `undefined` when the
+property has no mapping.
+
+#### `getVisualStyle(networkId): ApiResult<{ visualStyle: VisualStyle }>`
+
+Reads the network's active visual style as one object — every default, mapping
+and bypass, in the shape `applyVisualStyle` accepts. Pair the two to copy a
+style from one network to another.
+
+The returned style is a **detached deep copy**: mutating it changes nothing in
+the network, and later edits to the network do not reach it. Bypass entries
+survive this read; they are stripped by `applyVisualStyle`, not here.
+
+Note that a `VisualStyle` carries `bypassMap` as a `Map`, so the object does
+not survive `JSON.stringify`. Pass it straight to `applyVisualStyle`, or read
+bypasses through `getBypasses`, which returns a plain `Record`.
+
+```typescript
+const read = visualStyleApi.getVisualStyle(sourceNetworkId)
+if (read.success) {
+  visualStyleApi.applyVisualStyle(targetNetworkId, read.data.visualStyle, {
+    name: 'Copied from source',
+  })
+}
+```
+
+#### `getStyles(networkId): ApiResult<{ styles: NamedStyleInfo[] }>`
+
+Lists the named styles the network owns, in the order the style set holds
+them. Exactly one entry is `active`. Metadata only — read the active style's
+content with `getVisualStyle`.
+
+```typescript
+const listed = visualStyleApi.getStyles(networkId)
+if (listed.success) {
+  const publication = listed.data.styles.find((s) => s.name === 'Publication')
+  if (publication !== undefined) {
+    visualStyleApi.switchStyle(networkId, publication.id)
+  }
+}
+```
+
+**Common errors for read methods:**
+
+| Error Code | Condition                                                                                                           |
+| ---------- | ------------------------------------------------------------------------------------------------------------------- |
+| `APP1`     | `networkId` has no visual style                                                                                     |
+| `APP9`     | `vpName` is not a known visual property (the `vpName`-scoped reads only; `getVisualProperties` returns only `APP1`) |
+
+### Write Methods
+
+#### `setDefault(networkId, vpName, vpValue): ApiResult`
+
+Sets the default value for a visual property (applies to all elements without a
+bypass or mapping). `vpValue` is validated against the property's declared value
+type before being written.
+
+| Error Code                                             | Condition                                                                              |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `APP1`                                                 | `networkId` does not exist                                                             |
+| `APP9`                                                 | `vpName` is not a known visual property                                                |
+| `VP1`/`VP2`/`VP3`/`VP4`/`VP5`/`VP6`/`VP7`/`VP9`/`VP10` | `vpValue` invalid for the property's value type (see [ErrorCodes.md](./ErrorCodes.md)) |
+
+#### `setDefaults(networkId, defaults): ApiResult`
+
+Sets several visual-property defaults in one call, where `defaults` is a
+`Partial<Record<VisualPropertyName, value>>`. Every entry is validated first
+(property existence and value type); if any is invalid, **nothing** is applied,
+so a bad value can't leave a half-updated style. Same error codes as
+`setDefault`.
+
+#### `setBypass(networkId, vpName, elementIds, vpValue): ApiResult`
+
+Sets a per-element override. `elementIds` must be non-empty and must match the
+property's node/edge scope; network-scoped properties cannot be bypassed.
+
+| Error Code   | Condition                                                                    |
+| ------------ | ---------------------------------------------------------------------------- |
+| `APP1`       | `networkId` does not exist                                                   |
+| `APP9`       | `elementIds` is empty, or `vpName` is not a known property                   |
+| `BV5`        | `vpName` is a network-scoped property                                        |
+| `BV1`        | An `elementIds` entry does not exist in the network                          |
+| `BV2`        | An `elementIds` entry doesn't match the property's node/edge scope           |
+| `VP1`–`VP10` | `vpValue` invalid for the property's value type (same codes as `setDefault`) |
+
+#### `setBypasses(networkId, elementIds, bypasses): ApiResult`
+
+Sets several visual-property bypasses on the same `elementIds` in one call —
+e.g. highlighting nodes with color + border + size at once. `bypasses` is a
+`Partial<Record<VisualPropertyName, value>>`. Every property is validated first
+(existence, node/edge scope, value type, and element existence); if any is
+invalid, **nothing** is applied. Same error codes as `setBypass`.
+
+#### `deleteBypass(networkId, vpName, elementIds): ApiResult`
+
+Removes per-element overrides. Intentionally unguarded against non-existent
+element IDs, so cleanup of stale bypasses (e.g. after external deletion) always
+succeeds.
+
+| Error Code | Condition                  |
+| ---------- | -------------------------- |
+| `APP1`     | `networkId` does not exist |
+
+#### `createDiscreteMapping(networkId, vpName, attribute, attributeType, mapping?): ApiResult`
+
+Creates a discrete (lookup-table) mapping for `vpName` based on the specified
+node/edge attribute. `mapping` is an optional `Record<string, VisualPropertyValueType>`
+of attribute-value keys (stringified; parsed back to `integer`/`long`/`double` per
+`attributeType`) to visual property values.
+
+| Error Code | Condition                                                   |
+| ---------- | ----------------------------------------------------------- |
+| `APP1`     | `networkId` does not exist                                  |
+| `MC1`      | `vpName` is a network-scoped property                       |
+| `MI1`      | `attribute` is not declared in the matching node/edge table |
+| `MI2`      | `attributeType` does not match the declared column type     |
+
+#### `createContinuousMapping(networkId, vpName, options): ApiResult`
+
+Creates a continuous (interpolated) mapping. `options` is a
+`CreateContinuousMappingOptions` bundle (see [Types](#types)) — the correlated
+values are passed as one object rather than positionally.
+`options.attributeValues` defines the control point values on the data axis. By
+default, `min`/`max`/`controlPoints`/`ltMinVpValue`/`gtMaxVpValue` are computed
+automatically from `attributeValues` and `vpType`. Pass `controlPoints` to
+override the interpolation points (`min`/`max` are derived from the first/last
+entries); pass `ltMinVpValue`/`gtMaxVpValue` to override the values used
+below/above the range.
+
+```typescript
+visualStyleApi.createContinuousMapping(networkId, 'NODE_BACKGROUND_COLOR', {
+  vpType: 'color',
+  attribute: 'degree',
+  attributeValues: [0, 50, 100],
+  attributeType: 'long',
+})
+```
+
+| Error Code | Condition                                                              |
+| ---------- | ---------------------------------------------------------------------- |
+| `APP1`     | `networkId` does not exist                                             |
+| `MC1`      | `vpName` is a network-scoped property                                  |
+| `MI1`      | `attribute` is not declared in the matching node/edge table            |
+| `MI2`      | `attributeType` does not match the declared column type                |
+| `MI3`      | The source column is non-numeric                                       |
+| `V7`       | `attributeValues` empty/non-numeric, or a control point is non-numeric |
+
+#### `createPassthroughMapping(networkId, vpName, attribute, attributeType): ApiResult`
+
+Creates a passthrough mapping (attribute value used directly as the visual value).
+
+| Error Code | Condition                                                   |
+| ---------- | ----------------------------------------------------------- |
+| `APP1`     | `networkId` does not exist                                  |
+| `MC1`      | `vpName` is a network-scoped property                       |
+| `MI1`      | `attribute` is not declared in the matching node/edge table |
+| `MI2`      | `attributeType` does not match the declared column type     |
+
+#### `deleteMapping(networkId, vpName): ApiResult`
+
+Removes any mapping for the specified visual property.
+
+#### `applyVisualStyle(networkId, visualStyle, options?): ApiResult<{ styleId }>`
+
+Gives the network a whole visual style, rather than one property at a time.
+The Cytoscape Web equivalent of Desktop's
+`VisualMappingManager.setVisualStyle(style, view)`, and of the Vizmapper's
+"Apply Style".
+
+**A copy, not a shared reference.** This is where Cytoscape Web differs from
+Desktop, and the difference matters. In Desktop a `VisualStyle` is an object
+the `VisualMappingManager` owns; `setVisualStyle` attaches that one object to a
+view, so several views can follow the same style and a later edit to it changes
+all of them. In Cytoscape Web a style has no existence outside a network, so
+applying one always takes a snapshot: the network gets its own deep copy of
+`visualStyle` as it is at the moment of the call, and from then on edits to the
+passed object and edits to the network's copy do not affect each other. There
+is no way to make two networks follow one live style.
+
+What the call does, in order:
+
+1. Validates the network and the shape of `visualStyle`.
+2. Deep-copies the style into the network's named-style set, under
+   `options.name` (default `"Imported style"`, de-duplicated against its
+   siblings — a second copy of "Blue" is stored as "Blue 2").
+   **Bypasses are dropped**: bypass entries are keyed by the source network's
+   node and edge ids, which name nothing in the target.
+3. Makes the copy the active style, so the network re-renders with it.
+4. Records the switch as one undo entry and marks the network modified.
+
+Undo reverts which style is active and leaves the copy in the set, inert until
+selected and deletable — the same behavior as the in-app apply path. The
+style's content is deliberately not carried on the undo stack, which is
+persisted to IndexedDB.
+
+Fires `style:switched`, then one `style:changed` per property that differs from
+the previously active style.
+
+```typescript
+const read = visualStyleApi.getVisualStyle(sourceNetworkId)
+if (read.success) {
+  const applied = visualStyleApi.applyVisualStyle(
+    subnetworkId,
+    read.data.visualStyle,
+  )
+  if (applied.success) {
+    console.log(applied.data.styleId) // the new named-style entry
+  }
+}
+```
+
+| Error Code | Condition                                                     |
+| ---------- | ------------------------------------------------------------- |
+| `APP1`     | `networkId` has no visual style in memory                     |
+| `APP9`     | `visualStyle` is not a visual style object (see below)        |
+| `APP14`    | the network already owns `MAX_STYLES_PER_NETWORK` (50) styles |
+
+Nothing is applied when the call fails; every check runs before the store is
+touched.
+
+`APP9` covers the structural check on `visualStyle`. It must be a **complete**
+style: every `VisualPropertyName` present, each one an object carrying a valid
+`group` (`'node'`/`'edge'`/`'network'`), a `type`, a `defaultValue`, and — when
+present — a `mapping` with a known `type`
+(`'passthrough'`/`'discrete'`/`'continuous'`) and an `attribute`. The message
+names what is wrong (`"visualStyle missing 65 of 66 visual properties (…)"`,
+`"visualStyle edgeWidth has no defaultValue"`).
+
+A partial style is rejected rather than merged over the defaults. This method
+is "make B look like A", and quietly substituting Cytoscape Web defaults for
+the properties A did not mention would not do that. Every style the host
+produces is complete, so `getVisualStyle` output always passes; build a style
+from scratch with `setDefault` and `create*Mapping` instead of hand-assembling
+one to pass here.
+
+Keys that are not visual property names are ignored, and `bypassMap` is not
+checked since bypasses are stripped anyway. Property **values** are not
+validated here — per-property validation belongs to `setDefault`, which can say
+which property failed.
+
+#### `switchStyle(networkId, styleId): ApiResult`
+
+Makes one of the network's own named styles the active one. Ids come from
+`getStyles` or from `applyVisualStyle`, and mean nothing outside this network's
+style set — an id read from another network reports `APP15`, not a
+cross-network apply. Use `getVisualStyle` + `applyVisualStyle` for that.
+
+Recorded as one undo entry, like the Vizmapper's style picker. Switching to the
+style that is **already active** succeeds and does nothing: no undo entry, and
+the network is not marked modified, so an app that re-asserts a style on every
+event cannot dirty a clean network.
+
+Fires `style:switched`, then one `style:changed` per property that differs
+between the two styles.
+
+| Error Code | Condition                                     |
+| ---------- | --------------------------------------------- |
+| `APP1`     | `networkId` has no style set in memory        |
+| `APP15`    | the network owns no style with that `styleId` |
+
+All methods in this API return `APP1` if the visual style for `networkId` is not found.
+
+---
+
+## LayoutApi (`cyweb/LayoutApi`)
+
+Applies layout algorithms and queries available layouts.
+
+```typescript
+import { useLayoutApi } from 'cyweb/LayoutApi'
+```
+
+### Types
+
+```typescript
+interface LayoutAlgorithmInfo {
+  engineName: string
+  algorithmName: string // what applyLayout takes; `<appId>::<id>` for an app algorithm
+  displayName: string
+  description: string
+  type: string
+  appId?: string // set for algorithms an app registered ('layout-algorithm' slot)
+}
+
+interface ApplyLayoutOptions {
+  algorithmName?: string // default: LayoutStore.preferredLayout
+  fitAfterLayout?: boolean // default: true
+}
+```
+
+### Methods
+
+#### `applyLayout(networkId, options?): Promise<ApiResult>`
+
+Applies a layout algorithm asynchronously. Lifecycle:
+
+1. Dispatches `layout:started` event
+2. Sets `LayoutStore.isRunning = true`
+3. Calls `engine.apply(...)` (callback-based, wrapped in a Promise)
+4. On completion: updates node positions, records undo, calls `fit()` if requested,
+   sets `isRunning = false`, dispatches `layout:completed`
+
+Pre-layout positions are snapshotted for undo.
+
+Never throws across the API boundary: if the layout engine throws synchronously
+(or its callback throws), the promise resolves to `fail(APP3)` and
+`LayoutStore.isRunning` is reset to `false` rather than leaving the rejection to
+escape.
+
+| Error Code | Condition                                |
+| ---------- | ---------------------------------------- |
+| `APP1`     | `networkId` does not exist               |
+| `APP4`     | No engine registered for `algorithmName` |
+| `APP3`     | The layout engine or its callback threw  |
+
+#### `getAvailableLayouts(): ApiResult<{ layouts: LayoutAlgorithmInfo[] }>`
+
+Returns all registered layout algorithms across all engines, including the
+ones apps registered through `resource.registerLayout` (those carry `appId`,
+and their `algorithmName` is the qualified `<appId>::<id>`). There are no
+validation failures to report — an empty engine registry yields
+`ok({ layouts: [] })` — but the call is still wrapped like every other, so an
+unexpected store error resolves to `fail(APP3)`. Handle both branches of the
+`ApiResult`.
+
+---
+
+## ExportApi (`cyweb/ExportApi`)
+
+Exports networks to portable formats.
+
+```typescript
+import { useExportApi } from 'cyweb/ExportApi'
+```
+
+### Types
+
+```typescript
+type Cx2 = any[] // CX2 format: array of aspect objects
+
+interface ExportOptions {
+  networkName?: string // override the network name in the exported CX2
+}
+```
+
+### Methods
+
+#### `exportToCx2(networkId, options?): ApiResult<Cx2>`
+
+Assembles the network from NetworkStore, TableStore, VisualStyleStore, ViewModelStore,
+OpaqueAspectStore, and NetworkSummaryStore, then serializes to CX2 format.
+
+| Error Code | Condition                                                                                                                                 |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP1`     | Network, tables, visual style, or view model not found — all four checks collapse to this one code (see [ErrorCodes.md](./ErrorCodes.md)) |
+
+---
+
+## WorkspaceApi (`cyweb/WorkspaceApi`)
+
+Provides read access to workspace state and the ability to switch the active
+network or rename the workspace. All operations are synchronous.
+
+```typescript
+import { useWorkspaceApi } from 'cyweb/WorkspaceApi'
+import type { WorkspaceInfo, WorkspaceNetworkInfo } from 'cyweb/ApiTypes'
+```
+
+### Types
+
+```typescript
+interface WorkspaceInfo {
+  workspaceId: IdType
+  name: string
+  currentNetworkId: IdType // '' if no networks are open
+  networkCount: number
+}
+
+interface WorkspaceNetworkInfo {
+  networkId: IdType
+  name: string
+  description: string
+  nodeCount: number
+  edgeCount: number
+  isModified: boolean // true when the network has unsaved local changes
+}
+```
+
+### Methods
+
+#### `getWorkspaceInfo(): ApiResult<WorkspaceInfo>`
+
+Returns top-level metadata. Always succeeds.
+
+#### `getNetworkIds(): ApiResult<{ networkIds: IdType[] }>`
+
+Returns the ordered list of network IDs (tab order). Always succeeds (empty array
+when no networks are open).
+
+#### `getNetworks(): ApiResult<{ networks: WorkspaceNetworkInfo[] }>`
+
+Returns summary metadata for all networks. Networks whose summary is not found in
+NetworkSummaryStore are **silently omitted**.
+
+#### `getNetworkSummary(networkId): ApiResult<WorkspaceNetworkInfo>`
+
+Returns summary metadata for a single network.
+
+| Error Code | Condition                                              |
+| ---------- | ------------------------------------------------------ |
+| `APP1`     | `networkId` is not in the workspace or summary missing |
+
+#### `getCurrentNetworkId(): ApiResult<{ networkId: IdType }>`
+
+Returns the currently active network ID.
+
+| Error Code | Condition            |
+| ---------- | -------------------- |
+| `APP2`     | No networks are open |
+
+#### `switchCurrentNetwork(networkId): ApiResult`
+
+Switches the active network. Triggers `network:switched` via the Event Bus.
+
+| Error Code | Condition                           |
+| ---------- | ----------------------------------- |
+| `APP9`     | `networkId` is empty/whitespace     |
+| `APP1`     | `networkId` is not in the workspace |
+
+#### `setWorkspaceName(name): ApiResult`
+
+Renames the workspace. The name is trimmed before being stored.
+
+| Error Code | Condition                      |
+| ---------- | ------------------------------ |
+| `APP9`     | `name` is empty after trimming |
+
+---
+
+## PanelApi (`cyweb/PanelApi`)
+
+Opens one of the workspace's collapsible panes — left, right or bottom — and
+selects a tab inside it. Use it to bring a result into view: an action started
+from the Apps menu can finish with its `'right-panel'` tab on screen even when
+the side panel was closed or showing another tab.
+
+```typescript
+import { usePanelApi } from 'cyweb/PanelApi'
+import type { OpenPanelResult, PanelApi, PanelId } from 'cyweb/ApiTypes'
+```
+
+Available as `context.apis.panel` in `mount()` and in an `'apps-menu'`
+`onClick(apis)`, as `usePanelApi()` in an app component, and as
+`window.CyWebApi.panel`. The first two are bound to the calling app, which
+only matters for [duplicate ids](#duplicate-tab-ids).
+
+### Types
+
+```typescript
+type PanelId = 'left' | 'right' | 'bottom'
+
+interface OpenPanelResult {
+  panel: PanelId // the pane that is now open
+  tabId?: string // the tab that is now selected; absent when only the pane was opened
+  appId?: string // the app that owns that tab; absent for a built-in tab
+}
+```
+
+| Pane       | Holds                                 | Tab ids                                                                                                                                         |
+| ---------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `'left'`   | Workspace / Style (network browser)   | `'workspace'`, `'style'`, `'llm-query'` (only while the current network is a hierarchy)                                                         |
+| `'right'`  | Side panel — `'right-panel'` app tabs | `'sub-network-viewer'`, plus the `id` each app tab was registered with (`registerPanel` or a resource declaration) |
+| `'bottom'` | Table browser                         | `'nodes'`, `'edges'`, `'network'`                                                                                                               |
+
+The built-in ids are exported as the `LeftPanelTabId`, `RightPanelTabId` and
+`BottomPanelTabId` constants from `cyweb/ApiTypes`.
+
+### Methods
+
+#### `open(panel, tabId?): ApiResult<OpenPanelResult>`
+
+Opens `panel` if it is closed and, when `tabId` is given, selects that tab.
+Omit `tabId` to only open the pane, leaving its selection alone. Only `panel`
+is searched — a tab with the same id in another pane is ignored — and a call
+never touches the other panes.
+
+A tab the pane is not showing right now does not match: an app tab whose app is
+disabled or whose `requires.network` is unmet, or `'llm-query'` on a network
+that is not a hierarchy.
+
+Selecting a tab does only that. In particular, selecting
+`'sub-network-viewer'` does not activate a network view the way a click on the
+tab does.
+
+| Error Code | Condition                                                                          |
+| ---------- | ---------------------------------------------------------------------------------- |
+| `APP9`     | `panel` is not `'left'`, `'right'` or `'bottom'`; `tabId` is empty or not a string |
+| `APP7`     | `panel` shows no tab with that id. The pane is left as it was                      |
+
+### Duplicate tab ids
+
+A tab id is unique only within the app that registered it, so two tabs of one
+pane can share an id. `open` then selects the **calling app's own tab**;
+if the caller owns none of them, the **first one in tab order**. Built-in tabs
+come first in tab order. `window.CyWebApi.panel` has no calling app and always
+gets the first one. `OpenPanelResult.appId` reports which tab was selected.
+
+### Example
+
+```typescript
+// An 'apps-menu' item runs an analysis, then shows its results tab.
+{
+  slot: 'apps-menu',
+  id: 'analyze',
+  label: 'Analyze Network',
+  onClick: async (apis) => {
+    await runAnalysis(apis)
+    // `?.` keeps the app working on a host that predates the Panel API.
+    apis.panel?.open('right', 'NetworkAnalyzerPanel')
+  },
+},
+{
+  slot: 'right-panel',
+  id: 'NetworkAnalyzerPanel',
+  title: 'Network Analyzer',
+  component: lazy(() => import('./components/MainPanel')),
+},
+```
+
+---
+
+## ContextMenuApi
+
+> **Phase 2 change:** `cyweb/ContextMenuApi` and `useContextMenuApi()` have been removed.
+> Context menu access is now via `AppContext.apis.contextMenu` (per-app factory, lifecycle-managed)
+> or `window.CyWebApi.contextMenu` (anonymous singleton, for non-React consumers only).
+
+Allows external apps to register and remove custom items in the host's context
+menus (right-click on nodes, edges, or the canvas background).
+
+```typescript
+// In mount() — per-app factory (recommended for plugin apps)
+mount({ apis }) {
+  apis.contextMenu.addContextMenuItem({ ... })
+}
+
+// In plugin components — via useAppContext()
+import { useAppContext } from 'cyweb/AppIdContext'
+const ctx = useAppContext()
+ctx?.apis.contextMenu.addContextMenuItem({ ... })
+
+// Non-React consumers — anonymous singleton (no auto-cleanup)
+window.CyWebApi.contextMenu.addContextMenuItem({ ... })
+```
+
+### Types
+
+```typescript
+interface ContextMenuTarget {
+  type: 'node' | 'edge' | 'canvas'
+  /** Present for node/edge targets; absent for canvas. */
+  id?: IdType
+  networkId: IdType
+}
+
+interface ContextMenuItemConfig {
+  /** Display label shown in the menu. Must be non-empty. */
+  label: string
+  /** Called when the user clicks the item. */
+  handler: (target: ContextMenuTarget) => void
+  /**
+   * Which context menus this item appears in.
+   * @default ['node', 'edge']
+   */
+  targetTypes?: Array<'node' | 'edge' | 'canvas'>
+  /** Optional icon URL or data URI rendered next to the label. */
+  icon?: string
+}
+```
+
+### Methods
+
+#### `addContextMenuItem(config): ApiResult<{ itemId: string }>`
+
+Registers a new context menu item. Returns a unique `itemId` that can be used to
+remove the item later.
+
+Items registered via `AppContext.apis.contextMenu` are automatically cleaned up
+when the app is disabled or mount() fails (via `cleanupAllForApp`). Explicit
+removal in `unmount()` is redundant but harmless.
+
+| Error Code | Condition                      |
+| ---------- | ------------------------------ |
+| `APP9`     | `label` is empty or whitespace |
+
+#### `removeContextMenuItem(itemId): ApiResult`
+
+Removes a previously registered context menu item.
+
+| Error Code | Condition           |
+| ---------- | ------------------- |
+| `APP6`     | `itemId` is unknown |
+
+### Example
+
+```typescript
+// Typical pattern — register in mount(), remove in unmount()
+let menuItemId: string | undefined
+
+export const MyApp: CyAppWithLifecycle = {
+  // ...
+  mount(context) {
+    const result = context.apis.contextMenu.addContextMenuItem({
+      label: 'Expand Pathway',
+      handler: (target) => {
+        if (target.type === 'node') {
+          console.log('Expand pathway for node:', target.id)
+        }
+      },
+      targetTypes: ['node'],
+    })
+    if (result.success) {
+      menuItemId = result.data.itemId
+    }
+  },
+
+  // unmount() is optional — context menu items registered via
+  // AppContext.apis.contextMenu are automatically cleaned up when
+  // the app is disabled. Only add unmount() if you have manual
+  // event listeners to remove.
+  unmount() {
+    // No need to remove context menu items — auto-cleaned by host.
+  },
+}
+```
+
+---
+
+## NodeGraphicsApi
+
+Register one function that Cytoscape Web calls with each node whose data changed.
+Return an image and the host draws it as that node's `background-image`.
+
+Access is via `AppContext.apis.nodeGraphics` (per-app factory, lifecycle-managed)
+or `window.CyWebApi.nodeGraphics` (anonymous singleton, non-React consumers only).
+There is no `cyweb/NodeGraphicsApi` Module Federation expose.
+
+> **Hook images are never exported to CX2.** They are renderer-only, applied as
+> Cytoscape.js element style bypasses. Vizmapper custom graphics
+> (`nodeImageChart1..9`) still export exactly as before. See
+> `docs/design/custom-graphics-image/node-graphics-render-hook.md`.
+
+```typescript
+// In mount() — per-app factory (recommended for plugin apps)
+mount({ apis }) {
+  apis.nodeGraphics.setRenderHook(({ nodeId, attributes }) => {
+    const pct = Number(attributes.confidence)
+    if (!Number.isFinite(pct)) return null   // leave this node to the Vizmapper
+    return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
+      <circle cx='50' cy='50' r='48' fill='none' stroke='#4caf50'
+              stroke-width='4' stroke-dasharray='${pct * 302} 302'/>
+    </svg>`
+  })
+}
+
+// Non-React consumers — anonymous singleton (no auto-cleanup)
+window.CyWebApi.nodeGraphics.setRenderHook((req) => '…')
+```
+
+### Types
+
+```typescript
+interface NodeGraphicsRequest {
+  networkId: IdType
+  nodeId: IdType
+  /** Shallow copy of the node's table row. Writes to it are ignored. */
+  attributes: Record<string, ValueType>
+  /** Current node size in model units, when the view model has it. */
+  width?: number
+  height?: number
+}
+
+interface NodeGraphicsImage {
+  /**
+   * An `http(s)://` URL, a `data:` URI, or raw `<svg>` markup.
+   * `blob:` and `file:` are rejected.
+   */
+  image: string
+  /**
+   * @default 'contain'
+   *
+   * Rasters use Cytoscape's `background-fit`. SVG sources are wrapped to the
+   * node box, so the fit is baked into the wrapper instead: `contain` → `meet`,
+   * `cover` → `slice`, `none` → natural size centred when the source declares
+   * one, `meet` otherwise.
+   */
+  fit?: 'contain' | 'cover' | 'none'
+  /** 0..1. @default 1 */
+  opacity?: number
+  /** @default 'null' — loads without CORS, but taints the canvas. */
+  crossOrigin?: 'anonymous' | 'use-credentials' | 'null'
+  /**
+   * 'inside' draws under pie/ring charts; 'over' draws above them.
+   * @default 'inside'
+   */
+  containment?: 'inside' | 'over'
+}
+
+/** A bare string is shorthand for `{ image }`. `null` means "no image". */
+type NodeGraphicsResult = string | NodeGraphicsImage | null | undefined
+
+/** Synchronous. Must not throw. */
+type NodeGraphicsRenderHook = (
+  request: NodeGraphicsRequest,
+) => NodeGraphicsResult
+```
+
+### Hook contract
+
+- **Synchronous.** For images needing async work (a fetch, an offscreen render),
+  compute and cache in your own code, then call `refresh()` so the hook can
+  return the cached value.
+- **Must not throw.** A throw yields no image for that node. After 20 throws or
+  slow calls (>16 ms) the hook is disabled for the rest of the session.
+- **Return `null` to decline a node.** It falls back to its Vizmapper custom
+  graphic, if any. With several apps registered, hooks run in registration order
+  and the first non-`null` result wins.
+- **Prefer stable URLs over freshly generated data URIs.** Cytoscape retains one
+  image per distinct URL with no eviction. The host caps a renderer at 2000
+  distinct image URLs and warns once when it stops accepting new ones. SVG
+  sources are re-wrapped per node size, so one SVG on many differently sized
+  nodes costs one URL per size.
+
+### When the hook runs
+
+Automatically on: renderer mount, network switch, hook registration, and any node
+table edit (including undo and redo). Deleted nodes have their image dropped
+without a hook call. Call `refresh()` for anything the host cannot observe —
+your own state.
+
+### Methods
+
+#### `setRenderHook(hook): ApiResult<{ hookId: string }>`
+
+Registers the hook, replacing any hook this caller previously registered. Hooks
+registered via `AppContext.apis.nodeGraphics` are removed automatically, along
+with every image they produced, when the app is disabled.
+
+| Error Code | Condition                |
+| ---------- | ------------------------ |
+| `VP9`      | `hook` is not a function |
+
+#### `clearRenderHook(): ApiResult`
+
+Removes this caller's hook and every image it produced. Affected nodes fall back
+to their Vizmapper custom graphics.
+
+| Error Code | Condition                          |
+| ---------- | ---------------------------------- |
+| `APP5`     | This caller has no hook registered |
+
+One app cannot clear another app's hook, and the anonymous singleton cannot clear
+an app-owned hook.
+
+#### `refresh(networkId?, nodeIds?): ApiResult<{ nodeCount: number }>`
+
+Re-runs the hook. Omit `networkId` for the workspace's current network; omit
+`nodeIds` for every node.
+
+| Error Code | Condition                                |
+| ---------- | ---------------------------------------- |
+| `APP5`     | This caller has no hook registered       |
+| `APP2`     | No `networkId` given and none is current |
+| `APP1`     | `networkId` is unknown                   |
+
+### Example — an image driven by the app's own state
+
+```typescript
+let currentThreshold = 0.5
+const cache = new Map<string, string>()
+
+export const MyApp: CyAppWithLifecycle = {
+  mount(context) {
+    // Synchronous: read from the cache the app fills elsewhere.
+    context.apis.nodeGraphics.setRenderHook(({ nodeId, attributes }) =>
+      Number(attributes.score) >= currentThreshold
+        ? (cache.get(nodeId) ?? null)
+        : null,
+    )
+
+    onSliderChange(async (value) => {
+      currentThreshold = value
+      await fillCache(cache, value) // async work lives here, not in the hook
+      // Ask the host to re-run the hook now that the cache is warm.
+      context.apis.nodeGraphics.refresh()
+    })
+  },
+
+  // No unmount needed — the hook and its images are auto-cleaned on disable.
+}
+```
+
+### Example — remote images from a STRING network
+
+STRING networks carry two node-image columns. Both need handling the contract
+above does not do for you.
+
+| Column                   | Value shape                                                                    |
+| ------------------------ | ------------------------------------------------------------------------------ |
+| `stringdb::imageurl`     | `https://version-12-0.string-db.org//images/Proteinpictures/pdb/1f/1fgu_A.png` |
+| `stringdb::STRING style` | `string:data:image/png;base64,iVBORw0KGgo…`                                    |
+
+```typescript
+// `string:` is a STRING namespace marker, not part of the URI. Without stripping
+// it the value is an unrecognised scheme and the node silently gets no image.
+const strip = (v: unknown): string =>
+  String(v).replace(/^string:(?=data:|https?:)/, '')
+
+apis.nodeGraphics.setRenderHook(({ attributes }) => {
+  const raw =
+    attributes['stringdb::STRING style'] ?? attributes['stringdb::imageurl']
+  if (raw == null) return null
+
+  return {
+    image: strip(raw),
+    fit: 'contain',
+    // Required for the remote host — it sends no CORS header. See below.
+    crossOrigin: 'null',
+  }
+})
+```
+
+Two things measured against the live host, both of which look like "the feature
+is broken" when hit:
+
+- **The `string:` prefix is rejected.** `normalizeImageSource` classifies
+  `string:data:…` as `unrecognized`, so the hook's return value is discarded.
+- **The structure-image host sends no `Access-Control-Allow-Origin`.** It answers
+  `200 image/png` (33,667 bytes), so the URL is fine — but
+  `crossOrigin: 'anonymous'` fails to load it at all. `'null'` works and taints
+  the canvas, which means Cytoscape omits that image from `cy.png()`. The base64
+  value is same-origin and survives PNG export either way.
+
+When adding any new remote source, preflight it with an `Image()` under both
+`crossOrigin` modes before concluding anything about the hook.
+
+Both STRING images are 240×240. Rasters skip the SVG size wrapper entirely, so
+Cytoscape's `background-fit` sizes them natively and their aspect ratio is
+preserved; on the default 75×35 node a square image letterboxes to a 35px square.
+
+### Interaction with Vizmapper custom graphics
+
+| Situation                                         | Result                                                                          |
+| ------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Hook returns an image, node has a Vizmapper image | Hook wins                                                                       |
+| Hook returns `null`                               | Vizmapper image shows                                                           |
+| `clearRenderHook()`                               | Vizmapper image returns on the next restyle                                     |
+| Node has a Vizmapper **pie or ring** chart        | The chart draws **on top** of a hook image unless you set `containment: 'over'` |
+
+The last row is Cytoscape's node draw order (shape → images(inside) → border →
+pie → stripe → images(over)), and matches how two Vizmapper slots already behave.
+
+---
+
+## ResourceApi (`cyweb/AppIdContext`)
+
+Per-app resource registration API for panels, menu items, network search
+providers, and modal dialogs. Available via `useAppContext().apis.resource`
+in plugin components or `context.apis.resource` in `mount()`. Not available
+on `window.CyWebApi`.
+
+```typescript
+import { useAppContext } from 'cyweb/AppIdContext'
+
+function MyComponent() {
+  const ctx = useAppContext()
+  if (!ctx) return null
+  const { resource } = ctx.apis
+  // resource.registerPanel(...), resource.getRegisteredResources(), etc.
+}
+```
+
+### Types
+
+```typescript
+type ResourceSlot =
+  | 'right-panel'
+  | 'apps-menu'
+  | 'search-bar'
+  | 'modal-launcher'
+  | 'layout-algorithm'
+
+// Discriminated by slot: 'right-panel' entries take RegisterPanelOptions;
+// 'apps-menu' entries take RegisterMenuItemOptions (plain data, no
+// `component`); 'search-bar' entries take
+// RegisterNetworkSearchProviderOptions (no `component`); 'modal-launcher'
+// entries take RegisterModalOptions; 'layout-algorithm' entries take
+// RegisterLayoutOptions (a `run` function, no `component`).
+type ResourceDeclaration =
+  | ({ slot: 'right-panel' } & RegisterPanelOptions)
+  | ({ slot: 'apps-menu' } & RegisterMenuItemOptions)
+  | ({ slot: 'search-bar' } & RegisterNetworkSearchProviderOptions)
+  | ({ slot: 'modal-launcher' } & RegisterModalOptions)
+  | ({ slot: 'layout-algorithm' } & RegisterLayoutOptions)
+
+interface RegisterPanelOptions {
+  id: string
+  title?: string
+  order?: number
+  group?: string
+  requires?: { network?: boolean; selection?: boolean }
+  component: React.ComponentType<any>
+  errorFallback?: React.ComponentType<{
+    error: Error
+    resetErrorBoundary: () => void
+  }>
+}
+
+// Plain data — never a component. The host renders every 'apps-menu' row
+// itself, so an app cannot change the shared dropdown's size, font, or
+// colors. For custom UI, open a dialog from onClick (see DialogApi).
+interface RegisterMenuItemOptions {
+  id: string
+  label: string // text shown in the menu, required non-empty
+  tooltip?: string
+  icon?: string // http(s) URL, data:image URI, or root-relative host asset path; SVG is tinted, raster shown as-is
+  order?: number
+  group?: string
+  requires?: { network?: boolean; selection?: boolean } // greys the item out
+  onClick: (apis: AppContextApis) => void | Promise<void>
+  isEnabled?: (apis: AppContextApis) => boolean // extra check, snapshot per open
+}
+
+interface RegisterNetworkSearchProviderOptions {
+  id: string
+  name: string // display name, required non-empty
+  description?: string
+  icon?: string // http(s) URL, data:image URI, or root-relative host asset path; SVG is tinted, raster shown as-is
+  website?: string // http(s) URL
+  placeholder?: string // for the host-owned search input
+  optionsComponent?: React.ComponentType<NetworkSearchOptionsHostProps>
+  onSubmit: (query: NetworkSearchQuery) => void | Promise<void>
+  errorFallback?: React.ComponentType<{
+    error: Error
+    resetErrorBoundary: () => void
+  }>
+}
+
+interface NetworkSearchQuery {
+  readonly query: string // the trimmed text the user submitted
+}
+
+interface NetworkSearchOptionsHostProps {
+  requestClose: () => void // closes the "More Options" popover
+}
+
+interface RegisterModalOptions {
+  id: string
+  component: React.ComponentType<ModalHostProps>
+  maxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | false // default 'sm'
+  fullWidth?: boolean // default false
+  errorFallback?: React.ComponentType<{
+    error: Error
+    resetErrorBoundary: () => void
+  }>
+}
+
+interface ModalHostProps {
+  requestClose: () => void // closes this modal (same path as the host's Close "X")
+}
+
+// A layout algorithm the host runs through its own layout engine. No
+// component: `run` computes positions, the host owns everything around it.
+interface RegisterLayoutOptions {
+  id: string // slot-local; the algorithm's public name is `<appId>::<id>`
+  displayName: string // Layout menu row and Settings entry, required non-empty
+  description?: string // hover text
+  type?: 'force' | 'geometric' | 'hierarchical' | 'other' // default 'other'
+  threshold?: number // greyed out above this many nodes + edges
+  parameters?: LayoutParameter[] // editable in Layout Settings, in this order
+  run: (context: LayoutRunContext) => LayoutPositions | Promise<LayoutPositions>
+  isEnabled?: (apis: AppContextApis) => boolean // extra check, snapshot per menu open
+}
+
+// The shared parameter spec (docs/specifications/APP_PARAMETERS_SPECIFICATION.md),
+// minus the two service-app-only host-filled types. A layout parameter must
+// declare a default.
+type ParameterValue = string | number | boolean
+type LayoutParameterUiType =
+  | 'text'
+  | 'dropDown'
+  | 'radio'
+  | 'checkBox'
+  | 'nodeColumn'
+  | 'edgeColumn'
+
+type LayoutParameter = {
+  displayName: string // label in Layout Settings, and the parameter's key (see below)
+  description?: string | null // hover text
+  type: LayoutParameterUiType
+  defaultValue: ParameterValue // number for text+number/digits, boolean for checkBox, string otherwise
+  valueList?: string[] | null // dropDown, radio: the choices
+  validationType?: 'string' | 'number' | 'digits' | null // text only
+  columnTypeFilter?: string | string[] | null // nodeColumn, edgeColumn: a CX2 type or number | wholenumber | list | list_of_number | list_of_wholenumber, or a list of those (any may match)
+  validationHelp?: string | null // text: the message shown when validation fails
+  validationRegex?: string | null // text + string
+  minValue?: number | null // text + number/digits
+  maxValue?: number | null
+  groups?: string[] | null // presentation nesting, outermost first
+}
+
+type LayoutPositions = Record<IdType, [number, number]> // node id → [x, y]
+
+interface LayoutRunContext {
+  readonly networkId: IdType // the network being laid out — not necessarily the current one
+  readonly nodes: readonly Node[]
+  readonly edges: readonly Edge[]
+  readonly positions: LayoutPositions // current position of every node with a view
+  readonly selectedNodeIds: readonly IdType[]
+  readonly parameters: Readonly<Record<string, ParameterValue>> // current values by key, typed by declaration
+  readonly apis: AppContextApis // the registering app's per-app API object
+}
+
+interface RegisteredResourceInfo {
+  resourceId: string // identity triple: appId::slot::id
+  slot: ResourceSlot
+  id: string
+  title?: string
+  order?: number
+  requires?: { network?: boolean; selection?: boolean }
+}
+
+interface ResourceVisibilityResult {
+  registered: boolean
+  visible: boolean
+  hiddenReason?:
+    | 'app-inactive'
+    | 'requires-network'
+    | 'requires-selection'
+    | 'slot-not-rendered'
+}
+```
+
+### Methods
+
+#### `getSupportedSlots(): ApiResult<{ slots: ResourceSlot[] }>`
+
+Returns the slots the host supports. Currently
+`['right-panel', 'apps-menu', 'search-bar', 'modal-launcher', 'layout-algorithm']`.
+
+#### `registerPanel(options): ApiResult<{ resourceId: string }>`
+
+Registers a panel in the `'right-panel'` slot. Uses upsert semantics: if a
+panel with the same `id` is already registered by this app, it is replaced
+in place (preserving tab selection).
+
+| Error Code | Condition                                      |
+| ---------- | ---------------------------------------------- |
+| `APP9`     | `id` empty, `component` not a valid React type |
+
+#### `unregisterPanel(panelId): ApiResult`
+
+Removes a panel. Returns `APP7` if the panel is not registered.
+
+#### `registerMenuItem(options): ApiResult<{ resourceId: string }>`
+
+Registers one entry in the shared Apps dropdown. Uses upsert semantics.
+
+The entry is **plain data**: `label`, optional `tooltip` and `icon`, an
+`onClick` handler, and enablement rules. There is no `component` — the host
+renders every entry as one of its own standard menu rows, so every app's item
+has the same size, font, and style as every other app's and as the host's
+built-in items. (Before 1.0 this slot took a React component; see
+"Migrating a component-based menu item" below.)
+
+- **`onClick(apis)`** receives the app's per-app API object (the same
+  `AppContextApis` passed to `mount()`). The host closes the dropdown first,
+  then calls the handler. Do the work directly, or open a dialog with
+  `apis.dialog.open(...)` / `apis.resource.openModal(id)` for anything that
+  needs a form, progress, or component state. A returned Promise is awaited
+  only to log a rejection.
+- **`requires`** — `{ network: true }` greys the item out until a network is
+  loaded; `{ selection: true }` until at least one element is selected.
+  Evaluated by the host from its own stores each time the menu opens.
+- **`isEnabled(apis)`** — optional extra check the host calls right before
+  the menu is shown, for conditions `requires` cannot express. A plain
+  function, not a hook; a throw is logged and counts as `false`.
+- **`icon`** — an image URI, exactly as for a `'search-bar'` provider: an
+  http(s) URL, a `data:image` URI (an inlined SVG works well), or a
+  root-relative host asset path, rendered by the host at a fixed size in the
+  row's icon slot. **SVG icons are painted in the row's text color; raster
+  icons are shown unchanged.** An SVG (`data:image/svg+xml`, or a path ending
+  in `.svg`) contributes only its shape, so it follows the light/dark theme
+  and the disabled state with no effort from the app — and multi-color SVG
+  artwork becomes a monochrome silhouette; ship a PNG to keep a logo's
+  colors. A cross-origin http(s) SVG needs CORS headers (CSS masks are
+  fetched in CORS mode). Never a component.
+
+```typescript
+apis.resource.registerMenuItem({
+  id: 'analyze',
+  label: 'Analyze Network',
+  tooltip: 'Calculates degree, centrality, and clustering',
+  icon: 'data:image/svg+xml,' + encodeURIComponent(LOGO_SVG),
+  requires: { network: true },
+  onClick: (apis) => {
+    apis.dialog.open({
+      id: 'analyze',
+      title: 'Network Analyzer',
+      maxWidth: 'xs',
+      render: ({ close }) => <AnalyzeForm onDone={close} />,
+    })
+  },
+})
+```
+
+| Error Code | Condition                                                                                             |
+| ---------- | ----------------------------------------------------------------------------------------------------- |
+| `APP9`     | `id` or `label` empty, `onClick`/`isEnabled` not a function, `icon` not a valid URI, or a `component` |
+
+**Migrating a component-based menu item.** Replace `component` (and
+`closeOnAction`/`errorFallback`/`title`) with `label` + `onClick`. If the old
+component just ran an action, move that logic into `onClick`. If it showed a
+form or other UI, move that JSX into `apis.dialog.open({ render })` (or a
+`'modal-launcher'` registration) called from `onClick`. Right-panel
+registrations need no change. Registering with a `component` now fails with
+`APP9` and a message that says so.
+
+#### `unregisterMenuItem(menuItemId): ApiResult`
+
+Removes a menu item. Returns `APP7` if the menu item is not registered.
+
+#### `registerNetworkSearchProvider(options): ApiResult<{ resourceId: string }>`
+
+Registers a network search provider in the `'search-bar'` slot. Uses upsert
+semantics. The host renders the search bar at the top of the Workspace tab
+once at least one provider is registered by an active app; with several
+providers the user picks one from the bar's provider menu (sorted by name,
+last choice remembered across sessions).
+
+The host owns the query input — providers cannot supply their own query
+component. A provider contributes:
+
+- `placeholder` for the host's search field.
+- `optionsComponent`, rendered inside the "More Options" popover the host
+  opens next to the search field. Mandatory input stays in the search field;
+  any extra parameters belong here, backed by the app's own state so
+  `onSubmit` can read them. The popover is an anchored non-modal surface:
+  click-away and Escape dismiss it, the host injects `requestClose`, and the
+  host also renders the popover's Close button as an explicit exit.
+- `onSubmit`, invoked with the trimmed query when the user presses Enter or
+  the Search button (enabled only while the query is non-empty). While a
+  returned promise is pending the bar shows progress and blocks re-submit; a
+  rejection is logged and surfaced to the user as an error message.
+
+| Error Code | Condition                                                                                                                                                   |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP9`     | `id`/`name` empty, `onSubmit` not a function, `optionsComponent` not a valid React type, `icon` not http(s)/data:image/root-relative, `website` not http(s) |
+
+The `icon` follows the same rule as an `'apps-menu'` icon: **an SVG is painted
+in the surrounding text color, a raster image is shown unchanged.** An SVG
+(`data:image/svg+xml`, or a path ending in `.svg`) contributes only its shape,
+so it follows the light/dark theme; multi-color SVG artwork becomes a monochrome
+silhouette, and a cross-origin http(s) SVG needs CORS headers. A raster logo
+keeps its colors on a white tile. Without an `icon` the host shows the
+provider's initial on that tile.
+
+```typescript
+mount(context) {
+  const { apis } = context
+  apis.resource.registerNetworkSearchProvider({
+    id: 'gene-search',
+    name: 'My Gene Search',
+    description: 'Find networks related to the given genes',
+    icon: 'https://example.org/logo.png',
+    website: 'https://example.org',
+    placeholder: 'Enter gene names...',
+    optionsComponent: SearchOptionsPanel,
+    onSubmit: async ({ query }) => {
+      const cx2 = await fetchNetworkFor(query)
+      apis.network.createNetworkFromCx2(cx2)
+    },
+  })
+}
+```
+
+#### `unregisterNetworkSearchProvider(providerId): ApiResult`
+
+Removes a network search provider. Returns `APP7` if it is not registered.
+When an app's last provider goes away (unregistration or app deactivation),
+the host hides the search bar again.
+
+#### `registerModal(options): ApiResult<{ resourceId: string }>`
+
+Registers a modal in the `'modal-launcher'` slot. Uses upsert semantics.
+Registration only declares the modal — nothing renders until `openModal(id)`
+is called.
+
+The host renders the component inside its own React tree, wrapped in its
+dialog shell (`CyDialog`), so the modal inherits the host theme, error
+isolation (`errorFallback` or the default plugin fallback), and a `Suspense`
+boundary with a loading spinner for `React.lazy` content. The component
+renders the dialog _contents_ — `DialogTitle`, `DialogContent`,
+`DialogActions` — and receives `ModalHostProps`.
+
+Dismissal follows the host's dialog policy
+(`docs/specifications/DIALOG_DISMISS_POLICY.md`): backdrop click is inert.
+The host shell always renders a Close "X" in the top-right corner and closes
+on Escape (the documented exception for app dialogs), both wired to the same
+close path as `requestClose`, so every app modal has an exit even if the app
+renders none; wire your own Cancel/Done buttons to `requestClose`.
+
+Do NOT treat the component's unmount as a "modal closed" signal (e.g. an
+effect cleanup that discards the modal's pending payload): the host runs
+under `React.StrictMode`, whose dev-mode double-mount runs every effect
+cleanup once immediately after mount — such a cleanup fires while the modal
+is still open and blanks it. Put close side effects on the buttons that
+close, and make reopening self-healing by (re)writing the payload before
+each `openModal(id)` call.
+
+| Error Code | Condition                                                                      |
+| ---------- | ------------------------------------------------------------------------------ |
+| `APP9`     | `id` empty, `component` not a valid React type, invalid `maxWidth`/`fullWidth` |
+
+#### `unregisterModal(modalId): ApiResult`
+
+Removes a modal registration. If the modal is currently open, it is closed
+first. Returns `APP7` if it is not registered.
+
+#### `registerLayout(options): ApiResult<{ resourceId: string }>`
+
+Registers a layout algorithm in the `'layout-algorithm'` slot. Uses upsert
+semantics: re-registering the same `id` replaces the algorithm and resets its
+parameter values to the new defaults.
+
+The host adapts the registration into its own layout engine — one synthetic
+engine per app, named after the app id — so the algorithm behaves like a
+built-in one everywhere the host lists layouts. (An app whose id equals a
+built-in engine's name — `G6`, `Cytoscape.js`, `Cosmos` — cannot register
+layouts: `registerLayout` fails with `OPERATION_FAILED`.)
+
+- **Layout menu** — a row in the app block, rendered after the core
+  algorithms and before "Layout Tools" with a divider on each side. Rows
+  are sorted by label (app id as the tiebreak); there is no `order` or
+  gravity option, so an app that registers several related layouts keeps
+  them together with a shared label prefix (`"MCODE Cluster Layout"`,
+  `"MCODE FD Layout"`). The row is greyed out above `threshold` nodes +
+  edges, when `isEnabled(apis)` returns `false`, and whenever the host
+  disables every layout (no network view, an HCX cell view).
+- **Layout → Settings...** — listed under `displayName`; every declared
+  parameter gets a control there (see "Parameters" below), and the current
+  values are what `run` receives. "Set as default" works for app algorithms
+  too: Apply Default Layout and the floating toolbar button then run it.
+- **Layout API** — `layout.getAvailableLayouts()` lists it with `appId` set
+  and `algorithmName` equal to the qualified name `<appId>::<id>`, which is
+  what `layout.applyLayout(networkId, { algorithmName })` takes. That is how
+  another app, or an agent on `window.CyWebApi`, runs it.
+
+**What the host does around `run`.** Every host path (menu row, Settings
+"Apply Layout", Apply Default Layout, the floating toolbar button, and
+`applyLayout`) sets the running flag, snapshots the current positions, calls
+`run` with a `LayoutRunContext`, writes the returned positions to the view
+model, records one undo entry, and fits the viewport. `run` computes
+positions and nothing else — do not write positions yourself from inside it.
+`layout:started` / `layout:completed` fire only on the `applyLayout` path, as
+for built-in algorithms.
+
+**The result.** An object keyed by node id with `[x, y]` pairs. Nodes left
+out keep their position; ids that are not nodes of the network, and values
+that are not finite `[x, y]` pairs, are dropped with a warning. `run` may be
+synchronous or return a Promise. A throw or a rejection aborts the run: the
+running flag is reset, no positions change, no undo entry is recorded, and
+the error is logged under the `api` debug namespace. If the app is disabled
+while `run` is pending, the result is discarded when it arrives.
+
+**Lifecycle.** Disabling or uninstalling the app removes its algorithms (and
+its engine); a preferred layout that pointed at one falls back to the host's
+built-in default. `unregisterAll()` removes them too.
+
+**Parameters.** `parameters` is an ordered array of the shared parameter spec
+(`docs/specifications/APP_PARAMETERS_SPECIFICATION.md`, the same one service
+apps use). The Settings dialog renders the fields in array order, nested
+into fieldsets by `groups` (outermost group first, like Cytoscape Desktop's
+`@Tunable(groups = ...)`; groups appear in the order they are first seen, and
+a group's fields stay together even when the array interleaves them). The
+six UI types are `text` (with `validationType` `string` / `number` /
+`digits`, `validationRegex`, `minValue` / `maxValue`, `validationHelp`),
+`dropDown` and `radio` (`valueList`), `checkBox`, and `nodeColumn` /
+`edgeColumn` (`columnTypeFilter`); a `defaultValue` is required and must be
+a number for `number` / `digits`, a boolean for `checkBox`, a string
+otherwise. Values are validated as declared before they are stored.
+
+- **Keys.** A parameter's key in `context.parameters` is its `displayName`.
+  When two parameters share a `displayName`, each of those is keyed by its
+  group path instead (`'Nodes/Gap'`, `'Clusters/Gap'`); two with the same
+  `displayName` and the same `groups` are rejected.
+- **Values.** Typed by the declaration: `checkBox` → boolean, `text` with
+  `number` → number, `digits` → integer, everything else → string.
+
+```typescript
+apis.resource.registerLayout({
+  id: 'cluster',
+  displayName: 'MCODE Cluster Layout',
+  description: 'Clusters as compact disks, members on rings by score',
+  type: 'other',
+  parameters: [
+    {
+      displayName: 'Node spacing',
+      description: 'Gap between nodes',
+      type: 'text',
+      validationType: 'number',
+      defaultValue: 20,
+      minValue: 0,
+      groups: ['Spacing'],
+    },
+    {
+      displayName: 'Cluster spacing',
+      type: 'text',
+      validationType: 'number',
+      defaultValue: 100,
+      minValue: 0,
+      groups: ['Spacing'],
+    },
+    {
+      displayName: 'Attach unclustered nodes',
+      type: 'checkBox',
+      defaultValue: true,
+    },
+    {
+      displayName: 'Cluster column',
+      description: 'A node column whose values are cluster ids (optional)',
+      type: 'nodeColumn',
+      columnTypeFilter: 'wholenumber',
+      defaultValue: '',
+    },
+  ],
+  run: async ({ networkId, nodes, edges, positions, parameters, apis }) => {
+    const options = {
+      nodeSpacing: parameters['Node spacing'] as number,
+      clusterSpacing: parameters['Cluster spacing'] as number,
+      satellites: parameters['Attach unclustered nodes'] as boolean,
+    }
+    const column = parameters['Cluster column'] as string
+    const clusters =
+      column !== ''
+        ? clustersFromColumn(networkId, column, apis)
+        : apis.appData.get(networkId, 'latest-result')
+    return layoutClusters(nodes, edges, positions, clusters, options)
+  },
+})
+```
+
+| Error Code | Condition                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP9`     | `id` or `displayName` empty; `run` or `isEnabled` not a function; `type` not one of the four families; `threshold` negative or not a number; `parameters` not an array (a record keyed by name is the pre-release shape and is named as such); a parameter with a blank `displayName`, an unknown or host-filled `type`, a missing or mistyped `defaultValue`, a `dropDown`/`radio` without a `valueList` or whose default is not in it, malformed `groups`, or `minValue > maxValue`; two parameters with the same `displayName` and `groups` |
+| `APP3`     | the host failed to register the algorithm (nothing is left registered)                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+
+#### `unregisterLayout(layoutId): ApiResult`
+
+Removes a layout algorithm. Returns `APP7` if it is not registered. If it
+was the default layout, the host falls back to its built-in default.
+
+#### `openModal(id): ApiResult`
+
+Opens a registered `'modal-launcher'` resource. Payload-less by design —
+carry any payload in your app's own state, set before the call. Idempotent
+when the modal is already open. Open modals survive the launching
+component's unmount (a closing menu dropdown, an options popover) and are
+closed automatically when the app is deactivated.
+
+Because modals are usually launched from app logic with no mounted
+component, `openModal` is typically called through the `AppContext` parked
+at `mount()` time:
+
+```typescript
+mount(context) {
+  setAppContext(context) // module-level singleton owned by the app
+}
+
+// Later, e.g. inside a search provider's onSubmit:
+async function runSearch(query: string) {
+  const candidates = await fetchCandidates(query)
+  myStore.setPending(candidates) // payload first...
+  getAppContext().apis.resource.openModal('select-sources') // ...then open
+}
+```
+
+| Error Code | Condition                             |
+| ---------- | ------------------------------------- |
+| `APP7`     | No modal with this `id` is registered |
+| `APP9`     | `id` empty or not a string            |
+
+#### `closeModal(id): ApiResult`
+
+Closes an open modal — the same path as the injected `requestClose` and the
+host's Close "X". Idempotent when the modal is not open. Returns `APP7` if
+the modal is not registered.
+
+#### `unregisterAll(): ApiResult`
+
+Removes all resources registered by this app, closing any open modals.
+
+#### `registerAll(entries): ApiResult<{ registered, errors }>`
+
+Batch registration. Always returns `ok()`. Check `result.data.errors` for
+partial failures.
+
+```typescript
+const result = apis.resource.registerAll([
+  { slot: 'right-panel', id: 'Panel', component: MyPanel },
+  { slot: 'apps-menu', id: 'Menu', label: 'My Action', onClick: runAction },
+  {
+    slot: 'layout-algorithm',
+    id: 'rows',
+    displayName: 'Row Layout',
+    run: layoutRows,
+  },
+])
+if (result.success && result.data.errors.length > 0) {
+  console.warn('Partial failures:', result.data.errors)
+}
+```
+
+#### `getRegisteredResources(): ApiResult<{ resources: RegisteredResourceInfo[] }>`
+
+Returns all resources registered by this app. Useful for debugging.
+
+#### `getResourceVisibility(id, slot?): ApiResult<ResourceVisibilityResult>`
+
+Ids are unique per slot, not per app. Pass `slot` when the same id is used in
+more than one slot; without it the first registration with that id (in
+registration order) is evaluated.
+
+Returns the visibility evaluation for a specific resource. Evaluates:
+
+1. App active status
+2. `requires.network` — hidden when no network is loaded
+3. `requires.selection` — hidden when nothing is selected, evaluated against the
+   current network's live selection
+
+---
+
+## AppDataApi (`cyweb/AppDataApi`)
+
+Per-app key/value storage for results an app computes — an analyzer's degree
+table, an enrichment panel's term list. Available via
+`useAppContext().apis.appData` in plugin components or `context.apis.appData` in
+`mount()`. Not available on `window.CyWebApi`: entries are scoped by `appId`,
+and the anonymous surface has no app identity to scope them to.
+
+```typescript
+import { useAppContext } from 'cyweb/AppIdContext'
+
+function ResultsPanel() {
+  const ctx = useAppContext()
+  if (!ctx) return null
+  const { appData } = ctx.apis
+  // appData.set(networkId, 'results', ...), appData.get(networkId, 'results')
+}
+```
+
+### Two tiers
+
+`options.export` picks where an entry lives. It defaults to `false`, so derived
+caches stay out of every network the user shares; an app opts in per key for
+results that are meant to follow the network.
+
+| `export`          | Storage                                          | Travels to NDEx / CX2 download | Marks network modified |
+| ----------------- | ------------------------------------------------ | ------------------------------ | ---------------------- |
+| `false` (default) | Local, network-keyed (`appData` IndexedDB store) | No                             | No                     |
+| `true`            | The network's `cyAppData` opaque aspect          | Yes                            | Yes                    |
+
+A key lives in exactly one tier. Setting an existing key with the other
+`export` value moves it rather than leaving a stale copy behind, so `get`
+never has two answers.
+
+Exported entries from every app share one `cyAppData` aspect, so apps cannot
+collide in the CX2 aspect namespace:
+
+```json
+{ "cyAppData": [{ "appId": "analyzer", "key": "results", "value": {} }] }
+```
+
+Records whose `appId` is not installed here are read, written and exported
+untouched — a round trip through Cytoscape Web does not destroy another host's
+app data.
+
+### Scoping and lifetime
+
+- **Per app.** One app can neither read nor overwrite another app's keys, and
+  `getAll` / `keys` never report them. Two apps may use the same key name.
+- **Survives disable.** Neither network-scoped nor app-scoped entries are
+  dropped when the app is disabled — results the user paid compute for outlive
+  a toggle. Discarding them is the app's call:
+  `remove(networkId, key)` for network entries, `removeGlobal(key)` for
+  app-scoped ones.
+- **Deleted with the network.** Both tiers are dropped when the network is
+  deleted. App-scoped entries (`setGlobal`) are tied to no network, so they
+  survive an emptied workspace.
+- **Not synced across tabs.** A second tab sees what was persisted at its own
+  boot, not later writes from the first.
+
+### Value rules
+
+Values must survive a JSON round trip. What is stored is the round-tripped
+copy, so mutating the object you passed in afterwards does not change what is
+stored.
+
+**A read returns a frozen object.** `get`, `getGlobal` and the values inside
+`getAll` hand back the object the host holds — the stores behind both tiers are
+Immer-backed with autofreeze on, so the value is deeply frozen and writing to
+it throws a `TypeError`. Copy before mutating:
+
+```typescript
+const read = ctx.apis.appData.get(networkId, 'results')
+if (read.success) {
+  const results = structuredClone(read.data.value) // or a JSON round trip
+  results.clusters[0].thumbnail = png // safe; the stored copy is untouched
+}
+```
+
+Reading, iterating and rendering the value need no copy. The copy matters for
+an app that stores records it later edits in place — writing the mutated copy
+back with `set` is what updates storage.
+
+| Condition                                            | Code    |
+| ---------------------------------------------------- | ------- |
+| `undefined` value (use `remove` instead)             | `APP9`  |
+| Empty `key`, or the reserved key `__proto__`         | `APP9`  |
+| `networkId` not in the workspace (writes only)       | `APP1`  |
+| Cyclic value, `BigInt`, bare function or symbol      | `APP12` |
+| JSON encoding over 5 MB (`MAX_APP_DATA_VALUE_BYTES`) | `APP13` |
+| `get` / `getGlobal` on a key that was never written  | `APP11` |
+
+`APP11` rather than an `undefined` value means a stored `null` and an absent
+key are distinguishable.
+
+### Types
+
+```typescript
+/** Largest JSON-encoded value one entry may hold, in bytes. */
+const MAX_APP_DATA_VALUE_BYTES: number // 5 * 1024 * 1024
+
+interface SetAppDataOptions {
+  readonly export?: boolean // default false
+}
+```
+
+### Methods
+
+| Method                                 | Returns                                           |
+| -------------------------------------- | ------------------------------------------------- |
+| `set(networkId, key, value, options?)` | `ApiResult`                                       |
+| `get(networkId, key)`                  | `ApiResult<{ value: unknown }>`                   |
+| `getAll(networkId)`                    | `ApiResult<{ entries: Record<string, unknown> }>` |
+| `remove(networkId, key)`               | `ApiResult`                                       |
+| `keys(networkId)`                      | `ApiResult<{ keys: string[] }>`                   |
+| `setGlobal(key, value)`                | `ApiResult`                                       |
+| `getGlobal(key)`                       | `ApiResult<{ value: unknown }>`                   |
+| `removeGlobal(key)`                    | `ApiResult`                                       |
+
+`get`, `getAll` and `keys` read both tiers. `remove` succeeds whether or not
+the key existed. `setGlobal` / `getGlobal` / `removeGlobal` store app-scoped
+data with no network attached; they are always local, since there is no network
+for the entry to travel with.
+
+### Reading on mount and on network switch
+
+Two reads, not one. No event fires for the network that is already current when
+an app mounts, and a registered right-panel component is keyed by its resource
+id rather than by network — it stays mounted across a switch, so a React
+remount will not re-read for you.
+
+```typescript
+import { useAppContext } from 'cyweb/AppIdContext'
+import { useCyWebEvent } from 'cyweb/EventBus'
+import { useCallback, useEffect, useState } from 'react'
+
+function ResultsPanel() {
+  const ctx = useAppContext()
+  const [results, setResults] = useState<unknown>(null)
+
+  const load = useCallback(
+    (networkId: string) => {
+      if (!ctx || networkId === '') return setResults(null)
+      const result = ctx.apis.appData.get(networkId, 'results')
+      setResults(result.success ? result.data.value : null)
+    },
+    [ctx],
+  )
+
+  // 1. The network that is already current at mount.
+  useEffect(() => {
+    if (!ctx) return
+    const current = ctx.apis.workspace.getCurrentNetworkId()
+    if (current.success) load(current.data.networkId)
+  }, [ctx, load])
+
+  // 2. Every switch after that.
+  useCyWebEvent(
+    'network:switched',
+    useCallback((detail) => load(detail.networkId), [load]),
+  )
+
+  return results === null ? <p>No results for this network.</p> : <Results data={results} />
+}
+```
+
+Computing and storing results, exported so they reach NDEx with the network:
+
+```typescript
+const scores = computeDegrees(networkId)
+const result = ctx.apis.appData.set(networkId, 'results', scores, {
+  export: true,
+})
+if (!result.success) {
+  console.error(result.error.code, result.error.message)
+}
+```
+
+---
+
+## Event Bus (`cyweb/EventBus`)
+
+The Event Bus bridges Cytoscape Web's internal Zustand store mutations to typed
+`CustomEvent`s dispatched on `window`. External apps subscribe to these events
+to react to state changes in real time.
+
+### Architecture
+
+```
+Zustand stores → initEventBus (subscriptions) → dispatchCyWebEvent → window CustomEvent
+layoutApi.ts ──────────────────────────────────→ dispatchCyWebEvent → window CustomEvent
+```
+
+`initEventBus()` is called once after store hydration in `src/features/AppShell.tsx`. It wires
+store subscriptions for all events except `layout:started`/`layout:completed`,
+which are dispatched directly from `layoutApi.ts`.
+
+### Subscribing (React)
+
+```typescript
+import { useCyWebEvent } from 'cyweb/EventBus'
+import { useCallback } from 'react'
+
+function MyComponent() {
+  const handleSwitch = useCallback(({ networkId, previousId }) => {
+    console.log('switched to', networkId, 'from', previousId)
+  }, [])
+
+  useCyWebEvent('network:switched', handleSwitch)
+}
+```
+
+`useCyWebEvent(eventType, handler)` subscribes on mount and automatically removes
+the listener on unmount. The `handler` receives the typed `detail` object directly
+(not the raw `CustomEvent`).
+
+**Stability requirement:** Wrap `handler` in `useCallback` (or a stable reference)
+to avoid re-subscribing on every render.
+
+### Subscribing (Vanilla JS)
+
+```javascript
+window.addEventListener('cywebapi:ready', () => {
+  window.addEventListener('network:switched', (e) => {
+    console.log('switched to', e.detail.networkId)
+  })
+})
+```
+
+### Event Reference
+
+#### `network:created`
+
+Fired when a new network is added to the workspace.
+
+```typescript
+detail: {
+  networkId: IdType
+}
+```
+
+Source: WorkspaceStore subscription (`workspace.networkIds`).
+
+#### `network:deleted`
+
+Fired when a network is removed from the workspace.
+
+```typescript
+detail: {
+  networkId: IdType
+}
+```
+
+Source: WorkspaceStore subscription (`workspace.networkIds`).
+
+#### `network:changed`
+
+Fired when nodes or edges are added to or removed from an existing network.
+Whole-network creation/deletion and attribute-only changes are excluded.
+
+```typescript
+detail: {
+  networkId: IdType
+  addedNodeIds: IdType[]
+  removedNodeIds: IdType[]
+  addedEdgeIds: IdType[]
+  removedEdgeIds: IdType[]
+}
+```
+
+Source: NetworkStore subscription (`networks` selector and element-ID diff).
+
+#### `network:switched`
+
+Fired when the active (current) network changes.
+`previousId` is an empty string if no network was active before.
+
+```typescript
+detail: {
+  networkId: IdType
+  previousId: IdType
+}
+```
+
+Source: WorkspaceStore subscription (`workspace.currentNetworkId`).
+Also triggered by `WorkspaceApi.switchCurrentNetwork`.
+
+**Switching is not loading.** After a page reload the workspace holds only
+network summaries; a network's tables and view are loaded the first time it
+becomes current, and `network:switched` fires before that async load lands.
+A `tableApi` / `elementApi` / `viewportApi` read made in that window fails
+with `APP1`. Subscribe to `network:loaded` to read again.
+
+#### `network:loaded`
+
+Fired once a network's data is readable through the API: its node and edge
+tables and its view have all landed in the stores. Fires for a lazily loaded
+workspace network (the case above), for a network created through
+`networkApi` or the UI (once, alongside `network:created`), and for a network
+another tab added (cross-tab sync). It does not fire on startup for networks
+that were already in the stores when the event bus started, and it fires at
+most once per network until that network is deleted.
+
+```typescript
+detail: {
+  networkId: IdType
+}
+```
+
+Source: TableStore and ViewModelStore subscriptions (`tables` / `viewModels`
+selectors; either store's change completes the pair).
+
+The first landing of a network's tables is a load, not an edit: it fires
+`network:loaded` and **not** `data:changed`.
+
+The two events answer different questions, so a panel that shows the current
+network's data listens to both. `network:switched` says which network is
+current but may precede its data; `network:loaded` says the data is there but
+also fires for networks that are not current (created with
+`addToWorkspace: false` or `navigate: false`, or added by another tab), and
+never fires again for a network that is already loaded when the user switches
+back to it. Refresh on the switch, and on a load only when it is the current
+network's:
+
+```typescript
+const refresh = useCallback(
+  (networkId: string) => {
+    const result = tableApi.getColumns(networkId, 'node')
+    // APP1 here means the data has not landed yet; network:loaded follows.
+    setColumns(result.success ? result.data.columns : [])
+  },
+  [tableApi],
+)
+useCyWebEvent(
+  'network:switched',
+  useCallback((d) => refresh(d.networkId), [refresh]),
+)
+// The switch may have arrived before the data; this one always has it.
+// Ignore loads of networks that are not on screen.
+useCyWebEvent(
+  'network:loaded',
+  useCallback(
+    (d) => {
+      const current = workspaceApi.getCurrentNetworkId()
+      if (current.success && current.data.networkId === d.networkId) {
+        refresh(d.networkId)
+      }
+    },
+    [refresh, workspaceApi],
+  ),
+)
+```
+
+Read once on mount as well: either event may already have fired by the time
+the panel subscribes, and the network that is current at boot gets no
+`network:switched` at all — only its `network:loaded`.
+
+#### `selection:changed`
+
+Fired when the selection state of the current network's primary view changes.
+Uses value-equality comparison to suppress spurious events (e.g., re-clicking
+the same node produces identical arrays).
+
+```typescript
+detail: {
+  networkId: IdType
+  selectedNodes: IdType[]
+  selectedEdges: IdType[]
+}
+```
+
+Source: ViewModelStore subscription (current network's view `selectedNodes` / `selectedEdges`).
+Also triggered by SelectionApi write methods.
+
+#### `layout:started`
+
+Fired immediately before a layout algorithm begins executing.
+
+```typescript
+detail: {
+  networkId: IdType
+  algorithm: string
+}
+```
+
+Source: `layoutApi.applyLayout` (dispatched directly, not via store subscription).
+
+#### `layout:completed`
+
+Fired when a layout algorithm finishes and node positions are updated.
+
+```typescript
+detail: {
+  networkId: IdType
+  algorithm: string
+}
+```
+
+Source: `layoutApi.applyLayout` (dispatched directly, not via store subscription).
+
+#### `style:changed`
+
+Fired when a visual style property changes on any network.
+`property` is a `VisualPropertyName` string (e.g., `'nodeBackgroundColor'`).
+One event is fired per changed property per network per store update.
+
+```typescript
+detail: {
+  networkId: IdType
+  property: string
+}
+```
+
+Source: VisualStyleStore subscription (full-state diff, no `subscribeWithSelector`).
+
+#### `style:switched`
+
+Fired when a network's **active named style** changes — the Vizmapper's style
+picker, `visualStyleApi.applyVisualStyle`, an undone or redone switch, or
+deleting the active style.
+
+```typescript
+detail: {
+  networkId: IdType
+  styleId: IdType
+  previousStyleId: IdType
+}
+```
+
+A switch replaces the whole active style, so it also produces one
+`style:changed` per property that differs between the two styles — up to ~60
+events. `style:switched` is dispatched first, from the same store update, so a
+listener can tell one switch from N separate property edits.
+
+Source: VisualStyleStore subscription (same callback as `style:changed`).
+
+#### `data:changed`
+
+Fired when table data or schema changes in a network's node or edge table.
+`rowIds` lists changed node/edge IDs. `addedColumns` and `removedColumns`
+describe schema changes; a rename produces one entry in each. Column operations
+may also populate `rowIds`. Not fired when a network's tables first land in
+the stores (a load, not an edit) — that is `network:loaded`.
+
+```typescript
+detail: {
+  networkId: IdType
+  tableType: 'node' | 'edge'
+  rowIds: IdType[]
+  addedColumns: string[]
+  removedColumns: string[]
+}
+```
+
+Source: TableStore subscription (`tables` selector).
+Also triggered by TableApi write methods.
+
+### Event Dispatch Table
+
+| API Method / Store Mutation                                                                                                | Events Fired                                                                             |
+| -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `networkApi.createNetworkFromEdgeList` / `createNetworkFromNodeList` (addToWorkspace: true)                                | `network:loaded`, `network:created`, `network:switched`                                  |
+| `networkApi.createNetworkFromCx2` (addToWorkspace: true)                                                                   | `network:loaded`, `network:created`                                                      |
+| `networkApi.createNetworkFromCx2` (navigate: true)                                                                         | `network:switched`                                                                       |
+| First switch to a workspace network after a page reload (lazy load)                                                        | `network:switched`, then `network:loaded` once the tables and view land                  |
+| `networkApi.deleteNetwork`                                                                                                 | `network:deleted`; `network:switched` only when deleting the current network             |
+| `networkApi.deleteAllNetworks`                                                                                             | `network:deleted` (×N)                                                                   |
+| `elementApi.createNode` / `createNodes` / `createEdge` / `createEdges` / `deleteNodes` / `deleteEdges`                     | `network:changed`; coordinated table/style/selection mutations may emit their own events |
+| `workspaceApi.switchCurrentNetwork`                                                                                        | `network:switched`                                                                       |
+| `selectionApi.exclusiveSelect` / `additiveSelect` / `additiveDeselect` / `toggleSelected` / `clearSelection`               | `selection:changed`                                                                      |
+| `layoutApi.applyLayout`                                                                                                    | `layout:started`, `layout:completed`                                                     |
+| `visualStyleApi.setDefault` / `setBypass` / `deleteBypass` / `create*Mapping` / `deleteMapping`                            | `style:changed` (×per property)                                                          |
+| `visualStyleApi.applyVisualStyle` / `switchStyle`                                                                          | `style:switched`, then `style:changed` (×per property differing between the two styles)  |
+| `tableApi.setValue` / `setValues` / `editRows` / `createColumn` / `deleteColumn` / `renameColumn` / `applyValueToElements` | `data:changed`                                                                           |
+| `contextMenuApi.addContextMenuItem` / `removeContextMenuItem`                                                              | _(no events — synchronous store mutation only)_                                          |
+
+### Usage Example (React)
+
+```typescript
+import { useWorkspaceApi } from 'cyweb/WorkspaceApi'
+import { useCyWebEvent } from 'cyweb/EventBus'
+import { useState, useEffect, useCallback } from 'react'
+import type { WorkspaceNetworkInfo } from 'cyweb/ApiTypes'
+
+function NetworkList() {
+  const workspaceApi = useWorkspaceApi()
+  const [networks, setNetworks] = useState<WorkspaceNetworkInfo[]>([])
+
+  const refresh = useCallback(() => {
+    const result = workspaceApi.getNetworks()
+    if (result.success) setNetworks(result.data.networks)
+  }, [workspaceApi])
+
+  useEffect(refresh, [refresh])
+
+  useCyWebEvent('network:created', refresh)
+  useCyWebEvent('network:deleted', refresh)
+
+  const handleSwitch = (networkId: string) => {
+    workspaceApi.switchCurrentNetwork(networkId)
+  }
+
+  return (
+    <ul>
+      {networks.map((n) => (
+        <li key={n.networkId} onClick={() => handleSwitch(n.networkId)}>
+          {n.name} ({n.nodeCount} nodes){n.isModified ? ' *' : ''}
+        </li>
+      ))}
+    </ul>
+  )
+}
+```
+
+### Usage Example (Vanilla JS)
+
+```javascript
+window.addEventListener('cywebapi:ready', () => {
+  const { workspace } = window.CyWebApi
+
+  // Display workspace name
+  const info = workspace.getWorkspaceInfo()
+  if (info.success) document.title = info.data.name
+
+  // React to events
+  window.addEventListener('selection:changed', (e) => {
+    const { selectedNodes, selectedEdges } = e.detail
+    console.log(
+      `Selected: ${selectedNodes.length} nodes, ${selectedEdges.length} edges`,
+    )
+  })
+
+  window.addEventListener('data:changed', (e) => {
+    const { networkId, tableType, rowIds, addedColumns, removedColumns } =
+      e.detail
+    console.log(
+      `${tableType} table ${networkId}: ${rowIds.length} rows, ` +
+        `${addedColumns.length} columns added, ` +
+        `${removedColumns.length} removed`,
+    )
+  })
+})
+```
+
+---
+
+## DialogApi (`AppContext.apis.dialog`)
+
+The escape hatch for `'apps-menu'` items — and for any other app code holding
+the per-app API object — that need more than a label and a click: a settings
+form, a progress indicator, a multi-step wizard, anything with its own
+component state. `open()` shows a modal in which the host owns the frame
+(title bar, Close "X", padding) and the app supplies only the body.
+
+Per-app: the factory is bound to the calling app, so an app can only close
+its own dialogs, and every dialog it opened is closed automatically when the
+app is disabled. Available via `apis.dialog` in `mount()`, as the `apis`
+argument of an `'apps-menu'` `onClick`, and via `useAppContext().apis.dialog`
+inside any host-rendered app component. **Not** on `window.CyWebApi`.
+
+**Relationship to `'modal-launcher'`.** Both render app content inside the
+same host dialog shell. `'modal-launcher'` is declarative — register a
+component by id, open it later with `openModal(id)`, render your own
+`DialogTitle` — and suits modals launched from several places. The Dialog API
+is imperative — pass a render function and a title right now — and suits a
+menu item that opens one form. Pick whichever fits the call site.
+
+### Types
+
+```typescript
+interface OpenDialogOptions {
+  id?: string // stable id: reopening with the same id replaces, never stacks
+  title: string // host-rendered title bar, required non-empty
+  render: (props: DialogRenderProps) => ReactNode // the body
+  maxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | false // default 'sm'
+  fullWidth?: boolean // default false
+}
+
+interface DialogRenderProps {
+  close: () => void // closes this dialog (same path as the host's Close "X")
+}
+
+interface DialogApi {
+  open(options: OpenDialogOptions): ApiResult<{ dialogId: string }>
+  close(dialogId?: string): ApiResult
+}
+```
+
+### Methods
+
+#### `open(options): ApiResult<{ dialogId: string }>`
+
+Opens a dialog and returns its id (generated when `options.id` is omitted).
+The body renders under the app's context (`useAppContext()` works), an error
+boundary, and a `Suspense` boundary with a spinner, so `render` may return
+`React.lazy` content. A throwing body is replaced by the host's plugin
+fallback; the title bar and Close "X" remain.
+
+Dismissal follows `docs/specifications/DIALOG_DISMISS_POLICY.md`: backdrop
+click is inert; the host always renders a Close "X" in the title bar and
+closes on Escape (the documented exception for app dialogs). Wire your own
+Cancel/Done buttons to the injected `close`.
+
+```typescript
+onClick: (apis) => {
+  apis.dialog.open({
+    id: 'settings',
+    title: 'Analysis Settings',
+    render: ({ close }) => <AnalysisSettingsForm onDone={close} />,
+  })
+}
+```
+
+| Error Code | Condition                                                                          |
+| ---------- | ---------------------------------------------------------------------------------- |
+| `APP9`     | `title` empty, `render` not a function, empty `id`, invalid `maxWidth`/`fullWidth` |
+
+#### `close(dialogId?): ApiResult`
+
+Closes a dialog. With no argument, closes this app's most recently opened
+dialog that is still open — the common case. Idempotent for an id that is not
+open; returns `APP7` when called without an id and the app has no dialog open.
+
+## App Lifecycle
+
+### `AppContext`
+
+Passed to `mount()` when the app is activated:
+
+```typescript
+interface AppContext {
+  readonly appId: string // unique ID of this app instance
+  readonly apis: AppContextApis // per-app APIs (extends CyWebApiType)
+}
+```
+
+### `AppContextApis`
+
+Per-app API object. Adds `resource`, `appData` and `dialog`, and replaces three
+shared domains with factories bound to the calling app:
+
+```typescript
+interface AppContextApis extends CyWebApiType {
+  readonly resource: ResourceApi // per-app resource registration
+  readonly contextMenu: ContextMenuApi // per-app, auto-cleaned on disable
+  readonly nodeGraphics: NodeGraphicsApi // per-app, auto-cleaned on disable
+  readonly appData: AppDataApi // per-app storage, survives disable
+  readonly dialog: DialogApi // per-app dialogs, closed on disable
+  readonly panel: PanelApi // per-app only to prefer the app's own tab
+}
+```
+
+> **Note:** `window.CyWebApi` is typed as `CyWebApiType` and does NOT include
+> `resource`. Resource registration requires the per-app context available in
+> `mount()` or via `useAppContext()`. `contextMenu` and `nodeGraphics` do appear
+> on `window.CyWebApi`, but as anonymous singletons with no owning app — nothing
+> registered through them is cleaned up automatically.
+
+### `CyAppWithLifecycle`
+
+Extends the existing `CyApp` interface with lifecycle callbacks, declarative
+resource registration, and metadata:
+
+```typescript
+interface CyAppWithLifecycle extends CyApp {
+  /** Declared API version this app targets (e.g. '1.0'). */
+  apiVersion?: string
+
+  /**
+   * Declarative resource registrations. The host registers these automatically
+   * when the app is loaded — no mount() needed.
+   */
+  resources?: ResourceDeclaration[]
+
+  mount?(context: AppContext): void | Promise<void>
+  unmount?(): void | Promise<void>
+}
+```
+
+The base `CyApp` interface provides the core metadata fields:
+
+```typescript
+interface CyApp {
+  id: string // unique ID, matches Module Federation name
+  name: string // human-readable display name
+  description?: string // short description shown in the App Settings panel
+  version?: string // app's own semantic version (e.g. '1.2.0')
+  status?: AppStatus // managed by host; do not set manually
+}
+```
+
+- **`resources`** — declarative registration of panels and menu items. The host
+  registers them before `mount()` is called. For dynamic registration, use
+  `apis.resource.registerPanel()` in `mount()`.
+- **`mount(context)`** — called after declarative resources are registered. If it
+  returns a Promise, the host awaits it. Use for context menus, event listeners,
+  and API-dependent initialization. If mount() throws, the host auto-cleans all
+  registered resources.
+- **`unmount()`** — called when the app is disabled or the page unloads. The host
+  calls `cleanupAllForApp()` before `unmount()`, so resources and context menu
+  items are already removed. Only manual cleanup (event listeners, timers) is needed.
+- **`version`** — import from `package.json` to keep in sync automatically.
+- **`apiVersion`** — reserved for future compatibility checks; set to `'1.0'`.
+
+Existing apps without lifecycle methods continue to work unchanged.
+
+### Example
+
+```typescript
+import { lazy } from 'react'
+import type { CyAppWithLifecycle, AppContext } from '@cytoscape-web/api-types'
+
+let _networkHandler: ((e: Event) => void) | null = null
+const LazyMyActionForm = lazy(() => import('./components/MyActionForm'))
+
+export const MyApp: CyAppWithLifecycle = {
+  id: 'myApp',
+  name: 'My App',
+  description: 'Short description shown in App Settings.',
+  version: '1.0.0',
+  apiVersion: '1.0',
+
+  // Declarative: panels and menu items
+  resources: [
+    {
+      slot: 'right-panel',
+      id: 'MainPanel',
+      title: 'My App',
+      component: lazy(() => import('./components/MainPanel')),
+    },
+    {
+      slot: 'apps-menu',
+      id: 'MyMenuItem',
+      label: 'My Action',
+      requires: { network: true },
+      // Plain data: the host renders the row. Custom UI goes in a dialog.
+      onClick: (apis) => {
+        apis.dialog.open({
+          id: 'my-action',
+          title: 'My Action',
+          render: ({ close }) => <LazyMyActionForm onDone={close} />,
+        })
+      },
+    },
+  ],
+
+  // Imperative: context menus and event listeners
+  mount(context: AppContext) {
+    const { appId, apis } = context
+
+    // Context menu items (auto-cleaned on disable)
+    apis.contextMenu.addContextMenuItem({
+      label: 'My App: Inspect',
+      targetTypes: ['node'],
+      handler: (ctx) => console.log(`[${appId}]`, ctx.id),
+    })
+
+    // Event listeners (manual cleanup in unmount)
+    _networkHandler = (e: Event) => {
+      const { networkId } = (e as CustomEvent).detail
+      console.log(`[${appId}] switched to`, networkId)
+    }
+    window.addEventListener('network:switched', _networkHandler)
+  },
+
+  unmount() {
+    // Only event listeners need manual cleanup
+    if (_networkHandler) {
+      window.removeEventListener('network:switched', _networkHandler)
+      _networkHandler = null
+    }
+  },
+}
+```
+
+---
+
+## `window.CyWebApi`
+
+The global `window.CyWebApi` object assembles all 12 domain APIs into a single
+singleton. Available after the `cywebapi:ready` event.
+
+```typescript
+interface CyWebApiType {
+  element: ElementApi
+  network: NetworkApi
+  selection: SelectionApi
+  viewport: ViewportApi
+  table: TableApi
+  visualStyle: VisualStyleApi
+  layout: LayoutApi
+  export: ExportApi
+  workspace: WorkspaceApi
+  contextMenu: ContextMenuApi
+  nodeGraphics: NodeGraphicsApi
+  panel: PanelApi
+}
+```
+
+```javascript
+window.addEventListener('cywebapi:ready', () => {
+  const api = window.CyWebApi
+  // api.element, api.network, api.selection, ...
+})
+```
+
+`AppContext.apis` extends `window.CyWebApi` with a per-app `resource` field and
+per-app `contextMenu`, `nodeGraphics` and `panel` factories. The 12 domain APIs (element,
+network, etc.) are shared; `resource` is exclusive to `AppContext.apis`.
+
+`contextMenu` and `nodeGraphics` exist on both, but not as the same object. On
+`window.CyWebApi` each is an anonymous singleton with no owning app and therefore
+no lifecycle. On `AppContext.apis` each is bound to the calling `appId`, so
+everything it registers — menu items, a render hook and every image that hook
+produced — is dropped automatically when the app is disabled or uninstalled.
+Prefer the `AppContext.apis` form in any app that has a `mount()`.

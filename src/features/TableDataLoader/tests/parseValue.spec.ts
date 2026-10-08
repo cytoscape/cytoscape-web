@@ -1,3 +1,6 @@
+// @vitest-environment node
+import { describe, expect, it } from 'vitest'
+
 import { ValueTypeName } from '../../../models/TableModel'
 import { parseValue } from '../model/impl/ParseValues'
 

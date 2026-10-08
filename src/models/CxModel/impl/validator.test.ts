@@ -1,11 +1,62 @@
+// @vitest-environment node
+import { describe, expect, it } from 'vitest'
+
 import { Cx2 } from '../Cx2'
 import {
   findAspect,
+  validateCX2,
   validateCx2Attributes,
   validateCx2Metadata,
   validateCx2ReferentialIntegrity,
   validateCx2Structure,
 } from './validator'
+
+// REVIEW.md R2-18: an unknown attribute declaration type ('d') used to hit
+// `default: throw z.string()` — throwing a Zod schema object (not even an
+// Error) instead of returning a ValidationResult, breaking the validator's
+// contract for every caller.
+describe('unknown attribute type handling (regression: R2-18)', () => {
+  const cxWithUnknownType = [
+    { CXVersion: '2.0' },
+    {
+      metaData: [
+        { name: 'nodes', elementCount: 1 },
+        { name: 'attributeDeclarations', elementCount: 1 },
+      ],
+    },
+    {
+      attributeDeclarations: [
+        { nodes: { foo: { d: 'list_of_number' } }, edges: {}, network: {} },
+      ],
+    },
+    { nodes: [{ id: 1 }] },
+    { status: [{ success: true }] },
+  ]
+
+  it('validateCX2 returns a ValidationResult instead of throwing', () => {
+    let result: any
+    expect(() => {
+      result = validateCX2(cxWithUnknownType)
+    }).not.toThrow()
+    expect(result.isValid).toBe(false)
+    expect(
+      result.errors.some((e: any) => /unknown attribute type/i.test(e.message)),
+    ).toBe(true)
+  })
+
+  it('validateCx2Attributes reports the offending attribute and type', () => {
+    let result: any
+    expect(() => {
+      result = validateCx2Attributes(cxWithUnknownType as Cx2)
+    }).not.toThrow()
+    expect(result.isValid).toBe(false)
+    const issue = result.errors.find((e: any) =>
+      /unknown attribute type/i.test(e.message),
+    )
+    expect(issue.message).toContain('list_of_number')
+    expect(issue.message).toContain('foo')
+  })
+})
 
 // to run these: npx jest src/models/CxModel/impl/validator.test.ts
 
@@ -572,30 +623,6 @@ describe('validateCx2Structure', () => {
   })
 
   describe('validateCx2Attributes', () => {
-    // Helper function to create a basic CX2 structure with attribute declarations
-    const createBaseCx2 = (): Cx2 =>
-      [
-        { CXVersion: '2.0' },
-        {
-          metaData: [
-            { name: 'attributeDeclarations', elementCount: 1 },
-            { name: 'nodes', elementCount: 0 },
-            { name: 'edges', elementCount: 0 },
-            { name: 'networkAttributes', elementCount: 0 },
-          ],
-        },
-        {
-          attributeDeclarations: [
-            {
-              nodes: {},
-              edges: {},
-              network: {},
-            },
-          ],
-        },
-        { status: [{ success: true }] },
-      ] as Cx2
-
     describe('node attributes', () => {
       it('should validate valid node attributes', () => {
         const cx2: Cx2 = [

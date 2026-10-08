@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+
 import { IdType } from '../../IdType'
 import { TableType } from '../../StoreModel/TableStoreModel'
 import {
@@ -9,8 +11,10 @@ import { PanelState } from '../PanelState'
 import { TableUIState } from '../TableUi'
 import { Ui } from '../Ui'
 import {
+  deleteNetworkUiState,
   deserializeColumnUIKey,
   enablePopup,
+  serializeColumnUIKey,
   setActiveNetworkBrowserPanelIndex,
   setActiveNetworkView,
   setActiveTableBrowserIndex,
@@ -25,7 +29,6 @@ import {
   setTableDisplayConfiguration,
   setTableState,
   setVisualStyleOptions,
-  serializeColumnUIKey,
 } from './uiImpl'
 
 // to run these: npx jest src/models/UiModel/impl/uiImpl.test.ts
@@ -497,9 +500,8 @@ describe('UiImpl', () => {
   describe('deserializeColumnUIKey', () => {
     it('should deserialize column UI key', () => {
       const serialized = '9|network-1|4|node|8|column-1'
-      const [networkId, tableType, columnId] = deserializeColumnUIKey(
-        serialized,
-      )
+      const [networkId, tableType, columnId] =
+        deserializeColumnUIKey(serialized)
 
       expect(networkId).toBe('network-1')
       expect(tableType).toBe('node')
@@ -548,6 +550,9 @@ describe('UiImpl', () => {
         },
       })
 
+      // The chained operations produce a new ui object
+      expect(ui).not.toBe(original)
+
       // Verify original is unchanged
       expect(original.activeNetworkView).toBe(originalActiveNetworkView)
       expect(original.panels[Panel.LEFT]).toBe(originalPanelState)
@@ -558,5 +563,61 @@ describe('UiImpl', () => {
       expect(original.visualStyleOptions['network-1']).toBeUndefined()
     })
   })
-})
 
+  describe('deleteNetworkUiState', () => {
+    const buildUiWithTwoNetworks = (): Ui => {
+      let ui = createDefaultUi()
+      ui = setNodeSizeLockedState(ui, 'network-1', true)
+      ui = setNodeSizeLockedState(ui, 'network-2', false)
+      ui = setColumnWidth(ui, 'network-1', TableType.NODE, 'name', 120)
+      ui = setColumnWidth(ui, 'network-2', TableType.EDGE, 'weight', 80)
+      return ui
+    }
+
+    it('removes visualStyleOptions for the deleted network only', () => {
+      const ui = buildUiWithTwoNetworks()
+
+      const result = deleteNetworkUiState(ui, 'network-1')
+
+      expect(result.visualStyleOptions['network-1']).toBeUndefined()
+      expect(result.visualStyleOptions['network-2']).toBeDefined()
+    })
+
+    it('removes column UI state for the deleted network only', () => {
+      const ui = buildUiWithTwoNetworks()
+      const deletedKey = serializeColumnUIKey(
+        'network-1',
+        TableType.NODE,
+        'name',
+      )
+      const keptKey = serializeColumnUIKey(
+        'network-2',
+        TableType.EDGE,
+        'weight',
+      )
+
+      const result = deleteNetworkUiState(ui, 'network-1')
+
+      expect(result.tableUi.columnUiState[deletedKey]).toBeUndefined()
+      expect(result.tableUi.columnUiState[keptKey]).toBeDefined()
+    })
+
+    it('does not mutate the original ui object', () => {
+      const ui = buildUiWithTwoNetworks()
+
+      const result = deleteNetworkUiState(ui, 'network-1')
+
+      expect(result).not.toBe(ui)
+      expect(ui.visualStyleOptions['network-1']).toBeDefined()
+    })
+
+    it('is a no-op for a network with no UI state', () => {
+      const ui = buildUiWithTwoNetworks()
+
+      const result = deleteNetworkUiState(ui, 'network-99')
+
+      expect(result.visualStyleOptions).toEqual(ui.visualStyleOptions)
+      expect(result.tableUi.columnUiState).toEqual(ui.tableUi.columnUiState)
+    })
+  })
+})

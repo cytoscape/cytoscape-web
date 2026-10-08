@@ -1,14 +1,14 @@
-import {
-  SequentialCustomColors,
-  DivergingCustomColors,
-  VirdisCustomColors,
-} from './colorUtils'
-import { ColorType } from '../VisualPropertyValue/ColorType'
 import { ColorPalette } from '../VisualPropertyValue/ColorPalette'
 import {
+  PaletteCategory,
   PaletteDefinition,
-  PaletteMetadata,
 } from '../VisualPropertyValue/ColorPalette'
+import { ColorType } from '../VisualPropertyValue/ColorType'
+import {
+  DivergingCustomColors,
+  SequentialCustomColors,
+  VirdisCustomColors,
+} from './colorUtils'
 
 // Expanded palettes (ColorBrewer-like) for CustomGraphics
 export const PALETTES: Record<string, PaletteDefinition> = {
@@ -544,6 +544,108 @@ export function getColorBrewerPaletteColors(
     max: palette.max,
     name: palette.metadata.name,
   }
+}
+
+/**
+ * Get the min/middle/max gradient colors for ANY palette (CW-460).
+ *
+ * Diverging palettes carry explicit min/middle/max colors. Sequential (and
+ * other) palettes only provide an ordered `colors` array, so derive the three
+ * stops from the first, middle and last colors. Returns null when the palette
+ * is unknown or has no colors.
+ */
+export function getPaletteGradientColors(
+  paletteId: string,
+): { min: ColorType; middle: ColorType; max: ColorType; name: string } | null {
+  const palette = PALETTES[paletteId] ?? PALETTES[paletteId.toLowerCase()]
+  if (!palette) return null
+
+  if (palette.min && palette.middle && palette.max) {
+    return {
+      min: palette.min,
+      middle: palette.middle,
+      max: palette.max,
+      name: palette.metadata.name,
+    }
+  }
+
+  const colors = palette.colors
+  if (!colors || colors.length === 0) return null
+
+  return {
+    min: colors[0],
+    middle: colors[Math.floor((colors.length - 1) / 2)],
+    max: colors[colors.length - 1],
+    name: palette.metadata.name,
+  }
+}
+
+/**
+ * Recommend a palette category for a continuous color mapping based on the data
+ * range (CW-460), mirroring Cytoscape Desktop: use a diverging palette when the
+ * data spans zero (has both negative and positive values), otherwise a
+ * sequential palette for single-sided data.
+ */
+export function recommendPaletteCategory(
+  minValue: number,
+  maxValue: number,
+): 'sequential' | 'diverging' {
+  const lo = Math.min(minValue, maxValue)
+  const hi = Math.max(minValue, maxValue)
+  return lo < 0 && hi > 0 ? 'diverging' : 'sequential'
+}
+
+/**
+ * The palette categories the pickers offer, in display order.
+ *
+ * `metadata.category` is the single source of this grouping. Grouping by
+ * palette-id prefix instead (`key.startsWith('Sequential')`) misses every
+ * named palette — the 9 ColorBrewer diverging palettes are `rdbu`, `puor`,
+ * `brbg` and friends, not `Diverging12`.
+ */
+export const PALETTE_CATEGORY_ORDER: PaletteCategory[] = [
+  'sequential',
+  'diverging',
+  'viridis',
+]
+
+export const PALETTE_CATEGORY_LABELS: Record<PaletteCategory, string> = {
+  sequential: 'Sequential',
+  diverging: 'Diverging',
+  viridis: 'Viridis',
+  categorical: 'Categorical',
+}
+
+/**
+ * Palette entries of one category, in table order.
+ *
+ * With `colorBlindSafeOnly`, palettes explicitly marked `colorBlindSafe: false`
+ * are dropped; palettes that say nothing are kept.
+ */
+export function getPalettesByCategory(
+  category: PaletteCategory,
+  options: { colorBlindSafeOnly?: boolean } = {},
+): Array<{ id: string; palette: PaletteDefinition }> {
+  return Object.entries(PALETTES)
+    .filter(([, palette]) => palette.metadata.category === category)
+    .filter(
+      ([, palette]) =>
+        !options.colorBlindSafeOnly ||
+        palette.metadata.colorBlindSafe !== false,
+    )
+    .map(([id, palette]) => ({ id, palette }))
+}
+
+/**
+ * One category's palettes as the `string[][]` shape react-color's
+ * SwatchesPicker wants: one inner array per palette, rendered as a column.
+ */
+export function getPaletteSwatchGroups(
+  category: PaletteCategory,
+): ColorType[][] {
+  return getPalettesByCategory(category).map(({ palette }) => [
+    ...palette.colors,
+  ])
 }
 
 // Legacy export for backward compatibility - now just references PALETTES

@@ -1,11 +1,12 @@
+/**
+ * @deprecated The Module Federation exposure of this hook (cyweb/CreateNetwork) is deprecated for external apps.
+ * This hook is still used internally by the host application — it is NOT being removed.
+ * External apps should use `cyweb/NetworkApi` (`useNetworkApi`) instead of importing this hook directly.
+ * This cyweb/CreateNetwork Module Federation export will be removed after 2 release cycles.
+ */
 import { useCallback } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 
-import { useNetworkStore } from '../hooks/stores/NetworkStore'
-import { useNetworkSummaryStore } from '../hooks/stores/NetworkSummaryStore'
-import { useTableStore } from '../hooks/stores/TableStore'
-import { useViewModelStore } from '../hooks/stores/ViewModelStore'
-import { useVisualStyleStore } from '../hooks/stores/VisualStyleStore'
 import { IdType } from '../../models'
 import { CyNetwork } from '../../models/CyNetworkModel'
 import NetworkFn, {
@@ -32,6 +33,11 @@ import VisualStyleFn, {
   VisualPropertyName,
   VisualStyle,
 } from '../../models/VisualStyleModel'
+import { useNetworkStore } from '../hooks/stores/NetworkStore'
+import { useNetworkSummaryStore } from '../hooks/stores/NetworkSummaryStore'
+import { useTableStore } from '../hooks/stores/TableStore'
+import { useViewModelStore } from '../hooks/stores/ViewModelStore'
+import { useVisualStyleStore } from '../hooks/stores/VisualStyleStore'
 
 const toNode = (id: IdType): Node => {
   return {
@@ -229,7 +235,14 @@ export const useCreateNetwork = (): (({
 
       return cyNetwork
     },
-    [],
+    [
+      addNetwork,
+      addVisualStyle,
+      addTable,
+      addViewModel,
+      addSummary,
+      createPassthroughMapping,
+    ],
   )
 
   return createNetwork

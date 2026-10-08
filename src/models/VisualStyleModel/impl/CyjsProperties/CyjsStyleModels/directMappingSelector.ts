@@ -46,6 +46,10 @@ export const SpecialPropertyName = {
   Pie14BackgroundSize: 'pie14BackgroundSize',
   Pie15BackgroundSize: 'pie15BackgroundSize',
   Pie16BackgroundSize: 'pie16BackgroundSize',
+  // Image background properties
+  BackgroundImage: 'backgroundImage',
+  BackgroundFit: 'backgroundFit',
+  BackgroundImageCrossorigin: 'backgroundImageCrossorigin',
 } as const
 
 export type SpecialPropertyName =

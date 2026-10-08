@@ -1,0 +1,661 @@
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+  type Mock,
+} from 'vitest'
+import { act, renderHook, waitFor } from '@testing-library/react'
+import { createElement, ReactNode } from 'react'
+
+import { AppConfigContext, defaultAppConfig } from '../../../AppConfigContext'
+import {
+  isAllowedOrigin,
+  isCatalogEntryAllowed,
+  isHostCompatible,
+} from '../../../features/AppManager/install/installGate'
+import { migrateLegacyApps } from '../../../features/AppManager/install/migrateLegacyApps'
+import { loadRemoteApp } from '../../../features/AppManager/loader/loadRemoteApp'
+import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
+import { AppStatus } from '../../../models/AppModel/AppStatus'
+import { mountApp, unmountApp } from './appLifecycle'
+import { useAppStore } from './AppStore'
+import { useMessageStore } from './MessageStore'
+import { appRegistry, loadedAppUrls, useAppManager } from './useAppManager'
+import { useWorkspaceStore } from './WorkspaceStore'
+
+// Stub the app-api/core barrel — its layout API transitively imports the
+// ESM-only @cosmograph/cosmos, which jest cannot transform. useAppManager only
+// spreads CyWebApi into per-app apis, which the mocked lifecycle never uses.
+vi.mock('../../../app-api/core', () => ({ CyWebApi: {} }))
+
+vi.mock('../../db', async (importOriginal) => ({
+  ...((await importOriginal()) as typeof import('../../db')),
+  getAppSettingFromDb: vi.fn().mockResolvedValue(undefined),
+  getAllServiceAppsFromDb: vi.fn().mockResolvedValue([]),
+  getAppFromDb: vi.fn().mockResolvedValue(undefined),
+  deleteAppFromDb: vi.fn().mockResolvedValue(undefined),
+  putWorkspaceToDb: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('../../../features/AppManager/manifest/obtainCatalogEntries', () => ({
+  obtainCatalogEntries: vi.fn().mockResolvedValue([]),
+}))
+
+vi.mock('../../../features/AppManager/install/migrateLegacyApps', () => ({
+  migrateLegacyApps: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('../../../features/AppManager/install/installGate', () => ({
+  isAllowedOrigin: vi.fn(() => true),
+  isCatalogEntryAllowed: vi.fn(() => true),
+  isHostCompatible: vi.fn(() => true),
+}))
+
+vi.mock('./appLifecycle', () => ({
+  mountApp: vi.fn().mockResolvedValue(undefined),
+  unmountApp: vi.fn().mockResolvedValue(undefined),
+  unmountAllApps: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('../../../features/AppManager/loader/loadRemoteApp', () => ({
+  loadRemoteApp: vi.fn(),
+}))
+
+const mockIsAllowedOrigin = isAllowedOrigin as Mock
+const mockIsCatalogEntryAllowed = isCatalogEntryAllowed as Mock
+const mockIsHostCompatible = isHostCompatible as Mock
+const mockMigrate = migrateLegacyApps as Mock
+const mockLoadRemoteApp = loadRemoteApp as Mock
+const mockMountApp = mountApp as Mock
+const mockUnmountApp = unmountApp as Mock
+
+const entry = (id: string, version = '1.0.0'): AppCatalogEntry => ({
+  id,
+  url: `https://apps.cytoscape.org/web/${id}/${version}/remoteEntry.js`,
+  author: 'Test',
+  name: `${id} app`,
+  version,
+})
+
+const wrapper = ({ children }: { children: ReactNode }) =>
+  createElement(
+    AppConfigContext.Provider,
+    { value: defaultAppConfig },
+    children,
+  )
+
+const installed = () =>
+  useWorkspaceStore.getState().workspace.installedApps ?? []
+
+/** Render the hook and wait for its init effect to settle. */
+const renderManager = async () => {
+  const rendered = renderHook(() => useAppManager(), { wrapper })
+  await waitFor(() => expect(mockMigrate).toHaveBeenCalled())
+  return rendered
+}
+
+describe('useAppManager — install / uninstall', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockIsAllowedOrigin.mockReturnValue(true)
+    mockIsCatalogEntryAllowed.mockReturnValue(true)
+    mockIsHostCompatible.mockReturnValue(true)
+    appRegistry.clear()
+    loadedAppUrls.clear()
+    // Hydrated workspace so addInstalledApp persists and the readiness gate
+    // resolves immediately.
+    useWorkspaceStore.getState().set({
+      id: 'ws-test',
+      name: 'Test',
+      isRemote: false,
+      networkIds: [],
+      networkModified: {},
+      creationTime: new Date(),
+      localModificationTime: new Date(),
+      currentNetworkId: '',
+      installedApps: [],
+    })
+    useAppStore.getState().setCatalog([])
+    useMessageStore.getState().resetMessages()
+  })
+
+  describe('installApp', () => {
+    it('persists an allowed entry and merges it into the catalog', async () => {
+      const { result } = await renderManager()
+
+      await act(async () => {
+        await result.current.installApp(entry('hello'), { activate: false })
+      })
+
+      expect(installed().map((a) => a.entry.id)).toEqual(['hello'])
+      expect(installed()[0].source).toBe('appstore')
+      expect(installed()[0].status).toBe(AppStatus.Inactive)
+      expect(useAppStore.getState().catalog['hello']).toBeDefined()
+      expect(useAppStore.getState().catalogSources['hello']).toBe('appstore')
+    })
+
+    // isAllowedOrigin is mocked here, so what this asserts is the wiring: the
+    // hook must hand the gate this deployment's opt-in, or the gate decides
+    // with the field permanently undefined and dev1 never works.
+    it('passes the localhost opt-in through to the origin gate', async () => {
+      const optedIn = {
+        ...defaultAppConfig,
+        allowsLocalhostAppsOn: 'https://dev1.ndexbio.org',
+      }
+      const optedInWrapper = ({ children }: { children: ReactNode }) =>
+        createElement(AppConfigContext.Provider, { value: optedIn }, children)
+
+      const { result } = renderHook(() => useAppManager(), {
+        wrapper: optedInWrapper,
+      })
+      await waitFor(() => expect(mockMigrate).toHaveBeenCalled())
+
+      await act(async () => {
+        await result.current.installApp(entry('hello'), { activate: false })
+      })
+
+      expect(mockIsAllowedOrigin).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(Array),
+        'https://dev1.ndexbio.org',
+      )
+    })
+
+    it('rejects a disallowed origin and persists nothing', async () => {
+      mockIsAllowedOrigin.mockReturnValue(false)
+      const { result } = await renderManager()
+
+      await act(async () => {
+        await result.current.installApp(entry('evil'), { activate: false })
+      })
+
+      expect(installed()).toHaveLength(0)
+      expect(useAppStore.getState().catalog['evil']).toBeUndefined()
+      const messages = useMessageStore.getState().messages
+      expect(messages[messages.length - 1].severity).toBe('error')
+    })
+
+    it('installs inactive with a warning when the host version is incompatible', async () => {
+      mockIsHostCompatible.mockReturnValue(false)
+      const { result } = await renderManager()
+
+      await act(async () => {
+        await result.current.installApp(entry('future'), { activate: true })
+      })
+
+      expect(installed().map((a) => a.entry.id)).toEqual(['future'])
+      expect(installed()[0].status).toBe(AppStatus.Inactive)
+      const messages = useMessageStore.getState().messages
+      expect(messages[messages.length - 1].severity).toBe('warning')
+    })
+
+    it('is idempotent — installing the same entry twice does not duplicate', async () => {
+      const { result } = await renderManager()
+
+      await act(async () => {
+        await result.current.installApp(entry('hello'), { activate: false })
+        await result.current.installApp(entry('hello'), { activate: false })
+      })
+
+      expect(installed().filter((a) => a.entry.id === 'hello')).toHaveLength(1)
+    })
+  })
+
+  // #810: an App Store link to a newer version updated the installed record
+  // but left the old module running until a reload. The module in memory was
+  // loaded from the old version's URL, and the fast re-enable path reused it.
+  describe('installApp — version update', () => {
+    beforeEach(() => {
+      useAppStore.setState({ loadStates: {}, loadErrors: {}, apps: {} })
+      mockLoadRemoteApp.mockImplementation(
+        async (id: string, url: string, registry: Map<string, unknown>) => {
+          const app = { id, name: id, status: AppStatus.Inactive, url }
+          registry.set(id, app)
+          return { ok: true, app }
+        },
+      )
+      // The real helpers keep the mounted-id set; the update path relies on it.
+      mockMountApp.mockImplementation(
+        async (app: { id: string }, _ctx: unknown, mounted: Set<string>) => {
+          mounted.add(app.id)
+        },
+      )
+      mockUnmountApp.mockImplementation(
+        async (app: { id: string }, mounted: Set<string>) => {
+          mounted.delete(app.id)
+        },
+      )
+    })
+
+    afterEach(() => {
+      mockMountApp.mockReset().mockResolvedValue(undefined)
+      mockUnmountApp.mockReset().mockResolvedValue(undefined)
+    })
+
+    it('unmounts the running version and loads the new one', async () => {
+      const { result } = await renderManager()
+      await act(async () => {
+        await result.current.installApp(entry('mcode', '1.0.0'), {
+          activate: true,
+        })
+      })
+      const oldApp = appRegistry.get('mcode')
+
+      await act(async () => {
+        await result.current.installApp(entry('mcode', '1.1.0'), {
+          activate: true,
+        })
+      })
+
+      expect(mockLoadRemoteApp).toHaveBeenLastCalledWith(
+        'mcode',
+        entry('mcode', '1.1.0').url,
+        appRegistry,
+      )
+      expect(mockUnmountApp).toHaveBeenCalledWith(oldApp, expect.any(Set))
+      expect(mockMountApp).toHaveBeenLastCalledWith(
+        expect.objectContaining({ url: entry('mcode', '1.1.0').url }),
+        expect.anything(),
+        expect.any(Set),
+      )
+      expect(useAppStore.getState().loadStates['mcode']).toBe('loaded')
+      expect(installed()[0].entry.version).toBe('1.1.0')
+    })
+
+    // The path in the issue: the page boots with 1.0.0 active, and the App
+    // Store link that opened it installs 1.1.0.
+    it('replaces a version the startup auto-load mounted', async () => {
+      useWorkspaceStore.getState().addInstalledApp({
+        entry: entry('mcode', '1.0.0'),
+        status: AppStatus.Active,
+        source: 'appstore',
+        installedAt: '2026-01-01T00:00:00.000Z',
+      })
+      const { result } = await renderManager()
+      await waitFor(() =>
+        expect(useAppStore.getState().loadStates['mcode']).toBe('loaded'),
+      )
+      const oldApp = appRegistry.get('mcode')
+
+      await act(async () => {
+        await result.current.installApp(entry('mcode', '1.1.0'), {
+          activate: true,
+        })
+      })
+
+      expect(mockUnmountApp).toHaveBeenCalledWith(oldApp, expect.any(Set))
+      expect(appRegistry.get('mcode')).toEqual(
+        expect.objectContaining({ url: entry('mcode', '1.1.0').url }),
+      )
+    })
+
+    it('updates an app that was loaded and then disabled', async () => {
+      const { result } = await renderManager()
+      await act(async () => {
+        await result.current.installApp(entry('mcode', '1.0.0'), {
+          activate: true,
+        })
+        await result.current.deactivateApp('mcode')
+      })
+
+      await act(async () => {
+        await result.current.installApp(entry('mcode', '1.1.0'), {
+          activate: true,
+        })
+      })
+
+      expect(mockLoadRemoteApp).toHaveBeenLastCalledWith(
+        'mcode',
+        entry('mcode', '1.1.0').url,
+        appRegistry,
+      )
+      expect(appRegistry.get('mcode')).toEqual(
+        expect.objectContaining({ url: entry('mcode', '1.1.0').url }),
+      )
+    })
+
+    it('reuses the module in memory when the URL has not changed', async () => {
+      const { result } = await renderManager()
+      await act(async () => {
+        await result.current.installApp(entry('mcode', '1.0.0'), {
+          activate: true,
+        })
+        await result.current.deactivateApp('mcode')
+        await result.current.installApp(entry('mcode', '1.0.0'), {
+          activate: true,
+        })
+      })
+
+      expect(mockLoadRemoteApp).toHaveBeenCalledTimes(1)
+      expect(mockMountApp).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('uninstallApp', () => {
+    it('removes an installed app from the workspace and catalog', async () => {
+      const { result } = await renderManager()
+
+      await act(async () => {
+        await result.current.installApp(entry('hello'), { activate: false })
+      })
+      expect(installed()).toHaveLength(1)
+
+      await act(async () => {
+        await result.current.uninstallApp('hello')
+      })
+
+      expect(installed()).toHaveLength(0)
+      expect(useAppStore.getState().catalog['hello']).toBeUndefined()
+    })
+
+    // #699: uninstalling a manifest app cannot stick — recomposeCatalog
+    // re-adds it from the manifest — so the command refuses instead of
+    // silently discarding the pinned record.
+    it('refuses to uninstall an app the manifest still ships', async () => {
+      const { result } = await renderManager()
+
+      await act(async () => {
+        await result.current.installApp(entry('hello'), { activate: false })
+      })
+      act(() => {
+        useAppStore
+          .getState()
+          .setCatalog([entry('hello')], { hello: 'appstore' }, ['hello'])
+      })
+
+      await act(async () => {
+        await result.current.uninstallApp('hello')
+      })
+
+      expect(installed()).toHaveLength(1)
+      expect(useAppStore.getState().catalog['hello']).toBeDefined()
+    })
+  })
+
+  describe('status reconciliation', () => {
+    it('creates a source:manifest record when a manifest app is activated', async () => {
+      // A manifest app present in the catalog but not yet in installedApps
+      mockLoadRemoteApp.mockImplementation(
+        async (id: string, _url: string, registry: Map<string, unknown>) => {
+          const app = { id, name: id, status: AppStatus.Inactive }
+          registry.set(id, app)
+          return { ok: true, app }
+        },
+      )
+      const { result } = await renderManager()
+      act(() => {
+        useAppStore
+          .getState()
+          .setCatalog([entry('manifestApp')], { manifestApp: 'manifest' })
+      })
+
+      await act(async () => {
+        await result.current.activateApp('manifestApp')
+      })
+
+      const record = installed().find((a) => a.entry.id === 'manifestApp')
+      expect(record).toBeDefined()
+      expect(record?.source).toBe('manifest')
+      expect(record?.status).toBe(AppStatus.Active)
+    })
+
+    it('round-trips status through deactivate', async () => {
+      mockLoadRemoteApp.mockImplementation(
+        async (id: string, _url: string, registry: Map<string, unknown>) => {
+          const app = { id, name: id, status: AppStatus.Inactive }
+          registry.set(id, app)
+          return { ok: true, app }
+        },
+      )
+      const { result } = await renderManager()
+
+      await act(async () => {
+        await result.current.installApp(entry('hello'), { activate: true })
+      })
+      expect(installed()[0].status).toBe(AppStatus.Active)
+
+      await act(async () => {
+        await result.current.deactivateApp('hello')
+      })
+      expect(installed()[0].status).toBe(AppStatus.Inactive)
+    })
+  })
+  // G-6: the catalog was the one install path with no origin check, so a
+  // user-set Manifest Source could name any URL and it would be loaded.
+  describe('activateApp — catalog trust boundary', () => {
+    const seedCatalog = (
+      source: 'manifest' | 'appstore' = 'manifest',
+    ): void => {
+      act(() => {
+        useAppStore.getState().setCatalog([entry('remote')], { remote: source })
+      })
+    }
+
+    it('refuses to load an entry the catalog gate rejects, and says so', async () => {
+      mockIsCatalogEntryAllowed.mockReturnValue(false)
+      const { result } = await renderManager()
+      seedCatalog()
+
+      await act(async () => {
+        await result.current.activateApp('remote')
+      })
+
+      expect(mockLoadRemoteApp).not.toHaveBeenCalled()
+      expect(useAppStore.getState().loadStates['remote']).toBe('failed')
+      const messages = useMessageStore.getState().messages
+      expect(messages[messages.length - 1].message).toContain(
+        'not from an allowed origin',
+      )
+    })
+
+    it('loads it when the gate allows it', async () => {
+      const { result } = await renderManager()
+      seedCatalog()
+
+      await act(async () => {
+        await result.current.activateApp('remote')
+      })
+
+      expect(mockLoadRemoteApp).toHaveBeenCalled()
+    })
+
+    // The exemption is "the default manifest lists this entry", so the hook has
+    // to answer that question truthfully. Hardcoding true would restore the
+    // bypass while leaving the call in place.
+    it('does not vouch for an entry the loaded manifest does not list', async () => {
+      const { result } = await renderManager()
+      // Seeded straight into the catalog, so no manifest was loaded that
+      // contains it — the shape a workspace-restored or previously-activated
+      // app has after the Manifest Source is reset to default.
+      seedCatalog('manifest')
+
+      await act(async () => {
+        await result.current.activateApp('remote')
+      })
+
+      expect(mockIsCatalogEntryAllowed).toHaveBeenCalledWith(
+        expect.any(String),
+        false,
+        expect.any(Array),
+        undefined,
+      )
+    })
+
+    // Stored provenance is not the signal. An app first activated from a custom
+    // Manifest Source persists as source:'manifest' (reconcileInstalledStatus
+    // stamps that whichever manifest it came from), and composeCatalog hands an
+    // installed-only entry its stored source back. Once the source is reset to
+    // default, a provenance test would have trusted it.
+    it('does not vouch for a stored source:manifest entry either', async () => {
+      const { result } = await renderManager()
+      seedCatalog('manifest')
+      expect(useAppStore.getState().manifestSource).toBeUndefined()
+
+      await act(async () => {
+        await result.current.activateApp('remote')
+      })
+
+      const [, fromDefaultManifest] = mockIsCatalogEntryAllowed.mock.calls[0]
+      expect(fromDefaultManifest).toBe(false)
+    })
+  })
+})
+
+// #719: the reason a load failed reached only the debug log. It must reach the
+// store (for the row) and a toast (for the paths where the list is closed).
+describe('useAppManager — load failure reasons', () => {
+  const idMismatch = {
+    ok: false,
+    failure: {
+      code: 'id-mismatch',
+      url: 'https://apps.cytoscape.org/web/chrisapp/1.0.0/remoteEntry.js',
+      expected: 'chrisapp',
+      received: 'chrisApp',
+    },
+  } as const
+
+  /** Seed a hydrated workspace with the given installed-app records. */
+  const seedWorkspace = (
+    records: Array<{ id: string; status: AppStatus }>,
+  ): void => {
+    useWorkspaceStore.getState().set({
+      id: 'ws-test',
+      name: 'Test',
+      isRemote: false,
+      networkIds: [],
+      networkModified: {},
+      creationTime: new Date(),
+      localModificationTime: new Date(),
+      currentNetworkId: '',
+      installedApps: records.map((r) => ({
+        entry: entry(r.id),
+        status: r.status,
+        source: 'appstore' as const,
+        installedAt: '2026-01-01T00:00:00.000Z',
+      })),
+    })
+  }
+
+  const lastMessage = (): string => {
+    const messages = useMessageStore.getState().messages
+    return messages[messages.length - 1]?.message ?? ''
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockIsAllowedOrigin.mockReturnValue(true)
+    mockIsCatalogEntryAllowed.mockReturnValue(true)
+    mockIsHostCompatible.mockReturnValue(true)
+    appRegistry.clear()
+    loadedAppUrls.clear()
+    seedWorkspace([])
+    useAppStore.setState({ loadStates: {}, loadErrors: {}, apps: {} })
+    useAppStore.getState().setCatalog([])
+    useMessageStore.getState().resetMessages()
+  })
+
+  it('stores the cause and toasts it when activation fails', async () => {
+    mockLoadRemoteApp.mockResolvedValue(idMismatch)
+    const { result } = await renderManager()
+    act(() => {
+      useAppStore.getState().setCatalog([entry('chrisapp')])
+    })
+
+    await act(async () => {
+      await result.current.activateApp('chrisapp')
+    })
+
+    expect(useAppStore.getState().loadStates['chrisapp']).toBe('failed')
+    expect(useAppStore.getState().loadErrors['chrisapp']).toEqual(
+      idMismatch.failure,
+    )
+    expect(lastMessage()).toContain('mis-packaged')
+    expect(lastMessage()).toContain('chrisApp')
+  })
+
+  it('records origin-blocked without adding a second toast', async () => {
+    mockIsCatalogEntryAllowed.mockReturnValue(false)
+    const { result } = await renderManager()
+    act(() => {
+      useAppStore.getState().setCatalog([entry('remote')])
+    })
+
+    await act(async () => {
+      await result.current.activateApp('remote')
+    })
+
+    expect(useAppStore.getState().loadErrors['remote']?.code).toBe(
+      'origin-blocked',
+    )
+    // The pre-existing gate message, not the generic failure toast.
+    expect(useMessageStore.getState().messages).toHaveLength(1)
+    expect(lastMessage()).toContain('not from an allowed origin')
+  })
+
+  it('records mount-failed and offers the reason when mount throws', async () => {
+    mockLoadRemoteApp.mockImplementation(
+      async (id: string, _url: string, registry: Map<string, unknown>) => {
+        const app = { id, name: id, status: AppStatus.Inactive }
+        registry.set(id, app)
+        return { ok: true, app }
+      },
+    )
+    ;(mountApp as Mock).mockRejectedValueOnce(new Error('boom'))
+    const { result } = await renderManager()
+    act(() => {
+      useAppStore.getState().setCatalog([entry('breaks')])
+    })
+
+    await act(async () => {
+      await result.current.activateApp('breaks')
+    })
+
+    expect(useAppStore.getState().loadErrors['breaks']).toEqual({
+      code: 'mount-failed',
+      message: 'boom',
+    })
+    expect(lastMessage()).toContain('boom')
+  })
+
+  // Before this change the startup path wrapped the failure in a synthetic
+  // Error and raised no toast at all, so a mis-packaged active app failed
+  // silently on every page load.
+  it('names the cause when one app fails at startup', async () => {
+    mockLoadRemoteApp.mockResolvedValue(idMismatch)
+    seedWorkspace([{ id: 'chrisapp', status: AppStatus.Active }])
+
+    await renderManager()
+
+    await waitFor(() => {
+      expect(useAppStore.getState().loadErrors['chrisapp']).toEqual(
+        idMismatch.failure,
+      )
+    })
+    await waitFor(() => expect(lastMessage()).toContain('mis-packaged'))
+  })
+
+  // SnackbarMessageList shows one message at a time, so N broken apps must not
+  // queue N toasts.
+  it('collapses several startup failures into one toast', async () => {
+    mockLoadRemoteApp.mockResolvedValue(idMismatch)
+    seedWorkspace([
+      { id: 'one', status: AppStatus.Active },
+      { id: 'two', status: AppStatus.Active },
+    ])
+
+    await renderManager()
+
+    await waitFor(() => {
+      expect(useAppStore.getState().loadErrors['two']).toBeDefined()
+    })
+    await waitFor(() =>
+      expect(lastMessage()).toBe(
+        '2 apps failed to load — open App Manager for details.',
+      ),
+    )
+    expect(useMessageStore.getState().messages).toHaveLength(1)
+  })
+})

@@ -33,12 +33,11 @@ const addNetworks = (
   state: NetMatchingTableStore,
   networkIds: IdType[],
   networkRecords: Record<IdType, NetworkRecord>,
-  matchingCols: Record<string, Column>,
 ) => {
   const sharedColsRecord: Record<IdType, Set<string>> = {}
   networkIds.forEach((netId) => (sharedColsRecord[netId] = new Set()))
   const mergedNetworkNames = new Set(state.rows.map((row) => row.mergedNetwork))
-  state.rows = state.rows.map((row, id) => {
+  state.rows = state.rows.map((row) => {
     let typeCheck = false
     for (const netId of networkIds) {
       const netCols = networkRecords[netId].netTable?.columns
@@ -125,8 +124,8 @@ const removeNetworks = (state: NetMatchingTableStore, networkIds: IdType[]) => {
     let needRecheck = false
     for (const netId of networkIds) {
       if (
-        tableRow.nameRecord.hasOwnProperty(netId) ||
-        tableRow.typeRecord.hasOwnProperty(netId)
+        Object.prototype.hasOwnProperty.call(tableRow.nameRecord, netId) ||
+        Object.prototype.hasOwnProperty.call(tableRow.typeRecord, netId)
       ) {
         delete tableRow.nameRecord[netId]
         delete tableRow.typeRecord[netId]
@@ -166,9 +165,9 @@ const useNetMatchingTableStore = create(
         rows: [],
         networkIds: new Set(),
       })),
-    addNetworksToTable: (networkIds, networkRecords, matchingCols) =>
+    addNetworksToTable: (networkIds, networkRecords) =>
       set((state) => {
-        addNetworks(state, networkIds, networkRecords, matchingCols)
+        addNetworks(state, networkIds, networkRecords)
       }),
     removeNetworksFromTable: (networkIds) =>
       set((state) => {

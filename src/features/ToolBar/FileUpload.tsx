@@ -1,19 +1,13 @@
-import {
-  Button,
-  Group,
-  MantineProvider,
-  Modal,
-  Stack,
-  Text,
-  Title,
-} from '@mantine/core'
-import { Dropzone, FileWithPath } from '@mantine/dropzone'
-import { ModalsProvider } from '@mantine/modals'
-import { PrimeReactProvider } from 'primereact/api'
+import { Typography } from '@mui/material'
 import { v4 as uuidv4 } from 'uuid'
 
+import {
+  DropzoneHint,
+  FileDropzoneDialog,
+  FileRejection,
+} from '@/features/FileDropzoneDialog'
+
 import { putNetworkSummaryToDb } from '../../data/db'
-import { logUi } from '../../debug'
 import { useUrlNavigation } from '../../data/hooks/navigation/useUrlNavigation'
 import { useMessageStore } from '../../data/hooks/stores/MessageStore'
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
@@ -24,6 +18,7 @@ import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
+import { logUi } from '../../debug'
 import { getCyNetworkFromCx2 } from '../../models/CxModel/impl'
 import {
   getAttributeDeclarations,
@@ -35,6 +30,7 @@ import { MessageSeverity } from '../../models/MessageModel'
 import { NetworkProperty, Visibility } from '../../models/NetworkSummaryModel'
 import { createNetworkSummary } from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { ValueType, ValueTypeName } from '../../models/TableModel'
+import { collectVisualStyleWarnings } from '../../models/VisualStyleModel'
 import { generateUniqueName } from '../../utils/generateUniqueName'
 import { createDataFromLocalSif } from '../../utils/sifUtils'
 import { validateSif } from '../../utils/sifUtils'
@@ -42,6 +38,19 @@ import {
   CreateNetworkFromTableStep,
   useCreateNetworkFromTableStore,
 } from '../TableDataLoader/store/createNetworkFromTableStore'
+import {
+  createFileValidator,
+  DEFAULT_MAX_FILE_SIZE_MB,
+} from './GenericFileUploadDialog'
+
+const NETWORK_FILE_TYPES = ['csv', 'txt', 'tsv', 'cx2', 'sif']
+// The whole file is read into memory and parsed on the main thread, so the
+// hint in the dropzone and the validator must promise the same limit.
+const NETWORK_FILE_MAX_SIZE_MB = DEFAULT_MAX_FILE_SIZE_MB
+const validateNetworkFile = createFileValidator(
+  NETWORK_FILE_TYPES,
+  NETWORK_FILE_MAX_SIZE_MB,
+)
 
 interface FileUploadProps {
   show: boolean
@@ -126,10 +135,19 @@ export function FileUpload(props: FileUploadProps) {
           nodeTable,
           edgeTable,
           visualStyle,
+          visualStyleSet,
           networkViews,
           visualStyleOptions,
           otherAspects,
         } = res
+
+        collectVisualStyleWarnings(visualStyle).forEach((warning) => {
+          addMessage({
+            duration: 10000,
+            message: warning.message,
+            severity: MessageSeverity.WARNING,
+          })
+        })
 
         const nodesAspect = getNodes(json)
         const anyNodeHasPosition = nodesAspect.some(
@@ -154,7 +172,7 @@ export function FileUpload(props: FileUploadProps) {
         setVisualStyleOptions(localUuid, visualStyleOptions)
         addNetworkToWorkspace(localUuid)
         addNewNetwork(network)
-        setVisualStyle(localUuid, visualStyle)
+        setVisualStyle(localUuid, visualStyle, visualStyleSet)
         setTables(localUuid, nodeTable, edgeTable)
         setViewModel(localUuid, networkViews[0])
         addSummary(localUuid, summary)
@@ -265,7 +283,7 @@ export function FileUpload(props: FileUploadProps) {
   const goToStep = useCreateNetworkFromTableStore((state) => state.goToStep)
   const setRawText = useCreateNetworkFromTableStore((state) => state.setRawText)
   const setName = useCreateNetworkFromTableStore((state) => state.setName)
-  const onFileError = (files: any) => {
+  const onFileError = (files: FileRejection[]) => {
     if (files.length > 1) {
       addMessage({
         duration: 3000,
@@ -302,7 +320,7 @@ export function FileUpload(props: FileUploadProps) {
 
   const onFileDrop = (file: File) => {
     const reader = new FileReader()
-    reader.addEventListener('load', () => {
+    reader.addEventListener('load', async () => {
       const text = reader.result as string
       const fileExtension = file.name.split('.').pop()?.toLowerCase()
 
@@ -351,38 +369,36 @@ export function FileUpload(props: FileUploadProps) {
           return
         }
 
-        // Acceptable delimiters: comma, semicolon, tab, space
-        const possibleDelimiters = [',', ';', '\t', ' ']
-        let detectedDelimiter = null
-        let columnCount = 1
-        for (const delimiter of possibleDelimiters) {
-          const count = firstLine.split(delimiter).length
-          if (count > 1) {
-            detectedDelimiter = delimiter
-            columnCount = count
-            break
-          }
-        }
+        // Use the robust delimiter detection utility
+        const { detectBestDelimiter } = await import(
+          '../TableDataLoader/model/impl/DelimiterUtils'
+        )
+        const parseResult = detectBestDelimiter(text)
+        let columnCount = 0
 
-        if (!detectedDelimiter && firstLine.length > 0) {
-          addMessage({
-            duration: 3000,
-            message: `File ${file.name} does not appear to start with a delimited pattern (comma, semicolon, tab, or space). Please check your file format.`,
-            severity: MessageSeverity.ERROR,
-          })
-          return
-        }
+        if (parseResult.data.length > 0) {
+          const firstRow = parseResult.data[0] as string[]
+          columnCount = firstRow.length
 
-        // Optionally, check that the next line has the same number of columns
-        if (lines.length > 1 && detectedDelimiter) {
-          const secondLineCount = lines[1].split(detectedDelimiter).length
-          if (secondLineCount !== columnCount) {
+          if (columnCount <= 1 && firstLine.length > 0) {
             addMessage({
               duration: 3000,
-              message: `File ${file.name} header and first data row have different column counts. Please check your file format.`,
+              message: `File ${file.name} does not appear to start with a delimited pattern (comma, semicolon, tab, or space). Please check your file format.`,
               severity: MessageSeverity.ERROR,
             })
             return
+          }
+
+          if (parseResult.data.length > 1) {
+            const secondRow = parseResult.data[1] as string[]
+            if (secondRow.length !== columnCount) {
+              addMessage({
+                duration: 3000,
+                message: `File ${file.name} header and first data row have different column counts. Please check your file format.`,
+                severity: MessageSeverity.ERROR,
+              })
+              return
+            }
           }
         }
         handleTableFile(file, text)
@@ -392,88 +408,31 @@ export function FileUpload(props: FileUploadProps) {
   }
 
   return (
-    <>
-      <PrimeReactProvider>
-        <MantineProvider>
-          <ModalsProvider>
-            <Modal
-              data-testid="file-upload-modal"
-              onClose={() => props.handleClose()}
-              opened={props.show}
-              zIndex={2000}
-              centered
-              title={
-                <Title c="gray" order={4}>
-                  Upload network file
-                </Title>
-              }
-            >
-              <Dropzone
-                data-testid="file-upload-dropzone"
-                multiple={false}
-                maxFiles={1}
-                validator={(file: File) => {
-                  // Do not validate if the object is not a file
-                  if (!file.name) {
-                    return null
-                  }
-
-                  const fileExtension = file.name
-                    .split('.')
-                    .pop()
-                    ?.toLowerCase()
-                  if (
-                    fileExtension !== 'csv' &&
-                    fileExtension !== 'txt' &&
-                    fileExtension !== 'tsv' &&
-                    fileExtension !== 'cx2' &&
-                    fileExtension !== 'sif'
-                  ) {
-                    return {
-                      code: 'file-invalid-type',
-                      message: `File ${file.name} is not a supported type.`,
-                    }
-                  }
-                  return null
-                }}
-                onDrop={(files: FileWithPath[]) => {
-                  if (files && files.length > 0) {
-                    onFileDrop(files[0])
-                  }
-                }}
-                onReject={(rejectedFiles: any) => {
-                  onFileError(rejectedFiles)
-                }}
-              >
-                <Group
-                  justify="center"
-                  gap="xl"
-                  mih={220}
-                  style={{ pointerEvents: 'stroke' }}
-                >
-                  <Stack align="center">
-                    <Button data-testid="file-upload-browse-button">
-                      Browse
-                    </Button>
-                    <Text size="xl" inline>
-                      Drag network file here
-                    </Text>
-                    <Text size="sm" inline mt={7}>
-                      Supported file types: .csv, .txt, .tsv, .cx2, .sif.
-                    </Text>
-                    <Text size="sm" c="dimmed" inline>
-                      Microsoft Excel files are not supported.
-                    </Text>
-                    <Text size="sm" c="dimmed" inline mt={7}>
-                      Files under 5MB supported.
-                    </Text>
-                  </Stack>
-                </Group>
-              </Dropzone>
-            </Modal>
-          </ModalsProvider>
-        </MantineProvider>
-      </PrimeReactProvider>
-    </>
+    <FileDropzoneDialog
+      show={props.show}
+      handleClose={() => props.handleClose()}
+      title="Upload network file"
+      testIds={{
+        modal: 'file-upload-modal',
+        dropzone: 'file-upload-dropzone',
+        browseButton: 'file-upload-browse-button',
+      }}
+      validator={validateNetworkFile}
+      onDrop={onFileDrop}
+      onReject={(rejectedFiles: FileRejection[]) => {
+        onFileError(rejectedFiles)
+      }}
+    >
+      <Typography variant="h6">Drag network file here</Typography>
+      <DropzoneHint>
+        Supported file types: .csv, .txt, .tsv, .cx2, .sif.
+      </DropzoneHint>
+      <DropzoneHint dimmed>
+        Microsoft Excel files are not supported.
+      </DropzoneHint>
+      <DropzoneHint dimmed>
+        Files under {NETWORK_FILE_MAX_SIZE_MB}MB supported.
+      </DropzoneHint>
+    </FileDropzoneDialog>
   )
 }

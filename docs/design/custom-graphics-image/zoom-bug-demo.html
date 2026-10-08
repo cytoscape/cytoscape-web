@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cytoscape.js Image Property Exploration</title>
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
+    <script src="https://unpkg.com/cytoscape@3.34.0/dist/cytoscape.min.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            height: 100vh;
+            flex-direction: row;
+            margin: 0;
+            overflow: hidden;
+        }
+        #sidebar {
+            flex: 1;
+            max-width: 450px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-right: 1px solid #ddd;
+            overflow-y: auto;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        #cy {
+            flex: 2;
+            display: block;
+        }
+        .node-card {
+            background: white;
+            border: 1px solid #ccc;
+            padding: 12px;
+            margin-bottom: 12px;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .node-card h4 {
+            margin: 0 0 8px 0;
+            color: #333;
+        }
+        .node-card p {
+            margin: 4px 0;
+            line-height: 1.4;
+        }
+        .meta {
+            font-size: 0.9em;
+            color: #555;
+            margin-bottom: 8px;
+        }
+        .note-box {
+            background: #e9ecef;
+            border-left: 4px solid #6c757d;
+            padding: 12px;
+            margin-bottom: 16px;
+            border-radius: 4px;
+        }
+        .note-box h4 {
+            margin: 0 0 8px 0;
+            color: #333;
+        }
+        .note-box p {
+            margin: 0 0 8px 0;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+        .note-box p:last-child {
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <h2>Cytoscape.js Image Property Exploration</h2>
+    <p>Scroll your mouse wheel in the right pane to zoom in and out. Notice the behavior of the background images in each scenario.</p>
+    <hr/>
+    
+    <div class="note-box">
+        <h4>Context: The Cytoscape.js Zoom Offset Bug (Nodes 1-3)</h4>
+        <p>Nodes 1, 2, and 3 explore an observed issue in the Cytoscape.js canvas rendering engine regarding the <code>background-position</code> property. When a background image's bounding box is smaller than the node, and it is offset to the center (using either percentages like <code>50%</code> or explicit pixels), the image visibly slides off its anchor point during canvas zoom events.</p>
+        <p><strong>The SVG URL Catch-22:</strong> This bug specifically traps <strong>SVG images loaded via external URLs</strong>. Because browser Canvas CORS security forbids us from wrapping external URLs in our "SVG Wrapper Hack", and because many external SVGs lack intrinsic pixel dimensions (causing Cytoscape to stretch them violently if we don't explicitly size them), we are forced to manually size and center them using <code>background-position</code>. Doing so immediately triggers this zoom bug, leaving URL SVGs with no viable workaround.</p>
+        <p><strong>Probable Cause:</strong> In the internal Cytoscape.js 2D canvas drawing pipeline, the math used to calculate the relative image offset does not scale accurately with the canvas transformation matrix during a zoom event. As the camera zooms, the calculated offset scales at a different rate than the node's dimensions, causing the image to "drift" away from the center.</p>
+    </div>
+
+    <div class="node-card">
+        <h4>1. Baseline (Stable, but stretched)</h4>
+        <div class="meta"><strong>Image Type:</strong> SVG | <strong>Source:</strong> Data URI</div>
+        <p><strong>Settings:</strong> <code>width: 200px</code>, <code>height: 50px</code>, <code>fit: contain</code></p>
+        <p><strong>Desired:</strong> Centered image that preserves aspect ratio.</p>
+        <p><strong>Result:</strong> Cytoscape forces the image to perfectly stretch to the 200x50 bounds (distorting SVGs missing width/height attributes). No zoom bug.</p>
+    </div>
+
+    <div class="node-card">
+        <h4>2. The Percentage Zoom Bug</h4>
+        <div class="meta"><strong>Image Type:</strong> SVG | <strong>Source:</strong> Data URI</div>
+        <p><strong>Settings:</strong> <code>width: 50px</code>, <code>height: 50px</code>, <code>position-x: 50%</code></p>
+        <p><strong>Desired:</strong> Perfect 50x50 centered square.</p>
+        <p><strong>Result:</strong> Image slides dramatically off-center when zooming due to an internal Cytoscape percentage scaling bug.</p>
+    </div>
+
+    <div class="node-card">
+        <h4>3. The Pixel Zoom Bug</h4>
+        <div class="meta"><strong>Image Type:</strong> SVG | <strong>Source:</strong> Data URI</div>
+        <p><strong>Settings:</strong> <code>width: 50px</code>, <code>position-x: 75px</code></p>
+        <p><strong>Desired:</strong> Bypass percentage bug with explicit pixel center.</p>
+        <p><strong>Result:</strong> Still slides off-center when zooming. Cytoscape fails to scale explicit pixels to zoom context properly.</p>
+    </div>
+
+    <div class="node-card">
+        <h4>4. The SVG Wrapper Hack</h4>
+        <div class="meta"><strong>Image Type:</strong> SVG | <strong>Source:</strong> Data URI</div>
+        <p><strong>Settings:</strong> Raw SVG nested inside an invisible 200x50 <code>viewBox</code> wrapper to natively pad aspect ratio.</p>
+        <p><strong>Desired:</strong> Perfect square without zoom sliding.</p>
+        <p><strong>Result:</strong> Inner image remains perfectly proportioned. Cytoscape sees a 200x50 bounding box, so offset is 0, completely avoiding the zoom bug.</p>
+    </div>
+
+    <div class="node-card">
+        <h4>5. External PNG (Baseline)</h4>
+        <div class="meta"><strong>Image Type:</strong> PNG (Raster) | <strong>Source:</strong> External URL</div>
+        <p><strong>Settings:</strong> <code>width: 200px</code>, <code>height: 50px</code>, External PNG.</p>
+        <p><strong>Desired:</strong> Preserve PNG aspect ratio.</p>
+        <p><strong>Result:</strong> The explicit width/height forces Cytoscape to stretch the PNG, completely destroying its native aspect ratio.</p>
+    </div>
+
+    <div class="node-card">
+        <h4>6. Contain Only (No width/height)</h4>
+        <div class="meta"><strong>Image Type:</strong> PNG (Raster) | <strong>Source:</strong> External URL</div>
+        <p><strong>Settings:</strong> <code>width: auto</code>, <code>height: auto</code>, <code>fit: contain</code></p>
+        <p><strong>Desired:</strong> Automatically letterbox external raster images.</p>
+        <p><strong>Result:</strong> By omitting explicit bounds, Cytoscape correctly utilizes the PNG's intrinsic aspect ratio and letterboxes it without triggering the zoom bug.</p>
+    </div>
+
+    <div class="node-card">
+        <h4>7. Native Cy.js Overlay</h4>
+        <div class="meta"><strong>Image Type:</strong> SVG | <strong>Source:</strong> Data URI</div>
+        <p><strong>Settings:</strong> <code>width: 50px</code>, <code>clip: none</code>, <code>position-x: 175px</code></p>
+        <p><strong>Desired:</strong> Draw image completely outside node bounds.</p>
+        <p><strong>Result:</strong> Image suffers from the zoom slide bug. Also, the browser canvas physically crops the rendering to the 50x50 bounding box, cutting the image in half.</p>
+    </div>
+
+    <div class="node-card">
+        <h4>8. SVG Wrapper Overlay</h4>
+        <div class="meta"><strong>Image Type:</strong> SVG | <strong>Source:</strong> Data URI</div>
+        <p><strong>Settings:</strong> Wrapper hack, but inner SVG is outside 200x50 viewBox with <code>overflow="visible"</code>.</p>
+        <p><strong>Desired:</strong> Draw outside bounds without zoom bugs.</p>
+        <p><strong>Result:</strong> Perfectly fixes the zoom bug, but the browser canvas still hard-crops the rendering exactly at the 200x50 bounding box.</p>
+    </div>
+
+    <div class="node-card">
+        <h4>9. Oversized Bounds Overlay</h4>
+        <div class="meta"><strong>Image Type:</strong> SVG | <strong>Source:</strong> Data URI</div>
+        <p><strong>Settings:</strong> <code>width: 300px</code>, <code>height: 150px</code> (larger than node). Wrapper SVG centered.</p>
+        <p><strong>Desired:</strong> Overlay image completely outside node.</p>
+        <p><strong>Result:</strong> The massively oversized bounding box gives the SVG enough canvas real-estate to draw anywhere outside the node. Perfectly avoids zoom bugs because the Wrapper SVG matches the oversized bounds.</p>
+    </div>
+</div>
+
+<div id="cy"></div>
+
+<script>
+    window.addEventListener('error', function(e) {
+        document.querySelector('.header').innerHTML += '<p style="color:red">Error: ' + e.message + ' at ' + e.filename + ':' + e.lineno + '</p>';
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // A simple SVG string encoded as a Data URI (A yellow smiley face)
+    const rawSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="yellow" stroke="black" stroke-width="4"/><circle cx="35" cy="35" r="5" fill="black"/><circle cx="65" cy="35" r="5" fill="black"/><path d="M 30 65 Q 50 85 70 65" fill="none" stroke="black" stroke-width="5" stroke-linecap="round"/></svg>';
+    const svgDataUri = 'data:image/svg+xml;base64,' + btoa(rawSvg);
+
+    // Wrapper Hack: Wrap the SVG in a larger SVG matching the 200x50 node aspect ratio
+    const wrapperSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50" width="200" height="50"><svg x="75" y="0" width="50" height="50">${rawSvg}</svg></svg>`;
+    const wrapperDataUri = 'data:image/svg+xml;base64,' + btoa(wrapperSvg);
+
+    // Wrapper Hack 2: Overflow Visible! We use the exact same 200x50 node aspect ratio, but we place the image OUTSIDE the viewBox, and set overflow="visible"
+    const overflowSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50" width="200" height="50" overflow="visible"><svg x="175" y="-25" width="50" height="50">${rawSvg}</svg></svg>`;
+    const overflowDataUri = 'data:image/svg+xml;base64,' + btoa(overflowSvg);
+
+    // Wrapper Hack 3: Oversized Bounding Box
+    // Node is 200x50. We make the wrapper 300x150 (centered over the node).
+    // The inner SVG is placed at x=250, y=0 (top right corner of the 300x150 box).
+    const oversizeSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 150" width="300" height="150"><svg x="250" y="0" width="50" height="50">${rawSvg}</svg></svg>`;
+    const oversizeDataUri = 'data:image/svg+xml;base64,' + btoa(oversizeSvg);
+
+    var cy = cytoscape({
+            container: document.getElementById('cy'),
+
+        elements: [
+            { data: { id: 'baseline', label: '1. Baseline (Stable, but stretched)' }, position: { x: 200, y: 100 } },
+            { data: { id: 'bug_percent', label: '2. The Percentage Zoom Bug' }, position: { x: 200, y: 250 } },
+            { data: { id: 'bug_pixel', label: '3. The Pixel Zoom Bug' }, position: { x: 200, y: 400 } },
+            { data: { id: 'wrapper_hack', label: '4. The SVG Wrapper Hack' }, position: { x: 200, y: 550 } },
+            { data: { id: 'png_test', label: '5. External PNG (Baseline)' }, position: { x: 200, y: 700 } },
+            { data: { id: 'contain_only', label: '6. Contain Only (No width/height)' }, position: { x: 200, y: 850 } },
+            { data: { id: 'overlay_native', label: '7. Native Cy.js Overlay (background-clip)' }, position: { x: 600, y: 100 } },
+            { data: { id: 'overlay_svg', label: '8. SVG Wrapper Overlay (overflow="visible")' }, position: { x: 600, y: 250 } },
+            { data: { id: 'overlay_oversize', label: '9. Oversized Bounds Overlay' }, position: { x: 600, y: 400 } }
+        ],
+
+        style: [
+            {
+                selector: 'node',
+                style: {
+                    'shape': 'rectangle',
+                    'width': '200px',
+                    'height': '50px',
+                    'background-color': '#ffffff',
+                    'border-width': '4px',
+                    'border-color': '#3a669e',
+                    'label': 'data(label)',
+                    'text-valign': 'center',
+                    'text-halign': 'center',
+                    'font-size': '10px',
+                    'color': '#333',
+                    
+                    // Common Image properties
+                    'background-image': svgDataUri,
+                    'background-fit': 'contain'
+                }
+            },
+            
+            // 1. The Baseline: Bounding box perfectly matches the node boundaries.
+            // Result: Zero offset math required. It zooms flawlessly.
+            // Problem: Because bounding box is a wide rectangle, the SVG stretches horizontally.
+            {
+                selector: '#baseline',
+                style: {
+                    'background-width': '200px',
+                    'background-height': '50px',
+                    // implicitly background-position is 50%, but offset is 0 so it has no effect.
+                }
+            },
+
+            // 2. The Percentage Zoom Bug: Attempting to fix the stretching by giving the image a fixed square bounding box (50px).
+            // Result: It looks perfectly proportioned initially. But when you zoom, Cytoscape.js's "50%" percentage 
+            // calculation scales incorrectly relative to the canvas origin. The image slides down and to the right.
+            {
+                selector: '#bug_percent',
+                style: {
+                    'background-width': '50px',
+                    'background-height': '50px',
+                    'background-position-x': '50%',
+                    'background-position-y': '50%'
+                }
+            },
+
+            // 3. The Pixel Zoom Bug: Bypassing the 50% percentage bug above by explicitly feeding the canvas the perfect pixel offset.
+            // Offset X = (Node Width 200 - Image Width 50) / 2 = 75px
+            // Result: Also fails. Cytoscape.js fails to scale explicit background-position-x pixels relative to the zoom level context correctly.
+            {
+                selector: '#bug_pixel',
+                style: {
+                    'background-width': '50px',
+                    'background-height': '50px',
+                    'background-position-x': '75px', // Manual perfect center
+                    'background-position-y': '0px'
+                }
+            },
+
+            // 4. The SVG Wrapper Hack
+            // We use the Baseline configuration (width and height match node perfectly to prevent offset zoom bugs)
+            // BUT we inject the raw SVG inside a new `<svg>` wrapper that pads the aspect ratio natively.
+            {
+                selector: '#wrapper_hack',
+                style: {
+                    'background-width': '200px',
+                    'background-height': '50px',
+                    'background-image': wrapperDataUri
+                }
+            },
+
+            // 5. External PNG Test
+            // We use the Baseline configuration. Since PNGs have intrinsic width/height, 
+            // `contain` should perfectly preserve the aspect ratio without stretching it!
+            {
+                selector: '#png_test',
+                style: {
+                    'background-width': '200px',
+                    'background-height': '50px',
+                    'background-image': 'https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png'
+                }
+            },
+
+            // 6. Contain Only Test
+            {
+                selector: '#contain_only',
+                style: {
+                    'background-width': 'auto',
+                    'background-height': 'auto',
+                    'background-fit': 'contain',
+                    'background-image': 'https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png'
+                }
+            },
+
+            // 7. Native Cy.js Overlay
+            // We use `background-clip: none` to allow the image to draw outside the node.
+            // BUT we use `background-position` to offset it, which will likely trigger the zoom slide bug!
+            {
+                selector: '#overlay_native',
+                style: {
+                    'background-width': '50px',
+                    'background-height': '50px',
+                    'background-clip': 'none',
+                    'background-position-x': '175px', // Push it off the right edge
+                    'background-position-y': '-25px', // Push it off the top edge
+                    'background-image': svgDataUri
+                }
+            },
+
+            // 8. SVG Wrapper Overlay
+            // We use our wrapper hack (so Cytoscape natively fits it), but the inner SVG is placed 
+            // completely outside the 200x50 SVG viewBox, and we set `overflow="visible"` on the SVG!
+            // This SHOULD render outside the node AND perfectly avoid the zoom slide bug!
+            {
+                selector: '#overlay_svg',
+                style: {
+                    'background-width': '200px',
+                    'background-height': '50px',
+                    'background-clip': 'none',
+                    'background-image': overflowDataUri
+                }
+            },
+
+            // 9. Oversized Bounds Overlay
+            // We set the background width/height LARGER than the node!
+            // Cytoscape will center the 300x150 background over the 200x50 node.
+            // With background-clip: none, it will successfully render outside the node body!
+            // And because it perfectly perfectly matches its own bounds, no zoom sliding!
+            {
+                selector: '#overlay_oversize',
+                style: {
+                    'background-width': '300px',
+                    'background-height': '150px',
+                    'background-clip': 'none',
+                    'background-image': oversizeDataUri
+                }
+            }
+        ],
+
+        layout: {
+            name: 'preset'
+        }
+        });
+
+        cy.fit();
+    });
+</script>
+</body>
+</html>

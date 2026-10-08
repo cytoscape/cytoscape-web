@@ -1,7 +1,9 @@
 import { act, renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { IdType } from '../../models/IdType'
 import NetworkFn, { Network } from '../../models/NetworkModel'
-import { Table, Column } from '../../models/TableModel'
+import { Column, Table } from '../../models/TableModel'
 import TableFn from '../../models/TableModel'
 import { NetworkView } from '../../models/ViewModel'
 import ViewModelFn from '../../models/ViewModel'
@@ -11,27 +13,34 @@ import { useViewModelStore } from './stores/ViewModelStore'
 import { useCreateEdge } from './useCreateEdge'
 
 // Mock the database operations
-jest.mock('../db', () => ({
-  ...jest.requireActual('../db'),
-  putNetworkToDb: jest.fn().mockResolvedValue(undefined),
-  deleteNetworkFromDb: jest.fn().mockResolvedValue(undefined),
-  clearNetworksFromDb: jest.fn().mockResolvedValue(undefined),
-  putTableToDb: jest.fn().mockResolvedValue(undefined),
-  deleteTableFromDb: jest.fn().mockResolvedValue(undefined),
-  clearTablesFromDb: jest.fn().mockResolvedValue(undefined),
-  putViewModelToDb: jest.fn().mockResolvedValue(undefined),
-  putNetworkViewToDb: jest.fn().mockResolvedValue(undefined),
-  putNetworkViewsToDb: jest.fn().mockResolvedValue(undefined),
-  deleteViewModelFromDb: jest.fn().mockResolvedValue(undefined),
-  deleteNetworkViewsFromDb: jest.fn().mockResolvedValue(undefined),
-  clearViewModelsFromDb: jest.fn().mockResolvedValue(undefined),
-  clearNetworkViewsFromDb: jest.fn().mockResolvedValue(undefined),
-}))
+vi.mock('../db', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../db')>()
+  return {
+    ...actual,
+    putNetworkToDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworksFromDb: vi.fn().mockResolvedValue(undefined),
+    putTableToDb: vi.fn().mockResolvedValue(undefined),
+    deleteTableFromDb: vi.fn().mockResolvedValue(undefined),
+    clearTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    putViewModelToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewsToDb: vi.fn().mockResolvedValue(undefined),
+    deleteViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearViewModelsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    putTablesToDb: vi.fn().mockResolvedValue(undefined),
+    getNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    getTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    getViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+  }
+})
 
 // Mock workspace store
-jest.mock('./stores/WorkspaceStore', () => ({
+vi.mock('./stores/WorkspaceStore', () => ({
   useWorkspaceStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       workspace: {
         currentNetworkId: 'test-network-1',
       },
@@ -40,9 +49,9 @@ jest.mock('./stores/WorkspaceStore', () => ({
 }))
 
 // Mock undo stack
-jest.mock('./useUndoStack', () => ({
+vi.mock('./useUndoStack', () => ({
   useUndoStack: () => ({
-    postEdit: jest.fn(),
+    postEdit: vi.fn(),
   }),
 }))
 
@@ -72,7 +81,10 @@ describe('useCreateEdge', () => {
     return TableFn.createTable(id, columns)
   }
 
-  const createTestViewModel = (networkId: IdType, network: Network): NetworkView => {
+  const createTestViewModel = (
+    networkId: IdType,
+    network: Network,
+  ): NetworkView => {
     return ViewModelFn.createViewModel(network, networkId)
   }
 
@@ -122,7 +134,11 @@ describe('useCreateEdge', () => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: hookResult } = renderHook(() => useCreateEdge())
 
-      const network = createTestNetwork(networkId, ['n1', 'n2'], ['e0', 'e5', 'e3', 'e10'])
+      const network = createTestNetwork(
+        networkId,
+        ['n1', 'n2'],
+        ['e0', 'e5', 'e3', 'e10'],
+      )
 
       act(() => {
         networkResult.current.add(network)
@@ -136,7 +152,11 @@ describe('useCreateEdge', () => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: hookResult } = renderHook(() => useCreateEdge())
 
-      const network = createTestNetwork(networkId, ['n1', 'n2'], ['edge1', 'edge2', 'e5'])
+      const network = createTestNetwork(
+        networkId,
+        ['n1', 'n2'],
+        ['edge1', 'edge2', 'e5'],
+      )
 
       act(() => {
         networkResult.current.add(network)
@@ -158,9 +178,7 @@ describe('useCreateEdge', () => {
     beforeEach(() => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: tableResult } = renderHook(() => useTableStore())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
 
       const network = createTestNetwork(networkId, ['n1', 'n2', 'n3'])
       const nodeTable = createTestTable(networkId)
@@ -225,9 +243,7 @@ describe('useCreateEdge', () => {
 
     it('should add edge to view model store', () => {
       const { result: hookResult } = renderHook(() => useCreateEdge())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
 
       act(() => {
         hookResult.current.createEdge(networkId, 'n1', 'n2')
@@ -265,9 +281,7 @@ describe('useCreateEdge', () => {
 
     it('should auto-select the new edge by default', () => {
       const { result: hookResult } = renderHook(() => useCreateEdge())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
 
       act(() => {
         hookResult.current.createEdge(networkId, 'n1', 'n2')
@@ -281,9 +295,7 @@ describe('useCreateEdge', () => {
 
     it('should not auto-select when autoSelect is false', () => {
       const { result: hookResult } = renderHook(() => useCreateEdge())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
 
       act(() => {
         hookResult.current.createEdge(networkId, 'n1', 'n2', {
@@ -396,9 +408,7 @@ describe('useCreateEdge', () => {
       const { result: tableResult } = renderHook(() => useTableStore())
 
       // Create table without name column
-      const columns: Column[] = [
-        { name: 'weight', type: 'double' },
-      ]
+      const columns: Column[] = [{ name: 'weight', type: 'double' }]
       const tableWithoutName = TableFn.createTable(networkId, columns)
 
       act(() => {
@@ -451,9 +461,7 @@ describe('useCreateEdge', () => {
     it('should create multiple edges with mixed IDs', () => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: tableResult } = renderHook(() => useTableStore())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
       const { result: hookResult } = renderHook(() => useCreateEdge())
 
       // Start with a network that has non-sequential edge IDs
@@ -490,9 +498,7 @@ describe('useCreateEdge', () => {
     it('should handle all stores consistently', () => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: tableResult } = renderHook(() => useTableStore())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
       const { result: hookResult } = renderHook(() => useCreateEdge())
 
       const network = createTestNetwork(networkId, ['n1', 'n2', 'n3'])
@@ -541,4 +547,3 @@ describe('useCreateEdge', () => {
     })
   })
 })
-

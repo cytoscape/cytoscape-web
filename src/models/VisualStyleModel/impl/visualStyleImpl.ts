@@ -13,6 +13,7 @@ import {
   VisualStyle,
 } from '..'
 import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
+import { getDiscreteVpValues } from './discreteVpValues'
 
 /**
  * Set the default value for a visual property
@@ -179,7 +180,9 @@ export const setContinuousMappingValues = (
   gtMaxVpValue: VisualPropertyValueType,
 ): VisualStyle => {
   const visualProperty = visualStyle[vpName]
-  const mapping = visualProperty.mapping as ContinuousMappingFunction | undefined
+  const mapping = visualProperty.mapping as
+    | ContinuousMappingFunction
+    | undefined
 
   if (mapping == null) {
     return visualStyle
@@ -210,7 +213,7 @@ export const createDiscreteMapping = (
   visualStyle: VisualStyle,
   vpName: VisualPropertyName,
   attributeName: AttributeName,
-  attributeType: ValueTypeName,
+  _attributeType: ValueTypeName,
 ): VisualStyle => {
   const visualProperty = visualStyle[vpName]
   const { defaultValue } = visualProperty
@@ -267,10 +270,7 @@ export const createContinuousMapping = (
     const b = 0.5
     const betacdf = (x: number, a: number, b: number): number => {
       const bt = Math.exp(
-        a * Math.log(x) +
-          b * Math.log(1 - x) -
-          Math.log(a) -
-          Math.log(b),
+        a * Math.log(x) + b * Math.log(1 - x) - Math.log(a) - Math.log(b),
       )
       return bt
     }
@@ -278,15 +278,11 @@ export const createContinuousMapping = (
   }
 
   // Function to perform two-tailed t-test
-  const twoTailedTTest = (
-    data: number[],
-    populationMean: number,
-  ): number => {
+  const twoTailedTTest = (data: number[], populationMean: number): number => {
     const dataMean = mean(data)
     const dataStdDev = standardDeviation(data)
     const n = data.length
-    const tStatistic =
-      (dataMean - populationMean) / (dataStdDev / Math.sqrt(n))
+    const tStatistic = (dataMean - populationMean) / (dataStdDev / Math.sqrt(n))
 
     // Calculate degrees of freedom
     const degreesOfFreedom = n - 1
@@ -306,7 +302,9 @@ export const createContinuousMapping = (
     let minValue = attributeValues[0] as number
     let maxValue = attributeValues[attributeValues.length - 1] as number
     if (twoTailedTTest(attributeValues as number[], 0) < 0.05) {
-      const absoluteMax = Math.max(...(attributeValues as number[]).map(Math.abs))
+      const absoluteMax = Math.max(
+        ...(attributeValues as number[]).map(Math.abs),
+      )
       minValue = -absoluteMax
       maxValue = absoluteMax
     }
@@ -365,8 +363,7 @@ export const createContinuousMapping = (
       },
       {
         value: ((max.value as number) + (min.value as number)) / 2,
-        vpValue:
-          (DEFAULT_NUMBER_RANGE[0] + DEFAULT_NUMBER_RANGE[1]) / 2,
+        vpValue: (DEFAULT_NUMBER_RANGE[0] + DEFAULT_NUMBER_RANGE[1]) / 2,
       },
       {
         value: attributeValues[attributeValues.length - 1] as number,
@@ -424,7 +421,44 @@ export const createContinuousMapping = (
     }
   }
 
-  // Return unchanged if vpType is not Color or Number
+  // CW-569: discrete-valued visual properties (edge line type, node shape, etc.)
+  // get a step-function continuous mapping seeded with a few distinct values.
+  const discreteValues = getDiscreteVpValues(vpType)
+  if (discreteValues.length > 0) {
+    const minValue = attributeValues[0] as number
+    const maxValue = attributeValues[attributeValues.length - 1] as number
+    const midValue = (minValue + maxValue) / 2
+
+    const lowVp = discreteValues[0]
+    const midVp = discreteValues[Math.floor(discreteValues.length / 2)]
+    const highVp = discreteValues[discreteValues.length - 1]
+
+    const continuousMapping: ContinuousMappingFunction = {
+      attribute: attributeName,
+      type: MappingFunctionType.Continuous,
+      min: { value: minValue, vpValue: lowVp, inclusive: false },
+      max: { value: maxValue, vpValue: highVp, inclusive: false },
+      controlPoints: [
+        { value: minValue, vpValue: lowVp },
+        { value: midValue, vpValue: midVp },
+        { value: maxValue, vpValue: highVp },
+      ],
+      visualPropertyType: type,
+      defaultValue,
+      ltMinVpValue: lowVp,
+      gtMaxVpValue: highVp,
+    }
+
+    return {
+      ...visualStyle,
+      [vpName]: {
+        ...visualProperty,
+        mapping: continuousMapping,
+      },
+    }
+  }
+
+  // Return unchanged if the vpType does not support a continuous mapping
   return visualStyle
 }
 
@@ -435,7 +469,7 @@ export const createPassthroughMapping = (
   visualStyle: VisualStyle,
   vpName: VisualPropertyName,
   attributeName: AttributeName,
-  attributeType: ValueTypeName,
+  _attributeType: ValueTypeName,
 ): VisualStyle => {
   const visualProperty = visualStyle[vpName]
   const { defaultValue, type } = visualProperty
@@ -464,11 +498,11 @@ export const removeMapping = (
   vpName: VisualPropertyName,
 ): VisualStyle => {
   const visualProperty = visualStyle[vpName]
-  const { mapping, ...rest } = visualProperty
 
   const updatedProperty: VisualProperty<VisualPropertyValueType> = {
-    ...rest,
+    ...visualProperty,
   } as VisualProperty<VisualPropertyValueType>
+  delete (updatedProperty as { mapping?: unknown }).mapping
 
   return {
     ...visualStyle,
@@ -500,4 +534,3 @@ export const setMapping = (
     },
   }
 }
-

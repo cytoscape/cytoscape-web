@@ -8,7 +8,7 @@ All stores live in `src/data/hooks/stores/` and follow a consistent pattern usin
 
 ## Prerequisites
 
-- `enableMapSet()` from Immer must be called before any store initializes. This is already done in `src/init.tsx` and `jest-setup.ts`. If you create a new standalone test entry point, include it.
+- `enableMapSet()` from Immer must be called before any store initializes. This is already done in `src/init.tsx` and `vitest-setup.ts`. If you create a new standalone test entry point, include it.
 - Store type interfaces must be defined in `src/models/StoreModel/` before implementing the store.
 
 ## Step-by-Step
@@ -252,10 +252,10 @@ When persisting objects that contain Maps or Immer proxies:
 
 ### 8. Module Federation Export (If Needed)
 
-If the store must be accessible to external apps via Module Federation, add it to `webpack.config.js` exposes:
+If the store must be accessible to external apps via Module Federation, add it to `FEDERATION_EXPOSES` in `src/app-api/federation/federationExposes.ts`:
 
 ```javascript
-exposes: {
+export const FEDERATION_EXPOSES = {
   './useExampleStore': './src/data/hooks/stores/ExampleStore',
 }
 ```
@@ -272,10 +272,9 @@ exposes: {
 
 ```typescript
 import { renderHook, act, waitFor } from '@testing-library/react'
-import { enableMapSet } from 'immer'
 import { useExampleStore } from '../ExampleStore'
 
-// enableMapSet() is already called in jest-setup.ts
+// enableMapSet() is already called in vitest-setup.ts
 
 describe('ExampleStore', () => {
   beforeEach(() => {

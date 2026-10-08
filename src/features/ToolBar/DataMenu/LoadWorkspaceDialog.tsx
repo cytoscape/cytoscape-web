@@ -1,12 +1,12 @@
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever'
 import {
   Box,
   Button,
-  Checkbox,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Radio,
   Table,
   TableBody,
   TableCell,
@@ -14,20 +14,26 @@ import {
   TableRow,
   Typography,
 } from '@mui/material'
-import React, { ReactElement, useContext, useEffect, useState } from 'react'
+import React, {
+  ReactElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react'
 
+import { CyDialog } from '@/components/CyDialog'
+import { AppConfigContext } from '../../../AppConfigContext'
 import {
   deleteNdexWorkspace,
   fetchMyNdexWorkspaces,
 } from '../../../data/external-api/ndex'
-import { AppConfigContext } from '../../../AppConfigContext'
-import { logUi } from '../../../debug'
 import { useAppStore } from '../../../data/hooks/stores/AppStore'
 import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { useLoadWorkspace } from '../../../data/hooks/useLoadWorkspace'
-import { AppStatus } from '../../../models/AppModel/AppStatus'
+import { logUi } from '../../../debug'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { dateFormatter } from '../../../utils/dateFormat'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
@@ -42,7 +48,8 @@ export const LoadWorkspaceDialog: React.FC<{
   )
   const currentWorkspaceId = useWorkspaceStore((state) => state.workspace.id)
   const setWorkspaceIsRemote = useWorkspaceStore((state) => state.setIsRemote)
-  const { ndexBaseUrl } = useContext(AppConfigContext)
+  const { ndexBaseUrl, appInstallAllowedOrigins, allowsLocalhostAppsOn } =
+    useContext(AppConfigContext)
   const getToken = useCredentialStore((state) => state.getToken)
   const addMessage = useMessageStore((state) => state.addMessage)
   const apps = useAppStore((state) => state.apps)
@@ -60,7 +67,7 @@ export const LoadWorkspaceDialog: React.FC<{
     setOpenDialog(false)
   }
 
-  const fetchWorkspaces = async (): Promise<void> => {
+  const fetchWorkspaces = useCallback(async (): Promise<void> => {
     const token = await getToken()
     fetchMyNdexWorkspaces(token)
       .then(setMyWorkspaces)
@@ -72,7 +79,7 @@ export const LoadWorkspaceDialog: React.FC<{
               ? error
               : 'Unknown error occurred'
         logUi.error(
-          `[${LoadWorkspaceDialog.name}]:[${handleCloseDialog.name}] Error fetching workspaces from NDEx`,
+          `[${LoadWorkspaceDialog.name}]:[fetchWorkspaces] Error fetching workspaces from NDEx`,
           error,
         )
 
@@ -82,12 +89,13 @@ export const LoadWorkspaceDialog: React.FC<{
           severity: MessageSeverity.ERROR,
         })
       })
-  }
+  }, [getToken, addMessage])
+
   useEffect(() => {
     if (open) {
       fetchWorkspaces()
     }
-  }, [open])
+  }, [open, fetchWorkspaces])
 
   const handleRowSelect = (workspaceId: string): void => {
     setSelectedWorkspaceId((prevId) =>
@@ -116,7 +124,13 @@ export const LoadWorkspaceDialog: React.FC<{
     )
     if (selectedWorkspace) {
       try {
-        await loadWorkspace(selectedWorkspace, apps, serviceApps)
+        await loadWorkspace(
+          selectedWorkspace,
+          apps,
+          serviceApps,
+          appInstallAllowedOrigins,
+          allowsLocalhostAppsOn,
+        )
         handleClose()
         // Reload the page to apply changes
         window.location.reload()
@@ -207,12 +221,9 @@ export const LoadWorkspaceDialog: React.FC<{
   }
 
   return (
-    <Dialog
+    <CyDialog
       data-testid="load-workspace-dialog"
-      onClick={(e) => e.stopPropagation()}
-      onKeyDown={(e) => e.stopPropagation()}
       open={open}
-      onClose={handleClose}
       fullWidth
       maxWidth="lg"
     >
@@ -241,8 +252,8 @@ export const LoadWorkspaceDialog: React.FC<{
                   hover
                 >
                   <TableCell padding="checkbox">
-                    <Checkbox
-                      data-testid={`load-workspace-checkbox-${workspace.workspaceId}`}
+                    <Radio
+                      data-testid={`load-workspace-radio-${workspace.workspaceId}`}
                       checked={selectedWorkspaceId === workspace.workspaceId}
                       onChange={() => handleRowSelect(workspace.workspaceId)}
                       onClick={(e) => e.stopPropagation()}
@@ -277,17 +288,9 @@ export const LoadWorkspaceDialog: React.FC<{
         >
           <Button
             data-testid="load-workspace-delete-button"
-            sx={{
-              color: '#F50157',
-              backgroundColor: 'transparent',
-              '&:hover': {
-                color: '#FFFFFF',
-                backgroundColor: '#fc266f',
-              },
-              '&:disabled': {
-                backgroundColor: 'transparent',
-              },
-            }}
+            variant="outlined"
+            color="error"
+            startIcon={<DeleteForeverIcon />}
             onClick={handleDeleteWorkspaceClick}
             disabled={selectedWorkspaceId == null}
           >
@@ -296,6 +299,7 @@ export const LoadWorkspaceDialog: React.FC<{
           <Box sx={{ display: 'flex' }}>
             <Button
               data-testid="load-workspace-cancel-button"
+              variant="outlined"
               color="primary"
               onClick={handleClose}
               sx={{ mr: 2 }}
@@ -304,23 +308,14 @@ export const LoadWorkspaceDialog: React.FC<{
             </Button>
             <Button
               data-testid="load-workspace-open-button"
-              sx={{
-                color: '#FFFFFF',
-                backgroundColor: '#337ab7',
-                '&:hover': {
-                  backgroundColor: '#285a9b',
-                },
-                '&:disabled': {
-                  backgroundColor: 'transparent',
-                },
-              }}
+              variant="contained"
               onClick={handleOpenWorkspace}
               disabled={selectedWorkspaceId == null}
             >
               Open Workspace
             </Button>
           </Box>
-          <Dialog open={openDialog} onClose={handleCloseDialog}>
+          <CyDialog open={openDialog}>
             <DialogTitle>Delete Workspace</DialogTitle>
             <DialogContent>
               <DialogContentText>
@@ -329,25 +324,19 @@ export const LoadWorkspaceDialog: React.FC<{
               </DialogContentText>
             </DialogContent>
             <DialogActions>
-              <Button onClick={handleCloseDialog}>Cancel</Button>
+              <Button variant="outlined" onClick={handleCloseDialog}>
+                Cancel
+              </Button>
               <Button
-                sx={{
-                  color: '#F50157',
-                  backgroundColor: 'transparent',
-                  '&:hover': {
-                    color: '#FFFFFF',
-                    backgroundColor: '#fc266f',
-                  },
-                  '&:disabled': {
-                    backgroundColor: 'transparent',
-                  },
-                }}
+                variant="contained"
+                color="error"
+                startIcon={<DeleteForeverIcon />}
                 onClick={handleConfirmDelete}
               >
                 Delete
               </Button>
             </DialogActions>
-          </Dialog>
+          </CyDialog>
         </Box>
       </DialogActions>
       <ConfirmationDialog
@@ -364,7 +353,7 @@ export const LoadWorkspaceDialog: React.FC<{
         buttonTitle="Load (cannot be undone)"
         isAlert={true}
       />
-    </Dialog>
+    </CyDialog>
   )
 }
 

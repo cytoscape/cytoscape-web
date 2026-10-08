@@ -1,3 +1,6 @@
+// @vitest-environment node
+import { beforeEach, describe, expect, it } from 'vitest'
+
 import { DiscreteRange } from '../../PropertyModel/DiscreteRange'
 import { NumberRange } from '../../PropertyModel/NumberRange'
 import { createTable } from '../../TableModel/impl/inMemoryTable'
@@ -54,6 +57,24 @@ describe('SimpleFilter', () => {
       expect(result).toContain('2')
       expect(result).toContain('3')
       expect(result).not.toContain('4')
+    })
+
+    it('matches rows without a value (null, no attribute, blank string) to the null option', () => {
+      const table = createTable('test-table', [
+        { name: 'status', type: 'string' },
+      ])
+      table.rows.set('1', { status: 'active' })
+      table.rows.set('2', { status: null as unknown as string })
+      table.rows.set('3', {})
+      table.rows.set('4', { status: '' })
+      table.rows.set('5', { status: '  ' })
+
+      expect(
+        filter.applyDiscreteFilter({ values: [null] }, table, 'status'),
+      ).toEqual(['2', '3', '4', '5'])
+      expect(
+        filter.applyDiscreteFilter({ values: ['active'] }, table, 'status'),
+      ).toEqual(['1'])
     })
 
     it('should handle numeric discrete values', () => {
@@ -223,4 +244,3 @@ describe('SimpleFilter', () => {
     })
   })
 })
-

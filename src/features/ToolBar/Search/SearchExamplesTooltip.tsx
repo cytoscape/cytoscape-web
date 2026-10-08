@@ -7,23 +7,23 @@ export const SearchExamplesTooltip = (): JSX.Element => {
         Search Examples:
       </Typography>
       <Typography variant="body2" sx={{ mb: 0.5 }}>
-        • <strong>protein</strong> - Search for "protein"
+        • <strong>protein</strong> - Search for &quot;protein&quot;
       </Typography>
       <Typography variant="body2" sx={{ mb: 0.5 }}>
-        • <strong>YL protein</strong> - Spaces create separate tokens: "YL" and
-        "protein"
+        • <strong>YL protein</strong> - Spaces create separate tokens:
+        &quot;YL&quot; and &quot;protein&quot;
       </Typography>
       <Typography variant="body2" sx={{ mb: 0.5 }}>
         • <strong>protein, YL</strong> - Commas create separate tokens:
-        "protein" and "YL"
+        &quot;protein&quot; and &quot;YL&quot;
       </Typography>
       <Typography variant="body2" sx={{ mb: 0.5 }}>
-        • <strong>"gene name"</strong> - Quotes prevent tokenization (treats
-        phrase as single token)
+        • <strong>&quot;gene name&quot;</strong> - Quotes prevent tokenization
+        (treats phrase as single token)
       </Typography>
       <Typography variant="body2" sx={{ mb: 0.5 }}>
-        • <strong>"cell cycle", protein</strong> - Multiple tokens with a
-        multi-word phrase
+        • <strong>&quot;cell cycle&quot;, protein</strong> - Multiple tokens
+        with a multi-word phrase
       </Typography>
     </Box>
   )

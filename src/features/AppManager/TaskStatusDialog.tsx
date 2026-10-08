@@ -1,7 +1,6 @@
 import {
   Button,
   CircularProgress,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
@@ -10,6 +9,7 @@ import {
   Typography,
 } from '@mui/material'
 
+import { CyDialog } from '@/components/CyDialog'
 import { useAppStore } from '../../data/hooks/stores/AppStore'
 import { ServiceAppTask } from '../../models/AppModel/ServiceAppTask'
 import { ServiceStatus } from '../../models/AppModel/ServiceStatus'
@@ -41,7 +41,7 @@ export const TaskStatusDialog = ({
   const progress: number = currentTask.progress
 
   return (
-    <Dialog
+    <CyDialog
       data-testid="task-status-dialog"
       open={open}
       aria-labelledby="confirmation-dialog-title"
@@ -80,6 +80,6 @@ export const TaskStatusDialog = ({
           Cancel
         </Button>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }

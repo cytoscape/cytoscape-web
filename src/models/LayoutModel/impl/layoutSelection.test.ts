@@ -1,7 +1,10 @@
-import NetworkFn from '../../NetworkModel'
-import { NetworkSummary } from '../../NetworkSummaryModel'
-import { createNetworkSummary } from '../../NetworkSummaryModel/impl/networkSummaryImpl'
-import { LayoutAlgorithm } from '../LayoutAlgorithm'
+// @vitest-environment node
+import { describe, expect, it, vi } from 'vitest'
+
+import {
+  parameterDefinitionProblem,
+  parameterValueType,
+} from '../../AppModel/impl/parameters'
 import { LayoutEngine } from '../LayoutEngine'
 import {
   defAlgorithm,
@@ -12,13 +15,8 @@ import {
   LayoutEngines,
 } from './layoutSelection'
 
-// Mock the isHCX function to avoid dependency issues
-jest.mock('../../../features/HierarchyViewer/utils/hierarchyUtil', () => ({
-  isHCX: jest.fn(() => false),
-}))
-
 // Mock Cosmos layout to avoid dependency issues with @cosmograph/cosmos
-jest.mock('./Cosmos/cosmosLayout', () => ({
+vi.mock('./Cosmos/cosmosLayout', () => ({
   CosmosLayout: {
     name: 'cosmos',
     algorithms: {
@@ -41,6 +39,54 @@ describe('layoutSelection', () => {
         expect(engine.name).toBeDefined()
         expect(typeof engine.name).toBe('string')
       })
+    })
+  })
+
+  describe('core algorithm editables', () => {
+    // Cosmos keeps its values under `parameters.simulation` (pre-existing gap,
+    // see cosmos.ts); every other core algorithm must declare editables whose
+    // live value is a top-level parameter of the declared type, equal to the
+    // advertised default.
+    const algorithms = LayoutEngines.filter(
+      (engine) => engine.name !== 'cosmos',
+    ).flatMap((engine) => Object.values(engine.algorithms))
+
+    it('are ordered arrays of the shared parameter spec', () => {
+      expect(algorithms.length).toBeGreaterThan(0)
+      for (const algorithm of algorithms) {
+        if (algorithm.editables === undefined) continue
+        expect(Array.isArray(algorithm.editables)).toBe(true)
+        for (const editable of algorithm.editables) {
+          expect(
+            parameterDefinitionProblem(editable, 0, { strict: true }),
+          ).toBeUndefined()
+        }
+      }
+    })
+
+    it('each name a live parameter whose value matches the default and type', () => {
+      for (const algorithm of algorithms) {
+        for (const editable of algorithm.editables ?? []) {
+          const live = algorithm.parameters[editable.name]
+          expect(live, `${algorithm.name}.${editable.name}`).toBeDefined()
+          expect(live).toBe(editable.defaultValue)
+          const expected = parameterValueType(editable)
+          const actual =
+            typeof live === 'boolean'
+              ? 'boolean'
+              : typeof live === 'number'
+                ? Number.isInteger(live)
+                  ? 'integer'
+                  : 'double'
+                : 'string'
+          // an integer literal is a valid double
+          expect(
+            actual === expected ||
+              (expected === 'double' && actual === 'integer'),
+            `${algorithm.name}.${editable.name}: ${actual} vs ${expected}`,
+          ).toBe(true)
+        }
+      }
     })
   })
 
@@ -111,29 +157,19 @@ describe('layoutSelection', () => {
 
   describe('getDefaultLayout', () => {
     it('should return undefined for networks larger than threshold', () => {
-      const network = NetworkFn.createNetwork('test-network')
-      const summary = createNetworkSummary({
-        networkId: network.id,
-        name: 'Test',
-      })
       const numElements = 2000
       const threshold = 1000
 
-      const result = getDefaultLayout(summary, numElements, threshold)
+      const result = getDefaultLayout(numElements, threshold, false)
 
       expect(result).toBeUndefined()
     })
 
     it('should return layout for small networks', () => {
-      const network = NetworkFn.createNetwork('test-network')
-      const summary = createNetworkSummary({
-        networkId: network.id,
-        name: 'Test',
-      })
       const numElements = 100
       const threshold = 1000
 
-      const result = getDefaultLayout(summary, numElements, threshold)
+      const result = getDefaultLayout(numElements, threshold, false)
 
       expect(result).toBeDefined()
       if (result) {
@@ -143,15 +179,10 @@ describe('layoutSelection', () => {
     })
 
     it('should return grid layout for networks at threshold', () => {
-      const network = NetworkFn.createNetwork('test-network')
-      const summary = createNetworkSummary({
-        networkId: network.id,
-        name: 'Test',
-      })
       const numElements = ELE_THRESHOLD
       const threshold = 1000
 
-      const result = getDefaultLayout(summary, numElements, threshold)
+      const result = getDefaultLayout(numElements, threshold, false)
 
       expect(result).toBeDefined()
       if (result) {
@@ -159,30 +190,29 @@ describe('layoutSelection', () => {
       }
     })
 
+    it('should return the hierarchical (dagre) layout for HCX networks', () => {
+      const result = getDefaultLayout(100, 1000, true)
+
+      expect(result).toBeDefined()
+      if (result) {
+        expect(result.algorithmName).toBe(defHierarchicalAlgorithm.name)
+      }
+    })
+
     it('should return layout for networks above threshold but below max threshold', () => {
-      const network = NetworkFn.createNetwork('test-network')
-      const summary = createNetworkSummary({
-        networkId: network.id,
-        name: 'Test',
-      })
       const numElements = 1500
       const maxThreshold = 2000
 
-      const result = getDefaultLayout(summary, numElements, maxThreshold)
+      const result = getDefaultLayout(numElements, maxThreshold, false)
 
       expect(result).toBeDefined()
     })
 
     it('should return undefined when numElements exceeds maxNetworkElementsThreshold', () => {
-      const network = NetworkFn.createNetwork('test-network')
-      const summary = createNetworkSummary({
-        networkId: network.id,
-        name: 'Test',
-      })
       const numElements = 1500
       const maxThreshold = 1000
 
-      const result = getDefaultLayout(summary, numElements, maxThreshold)
+      const result = getDefaultLayout(numElements, maxThreshold, false)
 
       expect(result).toBeUndefined()
     })

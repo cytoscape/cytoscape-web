@@ -170,8 +170,8 @@ const removeNetworks = (
     let needRecheck = false
     for (const netId of networkIds) {
       if (
-        tableRow.nameRecord.hasOwnProperty(netId) ||
-        tableRow.typeRecord.hasOwnProperty(netId)
+        Object.prototype.hasOwnProperty.call(tableRow.nameRecord, netId) ||
+        Object.prototype.hasOwnProperty.call(tableRow.typeRecord, netId)
       ) {
         delete tableRow.nameRecord[netId]
         delete tableRow.typeRecord[netId]
@@ -211,8 +211,8 @@ const useNodeMatchingTableStore = create(
         if (rowIndex < 0 || rowIndex >= state.rows.length) return
         const row = state.rows[rowIndex]
         if (
-          row.nameRecord.hasOwnProperty(netId) &&
-          row.typeRecord.hasOwnProperty(netId)
+          Object.prototype.hasOwnProperty.call(row.nameRecord, netId) &&
+          Object.prototype.hasOwnProperty.call(row.typeRecord, netId)
         ) {
           row.nameRecord[netId] = col.name
           row.typeRecord[netId] = col.type

@@ -7,37 +7,53 @@ import { LoginButton } from '../Login/LoginButton'
 import { AnalysisMenu } from './AnalysisMenu'
 import { AppMenu } from './AppMenu'
 import { DataMenu } from './DataMenu'
+import { DebugIndicator } from './DebugIndicator'
 import { EditMenu } from './EditMenu'
 import { HelpMenu } from './HelpMenu'
 import { LayoutMenu } from './LayoutMenu'
-import { LicenseMenu } from './LicenseMenu'
+import { MenuBar } from './MenuBar'
 import { SearchBox } from './Search'
+import { ThemeToggleButton } from './ThemeToggleButton'
 import { ToolsMenu } from './ToolsMenu'
 
 export const ToolBar = (): JSX.Element => {
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <AppBar position="static">
+      <AppBar
+        position="static"
+        sx={{
+          boxShadow: 'none',
+        }}
+      >
         <Toolbar
           data-testid="toolbar"
           variant="dense"
-          sx={{ justifyContent: 'space-between', backgroundColor: '#4F4F4F' }}
+          sx={{
+            justifyContent: 'space-between',
+            backgroundColor: (theme) =>
+              theme.palette.mode === 'dark'
+                ? theme.palette.background.default
+                : theme.palette.grey[900],
+            borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
+          }}
         >
           <Box sx={{ display: 'flex' }}>
-            <img src={logo} />
-            <DataMenu label="Data" />
-            <EditMenu label="Edit" />
-            <LayoutMenu label="Layout" />
-            {/* <DropdownMenu label="Help" /> */}
-            <AnalysisMenu label="Analysis" />
-            <ToolsMenu label="Tools" />
-            <AppMenu label="Apps" />
-            <HelpMenu label="Help" />
-            <LicenseMenu label="License" />
+            <img src={logo} alt="Cytoscape Logo" />
+            <MenuBar sx={{ display: 'flex' }}>
+              <DataMenu />
+              <EditMenu />
+              <LayoutMenu />
+              <AnalysisMenu />
+              <ToolsMenu />
+              <AppMenu />
+              <HelpMenu />
+            </MenuBar>
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <DebugIndicator />
             <SearchBox />
+            <ThemeToggleButton />
             <LoginButton />
           </Box>
         </Toolbar>

@@ -8,7 +8,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-//@ts-expect-error
+//@ts-expect-error no type declarations for file-saver
 import { saveAs } from 'file-saver'
 import { forwardRef, useImperativeHandle, useState } from 'react'
 
@@ -16,10 +16,7 @@ import { useRendererFunctionStore } from '../../../../data/hooks/stores/Renderer
 import { useUiStateStore } from '../../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
 import { IdType } from '../../../../models/IdType'
-import {
-  ExportFormRef,
-  ExportImageFormatProps,
-} from './ExportNetworkToImageMenuItem'
+import { ExportFormRef, ExportImageFormatProps } from './ExportImage'
 
 export const PaperSize = {
   LETTER: 'LETTER',
@@ -199,5 +196,7 @@ const PdfExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
     )
   },
 )
+
+PdfExportForm.displayName = 'PdfExportForm'
 
 export default PdfExportForm

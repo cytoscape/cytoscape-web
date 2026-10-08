@@ -1,3 +1,1 @@
-export const PresetStyles = {
-
-} as const;
+export const PresetStyles = {} as const

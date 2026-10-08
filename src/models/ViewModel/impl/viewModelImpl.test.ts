@@ -1,3 +1,6 @@
+// @vitest-environment node
+import { describe, expect, it } from 'vitest'
+
 /**
  * Tests for ViewModel implementation
  *
@@ -8,15 +11,14 @@ import { Edge as CxEdge } from '../../CxModel/Cx2/CoreAspects/Edge'
 import { Node as CxNode } from '../../CxModel/Cx2/CoreAspects/Node'
 import { createViewModelFromCX } from '../../CxModel/impl/converters'
 import { IdType } from '../../IdType'
-import { Edge,Network, Node } from '../../NetworkModel'
 import NetworkFn from '../../NetworkModel'
-import { EdgeView,NetworkView, NodeView } from '../index'
+import { EdgeView, NetworkView, NodeView } from '../index'
 import {
-  additiveSelect,
-  additiveUnselect,
   addEdgeViewDirect,
   addEdgeViewsToModel,
   addEdgeViewToModel,
+  additiveSelect,
+  additiveUnselect,
   addNodeViewDirect,
   addNodeViewsToModel,
   addNodeViewToModel,
@@ -860,11 +862,7 @@ describe('ViewModel Implementation', () => {
   describe('setNodePosition', () => {
     it('should set node position', () => {
       const networkView = createViewModel(
-        NetworkFn.createNetworkFromLists(
-          'test-network-1',
-          [{ id: 'n1' }],
-          [],
-        ),
+        NetworkFn.createNetworkFromLists('test-network-1', [{ id: 'n1' }], []),
       )
 
       const result = setNodePosition(networkView, 'n1', [100, 200])
@@ -877,11 +875,7 @@ describe('ViewModel Implementation', () => {
 
     it('should set node position with z coordinate', () => {
       const networkView = createViewModel(
-        NetworkFn.createNetworkFromLists(
-          'test-network-1',
-          [{ id: 'n1' }],
-          [],
-        ),
+        NetworkFn.createNetworkFromLists('test-network-1', [{ id: 'n1' }], []),
       )
 
       const result = setNodePosition(networkView, 'n1', [100, 200, 300])
@@ -991,6 +985,44 @@ describe('ViewModel Implementation', () => {
       expect(result.nodeViews['n1']).toBeUndefined()
       expect(result.edgeViews['e1']).toBeUndefined()
     })
+
+    it('should remove deleted nodes and edges from the selection', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists(
+          'test-network-1',
+          [{ id: 'n1' }, { id: 'n2' }],
+          [
+            { id: 'e1', s: 'n1', t: 'n2' },
+            { id: 'e2', s: 'n2', t: 'n1' },
+          ],
+        ),
+      )
+      networkView.selectedNodes = ['n1', 'n2']
+      networkView.selectedEdges = ['e1', 'e2']
+
+      const result = deleteObjects(networkView, ['n1', 'e1'])
+
+      expect(result.selectedNodes).toEqual(['n2'])
+      expect(result.selectedEdges).toEqual(['e2'])
+      expect(networkView.selectedNodes).toEqual(['n1', 'n2']) // Original unchanged
+    })
+
+    it('should leave selection untouched when deleted ids are not selected', () => {
+      const networkView = createViewModel(
+        NetworkFn.createNetworkFromLists(
+          'test-network-1',
+          [{ id: 'n1' }, { id: 'n2' }],
+          [{ id: 'e1', s: 'n1', t: 'n2' }],
+        ),
+      )
+      networkView.selectedNodes = ['n2']
+      networkView.selectedEdges = []
+
+      const result = deleteObjects(networkView, ['n1'])
+
+      expect(result.selectedNodes).toEqual(['n2'])
+      expect(result.selectedEdges).toEqual([])
+    })
   })
 
   describe('addNodeViewDirect', () => {
@@ -1013,11 +1045,7 @@ describe('ViewModel Implementation', () => {
 
     it('should replace existing node view', () => {
       const networkView = createViewModel(
-        NetworkFn.createNetworkFromLists(
-          'test-network-1',
-          [{ id: 'n1' }],
-          [],
-        ),
+        NetworkFn.createNetworkFromLists('test-network-1', [{ id: 'n1' }], []),
       )
       const updatedNodeView: NodeView = {
         id: 'n1',
@@ -1124,6 +1152,9 @@ describe('ViewModel Implementation', () => {
       })
       networkView = deleteObjects(networkView, ['n2'])
 
+      // The chained operations produce a new network view object
+      expect(networkView).not.toBe(original)
+
       // Verify original is unchanged
       expect(original.selectedNodes).toBe(originalSelectedNodes)
       expect(original.nodeViews['n1'].x).toBe(originalNodeX)
@@ -1151,7 +1182,11 @@ describe('ViewModel Implementation', () => {
       const network = NetworkFn.createNetwork('test-network-101')
       const networkView = createViewModel(network)
 
-      const updated = addNodeViewWithPosition(networkView, 'n1', [100, 200, 300])
+      const updated = addNodeViewWithPosition(
+        networkView,
+        'n1',
+        [100, 200, 300],
+      )
 
       expect(updated.nodeViews['n1']).toBeDefined()
       expect(updated.nodeViews['n1'].x).toBe(100)

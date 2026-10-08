@@ -1,5 +1,3 @@
-import { isHCX } from '../../../features/HierarchyViewer/utils/hierarchyUtil'
-import { NetworkSummary } from '../../NetworkSummaryModel'
 import { LayoutAlgorithm } from '../LayoutAlgorithm'
 import { LayoutEngine } from '../LayoutEngine'
 import { CosmosLayout } from './Cosmos/cosmosLayout'
@@ -38,10 +36,19 @@ export const getLayout = (
 
 export const ELE_THRESHOLD = 1000
 
+/**
+ * Pick the default layout for a network.
+ *
+ * @param numNetworkElements node + edge count
+ * @param maxNetworkElementsThreshold above this, no layout is applied
+ * @param isHierarchical whether the network is a hierarchy (HCX) — the
+ *   caller decides (e.g. via `isHCX(summary)`); models must not import
+ *   from features (REVIEW.md A7)
+ */
 export const getDefaultLayout = (
-  summary: NetworkSummary,
   numNetworkElements: number,
   maxNetworkElementsThreshold: number,
+  isHierarchical: boolean,
 ): { engineName: string; algorithmName: string } | undefined => {
   // dont run a layout if the network is too large
   if (numNetworkElements > maxNetworkElementsThreshold) {
@@ -49,7 +56,7 @@ export const getDefaultLayout = (
   }
 
   if (numNetworkElements < ELE_THRESHOLD) {
-    if (isHCX(summary)) {
+    if (isHierarchical) {
       return {
         engineName: G6Layout.name,
         algorithmName: G6Layout.algorithms.dagre.name,

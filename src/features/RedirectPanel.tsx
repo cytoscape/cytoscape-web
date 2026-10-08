@@ -15,7 +15,7 @@ export const RedirectPanel = (): JSX.Element => {
       Please double-check the URL you entered and try again. 
       Your workspace has now been initialized with the last cache.`,
     )
-  }, [])
+  }, [location.pathname, setErrorMessage])
 
   return (
     <div data-testid="redirect-panel">

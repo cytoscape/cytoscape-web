@@ -3,18 +3,23 @@
 
 export const VALID_PIE_CHART_SLICE_INDEX_RANGE = [1, 16] as const
 
+import { logModel } from '../../../debug'
 import { IdType } from '../../IdType'
 import { AttributeName, ValueType } from '../../TableModel'
 import { Mapper } from '../VisualMappingFunction'
+import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
 import { VisualProperty } from '../VisualProperty'
 import { VisualPropertyValueType } from '../VisualPropertyValue'
 import {
   CustomGraphicsNameType,
   CustomGraphicsType,
+  ImagePropertiesType,
+  isImageCustomGraphicsName,
   PieChartPropertiesType,
   RingChartPropertiesType,
 } from '../VisualPropertyValue/CustomGraphicsType'
 import { SpecialPropertyName } from './CyjsProperties/CyjsStyleModels/directMappingSelector'
+import { normalizeImageSource, wrapSvgDataUriForSize } from './imageSourceImpl'
 
 export const getCustomGraphicNodeVps = (
   vps: VisualProperty<VisualPropertyValueType>[],
@@ -38,7 +43,7 @@ export const getPieBackgroundColorViewModelProp = (
     sliceIndex < VALID_PIE_CHART_SLICE_INDEX_RANGE[0] ||
     sliceIndex > VALID_PIE_CHART_SLICE_INDEX_RANGE[1]
   ) {
-    console.debug(
+    logModel.info(
       `[CustomGraphicsImpl] getPieBackgroundSizeViewModelProp: Invalid pie chart slice index: ${sliceIndex}. Valid range is ${VALID_PIE_CHART_SLICE_INDEX_RANGE[0]}-${VALID_PIE_CHART_SLICE_INDEX_RANGE[1]}`,
     )
   }
@@ -73,7 +78,7 @@ export const getPieBackgroundSizeViewModelProp = (
     sliceIndex < VALID_PIE_CHART_SLICE_INDEX_RANGE[0] ||
     sliceIndex > VALID_PIE_CHART_SLICE_INDEX_RANGE[1]
   ) {
-    console.debug(
+    logModel.info(
       `[CustomGraphicsImpl] getPieBackgroundSizeViewModelProp: Invalid pie chart slice index: ${sliceIndex}. Valid range is ${VALID_PIE_CHART_SLICE_INDEX_RANGE[0]}-${VALID_PIE_CHART_SLICE_INDEX_RANGE[1]}`,
     )
   }
@@ -129,6 +134,11 @@ export const getCustomGraphicsPropertyKeys = (): string[] => {
     propertyKeys.push(getPieBackgroundSizeViewModelProp(i))
   }
 
+  // Image properties
+  propertyKeys.push(SpecialPropertyName.BackgroundImage)
+  propertyKeys.push(SpecialPropertyName.BackgroundFit)
+  propertyKeys.push(SpecialPropertyName.BackgroundImageCrossorigin)
+
   return propertyKeys
 }
 
@@ -141,7 +151,7 @@ export const getFirstValidCustomGraphicVp = (
   const isSupportedGraphicsType = (value: CustomGraphicsType) =>
     value.name === CustomGraphicsNameType.PieChart ||
     value.name === CustomGraphicsNameType.RingChart ||
-    value.name === CustomGraphicsNameType.Image
+    isImageCustomGraphicsName(value.name)
 
   const fullyValid = customGraphicNodeVps.find((vp) => {
     const defaultValue = vp.defaultValue as CustomGraphicsType
@@ -156,6 +166,15 @@ export const getFirstValidCustomGraphicVp = (
   })
   if (fullyValid) {
     return fullyValid as VisualProperty<CustomGraphicsType>
+  }
+
+  // A slot with a passthrough mapping is valid — the mapper will produce
+  // CustomGraphicsType objects at runtime from raw string values
+  const passthroughValid = customGraphicNodeVps.find((vp) => {
+    return vp.mapping?.type === MappingFunctionType.Passthrough
+  })
+  if (passthroughValid) {
+    return passthroughValid as VisualProperty<CustomGraphicsType>
   }
 
   // If none of the preferred types are fully valid, pick the first “empty” graphic (None)
@@ -195,7 +214,7 @@ const computeCustomGraphicSizeProperties = (
   mappers: Map<AttributeName, Mapper>,
   row: Record<AttributeName, ValueType>,
 ) => {
-  const { defaultValue, mapping, bypassMap, name, group } = vp
+  const { defaultValue, mapping, bypassMap } = vp
   const bypass = bypassMap.get(id)
   if (bypass !== undefined) {
     return bypass as number
@@ -234,6 +253,12 @@ export const computePieChartProperties = (
 ) => {
   const piePairsToAdd: [string, VisualPropertyValueType][] = []
   const pieValues = value.properties as PieChartPropertiesType
+
+  // Skip rendering when there are no data columns to drive the chart
+  if (!pieValues.cy_dataColumns || pieValues.cy_dataColumns.length === 0) {
+    return piePairsToAdd
+  }
+
   const totalValue = pieValues.cy_dataColumns.reduce((acc, attribute) => {
     const attributeValue = row[attribute] as number
     const value = attributeValue ?? 0
@@ -291,6 +316,12 @@ export const computeRingChartProperties = (
 ) => {
   const piePairsToAdd: [string, VisualPropertyValueType][] = []
   const pieValues = value.properties as RingChartPropertiesType
+
+  // Skip rendering when there are no data columns to drive the chart
+  if (!pieValues.cy_dataColumns || pieValues.cy_dataColumns.length === 0) {
+    return piePairsToAdd
+  }
+
   const totalValue = pieValues.cy_dataColumns.reduce((acc, attribute) => {
     const attributeValue = row[attribute] as number
     const value = attributeValue ?? 0
@@ -349,15 +380,42 @@ export const computeImageProperties = (
   id: IdType,
   value: CustomGraphicsType,
   row: Record<AttributeName, ValueType>,
-  customGraphicsSizeVp: VisualProperty<VisualPropertyValueType>,
+  widthVp: VisualProperty<VisualPropertyValueType>,
+  heightVp: VisualProperty<VisualPropertyValueType>,
   mappers: Map<AttributeName, Mapper>,
-) => {
-  const size = computeCustomGraphicSizeProperties(
-    id,
-    customGraphicsSizeVp,
-    mappers,
-    row,
-  )
+): [string, VisualPropertyValueType][] => {
+  const pairs: [string, VisualPropertyValueType][] = []
+  const imageProps = value.properties as ImagePropertiesType
+
+  if (!imageProps.url) {
+    return pairs
+  }
+
+  const width = computeCustomGraphicSizeProperties(id, widthVp, mappers, row)
+  const height = computeCustomGraphicSizeProperties(id, heightVp, mappers, row)
+
+  // A custom graphic can carry raw `<svg>` markup rather than a URL (Desktop-authored
+  // values and hand-edited CX2 both do this). Cytoscape.js only accepts a URL for
+  // background-image, so promote the markup to a data URI.
+  //
+  // Stored values are deliberately NOT held to the scheme policy that gates new
+  // input (blob:/file: rejection). Applying it here would silently drop images
+  // from existing networks — a product decision, not a refactor. A non-'url'
+  // classification therefore falls through with the value untouched.
+  const source = normalizeImageSource(imageProps.url)
+  const promotedUrl = source.kind === 'url' ? source.url : imageProps.url
+
+  const finalUrl = wrapSvgDataUriForSize(promotedUrl, width, height)
+
+  pairs.push([SpecialPropertyName.BackgroundImage, finalUrl])
+  pairs.push([SpecialPropertyName.BackgroundFit, 'contain'])
+  // 'null' is a valid Cytoscape.js background-image-crossorigin value meaning "do not
+  // set the crossOrigin attribute". This lets images load from servers without CORS
+  // headers; the tradeoff is that such images taint the canvas and are excluded from
+  // PNG/JPEG export. Use 'anonymous' instead if export fidelity matters more than reach.
+  pairs.push([SpecialPropertyName.BackgroundImageCrossorigin, 'null'])
+
+  return pairs
 }
 
 export const computeCustomGraphicsProperties = (
@@ -380,8 +438,8 @@ export const computeCustomGraphicsProperties = (
       heightVp,
       mappers,
     )
-  } else if (value.name === CustomGraphicsNameType.Image) {
-    return []
+  } else if (isImageCustomGraphicsName(value.name)) {
+    return computeImageProperties(id, value, row, widthVp, heightVp, mappers)
   }
 
   return []

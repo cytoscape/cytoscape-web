@@ -2,22 +2,24 @@ import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
 interface MergeToolTipState {
-    text: string,
-    isOpen: boolean;
+  text: string
+  isOpen: boolean
 }
 
 interface MergeToolTipAction {
-    setText: (toolTipText: string) => void
-    setIsOpen: (openToolTip: boolean) => void;
+  setText: (toolTipText: string) => void
+  setIsOpen: (openToolTip: boolean) => void
 }
 
 type MergeToolTipStore = MergeToolTipState & MergeToolTipAction
 
-const useMergeToolTipStore = create(immer<MergeToolTipStore>((set) => ({
+const useMergeToolTipStore = create(
+  immer<MergeToolTipStore>((set) => ({
     text: 'Please select networks to merge',
     isOpen: false,
     setText: (toolTipText: string) => set(() => ({ text: toolTipText })),
-    setIsOpen: (openToolTip: boolean) => set(() => ({ isOpen: openToolTip }))
-})));
+    setIsOpen: (openToolTip: boolean) => set(() => ({ isOpen: openToolTip })),
+  })),
+)
 
-export default useMergeToolTipStore;
+export default useMergeToolTipStore

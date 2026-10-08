@@ -6,6 +6,7 @@ export const RootMenu = {
   Edit: 'Edit',
   Layout: 'Layout',
   Analysis: 'Analysis',
+  Tools: 'Tools',
   Apps: 'Apps',
   Help: 'Help',
 } as const

@@ -1,4 +1,9 @@
 import { ValueType, ValueTypeName } from '../../../../models/TableModel'
+import {
+  valueTypeNameChipColor,
+  valueTypeNameLabel,
+  ValueTypeNameChipColor,
+} from '../../../../models/TableModel/impl/valueTypeNameDisplay'
 import { BooleanEditor } from './BooleanEditor'
 import { ListEditor } from './ListEditor'
 import { NumberEditor } from './NumberEditor'
@@ -6,6 +11,8 @@ import { StringEditor } from './StringEditor'
 
 interface ValueEditorProps {
   optionName: string
+  // Human-readable label; falls back to `optionName` (the identity)
+  label?: string
   description: string
   valueType: ValueTypeName
   value: ValueType
@@ -15,43 +22,16 @@ interface ValueEditorProps {
   showTypeChip?: boolean
 }
 
-const getTypeLabel = (type: ValueTypeName): string => {
-  const typeLabels: Record<ValueTypeName, string> = {
-    [ValueTypeName.String]: 'String',
-    [ValueTypeName.Integer]: 'Integer',
-    [ValueTypeName.Long]: 'Long',
-    [ValueTypeName.Double]: 'Double',
-    [ValueTypeName.Boolean]: 'Boolean',
-    [ValueTypeName.ListString]: 'List<String>',
-    [ValueTypeName.ListInteger]: 'List<Integer>',
-    [ValueTypeName.ListLong]: 'List<Long>',
-    [ValueTypeName.ListDouble]: 'List<Double>',
-    [ValueTypeName.ListBoolean]: 'List<Boolean>',
-  }
-  return typeLabels[type] || 'Unknown'
-}
+// Delegated to the shared data-type display module (CW-562) so labels/colors
+// are consistent with the rest of the app.
+const getTypeLabel = (type: ValueTypeName): string => valueTypeNameLabel(type)
 
-const getTypeColor = (type: ValueTypeName): 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error' => {
-  if (type.includes('list_of_')) {
-    return 'primary'
-  }
-  switch (type) {
-    case ValueTypeName.String:
-      return 'default'
-    case ValueTypeName.Integer:
-    case ValueTypeName.Long:
-      return 'success'
-    case ValueTypeName.Double:
-      return 'success'
-    case ValueTypeName.Boolean:
-      return 'secondary'
-    default:
-      return 'default'
-  }
-}
+const getTypeColor = (type: ValueTypeName): ValueTypeNameChipColor =>
+  valueTypeNameChipColor(type)
 
 export const ValueEditor = ({
   optionName,
+  label,
   description,
   valueType,
   value,
@@ -60,7 +40,7 @@ export const ValueEditor = ({
   error = false,
   showTypeChip = false,
 }: ValueEditorProps): JSX.Element => {
-  const isListType = 
+  const isListType =
     valueType === ValueTypeName.ListString ||
     valueType === ValueTypeName.ListInteger ||
     valueType === ValueTypeName.ListLong ||
@@ -71,6 +51,7 @@ export const ValueEditor = ({
     return (
       <ListEditor
         optionName={optionName}
+        label={label}
         description={description}
         valueType={valueType}
         value={value}
@@ -89,6 +70,7 @@ export const ValueEditor = ({
     return (
       <NumberEditor
         optionName={optionName}
+        label={label}
         description={description}
         value={value as number}
         valueType={valueType}
@@ -103,6 +85,7 @@ export const ValueEditor = ({
     return (
       <BooleanEditor
         optionName={optionName}
+        label={label}
         description={description}
         value={value as boolean}
         setValue={setValue}
@@ -115,6 +98,7 @@ export const ValueEditor = ({
     return (
       <StringEditor
         optionName={optionName}
+        label={label}
         description={description}
         value={value as string}
         setValue={setValue}

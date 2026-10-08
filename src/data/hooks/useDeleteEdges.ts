@@ -24,21 +24,19 @@
  * ```
  */
 
-import { IdType } from '../../models/IdType'
-import { ValueType } from '../../models/TableModel'
-import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
-import { TableType } from '../../models/StoreModel/TableStoreModel'
-import { Edge, EdgeView } from '../../models'
-import { VisualPropertyName } from '../../models/VisualStyleModel/VisualPropertyName'
+import { Edge } from '../../models'
 import {
   deleteEdgesCore,
   type EdgeOperationStoreActions,
 } from '../../models/CyNetworkModel'
+import { IdType } from '../../models/IdType'
+import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
+import { VisualPropertyName } from '../../models/VisualStyleModel/VisualPropertyName'
 import { useNetworkStore } from './stores/NetworkStore'
+import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import { useTableStore } from './stores/TableStore'
 import { useViewModelStore } from './stores/ViewModelStore'
 import { useVisualStyleStore } from './stores/VisualStyleStore'
-import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import { useUndoStack } from './useUndoStack'
 
 export interface DeleteEdgesOptions {
@@ -161,10 +159,7 @@ export const useDeleteEdges = () => {
       }
 
       // Capture visual style bypasses before deletion
-      const deletedBypasses = new Map<
-        VisualPropertyName,
-        Map<IdType, any>
-      >()
+      const deletedBypasses = new Map<VisualPropertyName, Map<IdType, any>>()
       const visualStyle = visualStyles[networkId]
       if (visualStyle) {
         Object.keys(visualStyle).forEach((vpName) => {
@@ -177,7 +172,10 @@ export const useDeleteEdges = () => {
               }
             })
             if (bypassesForProperty.size > 0) {
-              deletedBypasses.set(vpName as VisualPropertyName, bypassesForProperty)
+              deletedBypasses.set(
+                vpName as VisualPropertyName,
+                bypassesForProperty,
+              )
             }
           }
         })
@@ -185,7 +183,12 @@ export const useDeleteEdges = () => {
 
       // Call the pure function to delete edges (only existing ones)
       // Pass the network we validated to avoid stale snapshot issues
-      const result = deleteEdgesCore(networkId, existingEdgeIds, network, storeActions)
+      const result = deleteEdgesCore(
+        networkId,
+        existingEdgeIds,
+        network,
+        storeActions,
+      )
 
       // Clean up visual style bypasses for deleted edges
       if (visualStyle) {
@@ -197,7 +200,11 @@ export const useDeleteEdges = () => {
               visualProperty.bypassMap.has(id),
             )
             if (hasBypassesToDelete) {
-              deleteBypass(networkId, vpName as VisualPropertyName, existingEdgeIds)
+              deleteBypass(
+                networkId,
+                vpName as VisualPropertyName,
+                existingEdgeIds,
+              )
             }
           }
         })
@@ -218,6 +225,7 @@ export const useDeleteEdges = () => {
           ],
           // Redo: delete the edges again
           [networkId, result.deletedEdgeIds],
+          networkId,
         )
       }
 

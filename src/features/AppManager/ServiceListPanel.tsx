@@ -1,21 +1,19 @@
-import {
-  Box,
-  Button,
-  TextField,
-  Theme,
-  Typography,
-  useTheme,
-} from '@mui/material'
+import AddIcon from '@mui/icons-material/Add'
+import RefreshIcon from '@mui/icons-material/Refresh'
+import { Box, Button, TextField, Typography } from '@mui/material'
 import { useState } from 'react'
 
 import { useAppStore } from '../../data/hooks/stores/AppStore'
+import {
+  invalidRootMessage,
+  normalizeServiceAppUrl,
+  resolveRootMenu,
+} from '../../models/AppModel/impl'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { ExampleServicePanel } from './ExampleServicePanel'
 import { ServiceList } from './ServiceList'
 
 export const ServiceListPanel = () => {
-  const theme: Theme = useTheme()
-
   const [newUrl, setNewUrl] = useState<string>('')
 
   // Warning message to display when the user tries to add
@@ -27,6 +25,20 @@ export const ServiceListPanel = () => {
   )
 
   const addService = useAppStore((state) => state.addService)
+  const refreshAllServices = useAppStore((state) => state.refreshAllServices)
+
+  const [isRefreshingAll, setIsRefreshingAll] = useState<boolean>(false)
+
+  const hasServiceApps = Object.keys(serviceApps).length > 0
+
+  const handleRefreshAll = async () => {
+    setIsRefreshingAll(true)
+    try {
+      await refreshAllServices()
+    } finally {
+      setIsRefreshingAll(false)
+    }
+  }
 
   const handleClearUrl = () => {
     setNewUrl('')
@@ -34,10 +46,7 @@ export const ServiceListPanel = () => {
   }
 
   const handleAddServiceApp = async () => {
-    let trimmedUrl: string = newUrl.trim()
-    if (trimmedUrl.endsWith('/')) {
-      trimmedUrl = trimmedUrl.slice(0, -1) // Remove the last character if it is '/'
-    }
+    const trimmedUrl: string = normalizeServiceAppUrl(newUrl)
 
     if (trimmedUrl !== '') {
       const serviceApp = serviceApps[trimmedUrl]
@@ -47,10 +56,19 @@ export const ServiceListPanel = () => {
       }
       try {
         await addService(trimmedUrl)
-        setWarningMessage('')
-      } catch (e) {
+        // Warn the developer/user when the service requested a menu root that
+        // is not recognized: it is placed under the default (Apps) menu.
+        const added = useAppStore.getState().serviceApps[trimmedUrl]
+        const resolution = resolveRootMenu(added?.cyWebMenuItem?.root)
         setWarningMessage(
-          `Failed to add the service at "${trimmedUrl}" due to: ${e.message}.`,
+          added !== undefined && !resolution.valid
+            ? invalidRootMessage(resolution.requested)
+            : '',
+        )
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e)
+        setWarningMessage(
+          `Failed to add the service at "${trimmedUrl}" due to: ${message}.`,
         )
         console.error(
           `[${ServiceListPanel.name}]:[handleAddServiceApp]: Failed to add the service from ${trimmedUrl}. ${e}`,
@@ -62,14 +80,27 @@ export const ServiceListPanel = () => {
 
   return (
     <Box>
-      <Typography
-        sx={{ display: 'inline' }}
-        component="span"
-        variant="h6"
-        color="text.primary"
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
       >
-        Service Apps Manager
-      </Typography>
+        <Typography component="span" variant="h6" color="text.primary">
+          Service Apps Manager
+        </Typography>
+        {hasServiceApps && (
+          <Button
+            size="small"
+            startIcon={<RefreshIcon />}
+            onClick={handleRefreshAll}
+            disabled={isRefreshingAll}
+          >
+            {isRefreshingAll ? 'Refreshing...' : 'Refresh all'}
+          </Button>
+        )}
+      </Box>
       {warningMessage && (
         <Typography color="error" variant="body2">
           {warningMessage}
@@ -94,25 +125,22 @@ export const ServiceListPanel = () => {
           label="Enter new external service URL"
           value={newUrl}
           onChange={(e) => setNewUrl(e.target.value)}
-          style={{ marginRight: theme.spacing(1) }}
           size="small"
-          sx={{ flexGrow: 1 }}
+          sx={{ mr: 1, flexGrow: 1 }}
         />
         <Button
           variant="outlined"
-          color="inherit"
           onClick={handleClearUrl}
           disabled={newUrl.trim() === ''}
-          sx={{ marginRight: theme.spacing(1), width: '4em' }}
+          sx={{ mr: 1 }}
         >
           Clear
         </Button>
         <Button
           variant="outlined"
-          color="primary"
+          startIcon={<AddIcon />}
           onClick={handleAddServiceApp}
           disabled={newUrl.trim() === ''}
-          sx={{ width: '4em' }}
         >
           Add
         </Button>

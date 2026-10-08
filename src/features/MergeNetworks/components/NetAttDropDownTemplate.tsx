@@ -31,7 +31,6 @@ export const NetAttDropDownTemplate = React.memo(
     rowIndex,
     column,
     type,
-    netLst,
   }: netAttDropDownTemplateProps) => {
     const emptyOption = { label: 'None', value: 'None' }
     const tableType =
@@ -53,19 +52,23 @@ export const NetAttDropDownTemplate = React.memo(
       rowData.nameRecord[column] && rowData.nameRecord[column] !== 'None'
         ? rowData.nameRecord[column]
         : ''
-    const netIdLst = netLst.map((pair) => pair[1])
     const setMatchingCols = useMatchingColumnsStore(
       (state) => state.setMatchingCols,
     )
     const setHasDuplication = useNodesDuplicationStore(
       (state) => state.setHasDuplication,
     )
+    // Call every store hook unconditionally (Rules of Hooks), then pick the
+    // one that matches the current table view.
+    const setNodeRow = useNodeMatchingTableStore((state) => state.setRow)
+    const setEdgeRow = useEdgeMatchingTableStore((state) => state.setRow)
+    const setNetRow = useNetMatchingTableStore((state) => state.setRow)
     const setMatchingTable =
       type === TableView.node
-        ? useNodeMatchingTableStore((state) => state.setRow)
+        ? setNodeRow
         : type === TableView.edge
-          ? useEdgeMatchingTableStore((state) => state.setRow)
-          : useNetMatchingTableStore((state) => state.setRow)
+          ? setEdgeRow
+          : setNetRow
     // Handler for 'Dropdown' changes
     const onDropdownChange = (
       e: SelectChangeEvent<any>,
@@ -109,6 +112,7 @@ export const NetAttDropDownTemplate = React.memo(
         <Select
           data-testid={`merge-net-att-dropdown-${rowData.id}-${column}`}
           labelId={`select-label-${rowData.id}-${column}`}
+          size="small"
           value={currentValue}
           onChange={(e) => onDropdownChange(e, type, rowData, column)}
           id={`select-${rowData.id}-${column}`}
@@ -124,3 +128,5 @@ export const NetAttDropDownTemplate = React.memo(
     )
   },
 )
+
+NetAttDropDownTemplate.displayName = 'NetAttDropDownTemplate'

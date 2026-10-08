@@ -1,20 +1,20 @@
-import { ColorType } from './ColorType'
-import {
+import type { ColorType } from './ColorType'
+import type {
   CustomGraphicsPositionType,
   CustomGraphicsType,
 } from './CustomGraphicsType'
-import { EdgeArrowShapeType } from './EdgeArrowShapeType'
-import { EdgeFillType } from './EdgeFillType'
-import { EdgeLineType } from './EdgeLineType'
-import { FontType } from './FontType'
-import { NodeBorderLineType } from './NodeBorderLineType'
-import {
+import type { EdgeArrowShapeType } from './EdgeArrowShapeType'
+import type { EdgeFillType } from './EdgeFillType'
+import type { EdgeLineType } from './EdgeLineType'
+import type { FontType } from './FontType'
+import type { NodeBorderLineType } from './NodeBorderLineType'
+import type {
   HorizontalAlignType,
   NodeLabelPositionType,
   VerticalAlignType,
 } from './NodeLabelPositionType'
-import { NodeShapeType } from './NodeShapeType'
-import { VisibilityType } from './VisibilityType'
+import type { NodeShapeType } from './NodeShapeType'
+import type { VisibilityType } from './VisibilityType'
 
 /**
  * Supported visual property data types.

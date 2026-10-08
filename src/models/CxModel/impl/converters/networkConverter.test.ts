@@ -1,3 +1,6 @@
+// @vitest-environment node
+import { describe, expect, it } from 'vitest'
+
 import { Cx2 } from '../../Cx2'
 import { createNetworkFromCx, translateCXEdgeId } from './networkConverter'
 
@@ -48,11 +51,7 @@ describe('networkConverter', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
         {
-          nodes: [
-            { id: 1 },
-            { id: 2 },
-            { id: 3 },
-          ],
+          nodes: [{ id: 1 }, { id: 2 }, { id: 3 }],
         },
         {
           status: [{ success: true }],
@@ -63,9 +62,9 @@ describe('networkConverter', () => {
 
       expect(network.id).toBe(networkId)
       expect(network.nodes).toHaveLength(3)
-      expect(network.nodes.map(n => n.id)).toContain('1')
-      expect(network.nodes.map(n => n.id)).toContain('2')
-      expect(network.nodes.map(n => n.id)).toContain('3')
+      expect(network.nodes.map((n) => n.id)).toContain('1')
+      expect(network.nodes.map((n) => n.id)).toContain('2')
+      expect(network.nodes.map((n) => n.id)).toContain('3')
     })
 
     it('should create a network with edges', () => {
@@ -73,10 +72,7 @@ describe('networkConverter', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
         {
-          nodes: [
-            { id: 1 },
-            { id: 2 },
-          ],
+          nodes: [{ id: 1 }, { id: 2 }],
         },
         {
           edges: [
@@ -94,10 +90,10 @@ describe('networkConverter', () => {
       expect(network.id).toBe(networkId)
       expect(network.nodes).toHaveLength(2)
       expect(network.edges).toHaveLength(2)
-      expect(network.edges.map(e => e.id)).toContain('e1')
-      expect(network.edges.map(e => e.id)).toContain('e2')
-      expect(network.edges.find(e => e.id === 'e1')?.s).toBe('1')
-      expect(network.edges.find(e => e.id === 'e1')?.t).toBe('2')
+      expect(network.edges.map((e) => e.id)).toContain('e1')
+      expect(network.edges.map((e) => e.id)).toContain('e2')
+      expect(network.edges.find((e) => e.id === 'e1')?.s).toBe('1')
+      expect(network.edges.find((e) => e.id === 'e1')?.t).toBe('2')
     })
 
     it('should handle nodes with @id property', () => {
@@ -105,10 +101,7 @@ describe('networkConverter', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
         {
-          nodes: [
-            { '@id': 1 },
-            { '@id': 2 },
-          ] as any,
+          nodes: [{ '@id': 1 }, { '@id': 2 }] as any,
         },
         {
           status: [{ success: true }],
@@ -118,8 +111,8 @@ describe('networkConverter', () => {
       const network = createNetworkFromCx(networkId, cx2)
 
       expect(network.nodes).toHaveLength(2)
-      expect(network.nodes.map(n => n.id)).toContain('1')
-      expect(network.nodes.map(n => n.id)).toContain('2')
+      expect(network.nodes.map((n) => n.id)).toContain('1')
+      expect(network.nodes.map((n) => n.id)).toContain('2')
     })
 
     it('should handle edges with @id property', () => {
@@ -127,10 +120,7 @@ describe('networkConverter', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
         {
-          nodes: [
-            { id: 1 },
-            { id: 2 },
-          ],
+          nodes: [{ id: 1 }, { id: 2 }],
         },
         {
           edges: [
@@ -146,8 +136,8 @@ describe('networkConverter', () => {
       const network = createNetworkFromCx(networkId, cx2)
 
       expect(network.edges).toHaveLength(2)
-      expect(network.edges.map(e => e.id)).toContain('e1')
-      expect(network.edges.map(e => e.id)).toContain('e2')
+      expect(network.edges.map((e) => e.id)).toContain('e1')
+      expect(network.edges.map((e) => e.id)).toContain('e2')
     })
 
     it('should create a network with multiple nodes and edges', () => {
@@ -155,12 +145,7 @@ describe('networkConverter', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
         {
-          nodes: [
-            { id: 1 },
-            { id: 2 },
-            { id: 3 },
-            { id: 4 },
-          ],
+          nodes: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }],
         },
         {
           edges: [
@@ -179,7 +164,7 @@ describe('networkConverter', () => {
 
       expect(network.nodes).toHaveLength(4)
       expect(network.edges).toHaveLength(4)
-      expect(network.edges.map(e => e.id)).toEqual(['e1', 'e2', 'e3', 'e4'])
+      expect(network.edges.map((e) => e.id)).toEqual(['e1', 'e2', 'e3', 'e4'])
     })
 
     it('should convert node and edge ids to strings', () => {
@@ -187,15 +172,10 @@ describe('networkConverter', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
         {
-          nodes: [
-            { id: 1 },
-            { id: 2 },
-          ],
+          nodes: [{ id: 1 }, { id: 2 }],
         },
         {
-          edges: [
-            { id: 1, s: 1, t: 2 },
-          ],
+          edges: [{ id: 1, s: 1, t: 2 }],
         },
         {
           status: [{ success: true }],
@@ -232,4 +212,3 @@ describe('networkConverter', () => {
     })
   })
 })
-

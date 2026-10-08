@@ -1,16 +1,16 @@
-import { Checkbox, FormControlLabel, FormGroup } from '@mui/material'
-import { useTheme } from '@mui/material/styles'
+import { Box, Checkbox, FormControlLabel, FormGroup } from '@mui/material'
 import Tooltip from '@mui/material/Tooltip'
-import { useEffect, useState } from 'react'
+import { ReactNode, useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import { useFilterStore } from '../../../../data/hooks/stores/FilterStore'
-import { useViewModelStore } from '../../../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../../../data/hooks/stores/VisualStyleStore'
 import {
+  DiscreteFilterValue,
   Filter,
   FilterConfig,
   getBasicFilter,
+  toDiscreteFilterValue,
 } from '../../../../models/FilterModel'
 import { DiscreteFilterDetails } from '../../../../models/FilterModel/DiscreteFilterDetails'
 import { FilterUrlParams } from '../../../../models/FilterModel/FilterUrlParams'
@@ -18,7 +18,6 @@ import { IdType } from '../../../../models/IdType'
 import { GraphObjectType } from '../../../../models/NetworkModel'
 import { DiscreteRange } from '../../../../models/PropertyModel/DiscreteRange'
 import { Table, ValueType } from '../../../../models/TableModel'
-import { NetworkView } from '../../../../models/ViewModel'
 import {
   DiscreteMappingFunction,
   VisualPropertyValueType,
@@ -28,7 +27,9 @@ import {
   NodeVisualPropertyName,
 } from '../../../../models/VisualStyleModel/VisualPropertyName'
 import { VisibilityType } from '../../../../models/VisualStyleModel/VisualPropertyValue/VisibilityType'
+import { formatValueText } from '../../utils/attributeValueDisplay'
 import { getAllDiscreteValues } from '../../utils/filterUtil'
+import { NoValueLabel } from '../PropertyPanel/AttributeValue'
 
 interface CheckboxFilterProps {
   // The network to be filtered
@@ -49,20 +50,15 @@ export const CheckboxFilter = ({
   table,
   enableFilter,
 }: CheckboxFilterProps): JSX.Element => {
-  const theme = useTheme()
-  const disabledColor = theme.palette.action.disabled
-
   // Updating URL by range
   const [searchParams] = useSearchParams()
 
   const setBypassMap = useVisualStyleStore((state) => state.setBypassMap)
+  const deleteBypass = useVisualStyleStore((state) => state.deleteBypass)
 
-  const getViewModel = useViewModelStore((state) => state.getViewModel)
   const visualStyleExists = useVisualStyleStore(
     (state) => state.visualStyles[targetNetworkId] !== undefined,
   )
-  const viewModel: NetworkView | undefined = getViewModel(targetNetworkId)
-  const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
   const { description, attributeName } = filterConfig
   const discreteFilterDetails = filterConfig.discreteFilterDetails ?? []
   const name2label = new Map<string, string>()
@@ -71,32 +67,38 @@ export const CheckboxFilter = ({
   })
   const updateRange = useFilterStore((state) => state.updateRange)
 
-  const [allOptions, setAllOptions] = useState<string[]>([])
+  const [allOptions, setAllOptions] = useState<DiscreteFilterValue[]>([])
 
   // Check if all options are selected
-  const currentSelectedOptions = filterConfig.range as DiscreteRange<ValueType>
+  const currentSelectedOptions =
+    filterConfig.range as DiscreteRange<DiscreteFilterValue>
 
-  // Apply the filter to the table
-  const applyFilter = () => {
+  // The visual property the filter writes its bypass to
+  const vpName =
+    filterConfig.target === GraphObjectType.NODE
+      ? NodeVisualPropertyName.NodeVisibility
+      : EdgeVisualPropertyName.EdgeVisibility
+
+  // Apply the filter to the table. Memoized so effects can depend on it:
+  // its identity changes exactly when its inputs change — including
+  // visualStyleExists, which re-applies the filter once a late-loading
+  // visual style arrives (previously the mount-only apply ran before the
+  // style existed and the filter never took effect).
+  const applyFilter = useCallback(() => {
     if (!visualStyleExists) {
       return
     }
 
-    let filtered: IdType[] = []
     // Current range stored in the config
-    const discreteRange: DiscreteRange<ValueType> =
-      filterConfig.range as DiscreteRange<ValueType>
+    const discreteRange: DiscreteRange<DiscreteFilterValue> =
+      filterConfig.range as DiscreteRange<DiscreteFilterValue>
     const basicFilter: Filter = getBasicFilter()
-    filtered = basicFilter.applyDiscreteFilter(
-      discreteRange,
-      table,
-      attributeName,
-    )
+    basicFilter.applyDiscreteFilter(discreteRange, table, attributeName)
 
     const idsToFilter: IdType[] = []
     const idsToExclude: IdType[] = []
 
-    const rangeSet = new Set<ValueType>(discreteRange.values)
+    const rangeSet = new Set<DiscreteFilterValue>(discreteRange.values)
 
     if (rangeSet.size === 0) {
       // No options checked - hide all items
@@ -107,11 +109,6 @@ export const CheckboxFilter = ({
         visibilityBypassMap.set(id, VisibilityType.None)
       })
 
-      const vpName =
-        filterConfig.target === GraphObjectType.NODE
-          ? NodeVisualPropertyName.NodeVisibility
-          : EdgeVisualPropertyName.EdgeVisibility
-
       setBypassMap(targetNetworkId, vpName, visibilityBypassMap)
       return []
     }
@@ -121,9 +118,12 @@ export const CheckboxFilter = ({
 
     ids.forEach((id: string) => {
       const row = rows.get(id)
-      const value = row?.[attributeName]
+      // A missing value (null, no attribute, blank) matches the null option
+      const value: DiscreteFilterValue = toDiscreteFilterValue(
+        row?.[attributeName],
+      )
 
-      if (value !== undefined && rangeSet.has(value)) {
+      if (rangeSet.has(value)) {
         idsToFilter.push(id)
       } else {
         idsToExclude.push(id)
@@ -138,13 +138,28 @@ export const CheckboxFilter = ({
       visibilityBypassMap.set(id, VisibilityType.None)
     })
 
-    const vpName =
-      filterConfig.target === GraphObjectType.NODE
-        ? NodeVisualPropertyName.NodeVisibility
-        : EdgeVisualPropertyName.EdgeVisibility
-
     setBypassMap(targetNetworkId, vpName, visibilityBypassMap)
-  }
+  }, [
+    visualStyleExists,
+    filterConfig,
+    table,
+    attributeName,
+    targetNetworkId,
+    vpName,
+    setBypassMap,
+  ])
+
+  // Remove the filter's visibility bypass so every element of the table is
+  // shown again. This deliberately does not depend on what this instance
+  // applied: the component remounts when the subsystem changes while the
+  // network's bypass stays in the store, so a filter mounted disabled must
+  // still clear what an earlier mount wrote.
+  const removeFilter = useCallback(() => {
+    if (!visualStyleExists) {
+      return
+    }
+    deleteBypass(targetNetworkId, vpName, [...table.rows.keys()])
+  }, [visualStyleExists, table, targetNetworkId, vpName, deleteBypass])
 
   useEffect(() => {
     setAllOptions(getAllDiscreteValues(table.rows, attributeName))
@@ -155,8 +170,9 @@ export const CheckboxFilter = ({
    *
    * @param value
    */
-  const handleToggle = (value: string) => {
-    const discreteRange = filterConfig.range as DiscreteRange<ValueType>
+  const handleToggle = (value: DiscreteFilterValue) => {
+    const discreteRange =
+      filterConfig.range as DiscreteRange<DiscreteFilterValue>
     const currentSelection = discreteRange.values
     const currentIndex = currentSelection.indexOf(value)
     const newChecked = [...currentSelection]
@@ -176,7 +192,7 @@ export const CheckboxFilter = ({
     updateUrl(newChecked)
   }
 
-  const updateUrl = (checked: ValueType[]): void => {
+  const updateUrl = (checked: DiscreteFilterValue[]): void => {
     if (checked.length !== 0) {
       searchParams.set(FilterUrlParams.FILTER_RANGE, checked.join(',') || '')
       // setSearchParams(searchParams)
@@ -208,26 +224,26 @@ export const CheckboxFilter = ({
   }
 
   /**
-   * update the filter range when the target network changes
+   * Apply the filter when it is enabled, the target network changes, the
+   * selected range changes, or applyFilter's inputs (table, config, a
+   * late-loading visual style) change. This also covers the initial apply
+   * on mount. When disabled, remove the filter's bypass so the hidden
+   * elements are shown again; the stored range is kept and reapplied once
+   * the filter is enabled again.
    */
   useEffect(() => {
-    //Apply the filter from the existing filter store
     if (enableFilter) {
       applyFilter()
     } else {
-      // Select all nodes / edges
-      exclusiveSelect(targetNetworkId, [], [])
+      removeFilter()
     }
-  }, [enableFilter, targetNetworkId, currentSelectedOptions.values])
-
-  /**
-   * Apply filter after initialization if the filter is enabled
-   */
-  useEffect(() => {
-    if (enableFilter && visualStyleExists) {
-      applyFilter()
-    }
-  }, [])
+  }, [
+    enableFilter,
+    targetNetworkId,
+    currentSelectedOptions.values,
+    applyFilter,
+    removeFilter,
+  ])
 
   const isAllSelected: boolean =
     allOptions.length > 0 &&
@@ -246,8 +262,8 @@ export const CheckboxFilter = ({
       <FormGroup>
         <FormControlLabel
           sx={{
-            borderTop: '1px solid #A0A0A0',
-            borderBottom: '1px solid #A0A0A0',
+            m: 0,
+            backgroundColor: (theme) => theme.palette.background.default,
           }}
           control={
             <Checkbox
@@ -260,36 +276,55 @@ export const CheckboxFilter = ({
               onChange={(e) => handleToggleAll(e.target.checked)}
             />
           }
-          label={isAllSelected ? 'Clear selection' : 'Select all'}
+          label={isAllSelected ? 'Deselect All' : 'Select All'}
         />
-        {allOptions.map((option: string) => {
-          const color: string = colorMap.get(option) as string
+        {allOptions.map((option: DiscreteFilterValue) => {
+          const color: string | undefined =
+            option === null ? undefined : (colorMap.get(option) as string)
+          // Criteria in the filterWidgets aspect are strings, whatever the
+          // column type. React renders nothing for a boolean, so the label is
+          // always text; the null option (no value) gets a placeholder.
+          const label: ReactNode =
+            option === null ? (
+              <NoValueLabel />
+            ) : (
+              (name2label.get(String(option)) ?? formatValueText(option) ?? '')
+            )
 
-          let checkboxStyle = {}
-          if (color !== undefined) {
-            checkboxStyle = {
-              color: !enableFilter ? disabledColor : color,
-              '&.Mui-checked': {
-                color: !enableFilter ? disabledColor : color,
-              },
-              '&.Mui-disabled': {
-                color: disabledColor,
-              },
-            }
-          }
           return (
             <FormControlLabel
-              key={option}
+              key={`${typeof option}:${String(option)}`}
+              sx={{ m: 0 }}
               control={
                 <Checkbox
-                  data-testid={`checkbox-filter-option-${option}`}
+                  data-testid={
+                    option === null
+                      ? 'checkbox-filter-option-no-value'
+                      : `checkbox-filter-option-${String(option)}`
+                  }
                   disabled={!enableFilter}
-                  sx={checkboxStyle}
                   checked={currentSelectedOptions.values.includes(option)}
                   onChange={() => handleToggle(option)}
+                  sx={{ py: 0.75 }}
                 />
               }
-              label={name2label.get(option) ?? option}
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Box
+                    sx={{
+                      width: '1em',
+                      height: '1em',
+                      backgroundColor: color ?? 'transparent',
+                      border: (theme) =>
+                        `1px solid ${theme.palette.text.secondary}`,
+                      opacity: enableFilter ? 1.0 : 0.2,
+                      borderRadius: '50%',
+                      mr: 0.5,
+                    }}
+                  />
+                  {label}
+                </Box>
+              }
             />
           )
         })}

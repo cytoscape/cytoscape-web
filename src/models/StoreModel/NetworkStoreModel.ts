@@ -1,5 +1,5 @@
 import { IdType } from '../IdType'
-import { Edge,Network } from '../NetworkModel'
+import { Edge, Network } from '../NetworkModel'
 
 export const UpdateEventType = {
   ADD: 'ADD',
@@ -17,8 +17,22 @@ export interface NetworkUpdatedEvent {
 
 export interface NetworkState {
   networks: Map<IdType, Network>
-  // Wil be set by this store when a network topology is updated
+  // Will be set by this store when a network topology is updated
   lastUpdated?: NetworkUpdatedEvent
+
+  /**
+   * Monotonic counter per network, incremented whenever subscribers need to
+   * re-snapshot membership (network add/delete and topology mutations).
+   *
+   * Networks are cytoscape-backed and mutate in place, so
+   * `networks.set(id, network)` re-stores a reference that is already there.
+   * Immer treats that as no change, `networks` keeps its identity, and
+   * subscribers selecting `networks` never run. This counter is the value
+   * that does change, so subscribers have something to select on.
+   * Subscribers must keep their own snapshot of the previous topology —
+   * the Network object cannot be diffed against itself.
+   */
+  topologyVersions: Map<IdType, number>
 }
 
 /**
@@ -49,6 +63,12 @@ export interface NetworkUpdateActions {
    */
   deleteNodes: (networkId: IdType, nodeIds: IdType[]) => Edge[]
   deleteEdges: (networkId: IdType, edgeIds: IdType[]) => void
+  moveEdge: (
+    networkId: IdType,
+    edgeId: IdType,
+    newSourceId: IdType,
+    newTargetId: IdType,
+  ) => { oldSourceId: IdType; oldTargetId: IdType }
 }
 
 /**

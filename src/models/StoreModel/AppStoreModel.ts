@@ -1,5 +1,10 @@
+import { AppCatalogEntry } from '../AppModel/AppCatalogEntry'
+import { AppLoadFailure } from '../AppModel/AppLoadFailure'
+import { AppLoadState, SettableAppLoadState } from '../AppModel/AppLoadState'
 import { AppStatus } from '../AppModel/AppStatus'
 import { CyApp } from '../AppModel/CyApp'
+import { AppSource } from '../AppModel/InstalledApp'
+import { ManifestSource } from '../AppModel/ManifestSource'
 import { ServiceApp } from '../AppModel/ServiceApp'
 import { ServiceAppTask } from '../AppModel/ServiceAppTask'
 
@@ -11,15 +16,38 @@ export interface AppState {
 
   // Status of the remote task
   currentTask?: ServiceAppTask
+
+  // Merged app catalog (manifest ∪ workspace.installedApps), session-local
+  catalog: Record<string, AppCatalogEntry>
+
+  // Provenance of each merged catalog entry (manifest | appstore | snapshot),
+  // session-local; records which entry won the merge, not whether the manifest
+  // still ships the app
+  catalogSources: Record<string, AppSource>
+
+  // Ids the resolved manifest carries, independent of which entry won the
+  // merge; consumed by the App Manager UI to decide removability (§12.3)
+  manifestIds: string[]
+
+  // Per-app runtime load state (session-local, not persisted)
+  loadStates: Record<string, AppLoadState>
+
+  // Why each failed app failed, keyed by the same catalog id as loadStates.
+  // Session-local like loadStates; only ids whose loadState is 'failed' have
+  // an entry (§719). Kept beside loadStates rather than folded into
+  // AppLoadState so the four bare string comparisons in the UI keep working.
+  loadErrors: Record<string, AppLoadFailure>
+
+  // User-configured manifest source (persisted to appSettings IndexedDB)
+  manifestSource?: ManifestSource
 }
 
 export interface AppAction {
   /**
-   * Try to restore app states from IndexedDB
-   *
-   * @returns
+   * Seed the session apps map with the given records (built by the caller from
+   * workspace.installedApps, §8.4) and restore service apps from IndexedDB.
    */
-  restore: (appIds: string[]) => Promise<void>
+  restore: (apps: CyApp[]) => Promise<void>
 
   /**
    * Add an app from the external module
@@ -27,7 +55,7 @@ export interface AppAction {
    * @param app
    * @returns
    */
-  add: (app: CyApp) => void
+  add: (app: CyApp) => Promise<void>
 
   /**
    * Fetch service metadata and add it to the store
@@ -43,6 +71,21 @@ export interface AppAction {
    * @returns
    */
   removeService: (url: string) => void
+
+  /**
+   * Re-fetch the metadata for an already-registered service app and replace it
+   * in the store, so UI/parameter changes made on the service are picked up
+   * without removing and re-adding the app.
+   *
+   * @param url - ServiceApp endpoint to refresh
+   */
+  refreshService: (url: string) => Promise<void>
+
+  /**
+   * Re-fetch the metadata for every registered service app. Individual
+   * failures are logged and do not abort the others.
+   */
+  refreshAllServices: () => Promise<void>
 
   /**
    * Set current status of the app
@@ -69,14 +112,12 @@ export interface AppAction {
   clearCurrentTask: () => void
 
   /**
-   * Update the parameters for the service call
-   *
+   * Update one parameter value for the service call. `key` follows the
+   * parameter key rule (`parameterKeys`): the parameter's displayName, or
+   * its group path joined with '/' when two parameters share a displayName.
+   * Values stay strings, as the service protocol sends and receives them.
    */
-  updateServiceParameter: (
-    url: string,
-    displayName: string,
-    value: string,
-  ) => void
+  updateServiceParameter: (url: string, key: string, value: string) => void
 
   /**
    * Update the input column (selected column in the table)
@@ -88,6 +129,48 @@ export interface AppAction {
    *
    */
   updateInputColumn: (url: string, name: string, columnName: string) => void
+
+  /**
+   * Replace the entire catalog with new entries plus their provenance.
+   * When `sources` is omitted, every entry defaults to `'manifest'`.
+   * When `manifestIds` is omitted, it falls back to the entries whose
+   * resolved source is `'manifest'`.
+   *
+   * Drops any `'failed'` state whose recorded failure names a URL the new
+   * entry no longer uses — a refreshed manifest that fixes the bundle URL
+   * must not leave the row without a control (#719).
+   */
+  setCatalog: (
+    entries: AppCatalogEntry[],
+    sources?: Record<string, AppSource>,
+    manifestIds?: string[],
+  ) => void
+
+  /**
+   * Set the runtime load state for a specific app. Clears any recorded
+   * failure — a new state supersedes the last reason.
+   *
+   * `'failed'` is excluded: it would clear the reason it needs. Use
+   * `setLoadFailed`.
+   */
+  setLoadState: (id: string, state: SettableAppLoadState) => void
+
+  /**
+   * Mark an app failed and record why. Writes both `loadStates[id] = 'failed'`
+   * and `loadErrors[id]`, so a failed app always has a reason to show.
+   */
+  setLoadFailed: (id: string, failure: AppLoadFailure) => void
+
+  /**
+   * Set or clear the manifest source (persisted to IndexedDB appSettings)
+   */
+  setManifestSource: (source: ManifestSource | undefined) => void
+
+  /**
+   * Remove an app completely: delete from apps, loadStates, loadErrors, and
+   * IndexedDB
+   */
+  remove: (id: string) => void
 }
 
 export type AppStore = AppState & AppAction

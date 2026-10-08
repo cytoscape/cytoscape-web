@@ -1,24 +1,47 @@
 import { act, renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { IdType } from '../../../models/IdType'
 import { TableType } from '../../../models/StoreModel/TableStoreModel'
-import { AttributeName, Column, Table, ValueType, ValueTypeName } from '../../../models/TableModel'
+import {
+  Column,
+  Table,
+  ValueType,
+  ValueTypeName,
+} from '../../../models/TableModel'
 import { createTable } from '../../../models/TableModel/impl/inMemoryTable'
-import { VisualPropertyGroup } from '../../../models/VisualStyleModel/VisualPropertyGroup'
+import { flushPendingWrites } from './persistenceScheduler'
 import { useTableStore } from './TableStore'
 
 // Mock the database operations to avoid IndexedDB issues in tests
-jest.mock('../../db', () => ({
-  ...jest.requireActual('../../db'),
-  putTablesToDb: jest.fn().mockResolvedValue(undefined),
-  deleteTablesFromDb: jest.fn().mockResolvedValue(undefined),
-  clearTablesFromDb: jest.fn().mockResolvedValue(undefined),
-}))
+vi.mock('../../db', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../db')>()
+  return {
+    ...actual,
+    putNetworkToDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworksFromDb: vi.fn().mockResolvedValue(undefined),
+    putTableToDb: vi.fn().mockResolvedValue(undefined),
+    deleteTableFromDb: vi.fn().mockResolvedValue(undefined),
+    clearTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    putViewModelToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewsToDb: vi.fn().mockResolvedValue(undefined),
+    deleteViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearViewModelsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    putTablesToDb: vi.fn().mockResolvedValue(undefined),
+    getNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    getTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    getViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+  }
+})
 
 // Mock the workspace store to provide a current network ID
-jest.mock('./WorkspaceStore', () => ({
+vi.mock('./WorkspaceStore', () => ({
   useWorkspaceStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       workspace: {
         currentNetworkId: 'test-network-1',
       },
@@ -201,9 +224,7 @@ describe('useTableStore', () => {
     it('should apply value to specific elements', () => {
       const { result } = renderHook(() => useTableStore())
       const networkId: IdType = 'network-1'
-      const columns: Column[] = [
-        { name: 'score', type: ValueTypeName.Double },
-      ]
+      const columns: Column[] = [{ name: 'score', type: ValueTypeName.Double }]
       const { nodeTable, edgeTable } = createTestTableRecord(
         networkId,
         columns,
@@ -214,13 +235,9 @@ describe('useTableStore', () => {
 
       act(() => {
         result.current.add(networkId, nodeTable, edgeTable)
-        result.current.applyValueToElements(
-          networkId,
-          'node',
-          'score',
-          100,
-          ['n1'],
-        )
+        result.current.applyValueToElements(networkId, 'node', 'score', 100, [
+          'n1',
+        ])
       })
 
       const updatedTable = result.current.tables[networkId].nodeTable
@@ -231,9 +248,7 @@ describe('useTableStore', () => {
     it('should apply value to all elements when elementIds is undefined', () => {
       const { result } = renderHook(() => useTableStore())
       const networkId: IdType = 'network-1'
-      const columns: Column[] = [
-        { name: 'score', type: ValueTypeName.Double },
-      ]
+      const columns: Column[] = [{ name: 'score', type: ValueTypeName.Double }]
       const { nodeTable, edgeTable } = createTestTableRecord(
         networkId,
         columns,
@@ -289,9 +304,7 @@ describe('useTableStore', () => {
     it('should delete column from all rows', () => {
       const { result } = renderHook(() => useTableStore())
       const networkId: IdType = 'network-1'
-      const columns: Column[] = [
-        { name: 'col1', type: ValueTypeName.String },
-      ]
+      const columns: Column[] = [{ name: 'col1', type: ValueTypeName.String }]
       const { nodeTable, edgeTable } = createTestTableRecord(
         networkId,
         columns,
@@ -315,9 +328,7 @@ describe('useTableStore', () => {
     it('should create a new column at the beginning', () => {
       const { result } = renderHook(() => useTableStore())
       const networkId: IdType = 'network-1'
-      const columns: Column[] = [
-        { name: 'col1', type: ValueTypeName.String },
-      ]
+      const columns: Column[] = [{ name: 'col1', type: ValueTypeName.String }]
       const { nodeTable, edgeTable } = createTestTableRecord(
         networkId,
         columns,
@@ -368,9 +379,7 @@ describe('useTableStore', () => {
     it('should set a value for a specific cell', () => {
       const { result } = renderHook(() => useTableStore())
       const networkId: IdType = 'network-1'
-      const columns: Column[] = [
-        { name: 'score', type: ValueTypeName.Double },
-      ]
+      const columns: Column[] = [{ name: 'score', type: ValueTypeName.Double }]
       const { nodeTable, edgeTable } = createTestTableRecord(
         networkId,
         columns,
@@ -412,9 +421,7 @@ describe('useTableStore', () => {
     it('should set multiple cell values', () => {
       const { result } = renderHook(() => useTableStore())
       const networkId: IdType = 'network-1'
-      const columns: Column[] = [
-        { name: 'score', type: ValueTypeName.Double },
-      ]
+      const columns: Column[] = [{ name: 'score', type: ValueTypeName.Double }]
       const { nodeTable, edgeTable } = createTestTableRecord(
         networkId,
         columns,
@@ -441,9 +448,7 @@ describe('useTableStore', () => {
     it('should return all unique values in a column', () => {
       const { result } = renderHook(() => useTableStore())
       const networkId: IdType = 'network-1'
-      const columns: Column[] = [
-        { name: 'score', type: ValueTypeName.Double },
-      ]
+      const columns: Column[] = [{ name: 'score', type: ValueTypeName.Double }]
       const { nodeTable, edgeTable } = createTestTableRecord(
         networkId,
         columns,
@@ -473,9 +478,7 @@ describe('useTableStore', () => {
     it('should duplicate a column', () => {
       const { result } = renderHook(() => useTableStore())
       const networkId: IdType = 'network-1'
-      const columns: Column[] = [
-        { name: 'col1', type: ValueTypeName.String },
-      ]
+      const columns: Column[] = [{ name: 'col1', type: ValueTypeName.String }]
       const { nodeTable, edgeTable } = createTestTableRecord(
         networkId,
         columns,
@@ -702,13 +705,9 @@ describe('useTableStore', () => {
 
       act(() => {
         // Apply value to elements
-        result.current.applyValueToElements(
-          networkId,
-          'node',
-          'newCol',
-          200,
-          ['n2'],
-        )
+        result.current.applyValueToElements(networkId, 'node', 'newCol', 200, [
+          'n2',
+        ])
       })
 
       act(() => {
@@ -726,5 +725,109 @@ describe('useTableStore', () => {
       expect(updatedTable.rows.get('n2')?.newCol).toBe(200)
     })
   })
-})
 
+  // REVIEW.md R2-2: the persist wrapper used to key the DB write off
+  // workspace.currentNetworkId (mocked here as 'test-network-1') instead of
+  // the network the action actually mutated. Mutations to any other network
+  // (hierarchy sub-networks, App API calls, merges) were silently never
+  // persisted, and the current network's unchanged tables were rewritten.
+  describe('IndexedDB persistence keying (regression: R2-2)', () => {
+    it('persists the mutated network tables even when it is not the current network', async () => {
+      const { putTablesToDb } = await import('../../db')
+      const { result } = renderHook(() => useTableStore())
+      const { nodeTable, edgeTable } = createTestTableRecord('other-network')
+
+      act(() => {
+        result.current.add('other-network', nodeTable, edgeTable)
+      })
+      flushPendingWrites()
+      vi.mocked(putTablesToDb).mockClear()
+
+      act(() => {
+        result.current.setValue(
+          'other-network',
+          TableType.NODE,
+          'n1',
+          'name',
+          'Renamed',
+        )
+      })
+      flushPendingWrites()
+
+      expect(putTablesToDb).toHaveBeenCalledTimes(1)
+      const [persistedId, persistedNodeTable] =
+        vi.mocked(putTablesToDb).mock.calls[0]
+      expect(persistedId).toBe('other-network')
+      expect(persistedNodeTable.rows.get('n1')?.name).toBe('Renamed')
+    })
+
+    it('does not rewrite unrelated networks when another network is mutated', async () => {
+      const { putTablesToDb } = await import('../../db')
+      const { result } = renderHook(() => useTableStore())
+      const current = createTestTableRecord('test-network-1')
+      const other = createTestTableRecord('other-network')
+
+      act(() => {
+        result.current.add(
+          'test-network-1',
+          current.nodeTable,
+          current.edgeTable,
+        )
+        result.current.add('other-network', other.nodeTable, other.edgeTable)
+      })
+      flushPendingWrites()
+      vi.mocked(putTablesToDb).mockClear()
+
+      act(() => {
+        result.current.setValue(
+          'other-network',
+          TableType.NODE,
+          'n1',
+          'name',
+          'Renamed',
+        )
+      })
+      flushPendingWrites()
+
+      const persistedIds = vi
+        .mocked(putTablesToDb)
+        .mock.calls.map((call) => call[0])
+      expect(persistedIds).toContain('other-network')
+      expect(persistedIds).not.toContain('test-network-1')
+    })
+
+    // REVIEW.md A2: every mutation used to trigger an immediate
+    // full-table serialize + IndexedDB put — per-keystroke write
+    // amplification. Bursts are now coalesced into one write of the
+    // latest state.
+    it('coalesces a burst of mutations into a single write of the latest state (regression: A2)', async () => {
+      const { putTablesToDb } = await import('../../db')
+      const { flushPendingWrites } = await import('./persistenceScheduler')
+      const { result } = renderHook(() => useTableStore())
+      const { nodeTable, edgeTable } = createTestTableRecord('burst-network')
+
+      act(() => {
+        result.current.add('burst-network', nodeTable, edgeTable)
+      })
+      flushPendingWrites()
+      vi.mocked(putTablesToDb).mockClear()
+
+      act(() => {
+        for (let i = 0; i < 5; i++) {
+          result.current.setValue(
+            'burst-network',
+            TableType.NODE,
+            'n1',
+            'name',
+            `v${i}`,
+          )
+        }
+      })
+      flushPendingWrites()
+
+      expect(putTablesToDb).toHaveBeenCalledTimes(1)
+      const [, persistedNodeTable] = vi.mocked(putTablesToDb).mock.calls[0]
+      expect(persistedNodeTable.rows.get('n1')?.name).toBe('v4')
+    })
+  })
+})

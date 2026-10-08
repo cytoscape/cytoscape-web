@@ -1,29 +1,58 @@
 import 'dexie-observable'
 
 import Dexie, { IndexableType, Table as DxTable } from 'dexie'
-import _ from 'lodash'
 
-import config from '../../assets/config.json'
-import { logDb } from '../../debug'
-import { toPlainObject } from './serialization'
-import { getNetworkViewId } from '../hooks/stores/ViewModelStore'
+import { logDb, registerDebugTool } from '../../debug'
+import { getTabId } from '@/data/tabState/tabId'
+import { APP_DATA_GLOBAL_SCOPE, AppDataRow } from '@/models/AppDataModel'
 import { CyApp } from '../../models/AppModel/CyApp'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { CyNetwork } from '../../models/CyNetworkModel'
 import { FilterConfig } from '../../models/FilterModel/FilterConfig'
 import { IdType } from '../../models/IdType'
-import NetworkFn, { Edge, Network, Node } from '../../models/NetworkModel'
+// Type-only: the NetworkModel implementation is built on cytoscape.js, and a
+// value import here would put cytoscape on the boot-critical DATABASE phase.
+// The one implementation call site loads it dynamically (getNetworkFromDb).
+import type { Edge, Network, Node } from '@/models/NetworkModel'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
 import { OpaqueAspects } from '../../models/OpaqueAspectModel'
 import { UndoRedoStack } from '../../models/StoreModel/UndoStoreModel'
 import { Table } from '../../models/TableModel'
 import { Ui } from '../../models/UiModel'
 import { NetworkView } from '../../models/ViewModel'
-import { VisualStyle } from '../../models/VisualStyleModel'
+import {
+  StyleTemplate,
+  VisualStyle,
+  VisualStyleSet,
+} from '../../models/VisualStyleModel'
+import {
+  createStyleSet,
+  isValidStyleSet,
+} from '../../models/VisualStyleModel/impl/visualStyleSetImpl'
+import { DEFAULT_STYLE_NAME } from '../../models/VisualStyleModel/VisualStyleSet'
 import { VisualStyleOptions } from '../../models/VisualStyleModel/VisualStyleOptions'
 import { Workspace } from '../../models/WorkspaceModel'
 import { createWorkspace } from '../../models/WorkspaceModel/impl/workspaceImpl'
-import { applyMigrations } from './migrations'
+import { getNetworkViewId } from '../hooks/stores/ViewModelStore'
+import { registerMigrations } from './migrations'
+import { toPlainObject } from './serialization'
+import { decodeRichValues, encodeRichValues } from './serialization/richValues'
+import {
+  validateAppDataRow,
+  validateCyApp,
+  validateNetwork,
+  validateNetworkSummary,
+  validateNetworkView,
+  validateOpaqueAspectsDb,
+  validateSerializedFilterConfig,
+  validateServiceApp,
+  validateStoredUiState,
+  validateTable,
+  validateUndoRedoStackDb,
+  validateViewSelection,
+  validateVisualStyle,
+  validateWorkspace,
+} from './validator'
 import {
   deserializeFilterConfig,
   deserializeNetworkView,
@@ -35,12 +64,19 @@ import {
   serializeVisualStyle,
 } from './serialization/mapSerialization'
 // Unique, fixed DB name for the Cytoscape Web
-const DB_NAME: string = 'cyweb-db'
+export const DB_NAME: string = 'cyweb-db'
 
 // Current version of the DB (integer only).
 // If older version is found, the migration
 // function will upgrade the existing data to this version.
-const currentVersion: number = 8
+// v10 adds the `cyStyleLibrary` store (workspace-level visual style templates).
+// v11 adds the `viewSelections` store (node/edge selection moved out of the
+// `cyNetworkViews` row — see ViewModelStore). It is a separate version rather
+// than an edit to v10 because v10 already shipped to branch deploys, and Dexie
+// will not re-run a version whose number a client already has on disk.
+// v12 adds the `appData` store (the app API's local per-app data tier — see
+// AppDataStore).
+export const currentVersion: number = 12
 
 /**
  * Predefined object store names.
@@ -57,7 +93,6 @@ export const ObjectStoreNames = {
   CyVisualStyles: 'cyVisualStyles',
   CyNetworkViews: 'cyNetworkViews',
   UiState: 'uiState',
-  Timestamp: 'timestamp',
   Filters: 'filters',
   Apps: 'apps',
 
@@ -68,6 +103,18 @@ export const ObjectStoreNames = {
   OpaqueAspects: 'opaqueAspects',
 
   UndoStacks: 'undoStacks',
+
+  // From v9
+  AppSettings: 'appSettings',
+
+  // From v10: workspace-level visual style template library
+  StyleLibrary: 'cyStyleLibrary',
+
+  // From v11
+  ViewSelections: 'viewSelections',
+
+  // From v12
+  AppData: 'appData',
 } as const
 
 // The type derived from the names of object stores
@@ -88,7 +135,7 @@ const Keys = {
   [ObjectStoreNames.CyVisualStyles]: 'id',
   [ObjectStoreNames.CyNetworkViews]: 'id',
   [ObjectStoreNames.UiState]: 'id',
-  [ObjectStoreNames.Timestamp]: 'id',
+  timestamp: null, // explicit drop from v9 -> v10
   [ObjectStoreNames.Filters]: 'id',
   [ObjectStoreNames.Apps]: 'id',
 
@@ -97,7 +144,61 @@ const Keys = {
   [ObjectStoreNames.OpaqueAspects]: 'id',
 
   [ObjectStoreNames.UndoStacks]: 'id',
+
+  [ObjectStoreNames.AppSettings]: 'key',
+
+  [ObjectStoreNames.StyleLibrary]: 'id',
+
+  [ObjectStoreNames.ViewSelections]: 'id',
+
+  // Rows are keyed by appDataRowId(appId, networkId, key); `networkId` is
+  // indexed so a network deletion can sweep every app's entries in one query.
+  [ObjectStoreNames.AppData]: 'id, networkId',
 } as const
+
+/**
+ * Tag every transaction with the id of the tab that opened it.
+ *
+ * dexie-observable copies `trans.source` onto each row it appends to its
+ * `_changes` table, and `db.on('changes')` fires in EVERY tab for EVERY change
+ * — own writes included, because `readChanges()` replays all `_changes` rows
+ * above that tab's own revision. Without an origin marker a tab cannot tell its
+ * own echo from a peer's edit, and re-applying its own write clobbers local
+ * state (the cross-tab selection desync).
+ *
+ * Stamping here rather than at each of the ~34 write helpers means a write
+ * helper added later is tagged by construction; the failure mode of forgetting
+ * one is a re-emergent echo loop, which is exactly the bug that is hard to
+ * trace back to its cause.
+ *
+ * `_createTransaction` is a Dexie internal, and `source` is typed by
+ * dexie-observable (`dexie-observable/api.d.ts`) rather than Dexie itself,
+ * hence the casts. This is the same hook dexie-observable overrides
+ * (dexie-observable.js:60-75), so a Dexie change that moved it would break the
+ * addon first and louder. `db.test.ts` asserts `_changes` rows carry the tab
+ * id, so a silent regression fails the suite instead of shipping. If the hook
+ * ever stops firing, every change reads as foreign and behavior degrades to
+ * self-hydration — wasteful, but not corrupting.
+ */
+const stampTransactionSource = (database: Dexie): void => {
+  const target = database as any
+  const createTransaction = target._createTransaction
+  if (typeof createTransaction !== 'function') {
+    logDb.warn(
+      '[stampTransactionSource] Dexie._createTransaction is unavailable; cross-tab changes will not carry an origin tab id',
+    )
+    return
+  }
+
+  target._createTransaction = function (...args: unknown[]) {
+    const trans = createTransaction.apply(this, args)
+    // Never overwrite an explicit source (e.g. a future sync addon).
+    if (trans !== undefined && trans !== null && trans.source === undefined) {
+      trans.source = getTabId()
+    }
+    return trans
+  }
+}
 
 /**
  * DB will be initialized to the current version.
@@ -110,7 +211,6 @@ class CyDB extends Dexie {
   [ObjectStoreNames.Summaries]!: DxTable<any>;
   [ObjectStoreNames.CyNetworkViews]!: DxTable<any>;
   [ObjectStoreNames.UiState]!: DxTable<any>;
-  [ObjectStoreNames.Timestamp]!: DxTable<any>;
   [ObjectStoreNames.Filters]!: DxTable<any>;
   [ObjectStoreNames.Apps]!: DxTable<CyApp>;
 
@@ -120,18 +220,57 @@ class CyDB extends Dexie {
   // From v4
   [ObjectStoreNames.OpaqueAspects]!: DxTable<any>;
 
-  [ObjectStoreNames.UndoStacks]!: DxTable<any>
+  [ObjectStoreNames.UndoStacks]!: DxTable<any>;
+
+  // From v9
+  [ObjectStoreNames.AppSettings]!: DxTable<any>;
+
+  // From v10
+  [ObjectStoreNames.StyleLibrary]!: DxTable<any>;
+
+  // From v11
+  [ObjectStoreNames.ViewSelections]!: DxTable<any>;
+
+  // From v12
+  [ObjectStoreNames.AppData]!: DxTable<AppDataRow>
 
   constructor(dbName: string) {
     super(dbName)
     this.version(currentVersion).stores(Keys)
 
-    // This will be applied only when the DB is created and should not be
-    // called multiple times
-    applyMigrations(this, currentVersion).catch((err) =>
-      logDb.error('[applyMigrations] Failed to apply migrations', err),
-    )
+    stampTransactionSource(this)
+
+    // Register upgrade functions before open(); Dexie decides at open time
+    // which ones the on-disk version needs
+    try {
+      registerMigrations(this)
+    } catch (err) {
+      logDb.error('[registerMigrations] Failed to register migrations', err)
+    }
   }
+}
+
+/**
+ * Observe-mode validation for IndexedDB reads (REVIEW.md round-1 P0,
+ * wired in round 7). Runs the model-shape validator against data read
+ * from the DB and logs a warning on mismatch — it NEVER alters or
+ * rejects the data, so corrupt or old-shape rows cannot brick a
+ * workspace. Escalate to enforcement only once field warnings are quiet.
+ */
+const observeValidation = <T>(
+  label: string,
+  value: T,
+  validate: (value: unknown) => unknown,
+): T => {
+  if (value === undefined || value === null) {
+    return value
+  }
+  try {
+    validate(value)
+  } catch (e) {
+    logDb.warn(`[db] Read-path validation failed for ${label}:`, e)
+  }
+  return value
 }
 
 // Initialize the DB
@@ -166,12 +305,45 @@ export const initializeDb = async (): Promise<void> => {
     )
   })
 
-  if (config.debug) {
-    const win = window as unknown as { debug?: Record<string, any> }
-    if (win.debug === undefined) {
-      win.debug = {}
+  registerDebugTool('db', db)
+}
+
+/**
+ * Verify at runtime that {@link stampTransactionSource}'s hook is still firing.
+ *
+ * `db.test.ts` asserts the same property, but a unit test only protects a build
+ * someone remembered to run the suite against. This makes the regression visible
+ * in the field: if a Dexie upgrade moves `_createTransaction`, cross-tab sync
+ * silently degrades to every tab hydrating its own writes, and nothing else in
+ * the app would say so.
+ *
+ * Uses a READ transaction on purpose — it writes no rows and creates no
+ * `_changes` records, so the check itself cannot perturb what it is checking.
+ *
+ * Never throws: a failed self-check means degraded sync, not an unusable app.
+ */
+export const verifyTransactionSourceStamp = async (): Promise<boolean> => {
+  try {
+    const expected = getTabId()
+    const observed = await db.transaction(
+      'r',
+      db.workspace,
+      async () => (Dexie.currentTransaction as any)?.source,
+    )
+
+    if (observed === expected) {
+      return true
     }
-    win.debug.db = db
+
+    logDb.error(
+      `[verifyTransactionSourceStamp] Dexie transactions are not carrying this tab's origin id ` +
+        `(expected "${expected}", saw "${String(observed)}"). Cross-tab sync will treat this tab's ` +
+        'own writes as foreign and re-hydrate them. See stampTransactionSource in src/data/db/index.ts.',
+    )
+    return false
+  } catch (err) {
+    logDb.error('[verifyTransactionSourceStamp] Self-check failed to run', err)
+    return false
   }
 }
 
@@ -188,25 +360,151 @@ export const closeDb = async (): Promise<void> => {
 }
 
 /**
- * Delete the current DB and create a new one
+ * What actually happened in {@link deleteDb}.
  *
- * - This should create the completely new DB with no data.
- *
+ * A single boolean used to cover all of these, which meant "the delete failed
+ * and your data is intact" and "your data is gone but I could not reopen the
+ * database" were reported identically — and the caller guessed wrong about
+ * which one it had. Only `deleted` is safe to treat as a completed reset.
  */
-export const deleteDb = async (): Promise<void> => {
+export type DeleteDbOutcome =
+  /** Destroyed, and a fresh empty database is open and ready. */
+  | 'deleted'
+  /** Nothing was destroyed. The previous data is intact and the DB is open. */
+  | 'delete-failed'
+  /**
+   * The delete did not finish within {@link DELETE_TIMEOUT_MS} — another
+   * connection is holding the database open. IndexedDB keeps the request
+   * queued, so it may still complete at any moment: the data must be treated
+   * as gone, and this tab has no usable connection.
+   */
+  | 'delete-blocked'
+  /**
+   * The database is gone (or in an unknown state) and no usable connection
+   * remains. Callers must not keep in-memory state that could be written back.
+   */
+  | 'reopen-failed'
+
+/**
+ * How long to wait for `deleteDatabase` before giving up on it.
+ *
+ * IndexedDB will not delete a database that still has open connections: it
+ * fires `blocked` and waits — with no timeout of its own — until every
+ * connection closes. `src/data/db/lifecycle.ts` asks the other tabs to let go
+ * first, but that handshake is best-effort by design (there is no tab census),
+ * so this is the backstop that keeps a wedged peer from hanging the reset
+ * forever with no way out for the user.
+ */
+export const DELETE_TIMEOUT_MS = 5000
+
+/**
+ * Delete the database, bounded in time, reporting whether it was blocked.
+ *
+ * `Dexie.delete()` is not used because it builds its own throwaway instance,
+ * which leaves no way to subscribe to `blocked`. Same work, one observable
+ * instance.
+ */
+const deleteDatabaseBounded = async (
+  timeoutMs: number,
+): Promise<'deleted' | 'blocked'> => {
+  // `addons: []` keeps dexie-observable off the throwaway deleter instance;
+  // this is what Dexie's own static `delete()` does.
+  const deleter = new Dexie(DB_NAME, { addons: [] })
+  const onBlocked = (): void => {
+    logDb.warn(
+      `[DeleteDB] ${DB_NAME} delete is blocked: another connection still has ` +
+        'it open. Waiting for it to close.',
+    )
+  }
+  deleter.on('blocked', onBlocked)
+
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const deletion = deleter.delete().then((): 'deleted' => 'deleted')
+
+  // A rejection here propagates to the caller through the race, which is also
+  // what keeps it handled.
+  const result = await Promise.race([
+    deletion,
+    new Promise<'blocked'>((resolve) => {
+      timer = setTimeout(() => resolve('blocked'), timeoutMs)
+    }),
+  ])
+  clearTimeout(timer)
+
+  if (result === 'blocked') {
+    // The request stays queued in IndexedDB after we stop waiting for it, so
+    // its eventual settlement must not surface as an unhandled rejection.
+    void deletion.catch((err) => {
+      logDb.error('[DeleteDB] The queued delete request later failed', err)
+    })
+    // Nothing reads this instance again, and its `blocked` handler would keep
+    // logging for as long as the peer holds on. Detach and close it; the queued
+    // delete request lives in IndexedDB, not in the Dexie object.
+    deleter.on('blocked').unsubscribe(onBlocked)
+    deleter.close()
+  }
+
+  return result
+}
+
+/** Point the module-level `db` at a fresh, open instance. */
+const reopenDb = async (): Promise<boolean> => {
+  try {
+    db = new CyDB(DB_NAME)
+    await db.open()
+    logDb.info(`[DeleteDB] ${DB_NAME} is opened and ready to use`)
+    return true
+  } catch (err) {
+    logDb.error(`[DeleteDB] Failed to reopen ${DB_NAME}`, err)
+    return false
+  }
+}
+
+/**
+ * Delete the current DB and create a new one.
+ *
+ * Never throws: existing callers (workspace import, tests) await this without a
+ * try/catch. Callers that must not proceed on failure check the outcome — see
+ * {@link DeleteDbOutcome}, and note that three of the four values mean "do not
+ * treat this as a completed reset".
+ */
+export const deleteDb = async (
+  options: { timeoutMs?: number } = {},
+): Promise<DeleteDbOutcome> => {
+  const timeoutMs = options.timeoutMs ?? DELETE_TIMEOUT_MS
+
   try {
     if (db) {
       db.close()
       logDb.info('[DeleteDB] DB is closed')
     }
-    await Dexie.delete(DB_NAME)
-    logDb.info(`[DeleteDB]  ${DB_NAME} is deleted`)
-    db = new CyDB(DB_NAME)
-    await db.open()
-    logDb.info(`[DeleteDB] ${DB_NAME} is opened and ready to use`)
   } catch (err) {
-    logDb.error('[DeleteDB] Failed to reset DB', err)
+    logDb.warn('[DeleteDB] Failed to close the database before deleting', err)
   }
+
+  let result: 'deleted' | 'blocked'
+  try {
+    result = await deleteDatabaseBounded(timeoutMs)
+  } catch (err) {
+    logDb.error('[DeleteDB] Failed to delete DB', err)
+    // Nothing was destroyed, but `db.close()` above set Dexie's `autoOpen` to
+    // false and a sticky DatabaseClosed error, so without this the tab would
+    // keep its data on disk and be unable to read or write any of it.
+    return (await reopenDb()) ? 'delete-failed' : 'reopen-failed'
+  }
+
+  if (result === 'blocked') {
+    // Deliberately not reopened: an open() issued now queues behind the
+    // still-pending delete, so it would block for as long as the peer does.
+    logDb.error(
+      `[DeleteDB] ${DB_NAME} was not deleted within ${timeoutMs}ms — another ` +
+        'tab is holding it open. The delete is still queued.',
+    )
+    return 'delete-blocked'
+  }
+
+  logDb.info(`[DeleteDB]  ${DB_NAME} is deleted`)
+  return (await reopenDb()) ? 'deleted' : 'reopen-failed'
 }
 export const getAllNetworkKeys = async (): Promise<IdType[]> => {
   return (await db.cyNetworks.toCollection().primaryKeys()) as IdType[]
@@ -247,6 +545,8 @@ export const getNetworkFromDb = async (
 ): Promise<Network | undefined> => {
   const network: Network | undefined = await db.cyNetworks.get({ id })
   if (network !== undefined) {
+    observeValidation(`network ${id}`, network, validateNetwork)
+    const { default: NetworkFn } = await import('@/models/NetworkModel')
     return NetworkFn.networkModelToImplNetwork(network)
   }
 }
@@ -267,22 +567,42 @@ export const clearNetworksFromDb = async (): Promise<void> => {
   })
 }
 
-export const getTablesFromDb = async (id: IdType): Promise<any> => {
+/**
+ * Deserialized tables for a network, or undefined when the network has no
+ * `cyTables` row at all. Callers that must tell "no tables persisted" apart
+ * from "tables persisted but empty" — network restore — use this, not
+ * getTablesFromDb, whose empty defaults erase that difference.
+ */
+const getStoredTablesFromDb = async (id: IdType): Promise<any | undefined> => {
   const cached: any = await db.cyTables.get({ id })
 
   if (cached === undefined) {
-    return {
-      nodeTable: { id: `${id}-nodes`, columns: [], rows: new Map() },
-      edgeTable: { id: `${id}-edges`, columns: [], rows: new Map() },
-    }
+    return undefined
   }
 
   return {
     ...cached,
-    nodeTable: deserializeTable(cached.nodeTable),
-    edgeTable: deserializeTable(cached.edgeTable),
+    nodeTable: observeValidation(
+      `node table ${id}`,
+      deserializeTable(cached.nodeTable),
+      validateTable,
+    ),
+    edgeTable: observeValidation(
+      `edge table ${id}`,
+      deserializeTable(cached.edgeTable),
+      validateTable,
+    ),
   }
 }
+
+/** Empty node and edge tables, the default for a network with no tables row. */
+const emptyTables = (id: IdType): any => ({
+  nodeTable: { id: `${id}-nodes`, columns: [], rows: new Map() },
+  edgeTable: { id: `${id}-edges`, columns: [], rows: new Map() },
+})
+
+export const getTablesFromDb = async (id: IdType): Promise<any> =>
+  (await getStoredTablesFromDb(id)) ?? emptyTables(id)
 /**
  *
  * @param id associated with the network
@@ -371,7 +691,11 @@ export const getWorkspaceFromDb = async (id?: IdType): Promise<Workspace> => {
       // TODO: pick the newest one in production
       const lastWs: Workspace = allWS[0]
       logDb.info('[getWorkspaceFromDb] Returning the first workspace:', lastWs)
-      return lastWs
+      return observeValidation(
+        `workspace ${lastWs.id}`,
+        lastWs,
+        validateWorkspace,
+      )
     }
   }
 
@@ -384,7 +708,11 @@ export const getWorkspaceFromDb = async (id?: IdType): Promise<Workspace> => {
       id,
       cachedWorkspace,
     )
-    return cachedWorkspace
+    return observeValidation(
+      `workspace ${id}`,
+      cachedWorkspace,
+      validateWorkspace,
+    )
   } else {
     logDb.info('[getWorkspaceFromDb] No workspace found with ID:', id)
 
@@ -403,7 +731,11 @@ export const getWorkspaceFromDb = async (id?: IdType): Promise<Workspace> => {
       const allWS: Workspace[] = await db.workspace.toArray()
       const lastWs: Workspace = allWS[0]
       logDb.info('[getWorkspaceFromDb] Returning workspace:', lastWs)
-      return lastWs
+      return observeValidation(
+        `workspace ${lastWs.id}`,
+        lastWs,
+        validateWorkspace,
+      )
     }
   }
 }
@@ -413,13 +745,26 @@ export const getWorkspaceFromDb = async (id?: IdType): Promise<Workspace> => {
 export const getNetworkSummaryFromDb = async (
   externalId: IdType,
 ): Promise<NetworkSummary | undefined> => {
-  return await db.summaries.get({ externalId })
+  const summary = await db.summaries.get({ externalId })
+  return observeValidation(
+    `network summary ${externalId}`,
+    summary,
+    validateNetworkSummary,
+  )
 }
 
 export const getNetworkSummariesFromDb = async (
   externalIds: IdType[],
 ): Promise<(NetworkSummary | undefined)[]> => {
-  return await db.summaries.bulkGet(externalIds)
+  const summaries = await db.summaries.bulkGet(externalIds)
+  summaries.forEach((summary) =>
+    observeValidation(
+      `network summary ${summary?.externalId}`,
+      summary,
+      validateNetworkSummary,
+    ),
+  )
+  return summaries
 }
 
 export const putNetworkSummaryToDb = async (
@@ -446,36 +791,264 @@ export const clearNetworkSummaryFromDb = async (): Promise<void> => {
   })
 }
 
-// Visual Sytles
+// Visual Styles
+//
+// Since DB v10 a row holds the complete named-style set of a network:
+//   { id: <networkId>, activeStyleId, styles: { [styleId]: {id, name, visualStyle} } }
+// Rows written before v10 have the legacy single-style shape
+//   { id: <networkId>, visualStyle }
+// and are normalized on read (no Dexie data migration needed — the row is
+// rewritten in the new shape on its next write).
+
+/** Legacy (pre-v10) row shape. */
 interface VisualStyleWithId {
   id: IdType
   visualStyle: VisualStyle
 }
 
-export const getVisualStyleFromDb = async (
+interface NamedVisualStyleRow {
+  id: IdType
+  name: string
+  visualStyle: ReturnType<typeof serializeVisualStyle>
+}
+
+/** Current (v10+) row shape. */
+interface VisualStyleSetRow {
+  id: IdType
+  activeStyleId: IdType
+  styles: Record<IdType, NamedVisualStyleRow>
+}
+
+const isLegacyVisualStyleRow = (
+  row: VisualStyleWithId | VisualStyleSetRow,
+): row is VisualStyleWithId =>
+  (row as VisualStyleSetRow).styles === undefined ||
+  (row as VisualStyleSetRow).activeStyleId === undefined
+
+/** Normalize any row shape into a deserialized VisualStyleSet. */
+const rowToVisualStyleSet = (
+  row: VisualStyleWithId | VisualStyleSetRow,
+): VisualStyleSet => {
+  if (isLegacyVisualStyleRow(row)) {
+    return createStyleSet(
+      observeValidation(
+        `visual style ${row.id}`,
+        deserializeVisualStyle(row.visualStyle as any),
+        validateVisualStyle,
+      ),
+    )
+  }
+  return {
+    activeStyleId: row.activeStyleId,
+    styles: Object.fromEntries(
+      Object.entries(row.styles).map(([styleId, namedStyle]) => [
+        styleId,
+        {
+          id: namedStyle.id,
+          name: namedStyle.name,
+          visualStyle: observeValidation(
+            `visual style ${row.id}/${styleId}`,
+            deserializeVisualStyle(namedStyle.visualStyle as any),
+            validateVisualStyle,
+          ),
+        },
+      ]),
+    ),
+  }
+}
+
+/**
+ * Get the complete visual style set of a network.
+ * Legacy single-style rows are transparently wrapped as a one-entry set.
+ * Corrupted rows return undefined instead of throwing so callers can fall
+ * back (e.g. re-fetch the network from NDEx).
+ */
+export const getVisualStyleSetFromDb = async (
   id: IdType,
-): Promise<VisualStyle | undefined> => {
-  const vsId: VisualStyleWithId | undefined = await db.cyVisualStyles.get({
-    id,
-  })
-  if (vsId !== undefined) {
-    return deserializeVisualStyle(vsId.visualStyle as any)
-  } else {
+): Promise<VisualStyleSet | undefined> => {
+  const row: VisualStyleWithId | VisualStyleSetRow | undefined =
+    await db.cyVisualStyles.get({ id })
+  if (row === undefined) {
+    return undefined
+  }
+  if (isLegacyVisualStyleRow(row) && row.visualStyle === undefined) {
+    logDb.error(
+      `[getVisualStyleSetFromDb] Corrupted style row for network ${id}`,
+    )
+    return undefined
+  }
+  try {
+    const styleSet = rowToVisualStyleSet(row)
+    if (!isValidStyleSet(styleSet)) {
+      logDb.error(
+        `[getVisualStyleSetFromDb] Invalid style set row for network ${id}`,
+      )
+      return undefined
+    }
+    return styleSet
+  } catch (e) {
+    logDb.error(
+      `[getVisualStyleSetFromDb] Failed to deserialize style row for network ${id}: ${e}`,
+    )
     return undefined
   }
 }
 
+/**
+ * Stand-in style id for a legacy (pre-v10) row.
+ *
+ * Such a row stores a bare style with no id of its own, and
+ * getVisualStyleSetFromDb mints a FRESH uuid for it on every read — so there is
+ * no id a metadata listing could hand back that would still resolve later.
+ * Metadata reports this sentinel as both the entry id and the activeStyleId,
+ * which makes "look the style up by id, falling back to the set's active style"
+ * the correct resolution strategy for every row shape.
+ */
+export const LEGACY_STYLE_ID = 'legacy-default-style'
+
+/**
+ * Just the names of a network's named styles — no style content.
+ */
+export interface StyleSetMetadata {
+  networkId: IdType
+  activeStyleId: IdType
+  styles: Array<{ id: IdType; name: string }>
+}
+
+/**
+ * List the named styles of several networks WITHOUT deserializing any of them.
+ *
+ * The style picker shows every workspace network's styles, but only the current
+ * network's styles are in memory — the rest are only ever loaded when their
+ * network is opened. This is the cheap read that fills the gap.
+ *
+ * Cheap because a stored style's `name` is a plain string sitting in the row, so
+ * this skips both `deserializeVisualStyle` and the zod `validateVisualStyle`
+ * pass that `rowToVisualStyleSet` performs — the two expensive halves of reading
+ * a style row. Deserialization is deferred to whoever actually needs content
+ * (`getVisualStyleSetFromDb`), i.e. rendering a thumbnail or applying a style.
+ *
+ * One `bulkGet` for all ids, in a single IndexedDB transaction (same shape as
+ * getNetworkSummariesFromDb). Note that IndexedDB cannot project columns, so the
+ * rows still arrive whole; the saving is in not parsing them, not in transfer.
+ *
+ * Networks with no row — never opened, so their style exists only in the CX2 on
+ * the server — are simply absent from the result rather than reported as an
+ * error. Callers use that to distinguish "no styles here" from "not local yet".
+ */
+export const getStyleSetMetadataFromDb = async (
+  ids: IdType[],
+): Promise<StyleSetMetadata[]> => {
+  if (ids.length === 0) {
+    return []
+  }
+  const rows = await db.cyVisualStyles.bulkGet(ids)
+  const metadata: StyleSetMetadata[] = []
+
+  rows.forEach((row: VisualStyleWithId | VisualStyleSetRow | undefined, i) => {
+    if (row === undefined) {
+      return
+    }
+    if (isLegacyVisualStyleRow(row)) {
+      // Pre-v10 rows hold a single unnamed style; getVisualStyleSetFromDb
+      // presents it as "Default" and so must this, or the picker would show a
+      // different name than the one that appears after the row is rewritten.
+      metadata.push({
+        networkId: ids[i],
+        activeStyleId: LEGACY_STYLE_ID,
+        styles: [{ id: LEGACY_STYLE_ID, name: DEFAULT_STYLE_NAME }],
+      })
+      return
+    }
+    metadata.push({
+      networkId: ids[i],
+      activeStyleId: row.activeStyleId,
+      styles: Object.values(row.styles).map((namedStyle) => ({
+        id: namedStyle.id,
+        name: namedStyle.name,
+      })),
+    })
+  })
+
+  return metadata
+}
+
+/**
+ * Store the complete visual style set of a network.
+ */
+export const putVisualStyleSetToDb = async (
+  id: IdType,
+  styleSet: VisualStyleSet,
+): Promise<void> => {
+  try {
+    await db.transaction('rw', db.cyVisualStyles, async () => {
+      const row: VisualStyleSetRow = {
+        id,
+        activeStyleId: styleSet.activeStyleId,
+        styles: Object.fromEntries(
+          Object.entries(styleSet.styles).map(([styleId, namedStyle]) => [
+            styleId,
+            {
+              id: namedStyle.id,
+              name: namedStyle.name,
+              visualStyle: serializeVisualStyle(namedStyle.visualStyle),
+            },
+          ]),
+        ),
+      }
+      return await db.cyVisualStyles.put(row)
+    })
+  } catch (e) {
+    logDb.error('[putVisualStyleSetToDb] error:', e, id, styleSet)
+    throw e
+  }
+}
+
+/**
+ * Get the ACTIVE visual style of a network.
+ *
+ * @deprecated Prefer getVisualStyleSetFromDb — kept for callers that only
+ * care about the currently active style.
+ */
+export const getVisualStyleFromDb = async (
+  id: IdType,
+): Promise<VisualStyle | undefined> => {
+  const styleSet = await getVisualStyleSetFromDb(id)
+  return styleSet?.styles[styleSet.activeStyleId]?.visualStyle
+}
+
+/**
+ * Update the ACTIVE visual style of a network, preserving the other named
+ * styles in the row. Creates a fresh single-style set when no row exists.
+ *
+ * @deprecated Prefer putVisualStyleSetToDb — kept for callers that only
+ * mutate the currently active style.
+ */
 export const putVisualStyleToDb = async (
   id: IdType,
   visualStyle: VisualStyle,
 ): Promise<void> => {
   try {
+    // One transaction across the read and the write: without it a concurrent
+    // writer can land between them and have its named styles overwritten by
+    // the set built from the stale read. Dexie reuses the parent transaction
+    // for the two nested calls, both of which touch only `cyVisualStyles`.
     await db.transaction('rw', db.cyVisualStyles, async () => {
-      // Need to add ID because it does not have one
-      return await db.cyVisualStyles.put({
-        id,
-        visualStyle: serializeVisualStyle(visualStyle),
-      })
+      const existing = await getVisualStyleSetFromDb(id)
+      const styleSet: VisualStyleSet =
+        existing === undefined
+          ? createStyleSet(visualStyle)
+          : {
+              ...existing,
+              styles: {
+                ...existing.styles,
+                [existing.activeStyleId]: {
+                  ...existing.styles[existing.activeStyleId],
+                  visualStyle,
+                },
+              },
+            }
+      await putVisualStyleSetToDb(id, styleSet)
     })
   } catch (e) {
     logDb.error('[putVisualStyleToDb] error:', e, id, visualStyle)
@@ -494,6 +1067,55 @@ export const clearVisualStyleFromDb = async (): Promise<void> => {
 }
 
 //
+// Style Library (workspace-level visual style templates, from DB v10)
+//
+
+interface StyleTemplateRow {
+  id: IdType
+  name: string
+  visualStyle: ReturnType<typeof serializeVisualStyle>
+}
+
+export const getAllStyleTemplatesFromDb = async (): Promise<
+  StyleTemplate[]
+> => {
+  const rows: StyleTemplateRow[] = await db.cyStyleLibrary.toArray()
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    visualStyle: deserializeVisualStyle(row.visualStyle as any),
+  }))
+}
+
+export const putStyleTemplateToDb = async (
+  template: StyleTemplate,
+): Promise<void> => {
+  try {
+    await db.transaction('rw', db.cyStyleLibrary, async () => {
+      const row: StyleTemplateRow = {
+        id: template.id,
+        name: template.name,
+        visualStyle: serializeVisualStyle(template.visualStyle),
+      }
+      return await db.cyStyleLibrary.put(row)
+    })
+  } catch (e) {
+    logDb.error('[putStyleTemplateToDb] error:', e, template.id)
+    throw e
+  }
+}
+
+export const deleteStyleTemplateFromDb = async (id: IdType): Promise<void> => {
+  await db.cyStyleLibrary.delete(id)
+}
+
+export const clearStyleLibraryFromDb = async (): Promise<void> => {
+  await db.transaction('rw', db.cyStyleLibrary, async () => {
+    await db.cyStyleLibrary.clear()
+  })
+}
+
+//
 // Functions for Network Views
 //
 // Now the multiple views are supported
@@ -505,13 +1127,134 @@ export const clearVisualStyleFromDb = async (): Promise<void> => {
  * @returns NetworkView[] | undefined
  *
  **/
-export const getNetworkViewsFromDb = async (
+/**
+ * Node/edge selection for one network.
+ *
+ * Stored apart from `cyNetworkViews` (v11). Selection is the highest-frequency
+ * thing a user changes, and while it lived inside the view row every click
+ * rewrote the whole view model — node positions included — and made every other
+ * tab replace its view model on hydration. Splitting it means a click writes a
+ * couple of id arrays, and the view row it no longer touches stays
+ * byte-identical, so dexie-observable records no change for it at all.
+ */
+export interface ViewSelection {
+  selectedNodes: IdType[]
+  selectedEdges: IdType[]
+}
+
+export const getViewSelectionFromDb = async (
+  id: IdType,
+): Promise<ViewSelection | undefined> => {
+  const entry = await db.viewSelections.get({ id })
+  if (entry === undefined) {
+    return undefined
+  }
+  return observeValidation(
+    `view selection ${id}`,
+    { selectedNodes: entry.selectedNodes, selectedEdges: entry.selectedEdges },
+    validateViewSelection,
+  )
+}
+
+export const putViewSelectionToDb = async (
+  id: IdType,
+  selection: ViewSelection,
+): Promise<void> => {
+  try {
+    await db.viewSelections.put({
+      id,
+      selectedNodes: [...selection.selectedNodes],
+      selectedEdges: [...selection.selectedEdges],
+    })
+  } catch (e) {
+    logDb.error('[putViewSelectionToDb] error:', e, id)
+    throw e
+  }
+}
+
+export const deleteViewSelectionFromDb = async (id: IdType): Promise<void> => {
+  await db.viewSelections.delete(id)
+}
+
+export const clearViewSelectionsFromDb = async (): Promise<void> => {
+  await db.transaction('rw', db.viewSelections, async () => {
+    await db.viewSelections.clear()
+  })
+}
+
+/**
+ * Read a network's views, with selection merged back in from `viewSelections`.
+ *
+ * Merging here rather than at each call site keeps `NetworkView` whole for
+ * consumers, so the v11 split is invisible above the DB layer. Rows written
+ * before v11 still carry their own selection; it is used when no selection row
+ * exists yet.
+ */
+const readNetworkViewsRow = async (
   id: IdType,
 ): Promise<NetworkView[] | undefined> => {
   const entry = await db.cyNetworkViews.get({ id })
   return entry?.views.map((v: any) =>
-    deserializeNetworkView(v),
-  ) as NetworkView[]
+    observeValidation(
+      `network view ${id}`,
+      deserializeNetworkView(v),
+      validateNetworkView,
+    ),
+  ) as NetworkView[] | undefined
+}
+
+export const getNetworkViewsFromDb = async (
+  id: IdType,
+): Promise<NetworkView[] | undefined> => {
+  const views = await readNetworkViewsRow(id)
+  if (views === undefined) {
+    return undefined
+  }
+
+  let storedSelection = await getViewSelectionFromDb(id)
+
+  if (storedSelection === undefined) {
+    // Pre-v11 row: selection is still inline. Reading it is not enough — the
+    // inline copy is the ONLY copy, and the next write of this row strips it
+    // (`withoutSelection` in ViewModelStore), so a node move or a layout would
+    // silently discard the user's selection. Move it to its new home now.
+    //
+    // A lazy back-fill rather than a Dexie upgrade function on purpose: an
+    // upgrade would have to read every `cyNetworkViews` row at open time, and it
+    // buys nothing. A view row is only ever rewritten for a network whose slice
+    // is in the store, which means a network the user opened, which means this
+    // read already ran for it. The loss window is exactly this call.
+    const inline: ViewSelection = {
+      selectedNodes: views[0]?.selectedNodes ?? [],
+      selectedEdges: views[0]?.selectedEdges ?? [],
+    }
+    storedSelection = inline
+
+    // Only when there is something to preserve: writing an empty row for every
+    // legacy network would mint a change record each peer tab then hydrates.
+    if (inline.selectedNodes.length > 0 || inline.selectedEdges.length > 0) {
+      try {
+        await putViewSelectionToDb(id, inline)
+        logDb.info(
+          `[getNetworkViewsFromDb] Migrated inline selection for ${id} to viewSelections (v11)`,
+        )
+      } catch (e) {
+        // Non-fatal: the caller still gets the selection this time round, and
+        // the next read retries. Failing the network load over it would be worse.
+        logDb.warn(
+          `[getNetworkViewsFromDb] Failed to back-fill selection for ${id}`,
+          e,
+        )
+      }
+    }
+  }
+
+  const selection = storedSelection
+  return views.map((view) => ({
+    ...view,
+    selectedNodes: selection.selectedNodes,
+    selectedEdges: selection.selectedEdges,
+  }))
 }
 /**
  * Add a new network view to the DB
@@ -532,7 +1275,7 @@ export const putNetworkViewToDb = async (
         )
         return
       }
-      const viewList = await getNetworkViewsFromDb(id)
+      const viewList = await readNetworkViewsRow(id)
       if (viewList !== undefined) {
         // Add only if the view does not exist
         let found = false
@@ -604,8 +1347,12 @@ export const putNetworkViewsToDb = async (
  * Delete all network views from the DB for the given network ID
  */
 export const deleteNetworkViewsFromDb = async (id: IdType): Promise<void> => {
-  await db.transaction('rw', db.cyNetworkViews, async () => {
+  // Both stores in one transaction: since DB v11 the view and its selection are
+  // two rows describing one thing, and a crash between two transactions would
+  // leave the selection row orphaned.
+  await db.transaction('rw', db.cyNetworkViews, db.viewSelections, async () => {
     await db.cyNetworkViews.delete(id)
+    await db.viewSelections.delete(id)
   })
 }
 
@@ -613,8 +1360,9 @@ export const deleteNetworkViewsFromDb = async (id: IdType): Promise<void> => {
  * Delete all network views from the DB for the given network ID
  */
 export const clearNetworkViewsFromDb = async (): Promise<void> => {
-  await db.transaction('rw', db.cyNetworkViews, async () => {
+  await db.transaction('rw', db.cyNetworkViews, db.viewSelections, async () => {
     await db.cyNetworkViews.clear()
+    await db.viewSelections.clear()
   })
 }
 
@@ -623,7 +1371,7 @@ export const DEFAULT_UI_STATE_ID = 'uistate'
 export const getUiStateFromDb = async (): Promise<Ui | undefined> => {
   const uiState = await db.uiState.get({ id: DEFAULT_UI_STATE_ID })
   if (uiState !== undefined) {
-    return uiState
+    return observeValidation('ui state', uiState, validateStoredUiState)
   } else {
     return undefined
   }
@@ -644,27 +1392,6 @@ export const deleteUiStateFromDb = async (): Promise<void> => {
   await db.transaction('rw', db.uiState, async () => {
     await db.uiState.delete(DEFAULT_UI_STATE_ID)
   })
-}
-
-export const DEFAULT_TIMESTAMP_ID = 'timestamp'
-export const getTimestampFromDb = async (): Promise<number | undefined> => {
-  const ts = await db.timestamp.get({ id: DEFAULT_TIMESTAMP_ID })
-  if (ts !== undefined) {
-    return ts.timestamp
-  } else {
-    return undefined
-  }
-}
-
-export const putTimestampToDb = async (ts: number): Promise<void> => {
-  try {
-    await db.transaction('rw', db.timestamp, async () => {
-      await db.timestamp.put({ id: DEFAULT_TIMESTAMP_ID, timestamp: ts })
-    })
-  } catch (e) {
-    logDb.error('[putTimestampToDb] error:', e, ts)
-    throw e
-  }
 }
 
 /**
@@ -709,6 +1436,73 @@ export const deleteFilterFromDb = async (filterName: string): Promise<void> => {
 }
 
 /**
+ * Get every stored filter configuration, to hydrate FilterStore at startup
+ * (#774). Rows are validated: a malformed row is logged and dropped rather
+ * than failing the boot.
+ */
+export const getAllFilterConfigsFromDb = async (): Promise<FilterConfig[]> => {
+  try {
+    const rows = await db.filters.toArray()
+    const configs: FilterConfig[] = []
+    rows.forEach((row) => {
+      try {
+        // Parsing also strips the row's `id` key and anything unknown
+        configs.push(
+          deserializeFilterConfig(validateSerializedFilterConfig(row)),
+        )
+      } catch (e) {
+        logDb.warn(
+          '[getAllFilterConfigsFromDb] dropping malformed row:',
+          row,
+          e,
+        )
+      }
+    })
+    return configs
+  } catch (e) {
+    logDb.warn('[getAllFilterConfigsFromDb] Failed to read filters', e)
+    return []
+  }
+}
+
+/**
+ * Delete the filter configurations of a network and its subnetworks, whose
+ * ids are `<networkId>_<subsystemNodeId>`. Called by the delete cascade.
+ */
+export const deleteNetworkFiltersFromDb = async (
+  networkId: IdType,
+): Promise<void> => {
+  await db.transaction('rw', db.filters, async () => {
+    await db.filters
+      .where('id')
+      .equals(networkId)
+      .or('id')
+      .startsWith(`${networkId}_`)
+      .delete()
+  })
+}
+
+/**
+ * Delete filter configurations by name
+ */
+export const deleteFiltersFromDb = async (
+  filterNames: string[],
+): Promise<void> => {
+  await db.transaction('rw', db.filters, async () => {
+    await db.filters.bulkDelete(filterNames)
+  })
+}
+
+/**
+ * Delete every filter configuration
+ */
+export const clearFiltersFromDb = async (): Promise<void> => {
+  await db.transaction('rw', db.filters, async () => {
+    await db.filters.clear()
+  })
+}
+
+/**
  * Store CyApps metadata to DB
  */
 export const putAppToDb = async (app: CyApp): Promise<void> => {
@@ -728,7 +1522,8 @@ export const putAppToDb = async (app: CyApp): Promise<void> => {
 export const getAppFromDb = async (
   appId: string,
 ): Promise<CyApp | undefined> => {
-  return await db.apps.get({ id: appId })
+  const app = await db.apps.get({ id: appId })
+  return observeValidation(`app ${appId}`, app, validateCyApp)
 }
 
 export const getAllAppsFromDb = async (): Promise<CyApp[]> => {
@@ -748,6 +1543,42 @@ export const getAllAppsFromDb = async (): Promise<CyApp[]> => {
 export const deleteAppFromDb = async (appId: string): Promise<void> => {
   await db.transaction('rw', db.apps, async () => {
     await db.apps.delete(appId)
+  })
+}
+
+// App Settings (key-value store for app-related settings)
+
+export const putAppSettingToDb = async (
+  key: string,
+  value: any,
+): Promise<void> => {
+  try {
+    await db.transaction('rw', db.appSettings, async () => {
+      await db.appSettings.put({ key, value })
+    })
+  } catch (e) {
+    logDb.error('[putAppSettingToDb] error:', e, key)
+    throw e
+  }
+}
+
+export const getAppSettingFromDb = async (key: string): Promise<any> => {
+  try {
+    const entry = await db.appSettings.get({ key })
+    return entry?.value
+  } catch (e) {
+    logDb.warn(
+      '[getAppSettingFromDb] Failed to read setting, returning undefined:',
+      key,
+      e,
+    )
+    return undefined
+  }
+}
+
+export const deleteAppSettingFromDb = async (key: string): Promise<void> => {
+  await db.transaction('rw', db.appSettings, async () => {
+    await db.appSettings.delete(key)
   })
 }
 
@@ -773,6 +1604,13 @@ export const getAllServiceAppsFromDb = async (): Promise<ServiceApp[]> => {
   try {
     // Fetch all entries as an array
     const serviceList: ServiceApp[] = await db.serviceApps.toArray()
+    serviceList.forEach((serviceApp) =>
+      observeValidation(
+        `service app ${serviceApp?.url}`,
+        serviceApp,
+        validateServiceApp,
+      ),
+    )
     return serviceList
   } catch (err) {
     logDb.warn(
@@ -814,7 +1652,12 @@ export const putOpaqueAspectsToDb = async (
 export const getOpaqueAspectsFromDb = async (
   networkId: IdType,
 ): Promise<OpaqueAspectsDB | undefined> => {
-  return await db.opaqueAspects.get({ id: networkId })
+  const aspects = await db.opaqueAspects.get({ id: networkId })
+  return observeValidation(
+    `opaque aspects ${networkId}`,
+    aspects,
+    validateOpaqueAspectsDb,
+  )
 }
 
 export const deleteOpaqueAspectsFromDb = async (
@@ -826,6 +1669,73 @@ export const deleteOpaqueAspectsFromDb = async (
 export const clearOpaqueAspectsFromDb = async (): Promise<void> => {
   await db.transaction('rw', db.opaqueAspects, async () => {
     await db.opaqueAspects.clear()
+  })
+}
+
+// App data (the app API's local per-app tier — see AppDataStore)
+
+export const putAppDataToDb = async (row: AppDataRow): Promise<void> => {
+  try {
+    await db.transaction('rw', db.appData, async () => {
+      await db.appData.put(toPlainObject(row))
+    })
+  } catch (e) {
+    logDb.error('[putAppDataToDb] error:', e, row.id)
+    throw e
+  }
+}
+
+/**
+ * Every persisted local-tier row, for the one boot-time hydration read.
+ *
+ * Read in full rather than per network: `appData.get()` is synchronous, so
+ * every row an app might ask for has to be in the store before the app API is
+ * marked ready. The per-entry size cap in `appDataApi` is what bounds this.
+ */
+export const getAllAppDataFromDb = async (): Promise<AppDataRow[]> => {
+  try {
+    const rows = await db.appData.toArray()
+    return rows.filter((row) => {
+      try {
+        validateAppDataRow(row)
+        return true
+      } catch (e) {
+        logDb.warn('[getAllAppDataFromDb] dropping malformed row:', row, e)
+        return false
+      }
+    })
+  } catch (e) {
+    logDb.warn('[getAllAppDataFromDb] Failed to read app data', e)
+    return []
+  }
+}
+
+export const deleteAppDataFromDb = async (id: string): Promise<void> => {
+  await db.appData.delete(id)
+}
+
+/** Drop every app's entries for one network. Called by the delete cascade. */
+export const deleteNetworkAppDataFromDb = async (
+  networkId: IdType,
+): Promise<void> => {
+  await db.transaction('rw', db.appData, async () => {
+    await db.appData.where('networkId').equals(networkId).delete()
+  })
+}
+
+/**
+ * Drop every network-scoped row, keeping the app-scoped ones (networkId
+ * `APP_DATA_GLOBAL_SCOPE`). Called by the "delete all networks" cascade.
+ */
+export const deleteNetworkScopedAppDataFromDb = async (): Promise<void> => {
+  await db.transaction('rw', db.appData, async () => {
+    await db.appData.where('networkId').notEqual(APP_DATA_GLOBAL_SCOPE).delete()
+  })
+}
+
+export const clearAppDataFromDb = async (): Promise<void> => {
+  await db.transaction('rw', db.appData, async () => {
+    await db.appData.clear()
   })
 }
 
@@ -845,6 +1755,7 @@ export interface CachedNetworkData {
   nodeTable?: Table
   edgeTable?: Table
   visualStyle?: VisualStyle
+  visualStyleSet?: VisualStyleSet
   networkViews?: NetworkView[]
   visualStyleOptions?: VisualStyleOptions
   otherAspects?: OpaqueAspects[]
@@ -857,7 +1768,13 @@ export const putUndoRedoStackToDb = async (
 ): Promise<void> => {
   try {
     await db.transaction('rw', db.undoStacks, async () => {
-      await db.undoStacks.put({ id: networkId, undoRedoStack })
+      // Undo params carry arbitrarily nested Maps; encode them to plain
+      // objects so the row is storable on Safari IndexedDB, which cannot
+      // structured-clone Maps (REVIEW.md R2-10)
+      await db.undoStacks.put({
+        id: networkId,
+        undoRedoStack: encodeRichValues(undoRedoStack),
+      })
     })
   } catch (e) {
     logDb.error('[putUndoRedoStackToDb] error:', e, networkId, undoRedoStack)
@@ -869,7 +1786,15 @@ export const getUndoRedoStackFromDb = async (
   networkId: IdType,
 ): Promise<UndoRedoStackDB | undefined> => {
   const result = await db.undoStacks.get({ id: networkId })
-  return result
+  const decoded =
+    result === undefined
+      ? undefined
+      : { ...result, undoRedoStack: decodeRichValues(result.undoRedoStack) }
+  return observeValidation(
+    `undo stack ${networkId}`,
+    decoded,
+    validateUndoRedoStackDb,
+  )
 }
 
 export const deleteUndoRedoStackFromDb = async (
@@ -899,15 +1824,33 @@ export const clearUndoRedoStackFromDb = async (): Promise<void> => {
  * @returns Promise resolving to CyNetwork object
  * @throws Error if data retrieval fails or required fields are missing
  */
+/**
+ * The network is absent from IndexedDB, or only partially written (a debounced
+ * persist that has not landed yet). Distinguished from a validation,
+ * deserialization or Dexie failure so callers can fall back to another source
+ * on a miss while letting real failures surface.
+ */
+export class CyNetworkCacheMissError extends Error {
+  constructor(id: string, missing: string) {
+    super(`${missing} not found in IndexedDB for network ${id}`)
+    this.name = 'CyNetworkCacheMissError'
+  }
+}
+
 export const getCyNetworkFromDb = async (id: string): Promise<CyNetwork> => {
   try {
     const network = await getNetworkFromDb(id)
-    const tables = await getTablesFromDb(id)
-    const networkViewsEntry = await db.cyNetworkViews.get({ id })
-    const networkViews: NetworkView[] | undefined = networkViewsEntry
-      ? networkViewsEntry.views.map((v: any) => deserializeNetworkView(v))
-      : undefined
-    const visualStyle = await getVisualStyleFromDb(id)
+    // Row-aware read: getTablesFromDb() invents empty tables for a missing
+    // row, which made a partially persisted network look fully cached.
+    const tables = await getStoredTablesFromDb(id)
+    // Through getNetworkViewsFromDb, not a raw row read: since DB v11 selection
+    // lives in `viewSelections`, and only that helper merges it back in. Reading
+    // the row directly restored every network with an empty selection.
+    const networkViews: NetworkView[] | undefined =
+      await getNetworkViewsFromDb(id)
+    const visualStyleSet = await getVisualStyleSetFromDb(id)
+    const visualStyle =
+      visualStyleSet?.styles[visualStyleSet.activeStyleId]?.visualStyle
     const uiState: Ui | undefined = await getUiStateFromDb()
     const vsOptions: Record<IdType, VisualStyleOptions> =
       uiState?.visualStyleOptions ?? {}
@@ -930,16 +1873,16 @@ export const getCyNetworkFromDb = async (id: string): Promise<CyNetwork> => {
 
     // Ensure all required fields are present
     if (!network) {
-      throw new Error(`Network not found for id: ${id}`)
+      throw new CyNetworkCacheMissError(id, 'Network')
     }
     if (!tables || !tables.nodeTable || !tables.edgeTable) {
-      throw new Error(`Tables not found for id: ${id}`)
+      throw new CyNetworkCacheMissError(id, 'Tables')
     }
     if (!visualStyle) {
-      throw new Error(`Visual style not found for id: ${id}`)
+      throw new CyNetworkCacheMissError(id, 'Visual style')
     }
     if (!networkViews) {
-      throw new Error(`Network views not found for id: ${id}`)
+      throw new CyNetworkCacheMissError(id, 'Network views')
     }
 
     return {
@@ -947,6 +1890,7 @@ export const getCyNetworkFromDb = async (id: string): Promise<CyNetwork> => {
       nodeTable: tables.nodeTable,
       edgeTable: tables.edgeTable,
       visualStyle,
+      visualStyleSet,
       networkViews: networkViews,
       visualStyleOptions: visualStyleOptions,
       otherAspects: otherAspects,
@@ -960,26 +1904,7 @@ export const getCyNetworkFromDb = async (id: string): Promise<CyNetwork> => {
   }
 }
 
-// ============================================================================
-// Database Snapshot (Import/Export)
-// Re-exported from ./snapshot module
-// ============================================================================
-
-export {
-  type DatabaseExportMetadata,
-  type DatabaseSnapshot,
-  exportDatabaseSnapshot,
-  exportDatabaseSnapshotToFile,
-  importDatabaseSnapshot,
-  importDatabaseSnapshotFromFile,
-  type ImportOptions,
-  type ImportResult,
-} from './snapshot'
-
-// Application state export (includes database + store states)
-export {
-  type ApplicationState,
-  exportApplicationState,
-  exportApplicationStateToFile,
-  manualExportAppState,
-} from './snapshot/exportApplicationState'
+// Database snapshot import/export lives in ./snapshot and is deliberately NOT
+// re-exported here: this module is on the boot-critical DATABASE phase, and a
+// re-export would drag the whole snapshot graph into the pre-render bundle.
+// Import from '@/data/db/snapshot' (dynamically, where possible) instead.

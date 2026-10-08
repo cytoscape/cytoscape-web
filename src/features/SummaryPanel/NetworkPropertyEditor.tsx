@@ -1,18 +1,13 @@
-import '@mantine/tiptap/styles.css'
-
-import { MantineProvider } from '@mantine/core'
-import { Link, RichTextEditor } from '@mantine/tiptap'
 import {
   Box,
   Button,
   Chip,
-  Divider,
-  Paper,
   Popover,
   TextField,
   Typography,
 } from '@mui/material'
 import Highlight from '@tiptap/extension-highlight'
+import Link from '@tiptap/extension-link'
 import SubScript from '@tiptap/extension-subscript'
 import Superscript from '@tiptap/extension-superscript'
 import TextAlign from '@tiptap/extension-text-align'
@@ -23,11 +18,11 @@ import isEqual from 'lodash/isEqual'
 import { ReactElement, useEffect, useState } from 'react'
 
 import { useNetworkSummaryStore } from '../../data/hooks/stores/NetworkSummaryStore'
-import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { useUndoStack } from '../../data/hooks/useUndoStack'
 import { IdType } from '../../models'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { removePTags } from '../../utils/removePTags'
+import { DescriptionEditor } from './DescriptionEditor'
 import NdexNetworkPropertyTable from './NdexNetworkPropertyTable'
 
 interface NetworkPropertyEditorProps {
@@ -47,21 +42,23 @@ const NetworkPropertyEditor = (
 
   const open = anchorEl !== undefined
   const updateNetworkSummary = useNetworkSummaryStore((state) => state.update)
-  const setNetworkModified = useWorkspaceStore(
-    (state) => state.setNetworkModified,
-  )
 
   const editor = useEditor({
     onUpdate: ({ editor }) => {
-      setLocalSummaryState({
-        ...localSummaryState,
+      // Functional update on purpose: this callback is bound when the editor
+      // is created, so spreading a captured `localSummaryState` here would
+      // silently revert any field (e.g. the name) edited after that render.
+      setLocalSummaryState((previous) => ({
+        ...previous,
         description: editor.getHTML(),
-      })
+      }))
     },
     extensions: [
       StarterKit,
       Underline,
-      Link,
+      // openOnClick false so clicking a link keeps editing instead of
+      // navigating (matches the behavior of the former Mantine preset).
+      Link.configure({ openOnClick: false }),
       Superscript,
       SubScript,
       Highlight,
@@ -70,11 +67,17 @@ const NetworkPropertyEditor = (
     content: removePTags(localSummaryState.description ?? ''),
   })
 
+  // Sync the draft from the store only when the popover opens. Keying this on
+  // `summary` clobbered in-progress edits: any background summary update while
+  // the editor is open (layout completion setting hasLayout, a cross-tab
+  // echo) replaced the user's draft with the store copy mid-typing.
   useEffect(() => {
-    setLocalSummaryState(summary)
-    editor?.commands?.setContent(removePTags(summary.description ?? ''))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [summary])
+    if (open) {
+      setLocalSummaryState(summary)
+      editor?.commands?.setContent(removePTags(summary.description ?? ''))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resync only on open/close, not on background summary changes
+  }, [open])
 
   return (
     <Popover
@@ -88,7 +91,7 @@ const NetworkPropertyEditor = (
         horizontal: 'right',
       }}
     >
-      <Paper
+      <Box
         sx={{
           width: 850,
           height: 810,
@@ -127,7 +130,7 @@ const NetworkPropertyEditor = (
                   name: e.target.value,
                 })
               }}
-            ></TextField>
+            />
             <TextField
               data-testid="network-property-editor-version-input"
               size="small"
@@ -142,83 +145,18 @@ const NetworkPropertyEditor = (
               }}
             />
           </Box>
-
-          <Typography sx={{ ml: 1.5, pt: 1 }} gutterBottom>
-            Description
+          <Typography gutterBottom sx={{ mt: 2 }}>
+            Description:
           </Typography>
-          <MantineProvider>
-            <style>
-              {`
-                .mantine-RichTextEditor-toolbar {
-                  padding-top: 0 !important;
-                  padding-bottom: 0 !important;
-                }
-              `}
-            </style>
-            <Box
-              sx={{
-                height: 290,
-                border: '1px solid #e0e0e0',
-                borderRadius: 1,
-                overflow: 'hidden',
-              }}
-            >
-              <RichTextEditor
-                editor={editor}
-                style={{
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <RichTextEditor.Toolbar>
-                  <RichTextEditor.ControlsGroup>
-                    <RichTextEditor.Bold />
-                    <RichTextEditor.Italic />
-                    <RichTextEditor.Underline />
-                    <RichTextEditor.Strikethrough />
-                    <RichTextEditor.ClearFormatting />
-                    <RichTextEditor.Highlight />
-                    <RichTextEditor.Code />
-                  </RichTextEditor.ControlsGroup>
+          <Box
+            sx={{
+              height: 290,
+              overflow: 'hidden',
+            }}
+          >
+            <DescriptionEditor editor={editor} />
+          </Box>
 
-                  <RichTextEditor.ControlsGroup>
-                    <RichTextEditor.H1 />
-                    <RichTextEditor.H2 />
-                    <RichTextEditor.H3 />
-                    <RichTextEditor.H4 />
-                  </RichTextEditor.ControlsGroup>
-
-                  <RichTextEditor.ControlsGroup>
-                    <RichTextEditor.Blockquote />
-                    <RichTextEditor.Hr />
-                    <RichTextEditor.BulletList />
-                    <RichTextEditor.OrderedList />
-                    <RichTextEditor.Subscript />
-                    <RichTextEditor.Superscript />
-                  </RichTextEditor.ControlsGroup>
-
-                  <RichTextEditor.ControlsGroup>
-                    <RichTextEditor.Link />
-                    <RichTextEditor.Unlink />
-                  </RichTextEditor.ControlsGroup>
-
-                  <RichTextEditor.ControlsGroup>
-                    <RichTextEditor.AlignLeft />
-                    <RichTextEditor.AlignCenter />
-                    <RichTextEditor.AlignJustify />
-                    <RichTextEditor.AlignRight />
-                  </RichTextEditor.ControlsGroup>
-                </RichTextEditor.Toolbar>
-
-                <RichTextEditor.Content
-                  style={{ flex: 1, overflowY: 'auto' }}
-                />
-              </RichTextEditor>
-            </Box>
-          </MantineProvider>
-
-          <Divider sx={{ mt: 2, mb: 1 }} />
           <NdexNetworkPropertyTable
             networkProperties={localSummaryState.properties}
             setNetworkProperties={(nextProperties) => {
@@ -233,15 +171,14 @@ const NetworkPropertyEditor = (
           sx={{
             px: 2,
             py: 1,
-            borderTop: '1px solid #e0e0e0',
+            borderTop: (theme) => `1px solid ${theme.palette.divider}`,
             display: 'flex',
-            justifyContent: 'space-between',
-            backgroundColor: '#fafafa',
+            justifyContent: 'flex-end',
           }}
         >
           <Button
             data-testid="network-property-editor-cancel-button"
-            color="primary"
+            variant="outlined"
             onClick={(e) => {
               setLocalSummaryState(summary)
               onClose(e)
@@ -252,16 +189,7 @@ const NetworkPropertyEditor = (
           </Button>
           <Button
             data-testid="network-property-editor-confirm-button"
-            sx={{
-              color: '#FFFFFF',
-              backgroundColor: '#337ab7',
-              '&:hover': {
-                backgroundColor: '#285a9b',
-              },
-              '&:disabled': {
-                backgroundColor: 'transparent',
-              },
-            }}
+            variant="contained"
             onClick={(e) => {
               if (isEqual(localSummaryState, summary)) {
                 onClose(e)
@@ -271,12 +199,14 @@ const NetworkPropertyEditor = (
                   'Update network summary',
                   [localSummaryState.externalId, summary],
                   [localSummaryState.externalId, localSummaryState],
+                  // Explicit: the network this summary belongs to, which also
+                  // makes postEdit mark the right one as modified (#680).
+                  localSummaryState.externalId,
                 )
                 updateNetworkSummary(
                   localSummaryState.externalId,
                   localSummaryState,
                 )
-                setNetworkModified(localSummaryState.externalId, true)
                 onClose(e)
               }
             }}
@@ -284,7 +214,7 @@ const NetworkPropertyEditor = (
             Confirm
           </Button>
         </Box>
-      </Paper>
+      </Box>
     </Popover>
   )
 }

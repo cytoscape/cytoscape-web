@@ -4,16 +4,16 @@
  * Module for sending error reports with database snapshots to the error reporting endpoint.
  */
 
+import packageJson from '../../../../package.json'
 import appConfig from '../../../assets/config.json'
 import { logDb } from '../../../debug'
+import { getDatabaseVersion, getDb, ObjectStoreNames } from '../../db'
 import type { DatabaseSnapshot } from '../../db/snapshot'
-import { getDb, getDatabaseVersion, ObjectStoreNames } from '../../db'
-import packageJson from '../../../../package.json'
 
 /**
- * Envelope expected by https://dev1.ndexbio.org/report
+ * Envelope expected by the error report endpoint configured in `assets/config.json`.
  *
- * curl -X POST https://dev1.ndexbio.org/report \
+ * curl -X POST <errorReportEndpoint> \
  *   -H "Content-Type: application/json" \
  *   -d '{"summary":"...","data":{...}}'
  */
@@ -86,7 +86,9 @@ const getBuildId = (): string | undefined => {
   return `${gitCommit.substring(0, 7)}-${formatDateForHash(lastCommitTime)}`
 }
 
-const getMemoryInfo = (): CrashReportData['environment']['memory'] | undefined => {
+const getMemoryInfo = ():
+  | CrashReportData['environment']['memory']
+  | undefined => {
   const anyPerformance = performance as unknown as {
     memory?: {
       jsHeapSizeLimit: number
@@ -120,7 +122,9 @@ export const createCrashReportPayload = (params: {
   const buildId = getBuildId()
   const buildDate = process.env.REACT_APP_BUILD_TIME
 
-  const summaryNetworkPart = params.networkId ? ` (network=${params.networkId})` : ''
+  const summaryNetworkPart = params.networkId
+    ? ` (network=${params.networkId})`
+    : ''
   const summary = `[Crash] ${params.error.message}${summaryNetworkPart}`
 
   return {
@@ -161,11 +165,15 @@ export const createCrashReportPayload = (params: {
   }
 }
 
-export const sendErrorReport = async (payload: ErrorReportPayload): Promise<void> => {
+export const sendErrorReport = async (
+  payload: ErrorReportPayload,
+): Promise<void> => {
   const endpoint = appConfig.errorReportEndpoint
 
   if (!endpoint || endpoint === '') {
-    logDb.warn('[sendErrorReport] Error report endpoint not configured, skipping')
+    logDb.warn(
+      '[sendErrorReport] Error report endpoint not configured, skipping',
+    )
     return
   }
 
@@ -238,7 +246,9 @@ export const exportPartialSnapshotForNetwork = async (
     try {
       const workspaces = await db.workspace.toArray()
       data[ObjectStoreNames.Workspace] = workspaces.filter(
-        (ws) => ws.networkIds?.includes(networkId) || ws.currentNetworkId === networkId,
+        (ws) =>
+          ws.networkIds?.includes(networkId) ||
+          ws.currentNetworkId === networkId,
       )
     } catch (error) {
       logDb.warn(
@@ -321,18 +331,6 @@ export const exportPartialSnapshotForNetwork = async (
       data[ObjectStoreNames.UiState] = []
     }
 
-    // Export timestamp
-    try {
-      const timestamp = await db.timestamp.get({ id: networkId })
-      data[ObjectStoreNames.Timestamp] = timestamp ? [timestamp] : []
-    } catch (error) {
-      logDb.warn(
-        `[exportPartialSnapshotForNetwork] Failed to export timestamp:`,
-        error,
-      )
-      data[ObjectStoreNames.Timestamp] = []
-    }
-
     // Export filters (may be network-specific)
     try {
       const filters = await db.filters.toArray()
@@ -350,7 +348,9 @@ export const exportPartialSnapshotForNetwork = async (
     // Export opaque aspects
     try {
       const opaqueAspects = await db.opaqueAspects.get({ id: networkId })
-      data[ObjectStoreNames.OpaqueAspects] = opaqueAspects ? [opaqueAspects] : []
+      data[ObjectStoreNames.OpaqueAspects] = opaqueAspects
+        ? [opaqueAspects]
+        : []
     } catch (error) {
       logDb.warn(
         `[exportPartialSnapshotForNetwork] Failed to export opaque aspects:`,
@@ -406,4 +406,3 @@ export const exportPartialSnapshotForNetwork = async (
     throw e
   }
 }
-

@@ -1,0 +1,2041 @@
+[
+    {
+        "numberVerification": [
+            {
+                "longNumber": 281474976710655
+            }
+        ]
+    },
+    {
+        "metaData": [
+            {
+                "name": "nodeAttributes",
+                "version": "1.0"
+            },
+            {
+                "name": "cyGroups",
+                "version": "1.0"
+            },
+            {
+                "name": "cyTableColumn",
+                "version": "1.0"
+            },
+            {
+                "name": "edges",
+                "version": "1.0"
+            },
+            {
+                "name": "cyVisualProperties",
+                "version": "1.0"
+            },
+            {
+                "name": "cyHiddenAttributes",
+                "version": "1.0"
+            },
+            {
+                "name": "nodes",
+                "version": "1.0"
+            },
+            {
+                "name": "cyNetworkRelations",
+                "version": "1.0"
+            },
+            {
+                "name": "networkAttributes",
+                "version": "1.0"
+            },
+            {
+                "name": "cartesianLayout",
+                "version": "1.0"
+            },
+            {
+                "name": "edgeAttributes",
+                "version": "1.0"
+            },
+            {
+                "name": "tableVisualProperties",
+                "version": "1.0"
+            },
+            {
+                "name": "cySubNetworks",
+                "version": "1.0"
+            }
+        ]
+    },
+    {
+        "cyTableColumn": [
+            {
+                "applies_to": "node_table",
+                "n": "shared name"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "name"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "AverageShortestPathLength",
+                "d": "double"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "BetweennessCentrality",
+                "d": "double"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "ClosenessCentrality",
+                "d": "double"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "ClusteringCoefficient",
+                "d": "double"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "COMMON"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "Degree",
+                "d": "integer"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "degree.layout",
+                "d": "integer"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "Eccentricity",
+                "d": "integer"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "gal1RGexp",
+                "d": "double"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "gal1RGsig",
+                "d": "double"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "gal4RGexp",
+                "d": "double"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "gal4RGsig",
+                "d": "double"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "gal80Rexp",
+                "d": "double"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "gal80Rsig",
+                "d": "double"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "isExcludedFromPaths",
+                "d": "boolean"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "IsSingleNode",
+                "d": "boolean"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "NeighborhoodConnectivity",
+                "d": "double"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "NumberOfDirectedEdges",
+                "d": "integer"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "NumberOfUndirectedEdges",
+                "d": "integer"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "PartnerOfMultiEdgedNodePairs",
+                "d": "integer"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "Radiality",
+                "d": "double"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "SelfLoops",
+                "d": "integer"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "Stress",
+                "d": "long"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "TopologicalCoefficient",
+                "d": "double"
+            },
+            {
+                "applies_to": "edge_table",
+                "n": "shared name"
+            },
+            {
+                "applies_to": "edge_table",
+                "n": "shared interaction"
+            },
+            {
+                "applies_to": "edge_table",
+                "n": "name"
+            },
+            {
+                "applies_to": "edge_table",
+                "n": "interaction"
+            },
+            {
+                "applies_to": "edge_table",
+                "n": "EdgeBetweenness",
+                "d": "double"
+            },
+            {
+                "applies_to": "network_table",
+                "n": "shared name"
+            },
+            {
+                "applies_to": "network_table",
+                "n": "name"
+            },
+            {
+                "applies_to": "network_table",
+                "n": "Dataset Name"
+            },
+            {
+                "applies_to": "network_table",
+                "n": "organism"
+            },
+            {
+                "applies_to": "network_table",
+                "n": "Dataset URL"
+            },
+            {
+                "applies_to": "network_table",
+                "n": "publication"
+            },
+            {
+                "applies_to": "network_table",
+                "n": "__Annotations",
+                "d": "list_of_string"
+            }
+        ]
+    },
+    {
+        "networkAttributes": [
+            {
+                "n": "Dataset Name",
+                "v": "Ideker's Yeast Perturbation Network"
+            },
+            {
+                "n": "organism",
+                "v": "scerevisiae"
+            },
+            {
+                "n": "Dataset URL",
+                "v": "https://www.ncbi.nlm.nih.gov/pubmed/?term=11340206"
+            },
+            {
+                "n": "publication",
+                "v": "Integrated Genomic and Proteomic Analyses of a Systematically Perturbed Metabolic Network\nTrey Ideker, Vesteinn Thorsson, Jeffrey A. Ranish, Rowan Christmas, Jeremy Buhler, Jimmy K. Eng, Roger Bumgarner, David R. Goodlett, Ruedi Aebersold, and Leroy Hood\nScience 4 May 2001: 292 (5518), 929-934. [DOI:10.1126/science.292.5518.929]"
+            },
+            {
+                "n": "name",
+                "v": "galFiltered chart_1"
+            }
+        ]
+    },
+    {
+        "nodes": [
+            {
+                "@id": 8069,
+                "n": "Node 1"
+            },
+            {
+                "@id": 8068,
+                "n": "YNL098C"
+            },
+            {
+                "@id": 8066,
+                "n": "YLR310C"
+            },
+            {
+                "@id": 8042,
+                "n": "YLL028W"
+            },
+            {
+                "@id": 8040,
+                "n": "YGL166W"
+            },
+            {
+                "@id": 8000,
+                "n": "YBR072W"
+            },
+            {
+                "@id": 7998,
+                "n": "YGL073W"
+            },
+            {
+                "@id": 7884,
+                "n": "YER103W"
+            },
+            {
+                "@id": 7818,
+                "n": "YHR053C"
+            },
+            {
+                "@id": 7816,
+                "n": "YHR055C"
+            }
+        ]
+    },
+    {
+        "edges": [
+            {
+                "@id": 8724,
+                "s": 8068,
+                "t": 8066,
+                "i": "pp"
+            },
+            {
+                "@id": 8722,
+                "s": 8066,
+                "t": 7884,
+                "i": "pp"
+            },
+            {
+                "@id": 8702,
+                "s": 8042,
+                "t": 8040,
+                "i": "pp"
+            },
+            {
+                "@id": 8698,
+                "s": 8040,
+                "t": 7816,
+                "i": "pd"
+            },
+            {
+                "@id": 8700,
+                "s": 8040,
+                "t": 7818,
+                "i": "pd"
+            },
+            {
+                "@id": 8650,
+                "s": 8000,
+                "t": 7998,
+                "i": "pd"
+            },
+            {
+                "@id": 8642,
+                "s": 7998,
+                "t": 7884,
+                "i": "pd"
+            },
+            {
+                "@id": 8644,
+                "s": 7998,
+                "t": 7816,
+                "i": "pd"
+            },
+            {
+                "@id": 8646,
+                "s": 7998,
+                "t": 7818,
+                "i": "pd"
+            }
+        ]
+    },
+    {
+        "nodeAttributes": [
+            {
+                "po": 8068,
+                "n": "degree.layout",
+                "v": "1",
+                "d": "integer"
+            },
+            {
+                "po": 8068,
+                "n": "gal80Rexp",
+                "v": "0.293",
+                "d": "double"
+            },
+            {
+                "po": 8068,
+                "n": "gal1RGsig",
+                "v": "0.20515",
+                "d": "double"
+            },
+            {
+                "po": 8068,
+                "n": "Eccentricity",
+                "v": "23",
+                "d": "integer"
+            },
+            {
+                "po": 8068,
+                "n": "gal4RGsig",
+                "v": "0.23242",
+                "d": "double"
+            },
+            {
+                "po": 8068,
+                "n": "TopologicalCoefficient",
+                "v": "0.0",
+                "d": "double"
+            },
+            {
+                "po": 8068,
+                "n": "SelfLoops",
+                "v": "0",
+                "d": "integer"
+            },
+            {
+                "po": 8068,
+                "n": "NumberOfDirectedEdges",
+                "v": "1",
+                "d": "integer"
+            },
+            {
+                "po": 8068,
+                "n": "AverageShortestPathLength",
+                "v": "12.64112903",
+                "d": "double"
+            },
+            {
+                "po": 8068,
+                "n": "gal80Rsig",
+                "v": "1.0426E-4",
+                "d": "double"
+            },
+            {
+                "po": 8068,
+                "n": "ClosenessCentrality",
+                "v": "0.07910686",
+                "d": "double"
+            },
+            {
+                "po": 8068,
+                "n": "Degree",
+                "v": "1",
+                "d": "integer"
+            },
+            {
+                "po": 8068,
+                "n": "isExcludedFromPaths",
+                "v": "false",
+                "d": "boolean"
+            },
+            {
+                "po": 8068,
+                "n": "PartnerOfMultiEdgedNodePairs",
+                "v": "0",
+                "d": "integer"
+            },
+            {
+                "po": 8068,
+                "n": "ClusteringCoefficient",
+                "v": "0.0",
+                "d": "double"
+            },
+            {
+                "po": 8068,
+                "n": "Radiality",
+                "v": "0.56884707",
+                "d": "double"
+            },
+            {
+                "po": 8068,
+                "n": "Stress",
+                "v": "0",
+                "d": "long"
+            },
+            {
+                "po": 8068,
+                "n": "BetweennessCentrality",
+                "v": "0.0",
+                "d": "double"
+            },
+            {
+                "po": 8068,
+                "n": "NumberOfUndirectedEdges",
+                "v": "0",
+                "d": "integer"
+            },
+            {
+                "po": 8068,
+                "n": "gal1RGexp",
+                "v": "0.05",
+                "d": "double"
+            },
+            {
+                "po": 8068,
+                "n": "COMMON",
+                "v": "RAS2"
+            },
+            {
+                "po": 8068,
+                "n": "gal4RGexp",
+                "v": "0.062",
+                "d": "double"
+            },
+            {
+                "po": 8068,
+                "n": "IsSingleNode",
+                "v": "false",
+                "d": "boolean"
+            },
+            {
+                "po": 8068,
+                "n": "NeighborhoodConnectivity",
+                "v": "2.0",
+                "d": "double"
+            },
+            {
+                "po": 8066,
+                "n": "degree.layout",
+                "v": "2",
+                "d": "integer"
+            },
+            {
+                "po": 8066,
+                "n": "gal80Rexp",
+                "v": "-0.071",
+                "d": "double"
+            },
+            {
+                "po": 8066,
+                "n": "gal1RGsig",
+                "v": "0.67137",
+                "d": "double"
+            },
+            {
+                "po": 8066,
+                "n": "Eccentricity",
+                "v": "22",
+                "d": "integer"
+            },
+            {
+                "po": 8066,
+                "n": "gal4RGsig",
+                "v": "0.41028",
+                "d": "double"
+            },
+            {
+                "po": 8066,
+                "n": "TopologicalCoefficient",
+                "v": "0.5",
+                "d": "double"
+            },
+            {
+                "po": 8066,
+                "n": "SelfLoops",
+                "v": "0",
+                "d": "integer"
+            },
+            {
+                "po": 8066,
+                "n": "NumberOfDirectedEdges",
+                "v": "2",
+                "d": "integer"
+            },
+            {
+                "po": 8066,
+                "n": "AverageShortestPathLength",
+                "v": "11.64516129",
+                "d": "double"
+            },
+            {
+                "po": 8066,
+                "n": "gal80Rsig",
+                "v": "0.25519",
+                "d": "double"
+            },
+            {
+                "po": 8066,
+                "n": "ClosenessCentrality",
+                "v": "0.08587258",
+                "d": "double"
+            },
+            {
+                "po": 8066,
+                "n": "Degree",
+                "v": "2",
+                "d": "integer"
+            },
+            {
+                "po": 8066,
+                "n": "isExcludedFromPaths",
+                "v": "false",
+                "d": "boolean"
+            },
+            {
+                "po": 8066,
+                "n": "PartnerOfMultiEdgedNodePairs",
+                "v": "0",
+                "d": "integer"
+            },
+            {
+                "po": 8066,
+                "n": "ClusteringCoefficient",
+                "v": "0.0",
+                "d": "double"
+            },
+            {
+                "po": 8066,
+                "n": "Radiality",
+                "v": "0.60573477",
+                "d": "double"
+            },
+            {
+                "po": 8066,
+                "n": "Stress",
+                "v": "1010",
+                "d": "long"
+            },
+            {
+                "po": 8066,
+                "n": "BetweennessCentrality",
+                "v": "0.00806452",
+                "d": "double"
+            },
+            {
+                "po": 8066,
+                "n": "NumberOfUndirectedEdges",
+                "v": "0",
+                "d": "integer"
+            },
+            {
+                "po": 8066,
+                "n": "gal1RGexp",
+                "v": "0.015",
+                "d": "double"
+            },
+            {
+                "po": 8066,
+                "n": "COMMON",
+                "v": "CDC25"
+            },
+            {
+                "po": 8066,
+                "n": "gal4RGexp",
+                "v": "-0.037",
+                "d": "double"
+            },
+            {
+                "po": 8066,
+                "n": "IsSingleNode",
+                "v": "false",
+                "d": "boolean"
+            },
+            {
+                "po": 8066,
+                "n": "NeighborhoodConnectivity",
+                "v": "1.5",
+                "d": "double"
+            },
+            {
+                "po": 8042,
+                "n": "degree.layout",
+                "v": "1",
+                "d": "integer"
+            },
+            {
+                "po": 8042,
+                "n": "gal80Rexp",
+                "v": "-0.24",
+                "d": "double"
+            },
+            {
+                "po": 8042,
+                "n": "gal1RGsig",
+                "v": "1.7163E-4",
+                "d": "double"
+            },
+            {
+                "po": 8042,
+                "n": "Eccentricity",
+                "v": "23",
+                "d": "integer"
+            },
+            {
+                "po": 8042,
+                "n": "gal4RGsig",
+                "v": "0.27319",
+                "d": "double"
+            },
+            {
+                "po": 8042,
+                "n": "TopologicalCoefficient",
+                "v": "0.0",
+                "d": "double"
+            },
+            {
+                "po": 8042,
+                "n": "SelfLoops",
+                "v": "0",
+                "d": "integer"
+            },
+            {
+                "po": 8042,
+                "n": "NumberOfDirectedEdges",
+                "v": "1",
+                "d": "integer"
+            },
+            {
+                "po": 8042,
+                "n": "AverageShortestPathLength",
+                "v": "12.63306452",
+                "d": "double"
+            },
+            {
+                "po": 8042,
+                "n": "gal80Rsig",
+                "v": "0.0047822",
+                "d": "double"
+            },
+            {
+                "po": 8042,
+                "n": "ClosenessCentrality",
+                "v": "0.07915736",
+                "d": "double"
+            },
+            {
+                "po": 8042,
+                "n": "Degree",
+                "v": "1",
+                "d": "integer"
+            },
+            {
+                "po": 8042,
+                "n": "isExcludedFromPaths",
+                "v": "false",
+                "d": "boolean"
+            },
+            {
+                "po": 8042,
+                "n": "PartnerOfMultiEdgedNodePairs",
+                "v": "0",
+                "d": "integer"
+            },
+            {
+                "po": 8042,
+                "n": "ClusteringCoefficient",
+                "v": "0.0",
+                "d": "double"
+            },
+            {
+                "po": 8042,
+                "n": "Radiality",
+                "v": "0.56914576",
+                "d": "double"
+            },
+            {
+                "po": 8042,
+                "n": "Stress",
+                "v": "0",
+                "d": "long"
+            },
+            {
+                "po": 8042,
+                "n": "BetweennessCentrality",
+                "v": "0.0",
+                "d": "double"
+            },
+            {
+                "po": 8042,
+                "n": "NumberOfUndirectedEdges",
+                "v": "0",
+                "d": "integer"
+            },
+            {
+                "po": 8042,
+                "n": "gal1RGexp",
+                "v": "-0.189",
+                "d": "double"
+            },
+            {
+                "po": 8042,
+                "n": "COMMON",
+                "v": "TPO1"
+            },
+            {
+                "po": 8042,
+                "n": "gal4RGexp",
+                "v": "-0.101",
+                "d": "double"
+            },
+            {
+                "po": 8042,
+                "n": "IsSingleNode",
+                "v": "false",
+                "d": "boolean"
+            },
+            {
+                "po": 8042,
+                "n": "NeighborhoodConnectivity",
+                "v": "3.0",
+                "d": "double"
+            },
+            {
+                "po": 8040,
+                "n": "degree.layout",
+                "v": "3",
+                "d": "integer"
+            },
+            {
+                "po": 8040,
+                "n": "gal80Rexp",
+                "v": "0.147",
+                "d": "double"
+            },
+            {
+                "po": 8040,
+                "n": "gal1RGsig",
+                "v": "0.33486",
+                "d": "double"
+            },
+            {
+                "po": 8040,
+                "n": "Eccentricity",
+                "v": "22",
+                "d": "integer"
+            },
+            {
+                "po": 8040,
+                "n": "gal4RGsig",
+                "v": "0.0012181",
+                "d": "double"
+            },
+            {
+                "po": 8040,
+                "n": "TopologicalCoefficient",
+                "v": "0.66666667",
+                "d": "double"
+            },
+            {
+                "po": 8040,
+                "n": "SelfLoops",
+                "v": "0",
+                "d": "integer"
+            },
+            {
+                "po": 8040,
+                "n": "NumberOfDirectedEdges",
+                "v": "2",
+                "d": "integer"
+            },
+            {
+                "po": 8040,
+                "n": "AverageShortestPathLength",
+                "v": "11.63709677",
+                "d": "double"
+            },
+            {
+                "po": 8040,
+                "n": "gal80Rsig",
+                "v": "0.032147",
+                "d": "double"
+            },
+            {
+                "po": 8040,
+                "n": "ClosenessCentrality",
+                "v": "0.08593209",
+                "d": "double"
+            },
+            {
+                "po": 8040,
+                "n": "Degree",
+                "v": "3",
+                "d": "integer"
+            },
+            {
+                "po": 8040,
+                "n": "isExcludedFromPaths",
+                "v": "false",
+                "d": "boolean"
+            },
+            {
+                "po": 8040,
+                "n": "PartnerOfMultiEdgedNodePairs",
+                "v": "0",
+                "d": "integer"
+            },
+            {
+                "po": 8040,
+                "n": "ClusteringCoefficient",
+                "v": "0.0",
+                "d": "double"
+            },
+            {
+                "po": 8040,
+                "n": "Radiality",
+                "v": "0.60603345",
+                "d": "double"
+            },
+            {
+                "po": 8040,
+                "n": "Stress",
+                "v": "2010",
+                "d": "long"
+            },
+            {
+                "po": 8040,
+                "n": "BetweennessCentrality",
+                "v": "0.00808084",
+                "d": "double"
+            },
+            {
+                "po": 8040,
+                "n": "NumberOfUndirectedEdges",
+                "v": "1",
+                "d": "integer"
+            },
+            {
+                "po": 8040,
+                "n": "gal1RGexp",
+                "v": "-0.073",
+                "d": "double"
+            },
+            {
+                "po": 8040,
+                "n": "COMMON",
+                "v": "CUP2"
+            },
+            {
+                "po": 8040,
+                "n": "gal4RGexp",
+                "v": "0.243",
+                "d": "double"
+            },
+            {
+                "po": 8040,
+                "n": "IsSingleNode",
+                "v": "false",
+                "d": "boolean"
+            },
+            {
+                "po": 8040,
+                "n": "NeighborhoodConnectivity",
+                "v": "1.66666667",
+                "d": "double"
+            },
+            {
+                "po": 8000,
+                "n": "degree.layout",
+                "v": "1",
+                "d": "integer"
+            },
+            {
+                "po": 8000,
+                "n": "gal80Rexp",
+                "v": "-0.447",
+                "d": "double"
+            },
+            {
+                "po": 8000,
+                "n": "gal1RGsig",
+                "v": "1.3135E-6",
+                "d": "double"
+            },
+            {
+                "po": 8000,
+                "n": "Eccentricity",
+                "v": "21",
+                "d": "integer"
+            },
+            {
+                "po": 8000,
+                "n": "gal4RGsig",
+                "v": "2.3868E-5",
+                "d": "double"
+            },
+            {
+                "po": 8000,
+                "n": "TopologicalCoefficient",
+                "v": "0.0",
+                "d": "double"
+            },
+            {
+                "po": 8000,
+                "n": "SelfLoops",
+                "v": "0",
+                "d": "integer"
+            },
+            {
+                "po": 8000,
+                "n": "NumberOfDirectedEdges",
+                "v": "1",
+                "d": "integer"
+            },
+            {
+                "po": 8000,
+                "n": "AverageShortestPathLength",
+                "v": "10.6733871",
+                "d": "double"
+            },
+            {
+                "po": 8000,
+                "n": "gal80Rsig",
+                "v": "3.3493E-11",
+                "d": "double"
+            },
+            {
+                "po": 8000,
+                "n": "ClosenessCentrality",
+                "v": "0.09369097",
+                "d": "double"
+            },
+            {
+                "po": 8000,
+                "n": "Degree",
+                "v": "1",
+                "d": "integer"
+            },
+            {
+                "po": 8000,
+                "n": "isExcludedFromPaths",
+                "v": "false",
+                "d": "boolean"
+            },
+            {
+                "po": 8000,
+                "n": "PartnerOfMultiEdgedNodePairs",
+                "v": "0",
+                "d": "integer"
+            },
+            {
+                "po": 8000,
+                "n": "ClusteringCoefficient",
+                "v": "0.0",
+                "d": "double"
+            },
+            {
+                "po": 8000,
+                "n": "Radiality",
+                "v": "0.6417264",
+                "d": "double"
+            },
+            {
+                "po": 8000,
+                "n": "Stress",
+                "v": "0",
+                "d": "long"
+            },
+            {
+                "po": 8000,
+                "n": "BetweennessCentrality",
+                "v": "0.0",
+                "d": "double"
+            },
+            {
+                "po": 8000,
+                "n": "NumberOfUndirectedEdges",
+                "v": "0",
+                "d": "integer"
+            },
+            {
+                "po": 8000,
+                "n": "gal1RGexp",
+                "v": "-1.232",
+                "d": "double"
+            },
+            {
+                "po": 8000,
+                "n": "COMMON",
+                "v": "HSP26"
+            },
+            {
+                "po": 8000,
+                "n": "gal4RGexp",
+                "v": "0.895",
+                "d": "double"
+            },
+            {
+                "po": 8000,
+                "n": "IsSingleNode",
+                "v": "false",
+                "d": "boolean"
+            },
+            {
+                "po": 8000,
+                "n": "NeighborhoodConnectivity",
+                "v": "5.0",
+                "d": "double"
+            },
+            {
+                "po": 7998,
+                "n": "degree.layout",
+                "v": "5",
+                "d": "integer"
+            },
+            {
+                "po": 7998,
+                "n": "gal80Rexp",
+                "v": "0.543",
+                "d": "double"
+            },
+            {
+                "po": 7998,
+                "n": "gal1RGsig",
+                "v": "0.034847",
+                "d": "double"
+            },
+            {
+                "po": 7998,
+                "n": "Eccentricity",
+                "v": "20",
+                "d": "integer"
+            },
+            {
+                "po": 7998,
+                "n": "gal4RGsig",
+                "v": "0.42981",
+                "d": "double"
+            },
+            {
+                "po": 7998,
+                "n": "TopologicalCoefficient",
+                "v": "0.25",
+                "d": "double"
+            },
+            {
+                "po": 7998,
+                "n": "SelfLoops",
+                "v": "0",
+                "d": "integer"
+            },
+            {
+                "po": 7998,
+                "n": "NumberOfDirectedEdges",
+                "v": "5",
+                "d": "integer"
+            },
+            {
+                "po": 7998,
+                "n": "AverageShortestPathLength",
+                "v": "9.67741935",
+                "d": "double"
+            },
+            {
+                "po": 7998,
+                "n": "gal80Rsig",
+                "v": "6.2254E-4",
+                "d": "double"
+            },
+            {
+                "po": 7998,
+                "n": "ClosenessCentrality",
+                "v": "0.10333333",
+                "d": "double"
+            },
+            {
+                "po": 7998,
+                "n": "Degree",
+                "v": "5",
+                "d": "integer"
+            },
+            {
+                "po": 7998,
+                "n": "isExcludedFromPaths",
+                "v": "false",
+                "d": "boolean"
+            },
+            {
+                "po": 7998,
+                "n": "PartnerOfMultiEdgedNodePairs",
+                "v": "0",
+                "d": "integer"
+            },
+            {
+                "po": 7998,
+                "n": "ClusteringCoefficient",
+                "v": "0.0",
+                "d": "double"
+            },
+            {
+                "po": 7998,
+                "n": "Radiality",
+                "v": "0.6786141",
+                "d": "double"
+            },
+            {
+                "po": 7998,
+                "n": "Stress",
+                "v": "9976",
+                "d": "long"
+            },
+            {
+                "po": 7998,
+                "n": "BetweennessCentrality",
+                "v": "0.06332441",
+                "d": "double"
+            },
+            {
+                "po": 7998,
+                "n": "NumberOfUndirectedEdges",
+                "v": "0",
+                "d": "integer"
+            },
+            {
+                "po": 7998,
+                "n": "gal1RGexp",
+                "v": "0.104",
+                "d": "double"
+            },
+            {
+                "po": 7998,
+                "n": "COMMON",
+                "v": "HSF1"
+            },
+            {
+                "po": 7998,
+                "n": "gal4RGexp",
+                "v": "-0.084",
+                "d": "double"
+            },
+            {
+                "po": 7998,
+                "n": "IsSingleNode",
+                "v": "false",
+                "d": "boolean"
+            },
+            {
+                "po": 7998,
+                "n": "NeighborhoodConnectivity",
+                "v": "2.0",
+                "d": "double"
+            },
+            {
+                "po": 7884,
+                "n": "degree.layout",
+                "v": "2",
+                "d": "integer"
+            },
+            {
+                "po": 7884,
+                "n": "gal80Rexp",
+                "v": "-0.826",
+                "d": "double"
+            },
+            {
+                "po": 7884,
+                "n": "gal1RGsig",
+                "v": "1.2362E-4",
+                "d": "double"
+            },
+            {
+                "po": 7884,
+                "n": "Eccentricity",
+                "v": "21",
+                "d": "integer"
+            },
+            {
+                "po": 7884,
+                "n": "gal4RGsig",
+                "v": "0.013281",
+                "d": "double"
+            },
+            {
+                "po": 7884,
+                "n": "TopologicalCoefficient",
+                "v": "0.5",
+                "d": "double"
+            },
+            {
+                "po": 7884,
+                "n": "SelfLoops",
+                "v": "0",
+                "d": "integer"
+            },
+            {
+                "po": 7884,
+                "n": "NumberOfDirectedEdges",
+                "v": "2",
+                "d": "integer"
+            },
+            {
+                "po": 7884,
+                "n": "AverageShortestPathLength",
+                "v": "10.65725806",
+                "d": "double"
+            },
+            {
+                "po": 7884,
+                "n": "gal80Rsig",
+                "v": "8.3702E-13",
+                "d": "double"
+            },
+            {
+                "po": 7884,
+                "n": "ClosenessCentrality",
+                "v": "0.09383277",
+                "d": "double"
+            },
+            {
+                "po": 7884,
+                "n": "Degree",
+                "v": "2",
+                "d": "integer"
+            },
+            {
+                "po": 7884,
+                "n": "isExcludedFromPaths",
+                "v": "false",
+                "d": "boolean"
+            },
+            {
+                "po": 7884,
+                "n": "PartnerOfMultiEdgedNodePairs",
+                "v": "0",
+                "d": "integer"
+            },
+            {
+                "po": 7884,
+                "n": "ClusteringCoefficient",
+                "v": "0.0",
+                "d": "double"
+            },
+            {
+                "po": 7884,
+                "n": "Radiality",
+                "v": "0.64232378",
+                "d": "double"
+            },
+            {
+                "po": 7884,
+                "n": "Stress",
+                "v": "2016",
+                "d": "long"
+            },
+            {
+                "po": 7884,
+                "n": "BetweennessCentrality",
+                "v": "0.01606373",
+                "d": "double"
+            },
+            {
+                "po": 7884,
+                "n": "NumberOfUndirectedEdges",
+                "v": "0",
+                "d": "integer"
+            },
+            {
+                "po": 7884,
+                "n": "gal1RGexp",
+                "v": "-0.405",
+                "d": "double"
+            },
+            {
+                "po": 7884,
+                "n": "COMMON",
+                "v": "SSA4"
+            },
+            {
+                "po": 7884,
+                "n": "gal4RGexp",
+                "v": "0.176",
+                "d": "double"
+            },
+            {
+                "po": 7884,
+                "n": "IsSingleNode",
+                "v": "false",
+                "d": "boolean"
+            },
+            {
+                "po": 7884,
+                "n": "NeighborhoodConnectivity",
+                "v": "3.5",
+                "d": "double"
+            },
+            {
+                "po": 7818,
+                "n": "degree.layout",
+                "v": "2",
+                "d": "integer"
+            },
+            {
+                "po": 7818,
+                "n": "gal80Rexp",
+                "v": "0.795",
+                "d": "double"
+            },
+            {
+                "po": 7818,
+                "n": "gal1RGsig",
+                "v": "1.6731E-4",
+                "d": "double"
+            },
+            {
+                "po": 7818,
+                "n": "Eccentricity",
+                "v": "21",
+                "d": "integer"
+            },
+            {
+                "po": 7818,
+                "n": "gal4RGsig",
+                "v": "8.4638E-4",
+                "d": "double"
+            },
+            {
+                "po": 7818,
+                "n": "TopologicalCoefficient",
+                "v": "0.6",
+                "d": "double"
+            },
+            {
+                "po": 7818,
+                "n": "SelfLoops",
+                "v": "0",
+                "d": "integer"
+            },
+            {
+                "po": 7818,
+                "n": "NumberOfDirectedEdges",
+                "v": "2",
+                "d": "integer"
+            },
+            {
+                "po": 7818,
+                "n": "AverageShortestPathLength",
+                "v": "10.65725806",
+                "d": "double"
+            },
+            {
+                "po": 7818,
+                "n": "gal80Rsig",
+                "v": "1.5187E-10",
+                "d": "double"
+            },
+            {
+                "po": 7818,
+                "n": "ClosenessCentrality",
+                "v": "0.09383277",
+                "d": "double"
+            },
+            {
+                "po": 7818,
+                "n": "Degree",
+                "v": "2",
+                "d": "integer"
+            },
+            {
+                "po": 7818,
+                "n": "isExcludedFromPaths",
+                "v": "false",
+                "d": "boolean"
+            },
+            {
+                "po": 7818,
+                "n": "PartnerOfMultiEdgedNodePairs",
+                "v": "0",
+                "d": "integer"
+            },
+            {
+                "po": 7818,
+                "n": "ClusteringCoefficient",
+                "v": "0.0",
+                "d": "double"
+            },
+            {
+                "po": 7818,
+                "n": "Radiality",
+                "v": "0.64232378",
+                "d": "double"
+            },
+            {
+                "po": 7818,
+                "n": "Stress",
+                "v": "2004",
+                "d": "long"
+            },
+            {
+                "po": 7818,
+                "n": "BetweennessCentrality",
+                "v": "0.00799922",
+                "d": "double"
+            },
+            {
+                "po": 7818,
+                "n": "NumberOfUndirectedEdges",
+                "v": "0",
+                "d": "integer"
+            },
+            {
+                "po": 7818,
+                "n": "gal1RGexp",
+                "v": "-0.656",
+                "d": "double"
+            },
+            {
+                "po": 7818,
+                "n": "COMMON",
+                "v": "CUP1A"
+            },
+            {
+                "po": 7818,
+                "n": "gal4RGexp",
+                "v": "-0.75",
+                "d": "double"
+            },
+            {
+                "po": 7818,
+                "n": "IsSingleNode",
+                "v": "false",
+                "d": "boolean"
+            },
+            {
+                "po": 7818,
+                "n": "NeighborhoodConnectivity",
+                "v": "4.0",
+                "d": "double"
+            },
+            {
+                "po": 7816,
+                "n": "degree.layout",
+                "v": "2",
+                "d": "integer"
+            },
+            {
+                "po": 7816,
+                "n": "gal80Rexp",
+                "v": "0.802",
+                "d": "double"
+            },
+            {
+                "po": 7816,
+                "n": "gal1RGsig",
+                "v": "2.8813E-6",
+                "d": "double"
+            },
+            {
+                "po": 7816,
+                "n": "Eccentricity",
+                "v": "21",
+                "d": "integer"
+            },
+            {
+                "po": 7816,
+                "n": "gal4RGsig",
+                "v": "0.026753",
+                "d": "double"
+            },
+            {
+                "po": 7816,
+                "n": "TopologicalCoefficient",
+                "v": "0.6",
+                "d": "double"
+            },
+            {
+                "po": 7816,
+                "n": "SelfLoops",
+                "v": "0",
+                "d": "integer"
+            },
+            {
+                "po": 7816,
+                "n": "NumberOfDirectedEdges",
+                "v": "2",
+                "d": "integer"
+            },
+            {
+                "po": 7816,
+                "n": "AverageShortestPathLength",
+                "v": "10.65725806",
+                "d": "double"
+            },
+            {
+                "po": 7816,
+                "n": "gal80Rsig",
+                "v": "1.9696E-12",
+                "d": "double"
+            },
+            {
+                "po": 7816,
+                "n": "ClosenessCentrality",
+                "v": "0.09383277",
+                "d": "double"
+            },
+            {
+                "po": 7816,
+                "n": "Degree",
+                "v": "2",
+                "d": "integer"
+            },
+            {
+                "po": 7816,
+                "n": "isExcludedFromPaths",
+                "v": "false",
+                "d": "boolean"
+            },
+            {
+                "po": 7816,
+                "n": "PartnerOfMultiEdgedNodePairs",
+                "v": "0",
+                "d": "integer"
+            },
+            {
+                "po": 7816,
+                "n": "ClusteringCoefficient",
+                "v": "0.0",
+                "d": "double"
+            },
+            {
+                "po": 7816,
+                "n": "Radiality",
+                "v": "0.64232378",
+                "d": "double"
+            },
+            {
+                "po": 7816,
+                "n": "Stress",
+                "v": "2004",
+                "d": "long"
+            },
+            {
+                "po": 7816,
+                "n": "BetweennessCentrality",
+                "v": "0.00799922",
+                "d": "double"
+            },
+            {
+                "po": 7816,
+                "n": "NumberOfUndirectedEdges",
+                "v": "0",
+                "d": "integer"
+            },
+            {
+                "po": 7816,
+                "n": "gal1RGexp",
+                "v": "-0.867",
+                "d": "double"
+            },
+            {
+                "po": 7816,
+                "n": "COMMON",
+                "v": "CUP1B"
+            },
+            {
+                "po": 7816,
+                "n": "gal4RGexp",
+                "v": "-0.416",
+                "d": "double"
+            },
+            {
+                "po": 7816,
+                "n": "IsSingleNode",
+                "v": "false",
+                "d": "boolean"
+            },
+            {
+                "po": 7816,
+                "n": "NeighborhoodConnectivity",
+                "v": "4.0",
+                "d": "double"
+            }
+        ]
+    },
+    {
+        "edgeAttributes": [
+            {
+                "po": 8724,
+                "n": "EdgeBetweenness",
+                "v": "496.0",
+                "d": "double"
+            },
+            {
+                "po": 8724,
+                "n": "name",
+                "v": "YNL098C (pp) YLR310C"
+            },
+            {
+                "po": 8722,
+                "n": "EdgeBetweenness",
+                "v": "988.0",
+                "d": "double"
+            },
+            {
+                "po": 8722,
+                "n": "name",
+                "v": "YLR310C (pp) YER103W"
+            },
+            {
+                "po": 8702,
+                "n": "EdgeBetweenness",
+                "v": "496.0",
+                "d": "double"
+            },
+            {
+                "po": 8702,
+                "n": "name",
+                "v": "YLL028W (pp) YGL166W"
+            },
+            {
+                "po": 8698,
+                "n": "EdgeBetweenness",
+                "v": "495.0",
+                "d": "double"
+            },
+            {
+                "po": 8698,
+                "n": "name",
+                "v": "YGL166W (pd) YHR055C"
+            },
+            {
+                "po": 8700,
+                "n": "EdgeBetweenness",
+                "v": "495.0",
+                "d": "double"
+            },
+            {
+                "po": 8700,
+                "n": "name",
+                "v": "YGL166W (pd) YHR053C"
+            },
+            {
+                "po": 8650,
+                "n": "EdgeBetweenness",
+                "v": "496.0",
+                "d": "double"
+            },
+            {
+                "po": 8650,
+                "n": "name",
+                "v": "YBR072W (pd) YGL073W"
+            },
+            {
+                "po": 8642,
+                "n": "EdgeBetweenness",
+                "v": "1476.0",
+                "d": "double"
+            },
+            {
+                "po": 8642,
+                "n": "name",
+                "v": "YGL073W (pd) YER103W"
+            },
+            {
+                "po": 8644,
+                "n": "EdgeBetweenness",
+                "v": "981.0",
+                "d": "double"
+            },
+            {
+                "po": 8644,
+                "n": "name",
+                "v": "YGL073W (pd) YHR055C"
+            },
+            {
+                "po": 8646,
+                "n": "EdgeBetweenness",
+                "v": "981.0",
+                "d": "double"
+            },
+            {
+                "po": 8646,
+                "n": "name",
+                "v": "YGL073W (pd) YHR053C"
+            }
+        ]
+    },
+    {
+        "cartesianLayout": [
+            {
+                "node": 8000,
+                "x": 1991.470856785445,
+                "y": 579.5633324052585
+            },
+            {
+                "node": 8040,
+                "x": 1599.2697357709164,
+                "y": 368.8216357367876
+            },
+            {
+                "node": 8042,
+                "x": 1628.8311074939247,
+                "y": 254.38255020291214
+            },
+            {
+                "node": 8066,
+                "x": 1829.1143417209043,
+                "y": 325.1851331475378
+            },
+            {
+                "node": 7816,
+                "x": 1727.830776999534,
+                "y": 457.792321195067
+            },
+            {
+                "node": 8068,
+                "x": 2018.5288932053413,
+                "y": 260.1846169870082
+            },
+            {
+                "node": 7818,
+                "x": 1483.5474429019155,
+                "y": 521.9084334376521
+            },
+            {
+                "node": 8069,
+                "x": 1433.0,
+                "y": 676.189099172156
+            },
+            {
+                "node": 7884,
+                "x": 1973.9749143125389,
+                "y": 428.20356656787874
+            },
+            {
+                "node": 7998,
+                "x": 1751.277978845074,
+                "y": 601.8039044611936
+            }
+        ]
+    },
+    {
+        "cyVisualProperties": [
+            {
+                "properties_of": "network",
+                "properties": {
+                    "NETWORK_ANNOTATION_SELECTION": "false",
+                    "NETWORK_BACKGROUND_PAINT": "#FFFFFF",
+                    "NETWORK_CENTER_X_LOCATION": "1823.9604049862376",
+                    "NETWORK_CENTER_Y_LOCATION": "547.0001251039271",
+                    "NETWORK_CENTER_Z_LOCATION": "0.0",
+                    "NETWORK_DEPTH": "0.0",
+                    "NETWORK_EDGE_SELECTION": "true",
+                    "NETWORK_FORCE_HIGH_DETAIL": "false",
+                    "NETWORK_HEIGHT": "399.0",
+                    "NETWORK_NODE_LABEL_SELECTION": "false",
+                    "NETWORK_NODE_SELECTION": "true",
+                    "NETWORK_SCALE_FACTOR": "1.4434898290536133",
+                    "NETWORK_SIZE": "550.0",
+                    "NETWORK_TITLE": "galFiltered chart_1",
+                    "NETWORK_WIDTH": "917.0"
+                }
+            },
+            {
+                "properties_of": "nodes:default",
+                "properties": {
+                    "COMPOUND_NODE_PADDING": "10.0",
+                    "COMPOUND_NODE_SHAPE": "ROUND_RECTANGLE",
+                    "NODE_BORDER_PAINT": "#006699",
+                    "NODE_BORDER_STROKE": "SOLID",
+                    "NODE_BORDER_TRANSPARENCY": "255",
+                    "NODE_BORDER_WIDTH": "0.0",
+                    "NODE_CUSTOMGRAPHICS_1": "org.cytoscape.BarChart:{\"cy_range\":[-1.232,1.022],\"cy_showRangeAxis\":true,\"cy_axisLabelFontSize\":2,\"cy_showRangeZeroBaseline\":true,\"cy_colorScheme\":\"Set3 colors\",\"cy_colors\":[\"#8DD3C7\",\"#FFFFB3\",\"#BEBADA\"],\"cy_itemLabelFontSize\":4,\"cy_showDomainAxis\":true,\"cy_axisColor\":\"#238443\",\"cy_axisWidth\":0.5,\"cy_autoRange\":true,\"cy_borderColor\":\"#CB181D\",\"cy_borderWidth\":0.5,\"cy_dataColumns\":[\"gal1RGexp\",\"gal4RGexp\",\"gal80Rexp\"],\"cy_domainLabelPosition\":\"DOWN_45\",\"cy_showItemLabels\":true}",
+                    "NODE_CUSTOMGRAPHICS_2": "org.cytoscape.HeatMapChart:{\"cy_range\":[-2.426,3.126],\"cy_showRangeAxis\":false,\"cy_orientation\":\"HORIZONTAL\",\"cy_colorScheme\":\"CYAN_WHITE_YELLOW\",\"cy_colors\":[\"#FFFF00\",\"#FFFFFF\",\"#00FFFF\",\"#808080\"],\"cy_dataColumns\":[\"gal1RGexp\",\"gal4RGexp\",\"gal80Rexp\"],\"cy_showDomainAxis\":false}",
+                    "NODE_CUSTOMGRAPHICS_3": "org.cytoscape.PieChart:{\"cy_range\":[1.0,16.35887097],\"cy_colorScheme\":\"Set3 colors\",\"cy_colors\":[\"#8DD3C7\",\"#BEBADA\"],\"cy_dataColumns\":[\"Radiality\",\"Degree\"]}",
+                    "NODE_CUSTOMGRAPHICS_4": "org.cytoscape.RingChart:{\"cy_range\":[1.0,16.35887097],\"cy_holeSize\":0.75,\"cy_startAngle\":45.0,\"cy_colors\":[\"#EF8A62\",\"#BEBADA\"],\"cy_borderWidth\":0.5,\"cy_borderColor\":\"#3690C0\",\"cy_dataColumns\":[\"NumberOfDirectedEdges\",\"NumberOfUndirectedEdges\"],\"cy_itemLabelFontSize\":2,\"cy_showItemLabels\":true}",
+                    "NODE_CUSTOMGRAPHICS_5": "org.cytoscape.BoxChart:{\"cy_range\":[8.3702E-13,0.67137],\"cy_axisWidth\":0.5,\"cy_showRangeAxis\":true,\"cy_orientation\":\"HORIZONTAL\",\"cy_axisLabelFontSize\":3,\"cy_colorScheme\":\"Dark colors\",\"cy_showRangeZeroBaseline\":true,\"cy_colors\":[\"#1B9E77\",\"#D95F02\",\"#7570B3\"],\"cy_borderColor\":\"#6E016B\",\"cy_borderWidth\":0.3,\"cy_dataColumns\":[\"gal1RGsig\",\"gal4RGsig\",\"gal80Rsig\"],\"cy_axisColor\":\"#EDF8B1\"}",
+                    "NODE_CUSTOMGRAPHICS_6": "org.cytoscape.LineChart:{\"cy_lineWidth\":2.1,\"cy_range\":[-1.232,0.895],\"cy_showRangeAxis\":true,\"cy_axisLabelFontSize\":2,\"cy_colorScheme\":\"Set3 colors\",\"cy_showRangeZeroBaseline\":true,\"cy_colors\":[\"#8DD3C7\",\"#FFFFB3\",\"#BEBADA\"],\"cy_itemLabelFontSize\":2,\"cy_showDomainAxis\":true,\"cy_axisColor\":\"#41AB5D\",\"cy_axisWidth\":0.3,\"cy_borderWidth\":0.3,\"cy_borderColor\":\"#016450\",\"cy_dataColumns\":[\"gal1RGexp\",\"gal4RGexp\",\"gal80Rexp\"],\"cy_domainLabelPosition\":\"DOWN_45\",\"cy_showItemLabels\":true}",
+                    "NODE_CUSTOMGRAPHICS_7": "org.cytoscape.BarChart:{\"cy_range\":[-1.232,0.895],\"cy_type\":\"HEAT_STRIPS\",\"cy_colorScheme\":\"Green-White-Purple\",\"cy_colors\":[\"#FF00FF\",\"#FFFFFF\",\"#00FF00\"],\"cy_dataColumns\":[\"gal1RGexp\",\"gal4RGexp\",\"gal80Rexp\"]}",
+                    "NODE_CUSTOMGRAPHICS_8": "org.cytoscape.ding.customgraphics.bitmap.URLImageCustomGraphics,2,25.png,bitmap image",
+                    "NODE_CUSTOMGRAPHICS_9": "org.cytoscape.LinearGradient:{\"cy_gradientFractions\":[0.0,1.0],\"cy_gradientColors\":[\"#E0ECF4\",\"#8856A7\"]}",
+                    "NODE_CUSTOMGRAPHICS_POSITION_1": "S,N,c,0.00,0.00",
+                    "NODE_CUSTOMGRAPHICS_POSITION_2": "C,C,c,0.00,0.00",
+                    "NODE_CUSTOMGRAPHICS_POSITION_3": "W,E,c,0.00,0.00",
+                    "NODE_CUSTOMGRAPHICS_POSITION_4": "E,W,c,0.00,0.00",
+                    "NODE_CUSTOMGRAPHICS_POSITION_5": "N,S,c,0.00,0.00",
+                    "NODE_CUSTOMGRAPHICS_POSITION_6": "NW,SE,c,0.00,0.00",
+                    "NODE_CUSTOMGRAPHICS_POSITION_7": "NE,SW,c,0.00,0.00",
+                    "NODE_CUSTOMGRAPHICS_POSITION_8": "SW,NE,c,0.00,0.00",
+                    "NODE_CUSTOMGRAPHICS_POSITION_9": "SE,NW,c,0.00,0.00",
+                    "NODE_CUSTOMGRAPHICS_SIZE_1": "50.0",
+                    "NODE_CUSTOMGRAPHICS_SIZE_2": "50.0",
+                    "NODE_CUSTOMGRAPHICS_SIZE_3": "50.0",
+                    "NODE_CUSTOMGRAPHICS_SIZE_4": "50.0",
+                    "NODE_CUSTOMGRAPHICS_SIZE_5": "50.0",
+                    "NODE_CUSTOMGRAPHICS_SIZE_6": "50.0",
+                    "NODE_CUSTOMGRAPHICS_SIZE_7": "50.0",
+                    "NODE_CUSTOMGRAPHICS_SIZE_8": "50.0",
+                    "NODE_CUSTOMGRAPHICS_SIZE_9": "50.0",
+                    "NODE_DEPTH": "0.0",
+                    "NODE_FILL_COLOR": "#CCCCCC",
+                    "NODE_HEIGHT": "30.0",
+                    "NODE_LABEL_BACKGROUND_COLOR": "#B6B6B6",
+                    "NODE_LABEL_BACKGROUND_SHAPE": "NONE",
+                    "NODE_LABEL_BACKGROUND_TRANSPARENCY": "255",
+                    "NODE_LABEL_COLOR": "#333333",
+                    "NODE_LABEL_FONT_FACE": "Dialog,plain,12",
+                    "NODE_LABEL_FONT_SIZE": "12",
+                    "NODE_LABEL_POSITION": "C,C,c,0.00,0.00",
+                    "NODE_LABEL_ROTATION": "0.0",
+                    "NODE_LABEL_TRANSPARENCY": "255",
+                    "NODE_LABEL_WIDTH": "200.0",
+                    "NODE_NESTED_NETWORK_IMAGE_VISIBLE": "true",
+                    "NODE_PAINT": "#1E90FF",
+                    "NODE_SELECTED": "false",
+                    "NODE_SELECTED_PAINT": "#FFFF00",
+                    "NODE_SHAPE": "ROUND_RECTANGLE",
+                    "NODE_SIZE": "35.0",
+                    "NODE_TRANSPARENCY": "255",
+                    "NODE_VISIBLE": "true",
+                    "NODE_WIDTH": "70.0",
+                    "NODE_X_LOCATION": "0.0",
+                    "NODE_Y_LOCATION": "0.0",
+                    "NODE_Z_LOCATION": "0.0"
+                },
+                "dependencies": {
+                    "nodeCustomGraphicsSizeSync": "true",
+                    "nodeSizeLocked": "false"
+                },
+                "mappings": {
+                    "NODE_LABEL": {
+                        "type": "PASSTHROUGH",
+                        "definition": "COL=name,T=string"
+                    }
+                }
+            },
+            {
+                "properties_of": "edges:default",
+                "properties": {
+                    "EDGE_CURVED": "true",
+                    "EDGE_LABEL_AUTOROTATE": "false",
+                    "EDGE_LABEL_BACKGROUND_COLOR": "#B6B6B6",
+                    "EDGE_LABEL_BACKGROUND_SHAPE": "NONE",
+                    "EDGE_LABEL_BACKGROUND_TRANSPARENCY": "255",
+                    "EDGE_LABEL_COLOR": "#000000",
+                    "EDGE_LABEL_FONT_FACE": "Dialog,plain,12",
+                    "EDGE_LABEL_FONT_SIZE": "10",
+                    "EDGE_LABEL_POSITION": "C,C,c,0.00,0.00",
+                    "EDGE_LABEL_ROTATION": "0.0",
+                    "EDGE_LABEL_TRANSPARENCY": "255",
+                    "EDGE_LABEL_WIDTH": "200.0",
+                    "EDGE_LINE_TYPE": "SOLID",
+                    "EDGE_PAINT": "#323232",
+                    "EDGE_SELECTED": "false",
+                    "EDGE_SELECTED_PAINT": "#FF0000",
+                    "EDGE_SOURCE_ARROW_SELECTED_PAINT": "#FFFF00",
+                    "EDGE_SOURCE_ARROW_SHAPE": "NONE",
+                    "EDGE_SOURCE_ARROW_SIZE": "6.0",
+                    "EDGE_SOURCE_ARROW_UNSELECTED_PAINT": "#000000",
+                    "EDGE_STACKING": "AUTO_BEND",
+                    "EDGE_STACKING_DENSITY": "0.5",
+                    "EDGE_STROKE_SELECTED_PAINT": "#FF0000",
+                    "EDGE_STROKE_UNSELECTED_PAINT": "#666666",
+                    "EDGE_TARGET_ARROW_SELECTED_PAINT": "#FFFF00",
+                    "EDGE_TARGET_ARROW_SHAPE": "NONE",
+                    "EDGE_TARGET_ARROW_SIZE": "6.0",
+                    "EDGE_TARGET_ARROW_UNSELECTED_PAINT": "#000000",
+                    "EDGE_TRANSPARENCY": "255",
+                    "EDGE_UNSELECTED_PAINT": "#404040",
+                    "EDGE_VISIBLE": "true",
+                    "EDGE_WIDTH": "3.0",
+                    "EDGE_Z_ORDER": "0.0"
+                },
+                "dependencies": {
+                    "arrowColorMatchesEdge": "false"
+                }
+            },
+            {
+                "properties_of": "nodes",
+                "applies_to": 8069,
+                "properties": {
+                    "NODE_CUSTOMGRAPHICS_9": "org.cytoscape.LinearGradient:{\"cy_gradientFractions\":[0.0,1.0],\"cy_gradientColors\":[\"#FFFFFF\",\"#000000\"]}",
+                    "NODE_CUSTOMGRAPHICS_POSITION_9": "SE,NW,c,0.00,0.00",
+                    "NODE_CUSTOMGRAPHICS_SIZE_9": "50.0"
+                }
+            }
+        ]
+    },
+    {
+        "metaData": [
+            {
+                "name": "nodeAttributes",
+                "elementCount": 216,
+                "version": "1.0"
+            },
+            {
+                "name": "cyGroups",
+                "version": "1.0"
+            },
+            {
+                "name": "cyTableColumn",
+                "elementCount": 38,
+                "version": "1.0"
+            },
+            {
+                "name": "edges",
+                "elementCount": 9,
+                "idCounter": 8724,
+                "version": "1.0"
+            },
+            {
+                "name": "cyVisualProperties",
+                "elementCount": 4,
+                "version": "1.0"
+            },
+            {
+                "name": "cyHiddenAttributes",
+                "version": "1.0"
+            },
+            {
+                "name": "nodes",
+                "elementCount": 10,
+                "idCounter": 8069,
+                "version": "1.0"
+            },
+            {
+                "name": "cyNetworkRelations",
+                "version": "1.0"
+            },
+            {
+                "name": "networkAttributes",
+                "elementCount": 5,
+                "version": "1.0"
+            },
+            {
+                "name": "cartesianLayout",
+                "elementCount": 10,
+                "version": "1.0"
+            },
+            {
+                "name": "edgeAttributes",
+                "elementCount": 18,
+                "version": "1.0"
+            },
+            {
+                "name": "tableVisualProperties",
+                "version": "1.0"
+            },
+            {
+                "name": "cySubNetworks",
+                "version": "1.0"
+            }
+        ]
+    },
+    {
+        "status": [
+            {
+                "error": "",
+                "success": true
+            }
+        ]
+    }
+]

@@ -11,17 +11,26 @@ import { ChangeEvent } from 'react'
 
 interface StringEditorProps {
   optionName: string
+  // Human-readable label; falls back to `optionName` (the identity)
+  label?: string
   description?: string
   value: string
   setValue: (optionName: string, value: string) => void
   typeLabel?: string
-  typeColor?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error'
+  typeColor?:
+    | 'default'
+    | 'primary'
+    | 'secondary'
+    | 'success'
+    | 'warning'
+    | 'error'
   tableLayout?: boolean
   error?: boolean
 }
 
 export const StringEditor = ({
   optionName,
+  label,
   description,
   value,
   setValue,
@@ -30,6 +39,7 @@ export const StringEditor = ({
   tableLayout = false,
   error = false,
 }: StringEditorProps): JSX.Element => {
+  const displayLabel = label ?? optionName
   const handleChange = (event: ChangeEvent<HTMLInputElement>): void => {
     const newValue: any = event.target.value
     setValue(optionName, newValue as string)
@@ -47,16 +57,16 @@ export const StringEditor = ({
             maxWidth: 0,
           }}
         >
-          <Typography 
+          <Typography
             variant="body2"
             sx={{
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
             }}
-            title={optionName}
+            title={displayLabel}
           >
-            {optionName}
+            {displayLabel}
           </Typography>
         </Box>
         <Box
@@ -68,9 +78,9 @@ export const StringEditor = ({
           }}
         >
           {typeLabel && (
-            <Chip 
-              label={typeLabel} 
-              size="small" 
+            <Chip
+              label={typeLabel}
+              size="small"
               color={typeColor}
               sx={{ fontSize: '0.7rem', height: '22px' }}
             />
@@ -111,11 +121,19 @@ export const StringEditor = ({
         px: 2,
       }}
       secondaryAction={
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: '200px', justifyContent: 'flex-end' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            minWidth: '200px',
+            justifyContent: 'flex-end',
+          }}
+        >
           {typeLabel && (
-            <Chip 
-              label={typeLabel} 
-              size="small" 
+            <Chip
+              label={typeLabel}
+              size="small"
               color={typeColor}
               sx={{ fontSize: '0.7rem', height: '22px', flexShrink: 0 }}
             />
@@ -136,9 +154,9 @@ export const StringEditor = ({
       }
       disablePadding
     >
-      <ListItemText 
-        id={optionName} 
-        primary={optionName}
+      <ListItemText
+        id={optionName}
+        primary={displayLabel}
         sx={{ flex: '1 1 auto', minWidth: 0 }}
       />
     </ListItem>

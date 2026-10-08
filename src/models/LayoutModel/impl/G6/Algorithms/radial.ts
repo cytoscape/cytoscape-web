@@ -1,4 +1,3 @@
-import { ValueTypeName } from '../../../../TableModel'
 import { LayoutAlgorithm, LayoutAlgorithmType } from '../../../LayoutAlgorithm'
 
 export const radial: LayoutAlgorithm = {
@@ -18,27 +17,30 @@ export const radial: LayoutAlgorithm = {
     strictRadial: false,
     workerEnabled: true, // Whether to activate web-worker
   },
-  editables: {
-    unitRadius: {
+  editables: [
+    {
       name: 'unitRadius',
+      displayName: 'Unit Radius',
       description: 'The radius of the circle',
-      type: ValueTypeName.Integer,
-      value: 100,
+      type: 'text',
+      validationType: 'digits',
       defaultValue: 100,
     },
-    maxIteration: {
+    {
       name: 'maxIteration',
+      displayName: 'Max Iterations',
       description: 'Maximum number of iterations',
-      type: ValueTypeName.Integer,
-      value: 500,
+      type: 'text',
+      validationType: 'digits',
       defaultValue: 500,
     },
-    nodeSize: {
+    {
       name: 'nodeSize',
+      displayName: 'Node Size',
       description: 'Size of nodes used to detect collisions',
-      type: ValueTypeName.Integer,
-      value: 30,
+      type: 'text',
+      validationType: 'digits',
       defaultValue: 30,
     },
-  },
+  ],
 }

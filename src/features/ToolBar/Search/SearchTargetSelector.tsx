@@ -24,7 +24,14 @@ export const SearchTargetSelector = ({
   return (
     <FormControl component="fieldset" variant="standard">
       <FormLabel component="legend">Search Target</FormLabel>
-      <FormGroup row>
+      <FormGroup
+        sx={{
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-start',
+        }}
+      >
         <FormControlLabel
           control={
             <Checkbox

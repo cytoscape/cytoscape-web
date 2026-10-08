@@ -8,7 +8,7 @@ export function FontPicker(props: {
   onValueChange: (font: FontType) => void
   closePopover: (reason: string) => void
 }): React.ReactElement {
-  const { onValueChange, currentValue } = props
+  const { currentValue } = props
   const sortedFontTypes = Object.values(FontType).sort()
   const [localValue, setLocalValue] = React.useState(
     currentValue ?? FontType.SansSerif,
@@ -30,7 +30,10 @@ export function FontPicker(props: {
         {sortedFontTypes.map((font: FontType) => (
           <Box
             sx={{
-              color: localValue === font ? 'blue' : 'black',
+              color: (theme) =>
+                localValue === font
+                  ? theme.palette.primary.main
+                  : theme.palette.text.secondary,
               fontWeight: localValue === font ? 'bold' : 'normal',
               width: 100,
               display: 'flex',
@@ -49,9 +52,11 @@ export function FontPicker(props: {
           </Box>
         ))}
       </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1 }}
+      >
         <Button
-          color="primary"
+          variant="outlined"
           onClick={() => {
             props.closePopover('cancel')
             setLocalValue(currentValue ?? FontType.SansSerif)
@@ -60,13 +65,7 @@ export function FontPicker(props: {
           Cancel
         </Button>
         <Button
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-          }}
+          variant="contained"
           onClick={() => {
             props.onValueChange(localValue)
             props.closePopover('confirm')

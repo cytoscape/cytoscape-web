@@ -4,8 +4,8 @@
 
 The `AppMenu` feature provides the **Apps** toolbar menu, acting as the entry point for user-installed external apps and services. It integrates with the `AppManager` and `ServiceApps` systems to:
 
-- Discover active apps and their menu components
-- Render app-specific menus dynamically
+- Discover active apps and their menu entries — `'apps-menu'` resources, plain data the host renders
+- Render app-specific menu rows dynamically
 - Run service tasks and monitor their status
 - Open app/settings and task-status dialogs
 
@@ -20,8 +20,7 @@ The `AppMenu` feature provides the **Apps** toolbar menu, acting as the entry po
   - **AppManager Components**:
     - `AppSettingsDialog`: Manage installed apps and services.
     - `TaskStatusDialog`: Show progress of running service app tasks.
-  - **Dynamic Components**:
-    - `ExternalComponent`: Loads app-specific menu components at runtime.
+  - **`AppResourceStore`**: Runtime `'apps-menu'` resources registered through the App API (`registerMenuItem` / declarative `resources`).
   - **Menu Model Factory**:
     - `createMenuItems` (from `MenuFactory.tsx`): Converts `serviceApps` into TieredMenu models.
 
@@ -29,22 +28,19 @@ The `AppMenu` feature provides the **Apps** toolbar menu, acting as the entry po
 
 ### Menu Model Construction
 
-1. **Active App Components**
-   - Filters `apps` by `AppStatus.Active`.
-   - Extracts components of type `ComponentType.Menu` from each app.
-   - Builds `componentList` of `[appId, componentId]` pairs.
+1. **Runtime `'apps-menu'` resources** (the App API path)
+   - Reads `AppResourceStore` and keeps entries of active apps.
+   - Each entry is plain data — `title` (the label), `tooltip`, `icon` (an image URI, as for search-bar providers), `onClick`, `isEnabled`, `requires` — and the HOST renders it as a `DropdownMenuItem` (`data-testid="apps-menu-item-<appId>-<id>"`) with a fixed-size `MenuItemIcon` (`components/UriIcon.tsx`, shared with the search-bar provider icon): an SVG icon is a CSS mask painted in the row's text color, so only its shape comes from the app; a raster icon is an unchanged `<img>`. No app component is ever mounted inside the dropdown, so no app can change the shared menu's size, font, or colors.
+   - Enablement: `getResourceVisibility` (`requires.network` / `requires.selection` / app active) plus the app's `isEnabled(apis)` snapshot. Both are re-evaluated every time the menu opens (`open` is a deliberate dependency of `createAppMenu`); a throwing `isEnabled` is logged and counts as disabled.
+   - Click: closes the dropdown, then calls `onClick(buildPerAppApis(appId))`. Throws and rejected promises are logged, never surfaced into the menu. Apps that need UI open it from `onClick` via `apis.dialog.open(...)` (rendered by `AppDialogHost`) or `apis.resource.openModal(id)` (rendered by `ModalLauncherHost`) — both outside the menu, in the host-owned `AppDialogShell`.
 
-2. **App Menu Items**
-   - For each `(appId, componentId)`, uses `ExternalComponent(appId, './' + componentId)` to create a React component.
-   - Wraps each in a `MenuItem` template, passing `handleClose` so apps can close the menu after actions.
-
-3. **Service Menu Items**
+2. **Service Menu Items**
    - Uses `createMenuItems(serviceApps, handleRun)` to build items that run service tasks via `useServiceTaskRunner`.
 
-4. **Base Menu**
+3. **Base Menu**
    - Always includes a **Manage Apps...** entry that opens the `AppSettingsDialog`.
 
-5. **Final Model**
+4. **Final Model**
    - Combines app items, service items, optional divider, and base menu into a single `menuModel`.
    - Model is recomputed when `apps`, `serviceApps`, or `appStateUpdated` change.
 
@@ -56,7 +52,13 @@ The `AppMenu` feature provides the **Apps** toolbar menu, acting as the entry po
     - Toggles the `OverlayPanel` containing the `TieredMenu`.
 
 - **Running a Service Task**
-  - Selecting a service menu item calls `handleRun(url)`:
+  - Selecting a service menu item calls `onSelectApp(app)`, supplied by
+    `useServiceAppMenu`. The row carries no dialog of its own: the hook closes
+    the host menu and records the picked app, then renders `AppMenuItemDialog`
+    in the `dialogs` fragment the menu component mounts outside the menu. A
+    menu row is unmounted the moment the menu closes, so a dialog kept inside
+    one was destroyed with it (#745).
+  - Submitting that dialog calls `handleRun(url)`:
     - Closes the menu and opens `TaskStatusDialog`.
     - Uses `run(url)` from `useServiceTaskRunner` to submit and monitor the task.
     - Shows a notification dialog if the service returns a non-complete status or throws.
@@ -70,9 +72,11 @@ The `AppMenu` feature provides the **Apps** toolbar menu, acting as the entry po
 
 ## Design Decisions
 
-- **Dynamic Menu via External Components**
-  - Apps contribute menu entries by declaring components of type `ComponentType.Menu`.
-  - `ExternalComponent` + webpack module federation allows loading components from external bundles at runtime.
+- **Host-rendered menu rows for App API entries**
+  - `'apps-menu'` resources are data, not components: the dropdown is shared by every installed app and the host's own items, so the host owns 100% of its rendering. Isolated surfaces (right panel, dialogs) still take full app components.
+
+- **One way to contribute a menu entry**
+  - Until App API 1.0.0-beta.5 an app could also declare menu components in `CyApp.components`, which the host mounted as rows. A row unmounts when the menu closes, so such a component could not show UI of its own (#784), and the field was removed (#786). An app record that still carries it contributes nothing to the menu.
 
 - **Separation of Concerns**
   - `AppMenu` focuses on wiring UI to stores and dialogs.

@@ -1,0 +1,399 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { dispatchCyWebEvent } from '../event-bus/dispatchCyWebEvent'
+// src/app-api/core/layoutApi.test.ts
+// Plain Jest tests for layoutApi core — no renderHook, no React context.
+import { AppCodes } from '../types/ApiResult'
+import { layoutApi } from './layoutApi'
+
+// ── Mock: dispatchCyWebEvent ──────────────────────────────────────────────────
+
+vi.mock('../event-bus/dispatchCyWebEvent', () => ({
+  dispatchCyWebEvent: vi.fn(),
+}))
+
+// Access the auto-mocked function after registration
+const mockDispatchCyWebEvent = vi.mocked(dispatchCyWebEvent)
+
+// ── Mock: LayoutStore ─────────────────────────────────────────────────────────
+
+const mockSetIsRunning = vi.fn()
+
+const mockCircleAlgorithm = {
+  name: 'circle',
+  engineName: 'testEngine',
+  displayName: 'Circle Layout',
+  type: 'geometric',
+  description: 'Arrange nodes in a circle',
+  parameters: {},
+}
+
+const mockLayoutEngines = [
+  {
+    name: 'testEngine',
+    defaultAlgorithmName: 'circle',
+    algorithms: { circle: mockCircleAlgorithm },
+    apply: vi.fn(),
+  },
+]
+
+const mockPreferredLayout = mockCircleAlgorithm
+
+const mockLayoutState = {
+  layoutEngines: mockLayoutEngines,
+  preferredLayout: mockPreferredLayout,
+  isRunning: false,
+  setIsRunning: mockSetIsRunning,
+}
+
+vi.mock('../../data/hooks/stores/LayoutStore', () => ({
+  useLayoutStore: { getState: vi.fn(() => mockLayoutState) },
+}))
+
+// ── Mock: NetworkStore ────────────────────────────────────────────────────────
+
+const mockNetworks = new Map<string, any>()
+
+vi.mock('../../data/hooks/stores/NetworkStore', () => ({
+  useNetworkStore: { getState: vi.fn(() => ({ networks: mockNetworks })) },
+}))
+
+// ── Mock: ViewModelStore ──────────────────────────────────────────────────────
+
+const mockGetViewModel = vi.fn()
+const mockUpdateNodePositions = vi.fn()
+
+vi.mock('../../data/hooks/stores/ViewModelStore', () => ({
+  useViewModelStore: {
+    getState: vi.fn(() => ({
+      getViewModel: mockGetViewModel,
+      updateNodePositions: mockUpdateNodePositions,
+    })),
+  },
+}))
+
+// ── Mock: RendererFunctionStore ───────────────────────────────────────────────
+
+const mockGetFunction = vi.fn()
+
+vi.mock('../../data/hooks/stores/RendererFunctionStore', () => ({
+  useRendererFunctionStore: {
+    getState: vi.fn(() => ({ getFunction: mockGetFunction })),
+  },
+}))
+
+// ── Mock: UiStateStore, WorkspaceStore, UndoStore (for corePostEdit) ─────────
+
+const mockSetUndoStack = vi.fn()
+const mockSetRedoStack = vi.fn()
+
+vi.mock('../../data/hooks/stores/UiStateStore', () => ({
+  useUiStateStore: {
+    getState: vi.fn(() => ({ ui: { activeNetworkView: '' } })),
+  },
+}))
+
+const mockSetNetworkModified = vi.fn()
+
+vi.mock('../../data/hooks/stores/WorkspaceStore', () => ({
+  useWorkspaceStore: {
+    getState: vi.fn(() => ({
+      workspace: { currentNetworkId: 'net1', networkModified: {} },
+      setNetworkModified: mockSetNetworkModified,
+    })),
+  },
+}))
+
+vi.mock('../../data/hooks/stores/UndoStore', () => ({
+  useUndoStore: {
+    getState: vi.fn(() => ({
+      undoRedoStacks: {},
+      setUndoStack: mockSetUndoStack,
+      setRedoStack: mockSetRedoStack,
+    })),
+  },
+}))
+
+// ── Test setup ────────────────────────────────────────────────────────────────
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  mockNetworks.clear()
+  // Restore default layout state
+  mockLayoutState.layoutEngines = mockLayoutEngines
+  mockLayoutState.preferredLayout = mockPreferredLayout
+  // Default: no view model
+  mockGetViewModel.mockReturnValue(undefined)
+  // Default: fit function available
+  const mockFitFn = vi.fn()
+  mockGetFunction.mockReturnValue(mockFitFn)
+})
+
+// ── getAvailableLayouts ────────────────────────────────────────────────────────
+
+describe('getAvailableLayouts', () => {
+  it('returns all algorithm infos from layout engines', () => {
+    const result = layoutApi.getAvailableLayouts()
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.layouts).toHaveLength(1)
+      expect(result.data.layouts[0]).toMatchObject({
+        engineName: 'testEngine',
+        algorithmName: 'circle',
+        displayName: 'Circle Layout',
+        type: 'geometric',
+      })
+    }
+  })
+
+  it('returns empty array when no engines registered', () => {
+    mockLayoutState.layoutEngines = []
+    const result = layoutApi.getAvailableLayouts()
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.layouts).toHaveLength(0)
+    }
+  })
+
+  it('returns all algorithms across multiple engines', () => {
+    const extraEngine = {
+      name: 'anotherEngine',
+      defaultAlgorithmName: 'grid',
+      algorithms: {
+        grid: {
+          name: 'grid',
+          engineName: 'anotherEngine',
+          displayName: 'Grid Layout',
+          type: 'geometric',
+          description: 'Arrange in grid',
+          parameters: {},
+        },
+      },
+      apply: vi.fn(),
+    }
+    mockLayoutState.layoutEngines = [...mockLayoutEngines, extraEngine] as any[]
+    const result = layoutApi.getAvailableLayouts()
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.layouts).toHaveLength(2)
+    }
+  })
+
+  it('reports appId only for app-registered engines, with the qualified name', () => {
+    const appEngine = {
+      name: 'mcode',
+      appId: 'mcode',
+      defaultAlgorithmName: 'mcode::cluster',
+      algorithms: {
+        'mcode::cluster': {
+          name: 'mcode::cluster',
+          engineName: 'mcode',
+          displayName: 'MCODE Cluster Layout',
+          type: 'other',
+          description: '',
+          parameters: {},
+        },
+      },
+      apply: vi.fn(),
+    }
+    mockLayoutState.layoutEngines = [...mockLayoutEngines, appEngine] as any[]
+    const result = layoutApi.getAvailableLayouts()
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.layouts[0]).not.toHaveProperty('appId')
+      expect(result.data.layouts[1]).toMatchObject({
+        engineName: 'mcode',
+        algorithmName: 'mcode::cluster',
+        appId: 'mcode',
+      })
+    }
+  })
+})
+
+// ── applyLayout — validation errors ──────────────────────────────────────────
+
+describe('applyLayout — validation errors', () => {
+  it('returns NetworkNotFound when network does not exist', async () => {
+    const result = await layoutApi.applyLayout('nonexistent')
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
+    }
+  })
+
+  it('returns LayoutEngineNotFound for unknown algorithmName', async () => {
+    mockNetworks.set('net1', { nodes: [], edges: [] })
+    const result = await layoutApi.applyLayout('net1', {
+      algorithmName: 'unknownAlgorithm',
+    })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(AppCodes.LAYOUT_ENGINE_NOT_FOUND.code)
+    }
+  })
+
+  it('returns LayoutEngineNotFound when no engine supports preferredLayout', async () => {
+    mockNetworks.set('net1', { nodes: [], edges: [] })
+    mockLayoutState.preferredLayout = {
+      name: 'nonexistentLayout',
+      engineName: '',
+      displayName: '',
+      type: 'other',
+      description: '',
+      parameters: {},
+    }
+    const result = await layoutApi.applyLayout('net1')
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(AppCodes.LAYOUT_ENGINE_NOT_FOUND.code)
+    }
+  })
+})
+
+// ── applyLayout — happy path ──────────────────────────────────────────────────
+
+describe('applyLayout — happy path', () => {
+  beforeEach(() => {
+    mockNetworks.set('net1', {
+      nodes: [{ id: 'node1' }],
+      edges: [],
+    })
+    mockGetViewModel.mockReturnValue({
+      nodeViews: { node1: { x: 0, y: 0 } },
+    })
+    // Engine immediately calls callback with new positions
+    mockLayoutEngines[0].apply.mockImplementation(
+      (nodes: any, edges: any, callback: any) => {
+        callback(new Map([['node1', [10, 20]]]))
+      },
+    )
+  })
+
+  it('resolves with ok() after layout completes', async () => {
+    const result = await layoutApi.applyLayout('net1')
+    expect(result.success).toBe(true)
+  })
+
+  it('hands the network id to the engine as the fifth apply argument', async () => {
+    await layoutApi.applyLayout('net1')
+    const call = mockLayoutEngines[0].apply.mock.calls[0]
+    expect(call[3]).toBe(mockCircleAlgorithm)
+    expect(call[4]).toBe('net1')
+  })
+
+  it('updates node positions via ViewModelStore', async () => {
+    const newPositions = new Map([['node1', [10, 20]]])
+    await layoutApi.applyLayout('net1')
+    expect(mockUpdateNodePositions).toHaveBeenCalledWith('net1', newPositions)
+  })
+
+  it('dispatches layout:started before layout executes', async () => {
+    await layoutApi.applyLayout('net1')
+    const startedCall = mockDispatchCyWebEvent.mock.calls.find(
+      ([type]) => type === 'layout:started',
+    )
+    expect(startedCall).toBeDefined()
+    expect(startedCall![1]).toMatchObject({
+      networkId: 'net1',
+      algorithm: 'circle',
+    })
+  })
+
+  it('dispatches layout:completed after positions committed', async () => {
+    await layoutApi.applyLayout('net1')
+    const completedCall = mockDispatchCyWebEvent.mock.calls.find(
+      ([type]) => type === 'layout:completed',
+    )
+    expect(completedCall).toBeDefined()
+    expect(completedCall![1]).toMatchObject({
+      networkId: 'net1',
+      algorithm: 'circle',
+    })
+  })
+
+  it('sets isRunning true then false', async () => {
+    await layoutApi.applyLayout('net1')
+    expect(mockSetIsRunning).toHaveBeenNthCalledWith(1, true)
+    expect(mockSetIsRunning).toHaveBeenNthCalledWith(2, false)
+  })
+
+  it('records undo via postEdit with APPLY_LAYOUT command', async () => {
+    await layoutApi.applyLayout('net1')
+    expect(mockSetUndoStack).toHaveBeenCalledWith('net1', expect.any(Array))
+    const calls = mockSetUndoStack.mock.calls[0][1]
+    expect(calls[0].undoCommand).toBe('APPLY_LAYOUT')
+  })
+
+  it('calls fit function when fitAfterLayout is true (default)', async () => {
+    const mockFitFn = vi.fn()
+    mockGetFunction.mockReturnValue(mockFitFn)
+    await layoutApi.applyLayout('net1')
+    expect(mockFitFn).toHaveBeenCalled()
+  })
+
+  it('does not call fit when fitAfterLayout is false', async () => {
+    const mockFitFn = vi.fn()
+    mockGetFunction.mockReturnValue(mockFitFn)
+    await layoutApi.applyLayout('net1', { fitAfterLayout: false })
+    expect(mockFitFn).not.toHaveBeenCalled()
+  })
+
+  it('layout succeeds when fit function is not registered (warning only)', async () => {
+    mockGetFunction.mockReturnValue(undefined)
+    const result = await layoutApi.applyLayout('net1')
+    expect(result.success).toBe(true)
+  })
+
+  it('uses specified algorithmName to select engine', async () => {
+    await layoutApi.applyLayout('net1', { algorithmName: 'circle' })
+    expect(mockLayoutEngines[0].apply).toHaveBeenCalled()
+  })
+
+  it('records undo on the stack of the laid-out network, not the current one', async () => {
+    // WorkspaceStore mock reports currentNetworkId 'net1'; lay out 'net2'.
+    mockNetworks.set('net2', { nodes: [{ id: 'node1' }], edges: [] })
+    await layoutApi.applyLayout('net2')
+    expect(mockSetUndoStack).toHaveBeenCalledWith('net2', expect.any(Array))
+  })
+})
+
+// ── applyLayout — engine failure ──────────────────────────────────────────────
+
+describe('applyLayout — engine failure', () => {
+  beforeEach(() => {
+    mockNetworks.set('net1', { nodes: [{ id: 'node1' }], edges: [] })
+    mockLayoutEngines[0].apply.mockImplementation(() => {
+      throw new Error('malformed engine')
+    })
+  })
+
+  // The throwing implementation outlives clearAllMocks (which clears calls,
+  // not implementations), so it must be reset or it leaks into later suites
+  afterEach(() => {
+    mockLayoutEngines[0].apply.mockReset()
+  })
+
+  it('resolves fail() instead of throwing when engine.apply throws synchronously', async () => {
+    // Must not reject — the API contract is "never throw across the boundary"
+    const result = await layoutApi.applyLayout('net1')
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(AppCodes.OPERATION_FAILED.code)
+      expect(result.error.message).toContain('malformed engine')
+    }
+  })
+
+  it('resets isRunning to false when engine.apply throws synchronously', async () => {
+    await layoutApi.applyLayout('net1')
+    expect(mockSetIsRunning).toHaveBeenNthCalledWith(1, true)
+    expect(mockSetIsRunning).toHaveBeenNthCalledWith(2, false)
+  })
+
+  it('does not dispatch layout:completed when the engine throws', async () => {
+    await layoutApi.applyLayout('net1')
+    const completedCall = mockDispatchCyWebEvent.mock.calls.find(
+      ([type]) => type === 'layout:completed',
+    )
+    expect(completedCall).toBeUndefined()
+  })
+})

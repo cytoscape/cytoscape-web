@@ -1,5 +1,6 @@
-import * as React from 'react'
 import { Box } from '@mui/material'
+import * as React from 'react'
+
 import { COLORS } from '../utils/constants'
 
 interface FormSectionProps {
@@ -27,4 +28,3 @@ export const FormSection: React.FC<FormSectionProps> = ({
     </Box>
   )
 }
-

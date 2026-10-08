@@ -1,3 +1,6 @@
+// @vitest-environment node
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { getNdexClient } from './client'
 import {
   deleteNdexWorkspace,
@@ -7,12 +10,12 @@ import {
 } from './workspace'
 
 // Mock the NDEx client module
-jest.mock('./client', () => ({
-  getNdexClient: jest.fn(),
+vi.mock('./client', () => ({
+  getNdexClient: vi.fn(),
 }))
 
 describe('fetchMyNdexWorkspaces', () => {
-  const mockGetNdexClient = getNdexClient as jest.MockedFunction<
+  const mockGetNdexClient = getNdexClient as import('vitest').MockedFunction<
     typeof getNdexClient
   >
 
@@ -24,7 +27,7 @@ describe('fetchMyNdexWorkspaces', () => {
   })
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should fetch user workspaces from NDEx', async () => {
@@ -35,8 +38,9 @@ describe('fetchMyNdexWorkspaces', () => {
     ]
 
     const mockClient = {
-      getUserCyWebWorkspaces: jest.fn().mockResolvedValue(mockWorkspaces),
-      setAuthToken: jest.fn(),
+      workspace: {
+        getUserCyWebWorkspaces: vi.fn().mockResolvedValue(mockWorkspaces),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -44,7 +48,7 @@ describe('fetchMyNdexWorkspaces', () => {
     const result = await fetchMyNdexWorkspaces(mockAccessToken)
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(mockAccessToken, undefined)
-    expect(mockClient.getUserCyWebWorkspaces).toHaveBeenCalled()
+    expect(mockClient.workspace.getUserCyWebWorkspaces).toHaveBeenCalled()
     expect(result).toEqual(mockWorkspaces)
     expect(result).toHaveLength(2)
   })
@@ -55,8 +59,9 @@ describe('fetchMyNdexWorkspaces', () => {
     const mockWorkspaces = [createMockWorkspace('workspace-1', 'Workspace 1')]
 
     const mockClient = {
-      getUserCyWebWorkspaces: jest.fn().mockResolvedValue(mockWorkspaces),
-      setAuthToken: jest.fn(),
+      workspace: {
+        getUserCyWebWorkspaces: vi.fn().mockResolvedValue(mockWorkspaces),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -64,7 +69,7 @@ describe('fetchMyNdexWorkspaces', () => {
     const result = await fetchMyNdexWorkspaces(mockAccessToken, mockNdexUrl)
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(mockAccessToken, mockNdexUrl)
-    expect(mockClient.getUserCyWebWorkspaces).toHaveBeenCalled()
+    expect(mockClient.workspace.getUserCyWebWorkspaces).toHaveBeenCalled()
     expect(result).toEqual(mockWorkspaces)
   })
 
@@ -73,8 +78,9 @@ describe('fetchMyNdexWorkspaces', () => {
     const mockWorkspaces: any[] = []
 
     const mockClient = {
-      getUserCyWebWorkspaces: jest.fn().mockResolvedValue(mockWorkspaces),
-      setAuthToken: jest.fn(),
+      workspace: {
+        getUserCyWebWorkspaces: vi.fn().mockResolvedValue(mockWorkspaces),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -90,8 +96,9 @@ describe('fetchMyNdexWorkspaces', () => {
     const mockWorkspaces = [createMockWorkspace('workspace-1', 'My Workspace')]
 
     const mockClient = {
-      getUserCyWebWorkspaces: jest.fn().mockResolvedValue(mockWorkspaces),
-      setAuthToken: jest.fn(),
+      workspace: {
+        getUserCyWebWorkspaces: vi.fn().mockResolvedValue(mockWorkspaces),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -116,8 +123,9 @@ describe('fetchMyNdexWorkspaces', () => {
     ]
 
     const mockClient = {
-      getUserCyWebWorkspaces: jest.fn().mockResolvedValue(mockWorkspaces),
-      setAuthToken: jest.fn(),
+      workspace: {
+        getUserCyWebWorkspaces: vi.fn().mockResolvedValue(mockWorkspaces),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -133,8 +141,9 @@ describe('fetchMyNdexWorkspaces', () => {
     const mockError = new Error('Failed to fetch workspaces')
 
     const mockClient = {
-      getUserCyWebWorkspaces: jest.fn().mockRejectedValue(mockError),
-      setAuthToken: jest.fn(),
+      workspace: {
+        getUserCyWebWorkspaces: vi.fn().mockRejectedValue(mockError),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -144,7 +153,7 @@ describe('fetchMyNdexWorkspaces', () => {
     )
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(mockAccessToken, undefined)
-    expect(mockClient.getUserCyWebWorkspaces).toHaveBeenCalled()
+    expect(mockClient.workspace.getUserCyWebWorkspaces).toHaveBeenCalled()
   })
 
   it('should cast result to Workspace[] type', async () => {
@@ -152,8 +161,9 @@ describe('fetchMyNdexWorkspaces', () => {
     const mockWorkspaces = [createMockWorkspace('workspace-1', 'Workspace 1')]
 
     const mockClient = {
-      getUserCyWebWorkspaces: jest.fn().mockResolvedValue(mockWorkspaces),
-      setAuthToken: jest.fn(),
+      workspace: {
+        getUserCyWebWorkspaces: vi.fn().mockResolvedValue(mockWorkspaces),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -168,7 +178,7 @@ describe('fetchMyNdexWorkspaces', () => {
 })
 
 describe('fetchMyNdexAccountNetworks', () => {
-  const mockGetNdexClient = getNdexClient as jest.MockedFunction<
+  const mockGetNdexClient = getNdexClient as import('vitest').MockedFunction<
     typeof getNdexClient
   >
 
@@ -178,7 +188,7 @@ describe('fetchMyNdexAccountNetworks', () => {
   })
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should fetch account networks from NDEx', async () => {
@@ -189,8 +199,12 @@ describe('fetchMyNdexAccountNetworks', () => {
     ]
 
     const mockClient = {
-      getAccountPageNetworks: jest.fn().mockResolvedValue(mockNetworks),
-      setAuthToken: jest.fn(),
+      user: {
+        authenticate: vi
+          .fn()
+          .mockResolvedValue({ externalId: 'user-uuid-123' }),
+        getAccountPageNetworks: vi.fn().mockResolvedValue(mockNetworks),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -198,7 +212,12 @@ describe('fetchMyNdexAccountNetworks', () => {
     const result = await fetchMyNdexAccountNetworks(mockAccessToken)
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(mockAccessToken, undefined)
-    expect(mockClient.getAccountPageNetworks).toHaveBeenCalledWith(0, 1000)
+    expect(mockClient.user.authenticate).toHaveBeenCalled()
+    expect(mockClient.user.getAccountPageNetworks).toHaveBeenCalledWith(
+      'user-uuid-123',
+      0,
+      1000,
+    )
     expect(result).toEqual(mockNetworks)
     expect(result).toHaveLength(2)
   })
@@ -208,15 +227,23 @@ describe('fetchMyNdexAccountNetworks', () => {
     const mockNetworks = [createMockNetwork('network-1', 'Network 1')]
 
     const mockClient = {
-      getAccountPageNetworks: jest.fn().mockResolvedValue(mockNetworks),
-      setAuthToken: jest.fn(),
+      user: {
+        authenticate: vi
+          .fn()
+          .mockResolvedValue({ externalId: 'user-uuid-123' }),
+        getAccountPageNetworks: vi.fn().mockResolvedValue(mockNetworks),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
 
     const result = await fetchMyNdexAccountNetworks(mockAccessToken, 10, 50)
 
-    expect(mockClient.getAccountPageNetworks).toHaveBeenCalledWith(10, 50)
+    expect(mockClient.user.getAccountPageNetworks).toHaveBeenCalledWith(
+      'user-uuid-123',
+      10,
+      50,
+    )
     expect(result).toEqual(mockNetworks)
   })
 
@@ -226,8 +253,12 @@ describe('fetchMyNdexAccountNetworks', () => {
     const mockNetworks = [createMockNetwork('network-1', 'Network 1')]
 
     const mockClient = {
-      getAccountPageNetworks: jest.fn().mockResolvedValue(mockNetworks),
-      setAuthToken: jest.fn(),
+      user: {
+        authenticate: vi
+          .fn()
+          .mockResolvedValue({ externalId: 'user-uuid-123' }),
+        getAccountPageNetworks: vi.fn().mockResolvedValue(mockNetworks),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -248,8 +279,12 @@ describe('fetchMyNdexAccountNetworks', () => {
     const mockNetworks: any[] = []
 
     const mockClient = {
-      getAccountPageNetworks: jest.fn().mockResolvedValue(mockNetworks),
-      setAuthToken: jest.fn(),
+      user: {
+        authenticate: vi
+          .fn()
+          .mockResolvedValue({ externalId: 'user-uuid-123' }),
+        getAccountPageNetworks: vi.fn().mockResolvedValue(mockNetworks),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -265,8 +300,12 @@ describe('fetchMyNdexAccountNetworks', () => {
     const mockError = new Error('Failed to fetch account networks')
 
     const mockClient = {
-      getAccountPageNetworks: jest.fn().mockRejectedValue(mockError),
-      setAuthToken: jest.fn(),
+      user: {
+        authenticate: vi
+          .fn()
+          .mockResolvedValue({ externalId: 'user-uuid-123' }),
+        getAccountPageNetworks: vi.fn().mockRejectedValue(mockError),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -280,7 +319,7 @@ describe('fetchMyNdexAccountNetworks', () => {
 })
 
 describe('searchNdexNetworks', () => {
-  const mockGetNdexClient = getNdexClient as jest.MockedFunction<
+  const mockGetNdexClient = getNdexClient as import('vitest').MockedFunction<
     typeof getNdexClient
   >
 
@@ -290,7 +329,7 @@ describe('searchNdexNetworks', () => {
   })
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should search networks in NDEx without authentication', async () => {
@@ -303,8 +342,11 @@ describe('searchNdexNetworks', () => {
     }
 
     const mockClient = {
-      searchNetworks: jest.fn().mockResolvedValue(mockSearchResults),
-      setAuthToken: jest.fn(),
+      networks: {
+        v2: {
+          searchNetworks: vi.fn().mockResolvedValue(mockSearchResults),
+        },
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -312,7 +354,7 @@ describe('searchNdexNetworks', () => {
     const result = await searchNdexNetworks(mockSearchValue)
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(undefined, undefined)
-    expect(mockClient.searchNetworks).toHaveBeenCalledWith(
+    expect(mockClient.networks.v2.searchNetworks).toHaveBeenCalledWith(
       mockSearchValue,
       0,
       1000,
@@ -329,8 +371,11 @@ describe('searchNdexNetworks', () => {
     }
 
     const mockClient = {
-      searchNetworks: jest.fn().mockResolvedValue(mockSearchResults),
-      setAuthToken: jest.fn(),
+      networks: {
+        v2: {
+          searchNetworks: vi.fn().mockResolvedValue(mockSearchResults),
+        },
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -338,7 +383,7 @@ describe('searchNdexNetworks', () => {
     const result = await searchNdexNetworks(mockSearchValue, mockAccessToken)
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(mockAccessToken, undefined)
-    expect(mockClient.searchNetworks).toHaveBeenCalledWith(
+    expect(mockClient.networks.v2.searchNetworks).toHaveBeenCalledWith(
       mockSearchValue,
       0,
       1000,
@@ -353,15 +398,18 @@ describe('searchNdexNetworks', () => {
     }
 
     const mockClient = {
-      searchNetworks: jest.fn().mockResolvedValue(mockSearchResults),
-      setAuthToken: jest.fn(),
+      networks: {
+        v2: {
+          searchNetworks: vi.fn().mockResolvedValue(mockSearchResults),
+        },
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
 
     const result = await searchNdexNetworks(mockSearchValue, undefined, 20, 50)
 
-    expect(mockClient.searchNetworks).toHaveBeenCalledWith(
+    expect(mockClient.networks.v2.searchNetworks).toHaveBeenCalledWith(
       mockSearchValue,
       20,
       50,
@@ -378,8 +426,11 @@ describe('searchNdexNetworks', () => {
     }
 
     const mockClient = {
-      searchNetworks: jest.fn().mockResolvedValue(mockSearchResults),
-      setAuthToken: jest.fn(),
+      networks: {
+        v2: {
+          searchNetworks: vi.fn().mockResolvedValue(mockSearchResults),
+        },
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -403,8 +454,11 @@ describe('searchNdexNetworks', () => {
     }
 
     const mockClient = {
-      searchNetworks: jest.fn().mockResolvedValue(mockSearchResults),
-      setAuthToken: jest.fn(),
+      networks: {
+        v2: {
+          searchNetworks: vi.fn().mockResolvedValue(mockSearchResults),
+        },
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -418,8 +472,11 @@ describe('searchNdexNetworks', () => {
   it('should handle undefined search results', async () => {
     const mockSearchValue = 'test query'
     const mockClient = {
-      searchNetworks: jest.fn().mockResolvedValue(undefined),
-      setAuthToken: jest.fn(),
+      networks: {
+        v2: {
+          searchNetworks: vi.fn().mockResolvedValue(undefined),
+        },
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -434,8 +491,11 @@ describe('searchNdexNetworks', () => {
     const mockError = new Error('Search failed')
 
     const mockClient = {
-      searchNetworks: jest.fn().mockRejectedValue(mockError),
-      setAuthToken: jest.fn(),
+      networks: {
+        v2: {
+          searchNetworks: vi.fn().mockRejectedValue(mockError),
+        },
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -449,12 +509,12 @@ describe('searchNdexNetworks', () => {
 })
 
 describe('deleteNdexWorkspace', () => {
-  const mockGetNdexClient = getNdexClient as jest.MockedFunction<
+  const mockGetNdexClient = getNdexClient as import('vitest').MockedFunction<
     typeof getNdexClient
   >
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should delete a workspace from NDEx', async () => {
@@ -462,8 +522,9 @@ describe('deleteNdexWorkspace', () => {
     const mockAccessToken = 'test-access-token'
 
     const mockClient = {
-      deleteCyWebWorkspace: jest.fn().mockResolvedValue(undefined),
-      setAuthToken: jest.fn(),
+      workspace: {
+        deleteCyWebWorkspace: vi.fn().mockResolvedValue(undefined),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -471,7 +532,7 @@ describe('deleteNdexWorkspace', () => {
     await deleteNdexWorkspace(mockWorkspaceId, mockAccessToken)
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(mockAccessToken, undefined)
-    expect(mockClient.deleteCyWebWorkspace).toHaveBeenCalledWith(
+    expect(mockClient.workspace.deleteCyWebWorkspace).toHaveBeenCalledWith(
       mockWorkspaceId,
     )
   })
@@ -482,8 +543,9 @@ describe('deleteNdexWorkspace', () => {
     const mockNdexUrl = 'https://custom.ndex.org'
 
     const mockClient = {
-      deleteCyWebWorkspace: jest.fn().mockResolvedValue(undefined),
-      setAuthToken: jest.fn(),
+      workspace: {
+        deleteCyWebWorkspace: vi.fn().mockResolvedValue(undefined),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -491,7 +553,7 @@ describe('deleteNdexWorkspace', () => {
     await deleteNdexWorkspace(mockWorkspaceId, mockAccessToken, mockNdexUrl)
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(mockAccessToken, mockNdexUrl)
-    expect(mockClient.deleteCyWebWorkspace).toHaveBeenCalledWith(
+    expect(mockClient.workspace.deleteCyWebWorkspace).toHaveBeenCalledWith(
       mockWorkspaceId,
     )
   })
@@ -502,8 +564,9 @@ describe('deleteNdexWorkspace', () => {
     const mockError = new Error('Delete failed')
 
     const mockClient = {
-      deleteCyWebWorkspace: jest.fn().mockRejectedValue(mockError),
-      setAuthToken: jest.fn(),
+      workspace: {
+        deleteCyWebWorkspace: vi.fn().mockRejectedValue(mockError),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -513,7 +576,7 @@ describe('deleteNdexWorkspace', () => {
     ).rejects.toThrow('Delete failed')
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(mockAccessToken, undefined)
-    expect(mockClient.deleteCyWebWorkspace).toHaveBeenCalledWith(
+    expect(mockClient.workspace.deleteCyWebWorkspace).toHaveBeenCalledWith(
       mockWorkspaceId,
     )
   })

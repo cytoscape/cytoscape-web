@@ -4,22 +4,22 @@ This directory contains all project documentation for Cytoscape Web. Documents a
 
 ## How to Navigate
 
-| Starting Point             | When to Use                                                                                   |
-| -------------------------- | --------------------------------------------------------------------------------------------- |
-| `CLAUDE.md` (project root) | LLM context — architecture summary, commands, conventions. Loaded automatically by LLM agents |
-| `docs/` (this directory)   | Detailed reference — specifications, design docs, workflow templates                          |
-| `src/features/*_docs/`     | Feature-level behavior docs — co-located with source code                                     |
+| Starting Point                         | When to Use                                                                 |
+| -------------------------------------- | --------------------------------------------------------------------------- |
+| [`guides/README.md`](guides/README.md) | Core Developer's Guide — the index for human contributors; start here       |
+| `AGENTS.md` (project root)             | Authoritative LLM context — architecture summary, commands, and conventions |
+| `docs/` (this directory)               | Detailed reference — specifications, design docs, workflow templates        |
+| `src/features/*_docs/`                 | Feature-level behavior docs — co-located with source code                   |
 
 ## Directory Map
 
-| Directory                          | Audience    | Purpose                                               | Status         |
-| ---------------------------------- | ----------- | ----------------------------------------------------- | -------------- |
-| [specifications/](specifications/) | LLM + Human | Behavioral specs, validation rules, creation patterns | 6 documents    |
-| [prompts/](prompts/)               | LLM         | Workflow templates for LLM-assisted tasks             | 5 templates    |
-| [design/](design/)                 | LLM + Human | Feature and subsystem design documents                | Template ready |
-| [adr/](adr/)                       | LLM + Human | Architecture Decision Records                         | Template ready |
-| [guides/](guides/)                 | Human       | Developer how-to guides and tutorials                 | Template ready |
-| [images/](images/)                 | Both        | Screenshots and diagrams                              | 1 image        |
+| Directory                          | Audience    | Purpose                                               | Status       |
+| ---------------------------------- | ----------- | ----------------------------------------------------- | ------------ |
+| [specifications/](specifications/) | LLM + Human | Behavioral specs, validation rules, creation patterns | 13 documents |
+| [prompts/](prompts/)               | LLM         | Workflow templates for LLM-assisted tasks             | 5 templates  |
+| [design/](design/)                 | LLM + Human | Feature and subsystem design documents (incl. ADRs)   | In use       |
+| [guides/](guides/)                 | Human       | Core Developer's Guide (index) and how-to guides      | Index only   |
+| [images/](images/)                 | Both        | Screenshots and diagrams                              | 1 image      |
 
 ## Specifications
 
@@ -27,11 +27,18 @@ Precise behavioral rules and creation patterns that both humans and LLMs referen
 
 ### Behavioral Specifications
 
-| Document                                                                                  | Scope                                                             |
-| ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| [ROUTING_SPECIFICATION.md](specifications/ROUTING_SPECIFICATION.md)                       | URL routing rules, navigation patterns, search parameter handling |
-| [EXTERNAL_INPUT_VALIDATION_POLICY.md](specifications/EXTERNAL_INPUT_VALIDATION_POLICY.md) | CX2 data validation requirements for all external inputs          |
-| [DEBUG_GUIDE.MD](specifications/DEBUG_GUIDE.MD)                                           | Structured logging policy, debug namespaces, browser inspection   |
+| Document                                                                                  | Scope                                                                                                |
+| ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| [ROUTING_SPECIFICATION.md](specifications/ROUTING_SPECIFICATION.md)                       | URL routing rules, navigation patterns, search parameter handling                                    |
+| [EXTERNAL_INPUT_VALIDATION_POLICY.md](specifications/EXTERNAL_INPUT_VALIDATION_POLICY.md) | CX2 data validation requirements for all external inputs                                             |
+| [DEBUG_GUIDE.md](specifications/DEBUG_GUIDE.md)                                           | Structured logging policy, debug namespaces, browser inspection                                      |
+| [STARTUP_SPECIFICATION.md](specifications/STARTUP_SPECIFICATION.md)                       | Boot phase contract, failure policy, timing milestones                                               |
+| [DIALOG_DISMISS_POLICY.md](specifications/DIALOG_DISMISS_POLICY.md)                       | Button-only dialog dismissal, the `CyDialog` wrapper, modal form popovers                            |
+| [MULTIPLE_VISUAL_STYLES.md](specifications/MULTIPLE_VISUAL_STYLES.md)                     | Named visual style sets per network, the `cyWebVisualStyles` CX2 aspect, the workspace style library |
+| [MULTI_TAB_AWARENESS.md](specifications/MULTI_TAB_AWARENESS.md)                           | Cross-tab synchronization of the shared IndexedDB workspace                                          |
+| [APP_PARAMETERS_SPECIFICATION.md](specifications/APP_PARAMETERS_SPECIFICATION.md)         | User-editable parameters for service apps, app-registered layouts and built-in layouts               |
+| [HIERARCHY_FILTER_WIDGETS_ASPECT.md](specifications/HIERARCHY_FILTER_WIDGETS_ASPECT.md)   | Hierarchy Viewer `filterWidgets` aspect format and validation                                        |
+| [VISUAL_PROPERTY_VALIDATION_SPEC.md](specifications/VISUAL_PROPERTY_VALIDATION_SPEC.md)   | Visual property validation for the CX2 validator (design proposal, not yet implemented)              |
 
 ### Creation Patterns
 
@@ -112,7 +119,7 @@ Behavior documentation co-located with source code in `src/features/`. Each `*_d
 | LayoutMenu     | [LayoutMenu.md](../src/features/ToolBar/LayoutMenu/LayoutMenu_docs/LayoutMenu.md)                                                                                        |
 | AnalysisMenu   | [AnalysisMenu.md](../src/features/ToolBar/AnalysisMenu/AnalysisMenu_docs/AnalysisMenu.md)                                                                                |
 | HelpMenu       | [HelpMenu.md](../src/features/ToolBar/HelpMenu/HelpMenu_docs/HelpMenu.md)                                                                                                |
-| LicenseMenu    | [LicenseMenu.md](../src/features/ToolBar/LicenseMenu/LicenseMenu_docs/LicenseMenu.md)                                                                                    |
+| LicenseMenu    | [LicenseMenu.md](../src/features/ToolBar/HelpMenu/LicenseMenu_docs/LicenseMenu.md)                                                                                       |
 | Search         | [Search.md](../src/features/ToolBar/Search/Search_docs/Search.md)                                                                                                        |
 | NestedMenu     | [NestedMenu.md](../src/features/ToolBar/NestedMenu/NestedMenu_docs/NestedMenu.md)                                                                                        |
 | RootMenuButton | [RootMenuButton.md](../src/features/ToolBar/RootMenuButton/RootMenuButton_docs/RootMenuButton.md)                                                                        |

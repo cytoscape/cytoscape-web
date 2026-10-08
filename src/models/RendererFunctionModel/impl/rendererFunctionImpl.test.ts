@@ -1,12 +1,19 @@
+import { describe, expect, it } from 'vitest'
+
 import { IdType } from '../../IdType'
-import { getFunction, RendererFunctionState, setFunction } from './rendererFunctionImpl'
+import {
+  getFunction,
+  RendererFunction,
+  RendererFunctionState,
+  setFunction,
+} from './rendererFunctionImpl'
 
 const createDefaultState = (): RendererFunctionState => {
   return {
-    rendererFunctions: new Map<string, Map<string, Function>>(),
+    rendererFunctions: new Map<string, Map<string, RendererFunction>>(),
     rendererFunctionsByNetworkId: new Map<
       IdType,
-      Map<string, Map<string, Function>>
+      Map<string, Map<string, RendererFunction>>
     >(),
   }
 }
@@ -133,11 +140,7 @@ describe('RendererFunctionImpl', () => {
     it('should return undefined if function does not exist', () => {
       const state = createDefaultState()
 
-      const retrievedFn = getFunction(
-        state,
-        'non-existent',
-        'non-existent',
-      )
+      const retrievedFn = getFunction(state, 'non-existent', 'non-existent')
 
       expect(retrievedFn).toBeUndefined()
     })
@@ -149,7 +152,7 @@ describe('RendererFunctionImpl', () => {
       const originalRendererFunctions = original.rendererFunctions
       const originalByNetworkId = original.rendererFunctionsByNetworkId
 
-      const result = setFunction(
+      setFunction(
         original,
         'renderer-1',
         'function-1',
@@ -161,10 +164,7 @@ describe('RendererFunctionImpl', () => {
       expect(original.rendererFunctions).toBe(originalRendererFunctions)
       expect(original.rendererFunctionsByNetworkId).toBe(originalByNetworkId)
       expect(original.rendererFunctions.has('renderer-1')).toBe(false)
-      expect(original.rendererFunctionsByNetworkId.has('network-1')).toBe(
-        false,
-      )
+      expect(original.rendererFunctionsByNetworkId.has('network-1')).toBe(false)
     })
   })
 })
-

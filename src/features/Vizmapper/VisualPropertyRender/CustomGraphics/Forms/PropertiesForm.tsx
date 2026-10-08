@@ -1,9 +1,10 @@
+import { Box } from '@mui/material'
 import * as React from 'react'
-import { Box, Typography } from '@mui/material'
+
 import { CustomGraphicsNameType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
-import { CustomGraphicKind } from '../WizardSteps/SelectTypeStep'
-import { CHART_CONSTANTS } from '../utils/constants'
 import { LabelWithTooltip, SliderWithInput } from '../components'
+import { CHART_CONSTANTS } from '../utils/constants'
+import { CustomGraphicKind } from '../WizardSteps/SelectTypeStep'
 
 interface PropertiesFormProps {
   startAngle: number

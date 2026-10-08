@@ -1,0 +1,438 @@
+[
+  {
+    "CXVersion": "2.0",
+    "hasFragments": false
+  },
+  {
+    "metaData": [
+      {
+        "name": "nodes",
+        "elementCount": 15,
+        "version": "1.0",
+        "idCounter": 14,
+        "propertyCounter": 0,
+        "consistencyGroup": 1
+      },
+      {
+        "name": "edges",
+        "elementCount": 14,
+        "version": "1.0",
+        "idCounter": 13,
+        "propertyCounter": 0,
+        "consistencyGroup": 1
+      },
+      {
+        "name": "networkAttributes",
+        "elementCount": 1,
+        "version": "1.0",
+        "idCounter": 0,
+        "propertyCounter": 0,
+        "consistencyGroup": 1
+      },
+      {
+        "name": "attributeDeclarations",
+        "elementCount": 1,
+        "version": "1.0",
+        "idCounter": 0,
+        "propertyCounter": 0,
+        "consistencyGroup": 1
+      }
+    ]
+  },
+  {
+    "attributeDeclarations": [
+      {
+        "nodes": {
+          "n": {
+            "a": "n",
+            "d": "string"
+          },
+          "type": {
+            "d": "string"
+          },
+          "score": {
+            "d": "double"
+          },
+          "HCX::members": {
+            "d": "list_of_integer"
+          }
+        },
+        "edges": {
+          "interaction": {
+            "a": "i",
+            "d": "string"
+          },
+          "weight": {
+            "d": "double"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "networkAttributes": [
+      {
+        "name": "Test Network 15 nodes",
+        "description": "Generated test network",
+        "ndexSchema": "hierarchy_v0.1",
+        "HCX::modelFileCount": 1,
+        "HCX::interactionNetworkUUID": "test-uuid-123",
+        "HCX::interactionNetworkHost": "dev1.ndexbio.org"
+      }
+    ]
+  },
+  {
+    "nodes": [
+      {
+        "id": 0,
+        "x": 50,
+        "y": 50,
+        "v": {
+          "n": "node1",
+          "type": "protein",
+          "score": 0,
+          "HCX::members": [
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29
+          ]
+        }
+      },
+      {
+        "id": 1,
+        "x": 150,
+        "y": 50,
+        "v": {
+          "n": "node2",
+          "type": "gene",
+          "score": 0.1,
+          "HCX::members": [
+            22,
+            23,
+            24,
+            25
+          ]
+        }
+      },
+      {
+        "id": 2,
+        "x": 250,
+        "y": 50,
+        "v": {
+          "n": "node3",
+          "type": "protein",
+          "score": 0.2,
+          "HCX::members": [
+            26,
+            27,
+            28,
+            29
+          ]
+        }
+      },
+      {
+        "id": 3,
+        "x": 350,
+        "y": 50,
+        "v": {
+          "n": "node4",
+          "type": "gene",
+          "score": 0.3,
+          "HCX::members": [
+            22,
+            23
+          ]
+        }
+      },
+      {
+        "id": 4,
+        "x": 50,
+        "y": 150,
+        "v": {
+          "n": "node5",
+          "type": "protein",
+          "score": 0.4,
+          "HCX::members": [
+            24,
+            25
+          ]
+        }
+      },
+      {
+        "id": 5,
+        "x": 150,
+        "y": 150,
+        "v": {
+          "n": "node6",
+          "type": "gene",
+          "score": 0.5,
+          "HCX::members": [
+            26,
+            27
+          ]
+        }
+      },
+      {
+        "id": 6,
+        "x": 250,
+        "y": 150,
+        "v": {
+          "n": "node7",
+          "type": "protein",
+          "score": 0.6,
+          "HCX::members": [
+            28,
+            29
+          ]
+        }
+      },
+      {
+        "id": 7,
+        "x": 350,
+        "y": 150,
+        "v": {
+          "n": "node8",
+          "type": "gene",
+          "score": 0.7,
+          "HCX::members": [
+            22
+          ]
+        }
+      },
+      {
+        "id": 8,
+        "x": 50,
+        "y": 250,
+        "v": {
+          "n": "node9",
+          "type": "protein",
+          "score": 0.8,
+          "HCX::members": [
+            23
+          ]
+        }
+      },
+      {
+        "id": 9,
+        "x": 150,
+        "y": 250,
+        "v": {
+          "n": "node10",
+          "type": "gene",
+          "score": 0.9,
+          "HCX::members": [
+            24
+          ]
+        }
+      },
+      {
+        "id": 10,
+        "x": 250,
+        "y": 250,
+        "v": {
+          "n": "node11",
+          "type": "protein",
+          "score": 1,
+          "HCX::members": [
+            25
+          ]
+        }
+      },
+      {
+        "id": 11,
+        "x": 350,
+        "y": 250,
+        "v": {
+          "n": "node12",
+          "type": "gene",
+          "score": 1.1,
+          "HCX::members": [
+            26
+          ]
+        }
+      },
+      {
+        "id": 12,
+        "x": 50,
+        "y": 350,
+        "v": {
+          "n": "node13",
+          "type": "protein",
+          "score": 1.2,
+          "HCX::members": [
+            27
+          ]
+        }
+      },
+      {
+        "id": 13,
+        "x": 150,
+        "y": 350,
+        "v": {
+          "n": "node14",
+          "type": "gene",
+          "score": 1.3,
+          "HCX::members": [
+            28
+          ]
+        }
+      },
+      {
+        "id": 14,
+        "x": 250,
+        "y": 350,
+        "v": {
+          "n": "node15",
+          "type": "protein",
+          "score": 1.4,
+          "HCX::members": [
+            29
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "edges": [
+      {
+        "id": 0,
+        "s": 0,
+        "t": 1,
+        "v": {
+          "interaction": "contains",
+          "weight": 0
+        }
+      },
+      {
+        "id": 1,
+        "s": 0,
+        "t": 2,
+        "v": {
+          "interaction": "contains",
+          "weight": 0
+        }
+      },
+      {
+        "id": 2,
+        "s": 1,
+        "t": 3,
+        "v": {
+          "interaction": "contains",
+          "weight": 0
+        }
+      },
+      {
+        "id": 3,
+        "s": 1,
+        "t": 4,
+        "v": {
+          "interaction": "contains",
+          "weight": 0
+        }
+      },
+      {
+        "id": 4,
+        "s": 2,
+        "t": 5,
+        "v": {
+          "interaction": "contains",
+          "weight": 0
+        }
+      },
+      {
+        "id": 5,
+        "s": 2,
+        "t": 6,
+        "v": {
+          "interaction": "contains",
+          "weight": 0
+        }
+      },
+      {
+        "id": 6,
+        "s": 3,
+        "t": 7,
+        "v": {
+          "interaction": "contains",
+          "weight": 0
+        }
+      },
+      {
+        "id": 7,
+        "s": 3,
+        "t": 8,
+        "v": {
+          "interaction": "contains",
+          "weight": 0
+        }
+      },
+      {
+        "id": 8,
+        "s": 4,
+        "t": 9,
+        "v": {
+          "interaction": "contains",
+          "weight": 0
+        }
+      },
+      {
+        "id": 9,
+        "s": 4,
+        "t": 10,
+        "v": {
+          "interaction": "contains",
+          "weight": 0
+        }
+      },
+      {
+        "id": 10,
+        "s": 5,
+        "t": 11,
+        "v": {
+          "interaction": "contains",
+          "weight": 0
+        }
+      },
+      {
+        "id": 11,
+        "s": 5,
+        "t": 12,
+        "v": {
+          "interaction": "contains",
+          "weight": 0
+        }
+      },
+      {
+        "id": 12,
+        "s": 6,
+        "t": 13,
+        "v": {
+          "interaction": "contains",
+          "weight": 0
+        }
+      },
+      {
+        "id": 13,
+        "s": 6,
+        "t": 14,
+        "v": {
+          "interaction": "contains",
+          "weight": 0
+        }
+      }
+    ]
+  },
+  {
+    "status": [
+      {
+        "error": "",
+        "success": true
+      }
+    ]
+  }
+]

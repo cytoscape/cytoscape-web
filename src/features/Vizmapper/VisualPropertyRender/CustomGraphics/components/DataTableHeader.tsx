@@ -1,5 +1,5 @@
+import { Box, Tooltip, Typography } from '@mui/material'
 import * as React from 'react'
-import { Box, Typography, Tooltip } from '@mui/material'
 
 interface DataTableHeaderProps {
   columns: Array<{
@@ -16,9 +16,7 @@ interface DataTableHeaderProps {
 export const DataTableHeader: React.FC<DataTableHeaderProps> = ({
   columns,
 }) => {
-  const gridTemplateColumns = columns
-    .map((col) => col.width || '1fr')
-    .join(' ')
+  const gridTemplateColumns = columns.map((col) => col.width || '1fr').join(' ')
 
   return (
     <Box
@@ -30,7 +28,6 @@ export const DataTableHeader: React.FC<DataTableHeaderProps> = ({
         px: 0.75,
         py: 0.25,
         bgcolor: 'grey.50',
-        borderRadius: 1,
         mb: 0.5,
       }}
     >
@@ -62,4 +59,3 @@ export const DataTableHeader: React.FC<DataTableHeaderProps> = ({
     </Box>
   )
 }
-

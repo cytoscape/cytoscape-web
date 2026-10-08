@@ -1,17 +1,15 @@
 import { useContext } from 'react'
+
 import { AppConfigContext } from '../../AppConfigContext'
-import { useHcxValidatorStore } from '../../features/HierarchyViewer/store/HcxValidatorStore'
 import { isHCX } from '../../features/HierarchyViewer/utils/hierarchyUtil'
-import { validateHcx } from '../../features/HierarchyViewer/model/impl/hcxValidators'
-import { HcxMetaTag } from '../../features/HierarchyViewer/model/HcxMetaTag'
+import { validateAndRecordHcx } from '../../features/HierarchyViewer/utils/validateAndRecordHcx'
 import { CyNetwork } from '../../models/CyNetworkModel'
 import { IdType } from '../../models/IdType'
-import { NetworkSummary } from '../../models/NetworkSummaryModel'
-import { MessageSeverity } from '../../models/MessageModel'
 import { LayoutEngine } from '../../models/LayoutModel'
 import { getDefaultLayout } from '../../models/LayoutModel/impl/layoutSelection'
+import { runEngineLayout } from '../../models/LayoutModel/impl/runEngineLayout'
+import { NetworkSummary } from '../../models/NetworkSummaryModel'
 import { useLayoutStore } from './stores/LayoutStore'
-import { useMessageStore } from './stores/MessageStore'
 import { useNetworkStore } from './stores/NetworkStore'
 import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import { useOpaqueAspectStore } from './stores/OpaqueAspectStore'
@@ -39,11 +37,6 @@ export const useRegisterNetwork = () => {
     (state) => state.setNetworkModified,
   )
 
-  const setValidationResult = useHcxValidatorStore(
-    (state) => state.setValidationResult,
-  )
-  const addMessage = useMessageStore((state) => state.addMessage)
-
   const layoutEngines = useLayoutStore((state) => state.layoutEngines)
   const setIsRunning = useLayoutStore((state) => state.setIsRunning)
   const addSummary = useNetworkSummaryStore((state) => state.add)
@@ -63,6 +56,7 @@ export const useRegisterNetwork = () => {
       nodeTable,
       edgeTable,
       visualStyle,
+      visualStyleSet,
       networkViews,
       visualStyleOptions,
       otherAspects,
@@ -71,7 +65,7 @@ export const useRegisterNetwork = () => {
 
     setVisualStyleOptions(networkId, visualStyleOptions)
     addNewNetwork(network)
-    addVisualStyle(networkId, visualStyle)
+    addVisualStyle(networkId, visualStyle, visualStyleSet)
     addTable(networkId, nodeTable, edgeTable)
     addViewModel(networkId, networkViews[0])
     addSummary(networkId, summary)
@@ -84,34 +78,16 @@ export const useRegisterNetwork = () => {
 
     // Validate HCX networks if applicable
     if (isHCX(summary)) {
-      const hcxVersion =
-        summary.properties.find(
-          (p) => p.predicateString === HcxMetaTag.ndexSchema,
-        )?.value ?? ''
-      const validationResult = validateHcx(
-        hcxVersion as string,
-        summary,
-        nodeTable,
-      )
-
-      if (!validationResult.isValid) {
-        const HCX_WARNING_DURATION_MS = 5000
-        addMessage({
-          message: `This network is not a valid HCX network.  Some features may not work properly.`,
-          duration: HCX_WARNING_DURATION_MS,
-          severity: MessageSeverity.WARNING,
-        })
-      }
-      setValidationResult(networkId, validationResult)
+      validateAndRecordHcx(networkId, summary, nodeTable, edgeTable)
     }
 
     // Apply default layout if network doesn't have one
     if (!summary.hasLayout) {
       const totalNetworkElements = network.nodes.length + network.edges.length
       const defaultLayout = getDefaultLayout(
-        summary,
         totalNetworkElements,
         maxNetworkElementsThreshold,
+        isHCX(summary),
       )
 
       if (defaultLayout !== undefined) {
@@ -122,7 +98,6 @@ export const useRegisterNetwork = () => {
         if (layoutEngine !== undefined) {
           const summaryWithLayout = { ...summary, hasLayout: true }
 
-          setIsRunning(true)
           const handleLayoutComplete = (
             positionMap: Map<IdType, [number, number]>,
           ): void => {
@@ -139,12 +114,17 @@ export const useRegisterNetwork = () => {
             setNetworkModified(networkId, false)
           }
 
-          layoutEngine.apply(
-            network.nodes,
-            network.edges,
-            handleLayoutComplete,
-            layoutEngine.algorithms[defaultLayout.algorithmName],
-          )
+          // The shared runner: a synchronous throw or a rejected promise
+          // from `apply` is logged and resets `isRunning`, instead of
+          // leaving the running flag stuck for the session.
+          runEngineLayout({
+            engine: layoutEngine,
+            algorithm: layoutEngine.algorithms[defaultLayout.algorithmName],
+            network,
+            networkId,
+            afterLayout: handleLayoutComplete,
+            setIsRunning,
+          })
         }
       }
     }

@@ -22,11 +22,7 @@ export const setActiveNetworkView = (ui: Ui, id: IdType): Ui => {
 /**
  * Set panel state
  */
-export const setPanelState = (
-  ui: Ui,
-  panel: Panel,
-  state: PanelState,
-): Ui => {
+export const setPanelState = (ui: Ui, panel: Panel, state: PanelState): Ui => {
   return {
     ...ui,
     panels: {
@@ -265,8 +261,32 @@ export const setCustomNetworkTabName = (
   return {
     ...ui,
     customNetworkTabName: {
-      ...(ui.customNetworkTabName ?? {}),
+      ...ui.customNetworkTabName,
       [rendererId]: name,
+    },
+  }
+}
+
+/**
+ * Remove all per-network UI state for a network (used when the network
+ * is deleted, so no orphaned configuration accumulates)
+ */
+export const deleteNetworkUiState = (ui: Ui, networkId: IdType): Ui => {
+  const nextVisualStyleOptions = { ...ui.visualStyleOptions }
+  delete nextVisualStyleOptions[networkId]
+
+  const nextColumnUiState = Object.fromEntries(
+    Object.entries(ui.tableUi.columnUiState).filter(
+      ([key]) => deserializeColumnUIKey(key)[0] !== networkId,
+    ),
+  )
+
+  return {
+    ...ui,
+    visualStyleOptions: nextVisualStyleOptions,
+    tableUi: {
+      ...ui.tableUi,
+      columnUiState: nextColumnUiState,
     },
   }
 }
@@ -307,4 +327,3 @@ export const deserializeColumnUIKey = (
 
   return [str1, str2, str3]
 }
-

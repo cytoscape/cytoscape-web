@@ -1,99 +1,179 @@
-import '../DataMenu/menuItem.css'
+import CodeIcon from '@mui/icons-material/Code'
+import { lazy, Suspense, useCallback, useState } from 'react'
 
-import { Divider } from '@mui/material'
-import Button from '@mui/material/Button'
-import { PrimeReactProvider } from 'primereact/api'
-import { OverlayPanel } from 'primereact/overlaypanel'
-import { TieredMenu } from 'primereact/tieredmenu'
-import { useRef } from 'react'
-
-import { DropdownMenuProps } from '../DropdownMenuProps'
+import { RootMenu } from '../../../models/AppModel/RootMenu'
+import { LazyDialogBoundary } from '@/features/LazyDialogBoundary'
+import { appendServiceMenuItems } from '../AppMenu/appendServiceMenuItems'
+import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
+import { DropdownMenu } from '../DropdownMenu'
+import { useMenuBarMenu } from '../MenuBar'
 import { AboutCytoscapeWebMenuItem } from './AboutCytoscapeWebMenuItem'
+import { AboutDialog } from './AboutDialog'
+import { BugReportDialog } from './BugReportDialog'
 import { BugReportMenuItem } from './BugReportMenuItem'
+import { CitationDialog } from './CitationDialog'
 import { CitationMenuItem } from './CitationMenuItem'
 import { CodeRepositoryMenuItem } from './CodeRepositoryMenuitem'
 import { DeveloperMenuItem } from './DeveloperMenuItem'
 import { ExportDatabaseMenuItem } from './ExportDatabaseMenuItem'
 import { ImportDatabaseMenuItem } from './ImportDatabaseMenuItem'
+import { LicenseDialog } from './LicenseDialog'
+import { LicenseMenuItem } from './LicenseMenuItem'
+import { TakeATourMenuItem } from './TakeATourMenuItem'
 import { TutorialMenuItem } from './TutorialMenuItem'
 
-export const HelpMenu = (props: DropdownMenuProps): JSX.Element => {
-  const { label } = props
-  const op = useRef(null)
+// Lazy: the import flow carries the dropzone and snapshot stack, which
+// would otherwise ship with the eager toolbar chunk.
+const ImportDatabaseSnapshotDialog = lazy(() =>
+  import('./ImportDatabaseSnapshotDialog').then((m) => ({
+    default: m.ImportDatabaseSnapshotDialog,
+  })),
+)
+
+/**
+ * The Help menu's dialogs, one open at a time. They are owned here rather
+ * than by their menu rows: a row is unmounted with the menu, and the menu
+ * closes as soon as the dialog takes focus.
+ */
+type HelpDialog =
+  | 'about'
+  | 'license'
+  | 'citation'
+  | 'bug-report'
+  | 'import-database'
+
+export const HelpMenu = () => {
+  const { open, setOpen } = useMenuBarMenu('help-menu')
+  const [openDialog, setOpenDialog] = useState<HelpDialog | null>(null)
+  // Mount latch for the lazy import flow: stays true after the first open
+  // so the close animation still plays and reopening is instant.
+  const [hasOpenedImport, setHasOpenedImport] = useState(false)
 
   const handleClose = (): void => {
-    ;(op.current as any)?.hide()
+    setOpen(false)
   }
 
-  const menuItems = [
+  // Close the menu first, then show the dialog on its own.
+  const openDialogFromMenu = (dialog: HelpDialog): (() => void) => {
+    return () => {
+      handleClose()
+      if (dialog === 'import-database') {
+        setHasOpenedImport(true)
+      }
+      setOpenDialog(dialog)
+    }
+  }
+  const handleCloseDialog = (): void => {
+    setOpenDialog(null)
+  }
+
+  const closeMenu = useCallback((): void => {
+    setOpen(false)
+  }, [setOpen])
+
+  // Service apps whose cyWebMenuItem.root resolves to the Help menu.
+  const { menuItems: serviceMenuItems, dialogs } = useServiceAppMenu(
+    RootMenu.Help,
+    closeMenu,
+  )
+
+  const builtInItems = [
     {
-      label: 'About Cytoscape Web',
-      template: <AboutCytoscapeWebMenuItem handleClose={handleClose} />,
+      template: (
+        <AboutCytoscapeWebMenuItem onClick={openDialogFromMenu('about')} />
+      ),
     },
     {
-      label: '',
-      template: <Divider />,
+      separator: true,
     },
     {
-      label: 'Tutorial',
-      template: <TutorialMenuItem handleClose={handleClose} />,
+      template: <TakeATourMenuItem onClick={handleClose} />,
+    },
+    {
+      template: <TutorialMenuItem onClick={handleClose} />,
     },
     {
       label: 'Developer',
+      icon: <CodeIcon sx={{ mr: 1 }} />,
       items: [
         {
-          label: "Developer's Guide",
-          template: <DeveloperMenuItem handleClose={handleClose} />,
+          template: <DeveloperMenuItem onClick={handleClose} />,
         },
         {
-          label: 'Export Database...',
-          template: <ExportDatabaseMenuItem handleClose={handleClose} />,
+          template: <CodeRepositoryMenuItem onClick={handleClose} />,
         },
         {
-          label: 'Import Database...',
-          template: <ImportDatabaseMenuItem handleClose={handleClose} />,
+          separator: true,
+        },
+        {
+          template: <ExportDatabaseMenuItem onClick={handleClose} />,
+        },
+        {
+          template: (
+            <ImportDatabaseMenuItem
+              onClick={openDialogFromMenu('import-database')}
+            />
+          ),
         },
       ],
     },
     {
-      label: 'Code Repository',
-      template: <CodeRepositoryMenuItem handleClose={handleClose} />,
+      template: <LicenseMenuItem onClick={openDialogFromMenu('license')} />,
     },
     {
-      label: '',
-      template: <Divider />,
+      separator: true,
     },
     {
-      label: 'Citation',
-      template: <CitationMenuItem handleClose={handleClose} />,
+      template: <CitationMenuItem onClick={openDialogFromMenu('citation')} />,
     },
     {
-      label: '',
-      template: <Divider />,
+      separator: true,
     },
     {
-      label: 'Bug Report',
-      template: <BugReportMenuItem handleClose={handleClose} />,
+      template: (
+        <BugReportMenuItem onClick={openDialogFromMenu('bug-report')} />
+      ),
     },
   ]
+  const menuItems = appendServiceMenuItems(builtInItems, serviceMenuItems)
 
   return (
-    <PrimeReactProvider>
-      <Button
-        data-testid="toolbar-help-menu-button"
-        sx={{
-          color: 'white',
-          textTransform: 'none',
-        }}
-        id={label}
-        aria-haspopup="true"
-        onClick={(e) => (op.current as any)?.toggle(e)}
-      >
-        {label}
-      </Button>
-      <OverlayPanel ref={op} unstyled>
-        <TieredMenu style={{ width: 350 }} model={menuItems} />
-      </OverlayPanel>
-    </PrimeReactProvider>
+    <>
+      <DropdownMenu
+        id="help-menu"
+        label="Help"
+        menuItems={menuItems}
+        open={open}
+        minWidth={300}
+        onOpenChange={setOpen}
+      />
+      <AboutDialog open={openDialog === 'about'} onClose={handleCloseDialog} />
+      <LicenseDialog
+        open={openDialog === 'license'}
+        onClose={handleCloseDialog}
+      />
+      <CitationDialog
+        open={openDialog === 'citation'}
+        onClose={handleCloseDialog}
+      />
+      <BugReportDialog
+        open={openDialog === 'bug-report'}
+        onClose={handleCloseDialog}
+      />
+      {hasOpenedImport && (
+        <LazyDialogBoundary
+          name="Import Database Snapshot"
+          open={openDialog === 'import-database'}
+        >
+          <Suspense fallback={null}>
+            <ImportDatabaseSnapshotDialog
+              open={openDialog === 'import-database'}
+              onClose={handleCloseDialog}
+            />
+          </Suspense>
+        </LazyDialogBoundary>
+      )}
+      {dialogs}
+    </>
   )
 }

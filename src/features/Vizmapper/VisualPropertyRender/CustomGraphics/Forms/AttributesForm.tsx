@@ -1,30 +1,29 @@
-import * as React from 'react'
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import KeyboardDoubleArrowLeftIcon from '@mui/icons-material/KeyboardDoubleArrowLeft'
+import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight'
 import {
+  Alert,
   Box,
-  Typography,
-  IconButton,
   Button,
   List,
   ListItem,
   ListItemButton,
   ListItemText,
   Paper,
-  Alert,
   Tooltip,
+  Typography,
 } from '@mui/material'
-import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
-import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight'
-import KeyboardDoubleArrowLeftIcon from '@mui/icons-material/KeyboardDoubleArrowLeft'
-import { IdType } from '../../../../../models/IdType'
+import * as React from 'react'
+
 import { useTableStore } from '../../../../../data/hooks/stores/TableStore'
+import { IdType } from '../../../../../models/IdType'
 import { AttributeName } from '../../../../../models/TableModel/AttributeName'
-import { ColorType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
-import { StepGuidance } from '../WizardSteps/StepGuidance'
 import { generateRandomColor } from '../../../../../models/VisualStyleModel/impl/colorUtils'
-import { getNumericColumnNames } from '../utils/numericColumnUtils'
-import { CHART_CONSTANTS, COLORS } from '../utils/constants'
+import { ColorType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
 import { OrderControls } from '../components'
+import { CHART_CONSTANTS } from '../utils/constants'
+import { getNumericColumnNames } from '../utils/numericColumnUtils'
 
 interface AttributesFormProps {
   dataColumns: AttributeName[]
@@ -38,10 +37,8 @@ interface AttributesFormProps {
 export const AttributesForm: React.FC<AttributesFormProps> = ({
   dataColumns,
   colors,
-  colorScheme,
   currentNetworkId,
   onUpdate,
-  hideGuidance = false,
 }) => {
   const tables = useTableStore((s) => s.tables)
   const nodeTable = tables[currentNetworkId]?.nodeTable
@@ -153,8 +150,6 @@ export const AttributesForm: React.FC<AttributesFormProps> = ({
     newColors.splice(to, 0, colorMoved)
     onUpdate(newCols, newColors)
   }
-
-  const showGuidance = !hideGuidance && dataColumns.length === 0
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>

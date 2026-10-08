@@ -11,3 +11,10 @@ export {
   createVisualStyleFromCx,
   createVisualStyleOptionsFromCx,
 } from './visualStyleConverter'
+export {
+  buildCyWebVisualStylesAspect,
+  createVisualStyleSetFromCx,
+  CY_WEB_VISUAL_STYLES_ASPECT_TAG,
+  parseCyWebVisualStylesAspect,
+  styleSetNeedsCustomAspect,
+} from './visualStyleSetConverter'

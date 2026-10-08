@@ -97,7 +97,7 @@
         "v": {
           "n": "node1",
           "type": "protein",
-          "score": "0.00"
+          "score": 0
         }
       },
       {
@@ -105,7 +105,7 @@
         "v": {
           "n": "node2",
           "type": "gene",
-          "score": "0.10"
+          "score": 0.1
         }
       },
       {
@@ -113,7 +113,7 @@
         "v": {
           "n": "node3",
           "type": "protein",
-          "score": "0.20"
+          "score": 0.2
         }
       },
       {
@@ -121,7 +121,7 @@
         "v": {
           "n": "node4",
           "type": "gene",
-          "score": "0.30"
+          "score": 0.3
         }
       },
       {
@@ -129,7 +129,7 @@
         "v": {
           "n": "node5",
           "type": "protein",
-          "score": "0.40"
+          "score": 0.4
         }
       },
       {
@@ -137,7 +137,7 @@
         "v": {
           "n": "node6",
           "type": "gene",
-          "score": "0.50"
+          "score": 0.5
         }
       },
       {
@@ -145,7 +145,7 @@
         "v": {
           "n": "node7",
           "type": "protein",
-          "score": "0.60"
+          "score": 0.6
         }
       },
       {
@@ -153,7 +153,7 @@
         "v": {
           "n": "node8",
           "type": "gene",
-          "score": "0.70"
+          "score": 0.7
         }
       },
       {
@@ -161,7 +161,7 @@
         "v": {
           "n": "node9",
           "type": "protein",
-          "score": "0.80"
+          "score": 0.8
         }
       },
       {
@@ -169,7 +169,7 @@
         "v": {
           "n": "node10",
           "type": "gene",
-          "score": "0.90"
+          "score": 0.9
         }
       },
       {
@@ -177,7 +177,7 @@
         "v": {
           "n": "node11",
           "type": "protein",
-          "score": "1.00"
+          "score": 1
         }
       },
       {
@@ -185,7 +185,7 @@
         "v": {
           "n": "node12",
           "type": "gene",
-          "score": "1.10"
+          "score": 1.1
         }
       },
       {
@@ -193,7 +193,7 @@
         "v": {
           "n": "node13",
           "type": "protein",
-          "score": "1.20"
+          "score": 1.2
         }
       },
       {
@@ -201,7 +201,7 @@
         "v": {
           "n": "node14",
           "type": "gene",
-          "score": "1.30"
+          "score": 1.3
         }
       },
       {
@@ -209,7 +209,7 @@
         "v": {
           "n": "node15",
           "type": "protein",
-          "score": "1.40"
+          "score": 1.4
         }
       },
       {
@@ -217,7 +217,7 @@
         "v": {
           "n": "node16",
           "type": "gene",
-          "score": "1.50"
+          "score": 1.5
         }
       },
       {
@@ -225,7 +225,7 @@
         "v": {
           "n": "node17",
           "type": "protein",
-          "score": "1.60"
+          "score": 1.6
         }
       },
       {
@@ -233,7 +233,7 @@
         "v": {
           "n": "node18",
           "type": "gene",
-          "score": "1.70"
+          "score": 1.7
         }
       },
       {
@@ -241,7 +241,7 @@
         "v": {
           "n": "node19",
           "type": "protein",
-          "score": "1.80"
+          "score": 1.8
         }
       },
       {
@@ -249,7 +249,7 @@
         "v": {
           "n": "node20",
           "type": "gene",
-          "score": "1.90"
+          "score": 1.9
         }
       },
       {
@@ -257,7 +257,7 @@
         "v": {
           "n": "node21",
           "type": "protein",
-          "score": "2.00"
+          "score": 2
         }
       },
       {
@@ -265,7 +265,7 @@
         "v": {
           "n": "node22",
           "type": "gene",
-          "score": "2.10"
+          "score": 2.1
         }
       },
       {
@@ -273,7 +273,7 @@
         "v": {
           "n": "node23",
           "type": "protein",
-          "score": "2.20"
+          "score": 2.2
         }
       },
       {
@@ -281,7 +281,7 @@
         "v": {
           "n": "node24",
           "type": "gene",
-          "score": "2.30"
+          "score": 2.3
         }
       },
       {
@@ -289,7 +289,7 @@
         "v": {
           "n": "node25",
           "type": "protein",
-          "score": "2.40"
+          "score": 2.4
         }
       },
       {
@@ -297,7 +297,7 @@
         "v": {
           "n": "node26",
           "type": "gene",
-          "score": "2.50"
+          "score": 2.5
         }
       },
       {
@@ -305,7 +305,7 @@
         "v": {
           "n": "node27",
           "type": "protein",
-          "score": "2.60"
+          "score": 2.6
         }
       },
       {
@@ -313,7 +313,7 @@
         "v": {
           "n": "node28",
           "type": "gene",
-          "score": "2.70"
+          "score": 2.7
         }
       },
       {
@@ -321,7 +321,7 @@
         "v": {
           "n": "node29",
           "type": "protein",
-          "score": "2.80"
+          "score": 2.8
         }
       },
       {
@@ -329,7 +329,7 @@
         "v": {
           "n": "node30",
           "type": "gene",
-          "score": "2.90"
+          "score": 2.9
         }
       },
       {
@@ -337,7 +337,7 @@
         "v": {
           "n": "node31",
           "type": "protein",
-          "score": "3.00"
+          "score": 3
         }
       },
       {
@@ -345,7 +345,7 @@
         "v": {
           "n": "node32",
           "type": "gene",
-          "score": "3.10"
+          "score": 3.1
         }
       },
       {
@@ -353,7 +353,7 @@
         "v": {
           "n": "node33",
           "type": "protein",
-          "score": "3.20"
+          "score": 3.2
         }
       },
       {
@@ -361,7 +361,7 @@
         "v": {
           "n": "node34",
           "type": "gene",
-          "score": "3.30"
+          "score": 3.3
         }
       },
       {
@@ -369,7 +369,7 @@
         "v": {
           "n": "node35",
           "type": "protein",
-          "score": "3.40"
+          "score": 3.4
         }
       },
       {
@@ -377,7 +377,7 @@
         "v": {
           "n": "node36",
           "type": "gene",
-          "score": "3.50"
+          "score": 3.5
         }
       },
       {
@@ -385,7 +385,7 @@
         "v": {
           "n": "node37",
           "type": "protein",
-          "score": "3.60"
+          "score": 3.6
         }
       },
       {
@@ -393,7 +393,7 @@
         "v": {
           "n": "node38",
           "type": "gene",
-          "score": "3.70"
+          "score": 3.7
         }
       },
       {
@@ -401,7 +401,7 @@
         "v": {
           "n": "node39",
           "type": "protein",
-          "score": "3.80"
+          "score": 3.8
         }
       },
       {
@@ -409,7 +409,7 @@
         "v": {
           "n": "node40",
           "type": "gene",
-          "score": "3.90"
+          "score": 3.9
         }
       },
       {
@@ -417,7 +417,7 @@
         "v": {
           "n": "node41",
           "type": "protein",
-          "score": "4.00"
+          "score": 4
         }
       },
       {
@@ -425,7 +425,7 @@
         "v": {
           "n": "node42",
           "type": "gene",
-          "score": "4.10"
+          "score": 4.1
         }
       },
       {
@@ -433,7 +433,7 @@
         "v": {
           "n": "node43",
           "type": "protein",
-          "score": "4.20"
+          "score": 4.2
         }
       },
       {
@@ -441,7 +441,7 @@
         "v": {
           "n": "node44",
           "type": "gene",
-          "score": "4.30"
+          "score": 4.3
         }
       },
       {
@@ -449,7 +449,7 @@
         "v": {
           "n": "node45",
           "type": "protein",
-          "score": "4.40"
+          "score": 4.4
         }
       },
       {
@@ -457,7 +457,7 @@
         "v": {
           "n": "node46",
           "type": "gene",
-          "score": "4.50"
+          "score": 4.5
         }
       },
       {
@@ -465,7 +465,7 @@
         "v": {
           "n": "node47",
           "type": "protein",
-          "score": "4.60"
+          "score": 4.6
         }
       },
       {
@@ -473,7 +473,7 @@
         "v": {
           "n": "node48",
           "type": "gene",
-          "score": "4.70"
+          "score": 4.7
         }
       },
       {
@@ -481,7 +481,7 @@
         "v": {
           "n": "node49",
           "type": "protein",
-          "score": "4.80"
+          "score": 4.8
         }
       },
       {
@@ -489,7 +489,7 @@
         "v": {
           "n": "node50",
           "type": "gene",
-          "score": "4.90"
+          "score": 4.9
         }
       },
       {
@@ -497,7 +497,7 @@
         "v": {
           "n": "node51",
           "type": "protein",
-          "score": "5.00"
+          "score": 5
         }
       },
       {
@@ -505,7 +505,7 @@
         "v": {
           "n": "node52",
           "type": "gene",
-          "score": "5.10"
+          "score": 5.1
         }
       },
       {
@@ -513,7 +513,7 @@
         "v": {
           "n": "node53",
           "type": "protein",
-          "score": "5.20"
+          "score": 5.2
         }
       },
       {
@@ -521,7 +521,7 @@
         "v": {
           "n": "node54",
           "type": "gene",
-          "score": "5.30"
+          "score": 5.3
         }
       },
       {
@@ -529,7 +529,7 @@
         "v": {
           "n": "node55",
           "type": "protein",
-          "score": "5.40"
+          "score": 5.4
         }
       },
       {
@@ -537,7 +537,7 @@
         "v": {
           "n": "node56",
           "type": "gene",
-          "score": "5.50"
+          "score": 5.5
         }
       },
       {
@@ -545,7 +545,7 @@
         "v": {
           "n": "node57",
           "type": "protein",
-          "score": "5.60"
+          "score": 5.6
         }
       },
       {
@@ -553,7 +553,7 @@
         "v": {
           "n": "node58",
           "type": "gene",
-          "score": "5.70"
+          "score": 5.7
         }
       },
       {
@@ -561,7 +561,7 @@
         "v": {
           "n": "node59",
           "type": "protein",
-          "score": "5.80"
+          "score": 5.8
         }
       },
       {
@@ -569,7 +569,7 @@
         "v": {
           "n": "node60",
           "type": "gene",
-          "score": "5.90"
+          "score": 5.9
         }
       },
       {
@@ -577,7 +577,7 @@
         "v": {
           "n": "node61",
           "type": "protein",
-          "score": "6.00"
+          "score": 6
         }
       },
       {
@@ -585,7 +585,7 @@
         "v": {
           "n": "node62",
           "type": "gene",
-          "score": "6.10"
+          "score": 6.1
         }
       },
       {
@@ -593,7 +593,7 @@
         "v": {
           "n": "node63",
           "type": "protein",
-          "score": "6.20"
+          "score": 6.2
         }
       },
       {
@@ -601,7 +601,7 @@
         "v": {
           "n": "node64",
           "type": "gene",
-          "score": "6.30"
+          "score": 6.3
         }
       },
       {
@@ -609,7 +609,7 @@
         "v": {
           "n": "node65",
           "type": "protein",
-          "score": "6.40"
+          "score": 6.4
         }
       },
       {
@@ -617,7 +617,7 @@
         "v": {
           "n": "node66",
           "type": "gene",
-          "score": "6.50"
+          "score": 6.5
         }
       },
       {
@@ -625,7 +625,7 @@
         "v": {
           "n": "node67",
           "type": "protein",
-          "score": "6.60"
+          "score": 6.6
         }
       },
       {
@@ -633,7 +633,7 @@
         "v": {
           "n": "node68",
           "type": "gene",
-          "score": "6.70"
+          "score": 6.7
         }
       },
       {
@@ -641,7 +641,7 @@
         "v": {
           "n": "node69",
           "type": "protein",
-          "score": "6.80"
+          "score": 6.8
         }
       },
       {
@@ -649,7 +649,7 @@
         "v": {
           "n": "node70",
           "type": "gene",
-          "score": "6.90"
+          "score": 6.9
         }
       },
       {
@@ -657,7 +657,7 @@
         "v": {
           "n": "node71",
           "type": "protein",
-          "score": "7.00"
+          "score": 7
         }
       },
       {
@@ -665,7 +665,7 @@
         "v": {
           "n": "node72",
           "type": "gene",
-          "score": "7.10"
+          "score": 7.1
         }
       },
       {
@@ -673,7 +673,7 @@
         "v": {
           "n": "node73",
           "type": "protein",
-          "score": "7.20"
+          "score": 7.2
         }
       },
       {
@@ -681,7 +681,7 @@
         "v": {
           "n": "node74",
           "type": "gene",
-          "score": "7.30"
+          "score": 7.3
         }
       },
       {
@@ -689,7 +689,7 @@
         "v": {
           "n": "node75",
           "type": "protein",
-          "score": "7.40"
+          "score": 7.4
         }
       },
       {
@@ -697,7 +697,7 @@
         "v": {
           "n": "node76",
           "type": "gene",
-          "score": "7.50"
+          "score": 7.5
         }
       },
       {
@@ -705,7 +705,7 @@
         "v": {
           "n": "node77",
           "type": "protein",
-          "score": "7.60"
+          "score": 7.6
         }
       },
       {
@@ -713,7 +713,7 @@
         "v": {
           "n": "node78",
           "type": "gene",
-          "score": "7.70"
+          "score": 7.7
         }
       },
       {
@@ -721,7 +721,7 @@
         "v": {
           "n": "node79",
           "type": "protein",
-          "score": "7.80"
+          "score": 7.8
         }
       },
       {
@@ -729,7 +729,7 @@
         "v": {
           "n": "node80",
           "type": "gene",
-          "score": "7.90"
+          "score": 7.9
         }
       },
       {
@@ -737,7 +737,7 @@
         "v": {
           "n": "node81",
           "type": "protein",
-          "score": "8.00"
+          "score": 8
         }
       },
       {
@@ -745,7 +745,7 @@
         "v": {
           "n": "node82",
           "type": "gene",
-          "score": "8.10"
+          "score": 8.1
         }
       },
       {
@@ -753,7 +753,7 @@
         "v": {
           "n": "node83",
           "type": "protein",
-          "score": "8.20"
+          "score": 8.2
         }
       },
       {
@@ -761,7 +761,7 @@
         "v": {
           "n": "node84",
           "type": "gene",
-          "score": "8.30"
+          "score": 8.3
         }
       },
       {
@@ -769,7 +769,7 @@
         "v": {
           "n": "node85",
           "type": "protein",
-          "score": "8.40"
+          "score": 8.4
         }
       },
       {
@@ -777,7 +777,7 @@
         "v": {
           "n": "node86",
           "type": "gene",
-          "score": "8.50"
+          "score": 8.5
         }
       },
       {
@@ -785,7 +785,7 @@
         "v": {
           "n": "node87",
           "type": "protein",
-          "score": "8.60"
+          "score": 8.6
         }
       },
       {
@@ -793,7 +793,7 @@
         "v": {
           "n": "node88",
           "type": "gene",
-          "score": "8.70"
+          "score": 8.7
         }
       },
       {
@@ -801,7 +801,7 @@
         "v": {
           "n": "node89",
           "type": "protein",
-          "score": "8.80"
+          "score": 8.8
         }
       },
       {
@@ -809,7 +809,7 @@
         "v": {
           "n": "node90",
           "type": "gene",
-          "score": "8.90"
+          "score": 8.9
         }
       },
       {
@@ -817,7 +817,7 @@
         "v": {
           "n": "node91",
           "type": "protein",
-          "score": "9.00"
+          "score": 9
         }
       },
       {
@@ -825,7 +825,7 @@
         "v": {
           "n": "node92",
           "type": "gene",
-          "score": "9.10"
+          "score": 9.1
         }
       },
       {
@@ -833,7 +833,7 @@
         "v": {
           "n": "node93",
           "type": "protein",
-          "score": "9.20"
+          "score": 9.2
         }
       },
       {
@@ -841,7 +841,7 @@
         "v": {
           "n": "node94",
           "type": "gene",
-          "score": "9.30"
+          "score": 9.3
         }
       },
       {
@@ -849,7 +849,7 @@
         "v": {
           "n": "node95",
           "type": "protein",
-          "score": "9.40"
+          "score": 9.4
         }
       },
       {
@@ -857,7 +857,7 @@
         "v": {
           "n": "node96",
           "type": "gene",
-          "score": "9.50"
+          "score": 9.5
         }
       },
       {
@@ -865,7 +865,7 @@
         "v": {
           "n": "node97",
           "type": "protein",
-          "score": "9.60"
+          "score": 9.6
         }
       },
       {
@@ -873,7 +873,7 @@
         "v": {
           "n": "node98",
           "type": "gene",
-          "score": "9.70"
+          "score": 9.7
         }
       },
       {
@@ -881,7 +881,7 @@
         "v": {
           "n": "node99",
           "type": "protein",
-          "score": "9.80"
+          "score": 9.8
         }
       },
       {
@@ -889,7 +889,7 @@
         "v": {
           "n": "node100",
           "type": "gene",
-          "score": "9.90"
+          "score": 9.9
         }
       }
     ]
@@ -902,7 +902,7 @@
         "t": 1,
         "v": {
           "interaction": "interacts",
-          "weight": "0.00"
+          "weight": 0
         }
       },
       {
@@ -911,7 +911,7 @@
         "t": 2,
         "v": {
           "interaction": "binds",
-          "weight": "0.05"
+          "weight": 0.05
         }
       },
       {
@@ -920,7 +920,7 @@
         "t": 3,
         "v": {
           "interaction": "regulates",
-          "weight": "0.10"
+          "weight": 0.1
         }
       },
       {
@@ -929,7 +929,7 @@
         "t": 4,
         "v": {
           "interaction": "activates",
-          "weight": "0.15"
+          "weight": 0.15
         }
       },
       {
@@ -938,7 +938,7 @@
         "t": 5,
         "v": {
           "interaction": "inhibits",
-          "weight": "0.20"
+          "weight": 0.2
         }
       },
       {
@@ -947,7 +947,7 @@
         "t": 6,
         "v": {
           "interaction": "interacts",
-          "weight": "0.25"
+          "weight": 0.25
         }
       },
       {
@@ -956,7 +956,7 @@
         "t": 7,
         "v": {
           "interaction": "binds",
-          "weight": "0.30"
+          "weight": 0.3
         }
       },
       {
@@ -965,7 +965,7 @@
         "t": 8,
         "v": {
           "interaction": "regulates",
-          "weight": "0.35"
+          "weight": 0.35
         }
       },
       {
@@ -974,7 +974,7 @@
         "t": 9,
         "v": {
           "interaction": "activates",
-          "weight": "0.40"
+          "weight": 0.4
         }
       },
       {
@@ -983,7 +983,7 @@
         "t": 10,
         "v": {
           "interaction": "inhibits",
-          "weight": "0.45"
+          "weight": 0.45
         }
       },
       {
@@ -992,7 +992,7 @@
         "t": 11,
         "v": {
           "interaction": "interacts",
-          "weight": "0.50"
+          "weight": 0.5
         }
       },
       {
@@ -1001,7 +1001,7 @@
         "t": 12,
         "v": {
           "interaction": "binds",
-          "weight": "0.55"
+          "weight": 0.55
         }
       },
       {
@@ -1010,7 +1010,7 @@
         "t": 13,
         "v": {
           "interaction": "regulates",
-          "weight": "0.60"
+          "weight": 0.6
         }
       },
       {
@@ -1019,7 +1019,7 @@
         "t": 14,
         "v": {
           "interaction": "activates",
-          "weight": "0.65"
+          "weight": 0.65
         }
       },
       {
@@ -1028,7 +1028,7 @@
         "t": 15,
         "v": {
           "interaction": "inhibits",
-          "weight": "0.70"
+          "weight": 0.7
         }
       },
       {
@@ -1037,7 +1037,7 @@
         "t": 16,
         "v": {
           "interaction": "interacts",
-          "weight": "0.75"
+          "weight": 0.75
         }
       },
       {
@@ -1046,7 +1046,7 @@
         "t": 17,
         "v": {
           "interaction": "binds",
-          "weight": "0.80"
+          "weight": 0.8
         }
       },
       {
@@ -1055,7 +1055,7 @@
         "t": 18,
         "v": {
           "interaction": "regulates",
-          "weight": "0.85"
+          "weight": 0.85
         }
       },
       {
@@ -1064,7 +1064,7 @@
         "t": 19,
         "v": {
           "interaction": "activates",
-          "weight": "0.90"
+          "weight": 0.9
         }
       },
       {
@@ -1073,7 +1073,7 @@
         "t": 20,
         "v": {
           "interaction": "inhibits",
-          "weight": "0.95"
+          "weight": 0.95
         }
       },
       {
@@ -1082,7 +1082,7 @@
         "t": 21,
         "v": {
           "interaction": "interacts",
-          "weight": "1.00"
+          "weight": 1
         }
       },
       {
@@ -1091,7 +1091,7 @@
         "t": 22,
         "v": {
           "interaction": "binds",
-          "weight": "1.05"
+          "weight": 1.05
         }
       },
       {
@@ -1100,7 +1100,7 @@
         "t": 23,
         "v": {
           "interaction": "regulates",
-          "weight": "1.10"
+          "weight": 1.1
         }
       },
       {
@@ -1109,7 +1109,7 @@
         "t": 24,
         "v": {
           "interaction": "activates",
-          "weight": "1.15"
+          "weight": 1.15
         }
       },
       {
@@ -1118,7 +1118,7 @@
         "t": 25,
         "v": {
           "interaction": "inhibits",
-          "weight": "1.20"
+          "weight": 1.2
         }
       },
       {
@@ -1127,7 +1127,7 @@
         "t": 26,
         "v": {
           "interaction": "interacts",
-          "weight": "1.25"
+          "weight": 1.25
         }
       },
       {
@@ -1136,7 +1136,7 @@
         "t": 27,
         "v": {
           "interaction": "binds",
-          "weight": "1.30"
+          "weight": 1.3
         }
       },
       {
@@ -1145,7 +1145,7 @@
         "t": 28,
         "v": {
           "interaction": "regulates",
-          "weight": "1.35"
+          "weight": 1.35
         }
       },
       {
@@ -1154,7 +1154,7 @@
         "t": 29,
         "v": {
           "interaction": "activates",
-          "weight": "1.40"
+          "weight": 1.4
         }
       },
       {
@@ -1163,7 +1163,7 @@
         "t": 30,
         "v": {
           "interaction": "inhibits",
-          "weight": "1.45"
+          "weight": 1.45
         }
       },
       {
@@ -1172,7 +1172,7 @@
         "t": 31,
         "v": {
           "interaction": "interacts",
-          "weight": "1.50"
+          "weight": 1.5
         }
       },
       {
@@ -1181,7 +1181,7 @@
         "t": 32,
         "v": {
           "interaction": "binds",
-          "weight": "1.55"
+          "weight": 1.55
         }
       },
       {
@@ -1190,7 +1190,7 @@
         "t": 33,
         "v": {
           "interaction": "regulates",
-          "weight": "1.60"
+          "weight": 1.6
         }
       },
       {
@@ -1199,7 +1199,7 @@
         "t": 34,
         "v": {
           "interaction": "activates",
-          "weight": "1.65"
+          "weight": 1.65
         }
       },
       {
@@ -1208,7 +1208,7 @@
         "t": 35,
         "v": {
           "interaction": "inhibits",
-          "weight": "1.70"
+          "weight": 1.7
         }
       },
       {
@@ -1217,7 +1217,7 @@
         "t": 36,
         "v": {
           "interaction": "interacts",
-          "weight": "1.75"
+          "weight": 1.75
         }
       },
       {
@@ -1226,7 +1226,7 @@
         "t": 37,
         "v": {
           "interaction": "binds",
-          "weight": "1.80"
+          "weight": 1.8
         }
       },
       {
@@ -1235,7 +1235,7 @@
         "t": 38,
         "v": {
           "interaction": "regulates",
-          "weight": "1.85"
+          "weight": 1.85
         }
       },
       {
@@ -1244,7 +1244,7 @@
         "t": 39,
         "v": {
           "interaction": "activates",
-          "weight": "1.90"
+          "weight": 1.9
         }
       },
       {
@@ -1253,7 +1253,7 @@
         "t": 40,
         "v": {
           "interaction": "inhibits",
-          "weight": "1.95"
+          "weight": 1.95
         }
       },
       {
@@ -1262,7 +1262,7 @@
         "t": 41,
         "v": {
           "interaction": "interacts",
-          "weight": "2.00"
+          "weight": 2
         }
       },
       {
@@ -1271,7 +1271,7 @@
         "t": 42,
         "v": {
           "interaction": "binds",
-          "weight": "2.05"
+          "weight": 2.05
         }
       },
       {
@@ -1280,7 +1280,7 @@
         "t": 43,
         "v": {
           "interaction": "regulates",
-          "weight": "2.10"
+          "weight": 2.1
         }
       },
       {
@@ -1289,7 +1289,7 @@
         "t": 44,
         "v": {
           "interaction": "activates",
-          "weight": "2.15"
+          "weight": 2.15
         }
       },
       {
@@ -1298,7 +1298,7 @@
         "t": 45,
         "v": {
           "interaction": "inhibits",
-          "weight": "2.20"
+          "weight": 2.2
         }
       },
       {
@@ -1307,7 +1307,7 @@
         "t": 46,
         "v": {
           "interaction": "interacts",
-          "weight": "2.25"
+          "weight": 2.25
         }
       },
       {
@@ -1316,7 +1316,7 @@
         "t": 47,
         "v": {
           "interaction": "binds",
-          "weight": "2.30"
+          "weight": 2.3
         }
       },
       {
@@ -1325,7 +1325,7 @@
         "t": 48,
         "v": {
           "interaction": "regulates",
-          "weight": "2.35"
+          "weight": 2.35
         }
       },
       {
@@ -1334,7 +1334,7 @@
         "t": 49,
         "v": {
           "interaction": "activates",
-          "weight": "2.40"
+          "weight": 2.4
         }
       },
       {
@@ -1343,7 +1343,7 @@
         "t": 50,
         "v": {
           "interaction": "inhibits",
-          "weight": "2.45"
+          "weight": 2.45
         }
       },
       {
@@ -1352,7 +1352,7 @@
         "t": 51,
         "v": {
           "interaction": "interacts",
-          "weight": "2.50"
+          "weight": 2.5
         }
       },
       {
@@ -1361,7 +1361,7 @@
         "t": 52,
         "v": {
           "interaction": "binds",
-          "weight": "2.55"
+          "weight": 2.55
         }
       },
       {
@@ -1370,7 +1370,7 @@
         "t": 53,
         "v": {
           "interaction": "regulates",
-          "weight": "2.60"
+          "weight": 2.6
         }
       },
       {
@@ -1379,7 +1379,7 @@
         "t": 54,
         "v": {
           "interaction": "activates",
-          "weight": "2.65"
+          "weight": 2.65
         }
       },
       {
@@ -1388,7 +1388,7 @@
         "t": 55,
         "v": {
           "interaction": "inhibits",
-          "weight": "2.70"
+          "weight": 2.7
         }
       },
       {
@@ -1397,7 +1397,7 @@
         "t": 56,
         "v": {
           "interaction": "interacts",
-          "weight": "2.75"
+          "weight": 2.75
         }
       },
       {
@@ -1406,7 +1406,7 @@
         "t": 57,
         "v": {
           "interaction": "binds",
-          "weight": "2.80"
+          "weight": 2.8
         }
       },
       {
@@ -1415,7 +1415,7 @@
         "t": 58,
         "v": {
           "interaction": "regulates",
-          "weight": "2.85"
+          "weight": 2.85
         }
       },
       {
@@ -1424,7 +1424,7 @@
         "t": 59,
         "v": {
           "interaction": "activates",
-          "weight": "2.90"
+          "weight": 2.9
         }
       },
       {
@@ -1433,7 +1433,7 @@
         "t": 60,
         "v": {
           "interaction": "inhibits",
-          "weight": "2.95"
+          "weight": 2.95
         }
       },
       {
@@ -1442,7 +1442,7 @@
         "t": 61,
         "v": {
           "interaction": "interacts",
-          "weight": "3.00"
+          "weight": 3
         }
       },
       {
@@ -1451,7 +1451,7 @@
         "t": 62,
         "v": {
           "interaction": "binds",
-          "weight": "3.05"
+          "weight": 3.05
         }
       },
       {
@@ -1460,7 +1460,7 @@
         "t": 63,
         "v": {
           "interaction": "regulates",
-          "weight": "3.10"
+          "weight": 3.1
         }
       },
       {
@@ -1469,7 +1469,7 @@
         "t": 64,
         "v": {
           "interaction": "activates",
-          "weight": "3.15"
+          "weight": 3.15
         }
       },
       {
@@ -1478,7 +1478,7 @@
         "t": 65,
         "v": {
           "interaction": "inhibits",
-          "weight": "3.20"
+          "weight": 3.2
         }
       },
       {
@@ -1487,7 +1487,7 @@
         "t": 66,
         "v": {
           "interaction": "interacts",
-          "weight": "3.25"
+          "weight": 3.25
         }
       },
       {
@@ -1496,7 +1496,7 @@
         "t": 67,
         "v": {
           "interaction": "binds",
-          "weight": "3.30"
+          "weight": 3.3
         }
       },
       {
@@ -1505,7 +1505,7 @@
         "t": 68,
         "v": {
           "interaction": "regulates",
-          "weight": "3.35"
+          "weight": 3.35
         }
       },
       {
@@ -1514,7 +1514,7 @@
         "t": 69,
         "v": {
           "interaction": "activates",
-          "weight": "3.40"
+          "weight": 3.4
         }
       },
       {
@@ -1523,7 +1523,7 @@
         "t": 70,
         "v": {
           "interaction": "inhibits",
-          "weight": "3.45"
+          "weight": 3.45
         }
       },
       {
@@ -1532,7 +1532,7 @@
         "t": 71,
         "v": {
           "interaction": "interacts",
-          "weight": "3.50"
+          "weight": 3.5
         }
       },
       {
@@ -1541,7 +1541,7 @@
         "t": 72,
         "v": {
           "interaction": "binds",
-          "weight": "3.55"
+          "weight": 3.55
         }
       },
       {
@@ -1550,7 +1550,7 @@
         "t": 73,
         "v": {
           "interaction": "regulates",
-          "weight": "3.60"
+          "weight": 3.6
         }
       },
       {
@@ -1559,7 +1559,7 @@
         "t": 74,
         "v": {
           "interaction": "activates",
-          "weight": "3.65"
+          "weight": 3.65
         }
       },
       {
@@ -1568,7 +1568,7 @@
         "t": 75,
         "v": {
           "interaction": "inhibits",
-          "weight": "3.70"
+          "weight": 3.7
         }
       },
       {
@@ -1577,7 +1577,7 @@
         "t": 76,
         "v": {
           "interaction": "interacts",
-          "weight": "3.75"
+          "weight": 3.75
         }
       },
       {
@@ -1586,7 +1586,7 @@
         "t": 77,
         "v": {
           "interaction": "binds",
-          "weight": "3.80"
+          "weight": 3.8
         }
       },
       {
@@ -1595,7 +1595,7 @@
         "t": 78,
         "v": {
           "interaction": "regulates",
-          "weight": "3.85"
+          "weight": 3.85
         }
       },
       {
@@ -1604,7 +1604,7 @@
         "t": 79,
         "v": {
           "interaction": "activates",
-          "weight": "3.90"
+          "weight": 3.9
         }
       },
       {
@@ -1613,7 +1613,7 @@
         "t": 80,
         "v": {
           "interaction": "inhibits",
-          "weight": "3.95"
+          "weight": 3.95
         }
       },
       {
@@ -1622,7 +1622,7 @@
         "t": 81,
         "v": {
           "interaction": "interacts",
-          "weight": "4.00"
+          "weight": 4
         }
       },
       {
@@ -1631,7 +1631,7 @@
         "t": 82,
         "v": {
           "interaction": "binds",
-          "weight": "4.05"
+          "weight": 4.05
         }
       },
       {
@@ -1640,7 +1640,7 @@
         "t": 83,
         "v": {
           "interaction": "regulates",
-          "weight": "4.10"
+          "weight": 4.1
         }
       },
       {
@@ -1649,7 +1649,7 @@
         "t": 84,
         "v": {
           "interaction": "activates",
-          "weight": "4.15"
+          "weight": 4.15
         }
       },
       {
@@ -1658,7 +1658,7 @@
         "t": 85,
         "v": {
           "interaction": "inhibits",
-          "weight": "4.20"
+          "weight": 4.2
         }
       },
       {
@@ -1667,7 +1667,7 @@
         "t": 86,
         "v": {
           "interaction": "interacts",
-          "weight": "4.25"
+          "weight": 4.25
         }
       },
       {
@@ -1676,7 +1676,7 @@
         "t": 87,
         "v": {
           "interaction": "binds",
-          "weight": "4.30"
+          "weight": 4.3
         }
       },
       {
@@ -1685,7 +1685,7 @@
         "t": 88,
         "v": {
           "interaction": "regulates",
-          "weight": "4.35"
+          "weight": 4.35
         }
       },
       {
@@ -1694,7 +1694,7 @@
         "t": 89,
         "v": {
           "interaction": "activates",
-          "weight": "4.40"
+          "weight": 4.4
         }
       },
       {
@@ -1703,7 +1703,7 @@
         "t": 90,
         "v": {
           "interaction": "inhibits",
-          "weight": "4.45"
+          "weight": 4.45
         }
       },
       {
@@ -1712,7 +1712,7 @@
         "t": 91,
         "v": {
           "interaction": "interacts",
-          "weight": "4.50"
+          "weight": 4.5
         }
       },
       {
@@ -1721,7 +1721,7 @@
         "t": 92,
         "v": {
           "interaction": "binds",
-          "weight": "4.55"
+          "weight": 4.55
         }
       },
       {
@@ -1730,7 +1730,7 @@
         "t": 93,
         "v": {
           "interaction": "regulates",
-          "weight": "4.60"
+          "weight": 4.6
         }
       },
       {
@@ -1739,7 +1739,7 @@
         "t": 94,
         "v": {
           "interaction": "activates",
-          "weight": "4.65"
+          "weight": 4.65
         }
       },
       {
@@ -1748,7 +1748,7 @@
         "t": 95,
         "v": {
           "interaction": "inhibits",
-          "weight": "4.70"
+          "weight": 4.7
         }
       },
       {
@@ -1757,7 +1757,7 @@
         "t": 96,
         "v": {
           "interaction": "interacts",
-          "weight": "4.75"
+          "weight": 4.75
         }
       },
       {
@@ -1766,7 +1766,7 @@
         "t": 97,
         "v": {
           "interaction": "binds",
-          "weight": "4.80"
+          "weight": 4.8
         }
       },
       {
@@ -1775,7 +1775,7 @@
         "t": 98,
         "v": {
           "interaction": "regulates",
-          "weight": "4.85"
+          "weight": 4.85
         }
       },
       {
@@ -1784,7 +1784,7 @@
         "t": 99,
         "v": {
           "interaction": "activates",
-          "weight": "4.90"
+          "weight": 4.9
         }
       },
       {
@@ -1793,7 +1793,7 @@
         "t": 0,
         "v": {
           "interaction": "inhibits",
-          "weight": "4.95"
+          "weight": 4.95
         }
       },
       {
@@ -1802,7 +1802,7 @@
         "t": 1,
         "v": {
           "interaction": "interacts",
-          "weight": "5.00"
+          "weight": 5
         }
       },
       {
@@ -1811,7 +1811,7 @@
         "t": 2,
         "v": {
           "interaction": "binds",
-          "weight": "5.05"
+          "weight": 5.05
         }
       },
       {
@@ -1820,7 +1820,7 @@
         "t": 3,
         "v": {
           "interaction": "regulates",
-          "weight": "5.10"
+          "weight": 5.1
         }
       },
       {
@@ -1829,7 +1829,7 @@
         "t": 4,
         "v": {
           "interaction": "activates",
-          "weight": "5.15"
+          "weight": 5.15
         }
       },
       {
@@ -1838,7 +1838,7 @@
         "t": 5,
         "v": {
           "interaction": "inhibits",
-          "weight": "5.20"
+          "weight": 5.2
         }
       },
       {
@@ -1847,7 +1847,7 @@
         "t": 6,
         "v": {
           "interaction": "interacts",
-          "weight": "5.25"
+          "weight": 5.25
         }
       },
       {
@@ -1856,7 +1856,7 @@
         "t": 7,
         "v": {
           "interaction": "binds",
-          "weight": "5.30"
+          "weight": 5.3
         }
       },
       {
@@ -1865,7 +1865,7 @@
         "t": 8,
         "v": {
           "interaction": "regulates",
-          "weight": "5.35"
+          "weight": 5.35
         }
       },
       {
@@ -1874,7 +1874,7 @@
         "t": 9,
         "v": {
           "interaction": "activates",
-          "weight": "5.40"
+          "weight": 5.4
         }
       },
       {
@@ -1883,7 +1883,7 @@
         "t": 10,
         "v": {
           "interaction": "inhibits",
-          "weight": "5.45"
+          "weight": 5.45
         }
       },
       {
@@ -1892,7 +1892,7 @@
         "t": 11,
         "v": {
           "interaction": "interacts",
-          "weight": "5.50"
+          "weight": 5.5
         }
       },
       {
@@ -1901,7 +1901,7 @@
         "t": 12,
         "v": {
           "interaction": "binds",
-          "weight": "5.55"
+          "weight": 5.55
         }
       },
       {
@@ -1910,7 +1910,7 @@
         "t": 13,
         "v": {
           "interaction": "regulates",
-          "weight": "5.60"
+          "weight": 5.6
         }
       },
       {
@@ -1919,7 +1919,7 @@
         "t": 14,
         "v": {
           "interaction": "activates",
-          "weight": "5.65"
+          "weight": 5.65
         }
       },
       {
@@ -1928,7 +1928,7 @@
         "t": 15,
         "v": {
           "interaction": "inhibits",
-          "weight": "5.70"
+          "weight": 5.7
         }
       },
       {
@@ -1937,7 +1937,7 @@
         "t": 16,
         "v": {
           "interaction": "interacts",
-          "weight": "5.75"
+          "weight": 5.75
         }
       },
       {
@@ -1946,7 +1946,7 @@
         "t": 17,
         "v": {
           "interaction": "binds",
-          "weight": "5.80"
+          "weight": 5.8
         }
       },
       {
@@ -1955,7 +1955,7 @@
         "t": 18,
         "v": {
           "interaction": "regulates",
-          "weight": "5.85"
+          "weight": 5.85
         }
       },
       {
@@ -1964,7 +1964,7 @@
         "t": 19,
         "v": {
           "interaction": "activates",
-          "weight": "5.90"
+          "weight": 5.9
         }
       },
       {
@@ -1973,7 +1973,7 @@
         "t": 20,
         "v": {
           "interaction": "inhibits",
-          "weight": "5.95"
+          "weight": 5.95
         }
       },
       {
@@ -1982,7 +1982,7 @@
         "t": 21,
         "v": {
           "interaction": "interacts",
-          "weight": "6.00"
+          "weight": 6
         }
       },
       {
@@ -1991,7 +1991,7 @@
         "t": 22,
         "v": {
           "interaction": "binds",
-          "weight": "6.05"
+          "weight": 6.05
         }
       },
       {
@@ -2000,7 +2000,7 @@
         "t": 23,
         "v": {
           "interaction": "regulates",
-          "weight": "6.10"
+          "weight": 6.1
         }
       },
       {
@@ -2009,7 +2009,7 @@
         "t": 24,
         "v": {
           "interaction": "activates",
-          "weight": "6.15"
+          "weight": 6.15
         }
       },
       {
@@ -2018,7 +2018,7 @@
         "t": 25,
         "v": {
           "interaction": "inhibits",
-          "weight": "6.20"
+          "weight": 6.2
         }
       },
       {
@@ -2027,7 +2027,7 @@
         "t": 26,
         "v": {
           "interaction": "interacts",
-          "weight": "6.25"
+          "weight": 6.25
         }
       },
       {
@@ -2036,7 +2036,7 @@
         "t": 27,
         "v": {
           "interaction": "binds",
-          "weight": "6.30"
+          "weight": 6.3
         }
       },
       {
@@ -2045,7 +2045,7 @@
         "t": 28,
         "v": {
           "interaction": "regulates",
-          "weight": "6.35"
+          "weight": 6.35
         }
       },
       {
@@ -2054,7 +2054,7 @@
         "t": 29,
         "v": {
           "interaction": "activates",
-          "weight": "6.40"
+          "weight": 6.4
         }
       },
       {
@@ -2063,7 +2063,7 @@
         "t": 30,
         "v": {
           "interaction": "inhibits",
-          "weight": "6.45"
+          "weight": 6.45
         }
       },
       {
@@ -2072,7 +2072,7 @@
         "t": 31,
         "v": {
           "interaction": "interacts",
-          "weight": "6.50"
+          "weight": 6.5
         }
       },
       {
@@ -2081,7 +2081,7 @@
         "t": 32,
         "v": {
           "interaction": "binds",
-          "weight": "6.55"
+          "weight": 6.55
         }
       },
       {
@@ -2090,7 +2090,7 @@
         "t": 33,
         "v": {
           "interaction": "regulates",
-          "weight": "6.60"
+          "weight": 6.6
         }
       },
       {
@@ -2099,7 +2099,7 @@
         "t": 34,
         "v": {
           "interaction": "activates",
-          "weight": "6.65"
+          "weight": 6.65
         }
       },
       {
@@ -2108,7 +2108,7 @@
         "t": 35,
         "v": {
           "interaction": "inhibits",
-          "weight": "6.70"
+          "weight": 6.7
         }
       },
       {
@@ -2117,7 +2117,7 @@
         "t": 36,
         "v": {
           "interaction": "interacts",
-          "weight": "6.75"
+          "weight": 6.75
         }
       },
       {
@@ -2126,7 +2126,7 @@
         "t": 37,
         "v": {
           "interaction": "binds",
-          "weight": "6.80"
+          "weight": 6.8
         }
       },
       {
@@ -2135,7 +2135,7 @@
         "t": 38,
         "v": {
           "interaction": "regulates",
-          "weight": "6.85"
+          "weight": 6.85
         }
       },
       {
@@ -2144,7 +2144,7 @@
         "t": 39,
         "v": {
           "interaction": "activates",
-          "weight": "6.90"
+          "weight": 6.9
         }
       },
       {
@@ -2153,7 +2153,7 @@
         "t": 40,
         "v": {
           "interaction": "inhibits",
-          "weight": "6.95"
+          "weight": 6.95
         }
       },
       {
@@ -2162,7 +2162,7 @@
         "t": 41,
         "v": {
           "interaction": "interacts",
-          "weight": "7.00"
+          "weight": 7
         }
       },
       {
@@ -2171,7 +2171,7 @@
         "t": 42,
         "v": {
           "interaction": "binds",
-          "weight": "7.05"
+          "weight": 7.05
         }
       },
       {
@@ -2180,7 +2180,7 @@
         "t": 43,
         "v": {
           "interaction": "regulates",
-          "weight": "7.10"
+          "weight": 7.1
         }
       },
       {
@@ -2189,7 +2189,7 @@
         "t": 44,
         "v": {
           "interaction": "activates",
-          "weight": "7.15"
+          "weight": 7.15
         }
       },
       {
@@ -2198,7 +2198,7 @@
         "t": 45,
         "v": {
           "interaction": "inhibits",
-          "weight": "7.20"
+          "weight": 7.2
         }
       },
       {
@@ -2207,7 +2207,7 @@
         "t": 46,
         "v": {
           "interaction": "interacts",
-          "weight": "7.25"
+          "weight": 7.25
         }
       },
       {
@@ -2216,7 +2216,7 @@
         "t": 47,
         "v": {
           "interaction": "binds",
-          "weight": "7.30"
+          "weight": 7.3
         }
       },
       {
@@ -2225,7 +2225,7 @@
         "t": 48,
         "v": {
           "interaction": "regulates",
-          "weight": "7.35"
+          "weight": 7.35
         }
       },
       {
@@ -2234,7 +2234,7 @@
         "t": 49,
         "v": {
           "interaction": "activates",
-          "weight": "7.40"
+          "weight": 7.4
         }
       },
       {
@@ -2243,7 +2243,7 @@
         "t": 50,
         "v": {
           "interaction": "inhibits",
-          "weight": "7.45"
+          "weight": 7.45
         }
       },
       {
@@ -2252,7 +2252,7 @@
         "t": 51,
         "v": {
           "interaction": "interacts",
-          "weight": "7.50"
+          "weight": 7.5
         }
       },
       {
@@ -2261,7 +2261,7 @@
         "t": 52,
         "v": {
           "interaction": "binds",
-          "weight": "7.55"
+          "weight": 7.55
         }
       },
       {
@@ -2270,7 +2270,7 @@
         "t": 53,
         "v": {
           "interaction": "regulates",
-          "weight": "7.60"
+          "weight": 7.6
         }
       },
       {
@@ -2279,7 +2279,7 @@
         "t": 54,
         "v": {
           "interaction": "activates",
-          "weight": "7.65"
+          "weight": 7.65
         }
       },
       {
@@ -2288,7 +2288,7 @@
         "t": 55,
         "v": {
           "interaction": "inhibits",
-          "weight": "7.70"
+          "weight": 7.7
         }
       },
       {
@@ -2297,7 +2297,7 @@
         "t": 56,
         "v": {
           "interaction": "interacts",
-          "weight": "7.75"
+          "weight": 7.75
         }
       },
       {
@@ -2306,7 +2306,7 @@
         "t": 57,
         "v": {
           "interaction": "binds",
-          "weight": "7.80"
+          "weight": 7.8
         }
       },
       {
@@ -2315,7 +2315,7 @@
         "t": 58,
         "v": {
           "interaction": "regulates",
-          "weight": "7.85"
+          "weight": 7.85
         }
       },
       {
@@ -2324,7 +2324,7 @@
         "t": 59,
         "v": {
           "interaction": "activates",
-          "weight": "7.90"
+          "weight": 7.9
         }
       },
       {
@@ -2333,7 +2333,7 @@
         "t": 60,
         "v": {
           "interaction": "inhibits",
-          "weight": "7.95"
+          "weight": 7.95
         }
       },
       {
@@ -2342,7 +2342,7 @@
         "t": 61,
         "v": {
           "interaction": "interacts",
-          "weight": "8.00"
+          "weight": 8
         }
       },
       {
@@ -2351,7 +2351,7 @@
         "t": 62,
         "v": {
           "interaction": "binds",
-          "weight": "8.05"
+          "weight": 8.05
         }
       },
       {
@@ -2360,7 +2360,7 @@
         "t": 63,
         "v": {
           "interaction": "regulates",
-          "weight": "8.10"
+          "weight": 8.1
         }
       },
       {
@@ -2369,7 +2369,7 @@
         "t": 64,
         "v": {
           "interaction": "activates",
-          "weight": "8.15"
+          "weight": 8.15
         }
       },
       {
@@ -2378,7 +2378,7 @@
         "t": 65,
         "v": {
           "interaction": "inhibits",
-          "weight": "8.20"
+          "weight": 8.2
         }
       },
       {
@@ -2387,7 +2387,7 @@
         "t": 66,
         "v": {
           "interaction": "interacts",
-          "weight": "8.25"
+          "weight": 8.25
         }
       },
       {
@@ -2396,7 +2396,7 @@
         "t": 67,
         "v": {
           "interaction": "binds",
-          "weight": "8.30"
+          "weight": 8.3
         }
       },
       {
@@ -2405,7 +2405,7 @@
         "t": 68,
         "v": {
           "interaction": "regulates",
-          "weight": "8.35"
+          "weight": 8.35
         }
       },
       {
@@ -2414,7 +2414,7 @@
         "t": 69,
         "v": {
           "interaction": "activates",
-          "weight": "8.40"
+          "weight": 8.4
         }
       },
       {
@@ -2423,7 +2423,7 @@
         "t": 70,
         "v": {
           "interaction": "inhibits",
-          "weight": "8.45"
+          "weight": 8.45
         }
       },
       {
@@ -2432,7 +2432,7 @@
         "t": 71,
         "v": {
           "interaction": "interacts",
-          "weight": "8.50"
+          "weight": 8.5
         }
       },
       {
@@ -2441,7 +2441,7 @@
         "t": 72,
         "v": {
           "interaction": "binds",
-          "weight": "8.55"
+          "weight": 8.55
         }
       },
       {
@@ -2450,7 +2450,7 @@
         "t": 73,
         "v": {
           "interaction": "regulates",
-          "weight": "8.60"
+          "weight": 8.6
         }
       },
       {
@@ -2459,7 +2459,7 @@
         "t": 74,
         "v": {
           "interaction": "activates",
-          "weight": "8.65"
+          "weight": 8.65
         }
       },
       {
@@ -2468,7 +2468,7 @@
         "t": 75,
         "v": {
           "interaction": "inhibits",
-          "weight": "8.70"
+          "weight": 8.7
         }
       },
       {
@@ -2477,7 +2477,7 @@
         "t": 76,
         "v": {
           "interaction": "interacts",
-          "weight": "8.75"
+          "weight": 8.75
         }
       },
       {
@@ -2486,7 +2486,7 @@
         "t": 77,
         "v": {
           "interaction": "binds",
-          "weight": "8.80"
+          "weight": 8.8
         }
       },
       {
@@ -2495,7 +2495,7 @@
         "t": 78,
         "v": {
           "interaction": "regulates",
-          "weight": "8.85"
+          "weight": 8.85
         }
       },
       {
@@ -2504,7 +2504,7 @@
         "t": 79,
         "v": {
           "interaction": "activates",
-          "weight": "8.90"
+          "weight": 8.9
         }
       },
       {
@@ -2513,7 +2513,7 @@
         "t": 80,
         "v": {
           "interaction": "inhibits",
-          "weight": "8.95"
+          "weight": 8.95
         }
       },
       {
@@ -2522,7 +2522,7 @@
         "t": 81,
         "v": {
           "interaction": "interacts",
-          "weight": "9.00"
+          "weight": 9
         }
       },
       {
@@ -2531,7 +2531,7 @@
         "t": 82,
         "v": {
           "interaction": "binds",
-          "weight": "9.05"
+          "weight": 9.05
         }
       },
       {
@@ -2540,7 +2540,7 @@
         "t": 83,
         "v": {
           "interaction": "regulates",
-          "weight": "9.10"
+          "weight": 9.1
         }
       },
       {
@@ -2549,7 +2549,7 @@
         "t": 84,
         "v": {
           "interaction": "activates",
-          "weight": "9.15"
+          "weight": 9.15
         }
       },
       {
@@ -2558,7 +2558,7 @@
         "t": 85,
         "v": {
           "interaction": "inhibits",
-          "weight": "9.20"
+          "weight": 9.2
         }
       },
       {
@@ -2567,7 +2567,7 @@
         "t": 86,
         "v": {
           "interaction": "interacts",
-          "weight": "9.25"
+          "weight": 9.25
         }
       },
       {
@@ -2576,7 +2576,7 @@
         "t": 87,
         "v": {
           "interaction": "binds",
-          "weight": "9.30"
+          "weight": 9.3
         }
       },
       {
@@ -2585,7 +2585,7 @@
         "t": 88,
         "v": {
           "interaction": "regulates",
-          "weight": "9.35"
+          "weight": 9.35
         }
       },
       {
@@ -2594,7 +2594,7 @@
         "t": 89,
         "v": {
           "interaction": "activates",
-          "weight": "9.40"
+          "weight": 9.4
         }
       },
       {
@@ -2603,7 +2603,7 @@
         "t": 90,
         "v": {
           "interaction": "inhibits",
-          "weight": "9.45"
+          "weight": 9.45
         }
       },
       {
@@ -2612,7 +2612,7 @@
         "t": 91,
         "v": {
           "interaction": "interacts",
-          "weight": "9.50"
+          "weight": 9.5
         }
       },
       {
@@ -2621,7 +2621,7 @@
         "t": 92,
         "v": {
           "interaction": "binds",
-          "weight": "9.55"
+          "weight": 9.55
         }
       },
       {
@@ -2630,7 +2630,7 @@
         "t": 93,
         "v": {
           "interaction": "regulates",
-          "weight": "9.60"
+          "weight": 9.6
         }
       },
       {
@@ -2639,7 +2639,7 @@
         "t": 94,
         "v": {
           "interaction": "activates",
-          "weight": "9.65"
+          "weight": 9.65
         }
       },
       {
@@ -2648,7 +2648,7 @@
         "t": 95,
         "v": {
           "interaction": "inhibits",
-          "weight": "9.70"
+          "weight": 9.7
         }
       },
       {
@@ -2657,7 +2657,7 @@
         "t": 96,
         "v": {
           "interaction": "interacts",
-          "weight": "9.75"
+          "weight": 9.75
         }
       },
       {
@@ -2666,7 +2666,7 @@
         "t": 97,
         "v": {
           "interaction": "binds",
-          "weight": "9.80"
+          "weight": 9.8
         }
       },
       {
@@ -2675,7 +2675,7 @@
         "t": 98,
         "v": {
           "interaction": "regulates",
-          "weight": "9.85"
+          "weight": 9.85
         }
       },
       {
@@ -2684,7 +2684,7 @@
         "t": 99,
         "v": {
           "interaction": "activates",
-          "weight": "9.90"
+          "weight": 9.9
         }
       },
       {
@@ -2693,7 +2693,7 @@
         "t": 0,
         "v": {
           "interaction": "inhibits",
-          "weight": "9.95"
+          "weight": 9.95
         }
       }
     ]

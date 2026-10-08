@@ -28,12 +28,12 @@ import VisualStyleFn, {
   VisualStyle,
 } from '../../../models/VisualStyleModel'
 import {
+  getCustomGraphicsPropertyKeys,
   getFirstValidCustomGraphicVp,
   getNonCustomGraphicVps,
-  VALID_PIE_CHART_SLICE_INDEX_RANGE,
-  getCustomGraphicsPropertyKeys,
   getPieBackgroundColorViewModelProp,
   getPieBackgroundSizeViewModelProp,
+  VALID_PIE_CHART_SLICE_INDEX_RANGE,
 } from '../../../models/VisualStyleModel/impl/customGraphicsImpl'
 import { CyjsDirectMapper } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/cyjsDirectMapper'
 import { SpecialPropertyName } from '../../../models/VisualStyleModel/impl/CyjsProperties/CyjsStyleModels/directMappingSelector'
@@ -122,17 +122,14 @@ const vpHandlers = new Map<
 >()
 
 // Handler for node label position: computes and sets alignment, margin, and justification.
-vpHandlers.set(
-  VisualPropertyName.NodeLabelPosition,
-  (obj, key, value, view) => {
-    const { horizontalAlign, verticalAlign } = computeNodeLabelPosition(value)
-    obj.data(SpecialPropertyName.NodeLabelHorizontalAlign, horizontalAlign)
-    obj.data(SpecialPropertyName.NodeLabelVerticalAlign, verticalAlign)
-    obj.data(SpecialPropertyName.NodeLabelMarginX, value.MARGIN_X)
-    obj.data(SpecialPropertyName.NodeLabelMarginY, value.MARGIN_Y)
-    obj.data(SpecialPropertyName.NodeLabelJustification, value.JUSTIFICATION)
-  },
-)
+vpHandlers.set(VisualPropertyName.NodeLabelPosition, (obj, key, value) => {
+  const { horizontalAlign, verticalAlign } = computeNodeLabelPosition(value)
+  obj.data(SpecialPropertyName.NodeLabelHorizontalAlign, horizontalAlign)
+  obj.data(SpecialPropertyName.NodeLabelVerticalAlign, verticalAlign)
+  obj.data(SpecialPropertyName.NodeLabelMarginX, value.MARGIN_X)
+  obj.data(SpecialPropertyName.NodeLabelMarginY, value.MARGIN_Y)
+  obj.data(SpecialPropertyName.NodeLabelJustification, value.JUSTIFICATION)
+})
 
 // Handler for edge target arrow shape and fill.
 vpHandlers.set(
@@ -163,25 +160,19 @@ vpHandlers.set(
 )
 
 // Handler for node shape: maps application node shape to Cytoscape.js node shape.
-vpHandlers.set(VisualPropertyName.NodeShape, (obj, key, value, view) => {
+vpHandlers.set(VisualPropertyName.NodeShape, (obj, key, value) => {
   obj.data(key, transformNodeShape(value as NodeShapeType))
 })
 
 // Handler for node label rotation: converts degrees to radians for Cytoscape.js.
-vpHandlers.set(
-  VisualPropertyName.NodeLabelRotation,
-  (obj, key, value, view) => {
-    obj.data(key, transformRotation(value))
-  },
-)
+vpHandlers.set(VisualPropertyName.NodeLabelRotation, (obj, key, value) => {
+  obj.data(key, transformRotation(value))
+})
 
 // Handler for edge label rotation: converts degrees to radians for Cytoscape.js.
-vpHandlers.set(
-  VisualPropertyName.EdgeLabelRotation,
-  (obj, key, value, view) => {
-    obj.data(key, transformRotation(value))
-  },
-)
+vpHandlers.set(VisualPropertyName.EdgeLabelRotation, (obj, key, value) => {
+  obj.data(key, transformRotation(value))
+})
 
 /**
  * Generates an array of Cytoscape.js style mappings (CyjsDirectMapper) from the application's VisualStyle.
@@ -367,10 +358,37 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
     }
 
     /**
-     * Placeholder for image custom graphics properties.
-     * (Not implemented yet.)
+     * Adds Cytoscape.js image custom graphics properties.
      */
-    const addCyjsImageProperties = () => {}
+    const addCyjsImageProperties = () => {
+      const imageProps: Array<{
+        selectorStr: SpecialPropertyName
+        styleStr: string
+      }> = [
+        {
+          selectorStr: SpecialPropertyName.BackgroundImage,
+          styleStr: 'background-image',
+        },
+        {
+          selectorStr: SpecialPropertyName.BackgroundFit,
+          styleStr: 'background-fit',
+        },
+        {
+          selectorStr: SpecialPropertyName.BackgroundImageCrossorigin,
+          styleStr: 'background-image-crossorigin',
+        },
+      ]
+
+      imageProps.forEach(({ selectorStr, styleStr }) => {
+        const mapping = {
+          selector: `node[${selectorStr}]`,
+          style: {
+            [styleStr as CyjsVisualPropertyType]: `data(${selectorStr})`,
+          },
+        }
+        cyStyle.push(mapping as CyjsDirectMapper)
+      })
+    }
 
     addCyjsPieProperties()
     addCyjsRingProperties()

@@ -1,24 +1,19 @@
-import React from 'react'
+import Palette from '@mui/icons-material/Palette'
 import {
-  Box,
-  Paper,
   Button,
-  Popover,
-  Typography,
-  ToggleButtonGroup,
-  ToggleButton,
-  Tooltip,
   Checkbox,
   FormControlLabel,
   FormGroup,
+  Paper,
+  Popover,
+  Typography,
 } from '@mui/material'
-import Palette from '@mui/icons-material/Palette'
-import {
-  PALETTES,
-  getColorBrewerPaletteColors,
-} from '../../../../../models/VisualStyleModel/impl/colorPalettes'
-import { PalettePreview } from './PalettePreview'
-import { ColorType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
+import React from 'react'
+
+import { PaletteSelector } from '@/features/Vizmapper/PalettePicker'
+import { getPaletteGradientColors } from '@/models/VisualStyleModel/impl/colorPalettes'
+import { PaletteCategory } from '@/models/VisualStyleModel/VisualPropertyValue/ColorPalette'
+import { ColorType } from '@/models/VisualStyleModel/VisualPropertyValue/ColorType'
 
 interface ColorPalettePickerProps {
   currentPaletteName: string
@@ -28,11 +23,17 @@ interface ColorPalettePickerProps {
     maxColor: ColorType,
     paletteName: string,
   ) => void
+  /**
+   * Category to preselect (CW-460). Defaults to diverging, but callers can pass
+   * a data-driven recommendation (sequential for single-sided data).
+   */
+  recommendedCategory?: PaletteCategory
 }
 
 export function ColorPalettePicker({
   currentPaletteName,
   onPaletteSelect,
+  recommendedCategory = 'diverging',
 }: ColorPalettePickerProps): React.ReactElement {
   const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(null)
   const [isColorBlindChecked, setIsColorBlindChecked] = React.useState(false)
@@ -66,13 +67,16 @@ export function ColorPalettePicker({
     setIsReverseColorChecked(event.target.checked)
   }
 
-  const handleColorPalette = (
-    event: React.MouseEvent<HTMLElement>,
-    newColorPalette: string | null,
-  ): void => {
-    if (newColorPalette !== null) {
-      setColorPalette(newColorPalette)
-    }
+  const handlePaletteChange = (paletteId: string): void => {
+    const colors = getPaletteGradientColors(paletteId)
+    // Nothing to apply, so leave the selection alone rather than highlighting a
+    // palette whose gradient Confirm would not send.
+    if (colors == null) return
+    setColorPalette(paletteId)
+    setMinPalette(colors.min)
+    setMiddlePalette(colors.middle)
+    setMaxPalette(colors.max)
+    setTextPalette(colors.name)
   }
 
   const handleConfirm = (): void => {
@@ -85,22 +89,20 @@ export function ColorPalettePicker({
 
   return (
     <Paper
+      variant="outlined"
       sx={{
         display: 'flex',
-        p: 1,
-        m: 1,
-        ml: 3,
-        mr: 3,
-        justifyContent: 'center',
-        backgroundColor: '#fcfffc',
-        color: '#595858',
+        py: 1,
+        px: 2,
+        gap: 1,
+        justifyContent: 'flex-start',
+        alignItems: 'center',
       }}
     >
-      Current Palette:&ensp;
+      <span>Current Palette:</span>
       <Button
         onClick={showColorPickerMenu}
         variant="outlined"
-        sx={{ color: '#63a5e8' }}
         size="small"
         startIcon={<Palette />}
       >
@@ -122,88 +124,13 @@ export function ColorPalettePicker({
         <Typography align={'center'} sx={{ p: 1 }}>
           Set Palette
         </Typography>
-        <ToggleButtonGroup
+        <PaletteSelector
+          layout="strip"
           value={colorPalette}
-          onChange={handleColorPalette}
-          orientation="horizontal"
-          exclusive
-          fullWidth={true}
-        >
-          {Object.entries(PALETTES)
-            .filter(([paletteId, palette]) => {
-              // Only show ColorBrewer diverging palettes (those with min/middle/max)
-              return (
-                palette.metadata.category === 'diverging' &&
-                palette.min &&
-                palette.middle &&
-                palette.max
-              )
-            })
-            .map(([paletteId, palette]) => {
-              const isColorBlindUnsafe =
-                palette.metadata.colorBlindSafe === false
-              if (isColorBlindUnsafe && isColorBlindChecked) {
-                return null
-              }
-              const colors = getColorBrewerPaletteColors(paletteId)
-              if (!colors) return null
-
-              return (
-                <ToggleButton
-                  key={paletteId}
-                  value={paletteId}
-                  aria-label={palette.metadata.name}
-                  onClick={() => {
-                    setMinPalette(colors.min)
-                    setMiddlePalette(colors.middle)
-                    setMaxPalette(colors.max)
-                    setTextPalette(colors.name)
-                  }}
-                >
-                  <Tooltip
-                    title={
-                      <Box>
-                        <Typography
-                          variant="body2"
-                          sx={{ fontWeight: 'bold', mb: 0.5 }}
-                        >
-                          {palette.metadata.name}
-                        </Typography>
-                        {palette.metadata.description && (
-                          <Typography
-                            variant="caption"
-                            sx={{ display: 'block', mb: 0.5 }}
-                          >
-                            {palette.metadata.description}
-                          </Typography>
-                        )}
-                        <Typography variant="caption" sx={{ display: 'block' }}>
-                          Category: {palette.metadata.category}
-                        </Typography>
-                        {palette.metadata.colorBlindSafe !== false && (
-                          <Typography
-                            variant="caption"
-                            sx={{ display: 'block', color: 'success.main' }}
-                          >
-                            Colorblind-safe
-                          </Typography>
-                        )}
-                      </Box>
-                    }
-                    placement="right"
-                  >
-                    <PalettePreview
-                      palette={palette}
-                      width={15}
-                      height={150}
-                      orientation="vertical"
-                      showMetadata={false}
-                    />
-                  </Tooltip>
-                </ToggleButton>
-              )
-            })}
-        </ToggleButtonGroup>
+          onChange={handlePaletteChange}
+          defaultCategory={recommendedCategory}
+          colorBlindSafeOnly={isColorBlindChecked}
+        />
 
         <Paper
           sx={{
@@ -213,8 +140,6 @@ export function ColorPalettePicker({
             ml: 3,
             mr: 3,
             justifyContent: 'space-evenly',
-            backgroundColor: '#fcfffc',
-            color: '#595858',
           }}
         >
           <FormGroup>
@@ -248,24 +173,17 @@ export function ColorPalettePicker({
             ml: 3,
             mr: 3,
             justifyContent: 'space-evenly',
-            backgroundColor: '#fcfffc',
-            color: '#595858',
           }}
         >
-          <Button color="primary" onClick={hideColorPickerMenu} size="small">
-            Cancel
-          </Button>
           <Button
-            sx={{
-              color: '#FFFFFF',
-              backgroundColor: '#337ab7',
-              '&:hover': {
-                backgroundColor: '#285a9b',
-              },
-            }}
-            onClick={handleConfirm}
+            color="primary"
+            variant="outlined"
+            onClick={hideColorPickerMenu}
             size="small"
           >
+            Cancel
+          </Button>
+          <Button variant="contained" onClick={handleConfirm} size="small">
             Confirm
           </Button>
         </Paper>

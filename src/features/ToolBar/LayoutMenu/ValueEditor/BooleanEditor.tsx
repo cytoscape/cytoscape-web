@@ -11,16 +11,25 @@ import { ChangeEvent, useState } from 'react'
 
 interface BooleanEditorProps {
   optionName: string
+  // Human-readable label; falls back to `optionName` (the identity)
+  label?: string
   description: string
   value: boolean
   setValue: (optionName: string, value: boolean) => void
   typeLabel?: string
-  typeColor?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error'
+  typeColor?:
+    | 'default'
+    | 'primary'
+    | 'secondary'
+    | 'success'
+    | 'warning'
+    | 'error'
   tableLayout?: boolean
 }
 
 export const BooleanEditor = ({
   optionName,
+  label,
   description,
   value,
   setValue,
@@ -28,6 +37,7 @@ export const BooleanEditor = ({
   typeColor = 'secondary',
   tableLayout = false,
 }: BooleanEditorProps): JSX.Element => {
+  const displayLabel = label ?? optionName
   const [checked, setChecked] = useState<boolean>(value)
 
   const handleToggle = (event: ChangeEvent<HTMLInputElement>): void => {
@@ -48,16 +58,16 @@ export const BooleanEditor = ({
             maxWidth: 0,
           }}
         >
-          <Typography 
+          <Typography
             variant="body2"
             sx={{
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
             }}
-            title={optionName}
+            title={displayLabel}
           >
-            {optionName}
+            {displayLabel}
           </Typography>
         </Box>
         <Box
@@ -69,9 +79,9 @@ export const BooleanEditor = ({
           }}
         >
           {typeLabel && (
-            <Chip 
-              label={typeLabel} 
-              size="small" 
+            <Chip
+              label={typeLabel}
+              size="small"
               color={typeColor}
               sx={{ fontSize: '0.7rem', height: '22px' }}
             />
@@ -108,11 +118,19 @@ export const BooleanEditor = ({
       }}
       disablePadding
       secondaryAction={
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: '200px', justifyContent: 'flex-end' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            minWidth: '200px',
+            justifyContent: 'flex-end',
+          }}
+        >
           {typeLabel && (
-            <Chip 
-              label={typeLabel} 
-              size="small" 
+            <Chip
+              label={typeLabel}
+              size="small"
               color={typeColor}
               sx={{ fontSize: '0.7rem', height: '22px', flexShrink: 0 }}
             />
@@ -130,7 +148,7 @@ export const BooleanEditor = ({
     >
       <ListItemText
         id={optionName}
-        primary={optionName}
+        primary={displayLabel}
         sx={{ flex: '1 1 auto', minWidth: 0 }}
       />
     </ListItem>

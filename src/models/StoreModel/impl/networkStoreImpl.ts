@@ -3,14 +3,27 @@ import { CollectionReturnValue } from 'cytoscape'
 import { IdType } from '../../IdType'
 import { Edge, Network } from '../../NetworkModel'
 import NetworkFn from '../../NetworkModel'
-import {
-  NetworkUpdatedEvent,
-  UpdateEventType,
-} from '../NetworkStoreModel'
+import { NetworkUpdatedEvent, UpdateEventType } from '../NetworkStoreModel'
 
 export interface NetworkStoreState {
   networks: Map<IdType, Network>
   lastUpdated?: NetworkUpdatedEvent
+  topologyVersions: Map<IdType, number>
+}
+
+/**
+ * Record that the topology of a network changed.
+ *
+ * Mutates the map in place (the caller passes an Immer draft) because the
+ * point of the counter is to give Immer a value that actually differs —
+ * see `topologyVersions` in NetworkStoreModel for why re-setting the network
+ * itself is not enough. Every topology-mutating store action must call this.
+ */
+export const bumpTopologyVersion = (
+  topologyVersions: Map<IdType, number>,
+  networkId: IdType,
+): void => {
+  topologyVersions.set(networkId, (topologyVersions.get(networkId) ?? 0) + 1)
 }
 
 /**
@@ -127,10 +140,7 @@ export const createDeleteEdgesEvent = (
 /**
  * Add node to a network and return the updated network
  */
-export const addNodeToNetwork = (
-  network: Network,
-  nodeId: IdType,
-): Network => {
+export const addNodeToNetwork = (network: Network, nodeId: IdType): Network => {
   return NetworkFn.addNode(network, nodeId)
 }
 
@@ -202,10 +212,6 @@ export const addEdgeToNetwork = (
 /**
  * Add edges to a network and return the updated network
  */
-export const addEdgesToNetwork = (
-  network: Network,
-  edges: Edge[],
-): Network => {
+export const addEdgesToNetwork = (network: Network, edges: Edge[]): Network => {
   return NetworkFn.addEdges(network, edges)
 }
-

@@ -1,9 +1,18 @@
+import ChevronRight from '@mui/icons-material/ChevronRight'
+import FolderIcon from '@mui/icons-material/Folder'
+import Home from '@mui/icons-material/Home'
+import LockIcon from '@mui/icons-material/Lock'
+import PublicIcon from '@mui/icons-material/Public'
 import Search from '@mui/icons-material/Search'
 import {
   Box,
+  Breadcrumbs,
   Checkbox,
+  Chip,
   CircularProgress,
+  FormControlLabel,
   IconButton,
+  Link as MuiLink,
   Table,
   TableBody,
   TableCell,
@@ -14,28 +23,38 @@ import {
   Typography,
 } from '@mui/material'
 import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
-import Tab from '@mui/material/Tab'
-import Tabs from '@mui/material/Tabs'
 import TextField from '@mui/material/TextField'
-import { ReactElement, useContext, useEffect, useState } from 'react'
-
 import {
-  fetchMyNdexAccountNetworks,
-  fetchNdexSummaries,
-  searchNdexNetworks,
-} from '../../../data/external-api/ndex'
+  ReactElement,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+
 import { AppConfigContext } from '../../../AppConfigContext'
-import { logUi } from '../../../debug'
+import {
+  enrichShortcutsWithTargetSummaries,
+  fetchFolderContents,
+  fetchFolderInfo,
+  fetchNdexSummaries,
+  fetchNdexUserName,
+  getNetworkIdForFileItem,
+  searchNdexFiles,
+} from '../../../data/external-api/ndex'
+import { NdexFileItem } from '../../../data/external-api/ndex/files'
 import { useUrlNavigation } from '../../../data/hooks/navigation/useUrlNavigation'
 import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
-import { KeycloakContext } from '../../../init/keycloak'
+import { logUi } from '../../../debug'
+import { CyDialog } from '@/components/CyDialog'
+import { KeycloakContext } from '@/boot/keycloak'
 import { IdType } from '../../../models/IdType'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { NetworkSummary } from '../../../models/NetworkSummaryModel'
@@ -44,15 +63,92 @@ import { dateFormatter } from '../../../utils/dateFormat'
 interface LoadFromNdexDialogProps {
   open: boolean
   handleClose: () => void
+  /**
+   * Query to prefill into the search field and run as soon as the dialog
+   * opens (used by the network search bar's NDEx provider). Omit for the
+   * plain browse mode the Data menu opens.
+   */
+  initialQuery?: string
 }
 
-export const NetworkSeachField = (props: {
+interface BreadcrumbItem {
+  name: string
+  id: string | null
+}
+
+/**
+ * Split file items into folders and networks.
+ * Shortcuts to folders go into the folders group.
+ */
+const splitByType = (
+  items: NdexFileItem[],
+): { folders: NdexFileItem[]; networks: NdexFileItem[] } => {
+  const folders: NdexFileItem[] = []
+  const networks: NdexFileItem[] = []
+  for (const item of items) {
+    if (
+      item.type === 'FOLDER' ||
+      (item.type === 'SHORTCUT' && item.attributes?.target_type === 'FOLDER')
+    ) {
+      folders.push(item)
+    } else {
+      networks.push(item)
+    }
+  }
+  return { folders, networks }
+}
+
+// ── Hoisted style objects (stable references for MUI/Emotion) ──────────
+const nameCellSx = {
+  maxWidth: 400,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+} as const
+const ownerCellSx = {
+  maxWidth: 100,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+} as const
+const visibilityCellSx = {
+  maxWidth: 50,
+  textAlign: 'center',
+  color: 'inherit',
+} as const
+const visibilityTextSx = {
+  color: 'inherit',
+  fontWeight: 'bold',
+} as const
+const countCellSx = {
+  maxWidth: 10,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+} as const
+const truncationNoticeSx = { textAlign: 'center', py: 2 } as const
+
+// Rows per NDEx search request. "Load more" fetches the next page.
+const SEARCH_PAGE_SIZE = 500
+
+export const NetworkSearchField = (props: {
   startSearch: (searchValue: string) => Promise<void>
   handleClose: () => void
+  /** Whether the hosting dialog is open. Drives the reset/prefill below. */
+  open?: boolean
+  /** Text to prefill when the dialog opens. */
+  initialValue?: string
 }): ReactElement => {
-  const [searchValue, setSearchValue] = useState<string>('')
+  const { open = true, initialValue = '' } = props
+  const [searchValue, setSearchValue] = useState<string>(initialValue)
 
-  // Execute search when enter key is pressed
+  // Follow the dialog lifecycle: adopt the initial value each time the
+  // dialog opens (even the same text twice), clear when it closes so a
+  // reopen never shows a stale query.
+  useEffect(() => {
+    setSearchValue(open ? initialValue : '')
+  }, [open, initialValue])
+
   const handleKeyDown = (
     event: React.KeyboardEvent<HTMLInputElement>,
   ): void => {
@@ -60,17 +156,15 @@ export const NetworkSeachField = (props: {
     if (event.key === 'Enter') {
       void props.startSearch(searchValue)
     }
-
-    if (event.key === 'Escape') {
-      props.handleClose()
-    }
   }
+
   return (
     <Box
       sx={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'end',
+        mb: 1,
       }}
     >
       <TextField
@@ -95,10 +189,167 @@ export const NetworkSeachField = (props: {
   )
 }
 
+/**
+ * Breadcrumb navigation for folder drill-in.
+ */
+const FolderBreadcrumbs = (props: {
+  path: BreadcrumbItem[]
+  onNavigate: (folderId: string | null) => void
+  hasError?: boolean
+}): ReactElement | null => {
+  const { path, onNavigate, hasError } = props
+  if (path.length === 0) return null
+
+  return (
+    <Breadcrumbs
+      separator={<ChevronRight fontSize="small" />}
+      sx={{ mb: 1, mt: 1 }}
+    >
+      {path.map((item, index) => {
+        const isLast = index === path.length - 1
+
+        let icon: ReactElement | null = null
+        if (index === 0) {
+          if (item.name.includes('My Drive')) {
+            icon = <Home fontSize="small" />
+          } else if (item.name.includes('Latest Networks')) {
+            icon = <PublicIcon fontSize="small" />
+          } else if (item.name.includes('Private Networks')) {
+            icon = <LockIcon fontSize="small" />
+          } else if (item.name.startsWith('Search:')) {
+            icon = <Search fontSize="small" />
+          }
+        }
+
+        const content = (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            {icon}
+            {item.name}
+          </Box>
+        )
+
+        return isLast && !hasError ? (
+          <Typography
+            key={index}
+            color="text.primary"
+            variant="body2"
+            fontWeight="bold"
+          >
+            {content}
+          </Typography>
+        ) : (
+          <MuiLink
+            key={index}
+            component="button"
+            variant="body2"
+            underline="hover"
+            onClick={() => onNavigate(item.id)}
+            sx={{ cursor: 'pointer' }}
+          >
+            {content}
+          </MuiLink>
+        )
+      })}
+    </Breadcrumbs>
+  )
+}
+
+/**
+ * Renders the folder rows section header and rows.
+ */
+const FolderSection = (props: {
+  folders: NdexFileItem[]
+  onFolderClick: (folderId: string) => void
+}): ReactElement | null => {
+  const { folders, onFolderClick } = props
+  if (folders.length === 0) return null
+
+  const cellSx = {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  }
+
+  return (
+    <>
+      <TableRow>
+        <TableCell
+          colSpan={7}
+          sx={{
+            py: 0.5,
+            backgroundColor: (theme) => theme.palette.background.default,
+          }}
+        >
+          <Typography variant="subtitle2" fontWeight="bold">
+            Folders
+          </Typography>
+        </TableCell>
+      </TableRow>
+      <TableRow>
+        <TableCell padding="checkbox" />
+        <TableCell>
+          <Typography variant="caption" fontWeight="bold">
+            Name
+          </Typography>
+        </TableCell>
+        <TableCell>
+          <Typography variant="caption" fontWeight="bold">
+            Owner
+          </Typography>
+        </TableCell>
+        <TableCell>
+          <Typography variant="caption" fontWeight="bold">
+            Visibility
+          </Typography>
+        </TableCell>
+        <TableCell colSpan={2} />
+        <TableCell>
+          <Typography variant="caption" fontWeight="bold">
+            Last modified
+          </Typography>
+        </TableCell>
+      </TableRow>
+      {folders.map((folder) => (
+        <TableRow
+          key={folder.uuid}
+          sx={{
+            cursor: 'pointer',
+          }}
+          hover
+          onClick={() => onFolderClick(getNetworkIdForFileItem(folder))}
+        >
+          <TableCell padding="checkbox" />
+          <TableCell sx={{ maxWidth: 400, ...cellSx }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <FolderIcon fontSize="small" sx={{ color: 'primary.light' }} />
+              {folder.name}
+            </Box>
+          </TableCell>
+          <TableCell sx={{ maxWidth: 100, ...cellSx }}>
+            {folder.owner ?? ''}
+          </TableCell>
+          <TableCell sx={{ maxWidth: 50, textAlign: 'center' }}>
+            <Typography
+              variant="caption"
+              sx={{ color: 'text.secondary', fontWeight: 'bold' }}
+            >
+              {folder.visibility}
+            </Typography>
+          </TableCell>
+          <TableCell colSpan={2} />
+          <TableCell sx={{ maxWidth: 10, ...cellSx }}>
+            {dateFormatter(folder.modificationTime)}
+          </TableCell>
+        </TableRow>
+      ))}
+    </>
+  )
+}
+
 export const LoadFromNdexDialog = (
   props: LoadFromNdexDialogProps,
 ): ReactElement => {
-  const { open, handleClose } = props
+  const { open, handleClose, initialQuery } = props
 
   const {
     ndexBaseUrl,
@@ -120,11 +371,10 @@ export const LoadFromNdexDialog = (
   )
   const networkIds = useWorkspaceStore((state) => state.workspace.networkIds)
 
-  const [currentTabIndex, setCurrentTabIndex] = useState<number>(
-    authenticated ? 1 : 0,
-  )
-  const [myNetworks, setMyNetworks] = useState<any[]>([])
-  const [searchResultNetworks, setSearchResultNetworks] = useState<any[]>([])
+  // UI state
+  const [onlyMine, setOnlyMine] = useState<boolean>(false)
+
+  const [lastSearchQuery, setLastSearchQuery] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
   const [errorMessage, setErrorMessage] = useState<string | undefined>(
     undefined,
@@ -137,34 +387,50 @@ export const LoadFromNdexDialog = (
   const { navigateToNetwork } = useUrlNavigation()
   const addSummaries = useNetworkSummaryStore((state) => state.addAll)
 
-  const networkListData =
-    currentTabIndex === 0 ? searchResultNetworks : myNetworks
-  const emptyListMessage =
-    currentTabIndex === 0
-      ? 'No search results'
-      : 'No networks found in your NDEx account'
+  const rootName = 'Latest Networks'
 
-  const myNetworksTab = authenticated ? (
-    <Tab label={<Typography>My Networks</Typography>}></Tab>
-  ) : (
-    <Tooltip
-      arrow
-      placement="right"
-      title="Login to NDEx to access your networks"
-    >
-      <Box>
-        <Tab disabled label={<Typography>My Networks</Typography>}></Tab>
-      </Box>
-    </Tooltip>
-  )
+  // Folder navigation state
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null)
+  const [breadcrumbPath, setBreadcrumbPath] = useState<BreadcrumbItem[]>([
+    { name: rootName, id: null },
+  ])
+  const [folderContents, setFolderContents] = useState<NdexFileItem[]>([])
 
-  const toggleSelectedNetwork = (networkId: IdType): void => {
-    if (selectedNetworks.includes(networkId)) {
-      setSelectedNetworks(selectedNetworks.filter((id) => id !== networkId))
-    } else {
-      setSelectedNetworks([...selectedNetworks, networkId])
+  // Search results: one ranked list of public and, when signed in, private
+  // and shared networks
+  const [searchResults, setSearchResults] = useState<NdexFileItem[]>([])
+  const [resultCount, setResultCount] = useState<number>(0)
+  // Offset of the next page, and the query and owner filter that produced
+  // the current results, so "Load more" continues the same search.
+  const [nextStart, setNextStart] = useState<number>(0)
+  const [loadingMore, setLoadingMore] = useState<boolean>(false)
+  const lastSearchRef = useRef<{ query: string; ownerFilter?: string }>({
+    query: '',
+  })
+  // Bumped by every search and by closing the dialog. A response commits
+  // only while its id is current, so an older search that resolves late
+  // cannot replace newer results or refill a closed dialog.
+  const searchIdRef = useRef<number>(0)
+  // The signed-in user's NDEx account name, fetched on the first "Only mine"
+  // search. Identity cannot change while the page is loaded (sign-in and
+  // sign-out reload it), so one lookup serves the session.
+  const ndexUserNameRef = useRef<Promise<string> | null>(null)
+
+  // Whether we're in folder browse mode (no search query) or search mode
+  const isBrowseMode = lastSearchQuery === ''
+
+  // Current items to display
+  const displayItems = useMemo(() => {
+    if (currentFolderId !== null) {
+      return folderContents
     }
-  }
+    return searchResults
+  }, [folderContents, searchResults, currentFolderId])
+
+  const { folders, networks } = useMemo(
+    () => splitByType(displayItems),
+    [displayItems],
+  )
 
   const networkPassesSizeThreshold = (
     nodeCount: number,
@@ -178,19 +444,26 @@ export const LoadFromNdexDialog = (
     )
   }
 
+  const toggleSelectedNetwork = (networkId: IdType): void => {
+    if (selectedNetworks.includes(networkId)) {
+      setSelectedNetworks(selectedNetworks.filter((id) => id !== networkId))
+    } else {
+      setSelectedNetworks([...selectedNetworks, networkId])
+    }
+  }
+
   const addNDExNetworksToWorkspace = async (
     networkIds: IdType[],
   ): Promise<void> => {
     try {
       const token = await getToken()
-      const rawSummaries = await fetchNdexSummaries(networkIds, token)
-      const summaries = rawSummaries.filter((summary) =>
-        networkPassesSizeThreshold(
-          summary.nodeCount,
-          summary.edgeCount,
-          summary.cx2FileSize ?? 0,
-        ),
-      )
+      const summaries = await fetchNdexSummaries(networkIds, token)
+
+      // Stamp the origin path so the UI can show where the network was imported from
+      const sourcePath = breadcrumbPath.map((b) => b.name).join(' / ')
+      summaries.forEach((summary) => {
+        summary.sourcePath = sourcePath
+      })
       addNetworks(summaries.map((summary) => summary.externalId))
       addSummaries(
         summaries.reduce(
@@ -214,283 +487,563 @@ export const LoadFromNdexDialog = (
       }
 
       setSuccessMessage(`${summaries.length} network(s) loaded`)
-
       setSelectedNetworks([])
     } catch (e) {
-      setErrorMessage(e.message)
+      setErrorMessage(e instanceof Error ? e.message : String(e))
     }
   }
 
-  useEffect(() => {
-    const fetchMyNetworks = async (): Promise<any> => {
-      const token = await getToken()
-      const myNetworks = await fetchMyNdexAccountNetworks(
-        token,
-        0,
-        1000,
-        ndexBaseUrl,
-      )
-      return myNetworks
-    }
-    if (authenticated) {
-      setLoading(true)
-      fetchMyNetworks()
-        .then((networks) => {
-          setMyNetworks(networks)
-          setLoading(false)
-        })
-        .catch((err) => {
-          setErrorMessage(err.message)
-          setLoading(false)
-        })
-    } else {
-      setMyNetworks([])
-    }
-  }, [authenticated, ndexBaseUrl, getToken])
-
-  useEffect(() => {
-    if (!open) {
-      return
-    }
-
+  // Navigate into a folder
+  const navigateToFolder = async (folderId: string): Promise<void> => {
     setLoading(true)
-    fetchSearchResults('')
-      .then(() => {
-        setLoading(false)
-      })
-      .catch((err) => {
-        setErrorMessage(err.message)
-        setLoading(false)
-      })
-  }, [open])
-
-  const fetchSearchResults = async (searchValue: string): Promise<void> => {
-    setLoading(true)
-
+    setErrorMessage(undefined)
     try {
-      const token = authenticated ? await getToken() : undefined
-      const searchResults = await searchNdexNetworks(
-        searchValue,
+      const token = await getToken()
+      const [items, info] = await Promise.all([
+        fetchFolderContents(folderId, token, ndexBaseUrl),
+        fetchFolderInfo(folderId, token, ndexBaseUrl),
+      ])
+      const enriched = await enrichShortcutsWithTargetSummaries(
+        items,
         token,
-        0,
-        1000,
         ndexBaseUrl,
       )
-      setSearchResultNetworks(searchResults?.networks ?? [])
-    } catch (err) {
+      setFolderContents(enriched)
+      setCurrentFolderId(folderId)
+
+      // Build breadcrumb — add to current path
+      setBreadcrumbPath((prev) => [...prev, { name: info.name, id: folderId }])
+    } catch (err: any) {
+      logUi.error('Failed to navigate to folder', err)
       setErrorMessage(err.message)
     } finally {
       setLoading(false)
     }
   }
 
-  const errorMessageContent = <Typography>{errorMessage}</Typography>
-  const loadingContent = <Typography>Loading...</Typography>
-  const emptyListMessageContent = <Typography>{emptyListMessage}</Typography>
-  const networksToRender =
-    currentTabIndex === 0 ? searchResultNetworks : myNetworks
+  const handleBreadcrumbNavigate = async (
+    folderId: string | null,
+  ): Promise<void> => {
+    if (folderId === null) {
+      setCurrentFolderId(null)
+      setBreadcrumbPath((prev) => [prev[0]])
+      // Jump back to the cached search results.
+      return
+    }
 
-  const networkListContent = (
-    <Box>
-      <TableContainer sx={{ height: 460 }}>
-        <Table size={'small'} stickyHeader>
-          <TableHead>
-            <TableRow>
-              <TableCell padding="checkbox"></TableCell>
-              <TableCell>Network</TableCell>
-              <TableCell>Owner</TableCell>
-              <TableCell>Nodes</TableCell>
-              <TableCell>Edges</TableCell>
-              <TableCell>Last modified</TableCell>
-            </TableRow>
-          </TableHead>
+    setLoading(true)
+    setErrorMessage(undefined)
+    try {
+      const token = await getToken()
+      const items = await fetchFolderContents(folderId, token, ndexBaseUrl)
+      const enriched = await enrichShortcutsWithTargetSummaries(
+        items,
+        token,
+        ndexBaseUrl,
+      )
+      setFolderContents(enriched)
+      setCurrentFolderId(folderId)
+
+      // Trim breadcrumb path to the clicked item
+      setBreadcrumbPath((prev) => {
+        const idx = prev.findIndex((item) => item.id === folderId)
+        return idx >= 0 ? prev.slice(0, idx + 1) : prev
+      })
+    } catch (err: any) {
+      logUi.error('Failed to navigate via breadcrumb', err)
+      setErrorMessage(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Execute a search. `mineOnly` defaults to the checkbox state; the checkbox
+  // handler passes its new value because state has not updated yet.
+  const executeSearch = async (
+    query: string,
+    mineOnly: boolean = onlyMine,
+  ): Promise<void> => {
+    const searchId = ++searchIdRef.current
+    const isCurrent = (): boolean => searchId === searchIdRef.current
+    const trimmedQuery = query.trim()
+    setLastSearchQuery(trimmedQuery)
+    setErrorMessage(undefined)
+    setCurrentFolderId(null)
+
+    setBreadcrumbPath([
+      {
+        name: trimmedQuery ? `Search: "${trimmedQuery}"` : rootName,
+        id: null,
+      },
+    ])
+
+    setLoading(true)
+    setLoadingMore(false)
+    try {
+      const token = authenticated ? await getToken() : undefined
+      // NDEx filters on its own account name, which can differ from the
+      // Keycloak preferred_username.
+      let ownerFilter: string | undefined
+      if (mineOnly && token !== undefined) {
+        ndexUserNameRef.current ??= fetchNdexUserName(token, ndexBaseUrl)
+        try {
+          ownerFilter = await ndexUserNameRef.current
+        } catch (err) {
+          ndexUserNameRef.current = null
+          throw err
+        }
+      }
+      logUi.info('[LoadFromNdexDialog]: search', {
+        query: trimmedQuery,
+        searchId,
+        mineOnly,
+        authenticated,
+        ownerFilter,
+      })
+
+      // No visibility filter: NDEx returns public results, plus private and
+      // shared ones when the request carries a token (ndexbio/ndex-rest#211).
+      const result = await searchNdexFiles(
+        query,
+        undefined,
+        token,
+        ownerFilter,
+        0,
+        SEARCH_PAGE_SIZE,
+        ndexBaseUrl,
+      )
+      const enriched = await enrichShortcutsWithTargetSummaries(
+        result.files,
+        token,
+        ndexBaseUrl,
+      )
+      if (!isCurrent()) {
+        logUi.info('[LoadFromNdexDialog]: dropped stale search response', {
+          searchId,
+          currentSearchId: searchIdRef.current,
+        })
+        return
+      }
+      setSearchResults(enriched)
+      setResultCount(result.numFound)
+      setNextStart(SEARCH_PAGE_SIZE)
+      lastSearchRef.current = { query, ownerFilter }
+    } catch (err: any) {
+      if (!isCurrent()) return
+      setErrorMessage(err.message || 'Failed to search NDEx')
+    } finally {
+      if (isCurrent()) setLoading(false)
+    }
+  }
+
+  // Fetch the next page of the current search and append it. Public and
+  // private files share one ranking, so a user's private files can sit past
+  // the first page. A new search or closing the dialog drops the response.
+  const loadMoreResults = async (): Promise<void> => {
+    const searchId = searchIdRef.current
+    const isCurrent = (): boolean => searchId === searchIdRef.current
+    const { query, ownerFilter } = lastSearchRef.current
+    const start = nextStart
+    setLoadingMore(true)
+    try {
+      const token = authenticated ? await getToken() : undefined
+      const result = await searchNdexFiles(
+        query,
+        undefined,
+        token,
+        ownerFilter,
+        start,
+        SEARCH_PAGE_SIZE,
+        ndexBaseUrl,
+      )
+      const enriched = await enrichShortcutsWithTargetSummaries(
+        result.files,
+        token,
+        ndexBaseUrl,
+      )
+      if (!isCurrent()) return
+      // The index can change between requests; skip rows already listed.
+      setSearchResults((prev) => {
+        const seen = new Set(prev.map((item) => item.uuid))
+        return [...prev, ...enriched.filter((item) => !seen.has(item.uuid))]
+      })
+      setResultCount(result.numFound)
+      setNextStart(start + SEARCH_PAGE_SIZE)
+    } catch (err: any) {
+      if (!isCurrent()) return
+      setErrorMessage(err.message || 'Failed to load more NDEx results')
+    } finally {
+      if (isCurrent()) setLoadingMore(false)
+    }
+  }
+
+  const hasMoreResults = currentFolderId === null && nextStart < resultCount
+
+  // Handle folder click (works in both browse and search mode)
+  const handleFolderClick = (folderId: string): void => {
+    void navigateToFolder(folderId)
+  }
+
+  // Reset state when dialog opens/closes. Opening runs a search right away:
+  // the caller's initialQuery when one was provided (the network search
+  // bar), otherwise the empty browse-mode listing.
+  useEffect(() => {
+    if (open) {
+      void executeSearch(initialQuery ?? '')
+    } else {
+      searchIdRef.current++
+      setLoading(false)
+      setLoadingMore(false)
+      setNextStart(0)
+      setLastSearchQuery('')
+      setSelectedNetworks([])
+      setErrorMessage(undefined)
+      setSuccessMessage(undefined)
+      setCurrentFolderId(null)
+      setBreadcrumbPath([{ name: 'Latest Networks', id: null }])
+      setSearchResults([])
+      setResultCount(0)
+      setOnlyMine(false)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires only on open/close transitions; executeSearch sets state every call
+  }, [open])
+
+  const emptyMessage =
+    currentFolderId !== null
+      ? 'No items in this folder'
+      : isBrowseMode
+        ? 'No networks found'
+        : 'No search results'
+
+  const MAX_VISIBLE_ROWS = 500
+
+  const renderNetworkRows = (): ReactElement[] => {
+    // Search results grow page by page through "Load more"; only a folder
+    // listing, which arrives whole, is capped.
+    const rowCap = currentFolderId !== null ? MAX_VISIBLE_ROWS : Infinity
+    const visibleNetworks = networks.slice(0, rowCap)
+    const rows = visibleNetworks.map((network) => {
+      const {
+        uuid: rowKey,
+        name,
+        owner,
+        edges: edgeCount,
+        modificationTime,
+      } = network
+
+      // Resolved network id — for a SHORTCUT this is its target network, so
+      // selection and loading act on the network the shortcut points to. The
+      // shortcut's own uuid (rowKey) is kept only for React keys / test ids.
+      const externalId = getNetworkIdForFileItem(network)
+      const nodeCount =
+        network.nodes ??
+        network.nodeCount ??
+        (network.attributes as any)?.nodeCount ??
+        0
+      const cx2FileSize =
+        network.cx2FileSize ?? (network.attributes as any)?.cx2FileSize ?? 0
+      const subnetworkIds =
+        network.subnetworkIds ??
+        (network.attributes as any)?.subnetworkIds ??
+        []
+
+      const selected = selectedNetworks.includes(externalId)
+      const networkAlreadyLoaded = networkIds.includes(externalId)
+      const networkCanBeSelected =
+        !networkAlreadyLoaded &&
+        networkPassesSizeThreshold(
+          +nodeCount,
+          +(edgeCount ?? 0),
+          cx2FileSize,
+        ) &&
+        subnetworkIds.length === 0
+
+      const dateDisplay = dateFormatter(modificationTime)
+
+      if (networkCanBeSelected) {
+        return (
+          <TableRow
+            key={rowKey}
+            hover
+            selected={selected}
+            onClick={() => toggleSelectedNetwork(externalId)}
+            sx={{
+              cursor: 'pointer',
+            }}
+          >
+            <TableCell padding="checkbox">
+              <Checkbox
+                data-testid={`load-from-ndex-network-checkbox-${rowKey}`}
+                onClick={() => toggleSelectedNetwork(externalId)}
+                checked={selected}
+              />
+            </TableCell>
+            <TableCell sx={nameCellSx}>{name}</TableCell>
+            <TableCell sx={ownerCellSx}>{owner ?? ''}</TableCell>
+            <TableCell sx={visibilityCellSx}>
+              <Typography variant="caption" sx={visibilityTextSx}>
+                {network.visibility}
+              </Typography>
+            </TableCell>
+            <TableCell sx={countCellSx}>{nodeCount}</TableCell>
+            <TableCell sx={countCellSx}>{edgeCount ?? 0}</TableCell>
+            <TableCell sx={countCellSx}>{dateDisplay}</TableCell>
+          </TableRow>
+        )
+      }
+
+      const tooltipMessage = networkAlreadyLoaded
+        ? 'Network already loaded in the workspace'
+        : subnetworkIds.length > 0
+          ? 'Collections cannot be imported into Cytoscape Web'
+          : 'Network is too large to be loaded into Cytoscape Web.'
+
+      return (
+        <Tooltip key={rowKey} title={tooltipMessage}>
+          <TableRow
+            hover={false}
+            selected={false}
+            sx={{
+              color: (theme) => theme.palette.text.disabled,
+              cursor: 'not-allowed',
+            }}
+          >
+            <TableCell padding="checkbox">
+              <Checkbox disabled />
+            </TableCell>
+            <TableCell sx={{ color: 'inherit', ...nameCellSx }}>
+              {name}
+            </TableCell>
+            <TableCell sx={{ color: 'inherit', ...ownerCellSx }}>
+              {owner ?? ''}
+            </TableCell>
+            <TableCell sx={visibilityCellSx}>
+              <Typography variant="caption" sx={visibilityTextSx}>
+                {network.visibility}
+              </Typography>
+            </TableCell>
+            <TableCell sx={{ color: 'inherit', ...countCellSx }}>
+              {nodeCount}
+            </TableCell>
+            <TableCell sx={{ color: 'inherit', ...countCellSx }}>
+              {edgeCount ?? 0}
+            </TableCell>
+            <TableCell sx={{ color: 'inherit', ...countCellSx }}>
+              {dateDisplay}
+            </TableCell>
+          </TableRow>
+        </Tooltip>
+      )
+    })
+
+    if (networks.length > rowCap) {
+      rows.push(
+        <TableRow key="__truncation_notice__">
+          <TableCell colSpan={7} sx={truncationNoticeSx}>
+            <Typography variant="body2" color="text.secondary">
+              Showing {MAX_VISIBLE_ROWS} of {networks.length} networks. Use
+              search to narrow results.
+            </Typography>
+          </TableCell>
+        </TableRow>,
+      )
+    }
+
+    return rows
+  }
+
+  const renderContent = (): ReactElement => {
+    if (errorMessage) {
+      return <Typography color="error">{errorMessage}</Typography>
+    }
+    if (loading) {
+      return (
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: 420,
+          }}
+        >
+          <CircularProgress />
+        </Box>
+      )
+    }
+    if (displayItems.length === 0) {
+      return (
+        <Typography sx={{ py: 4, textAlign: 'center' }}>
+          {emptyMessage}
+        </Typography>
+      )
+    }
+
+    return (
+      <TableContainer
+        sx={{
+          height: 420,
+          borderRadius: 1,
+        }}
+      >
+        <Table size="small" stickyHeader>
+          {networks.length > 0 && (
+            <TableHead>
+              <TableRow
+                sx={{
+                  backgroundColor: (theme) => theme.palette.background.subtle,
+                }}
+              >
+                <TableCell
+                  padding="checkbox"
+                  sx={{ backgroundColor: 'inherit' }}
+                />
+                <TableCell sx={{ backgroundColor: 'inherit' }}>
+                  <Typography variant="caption" fontWeight="bold">
+                    Network
+                  </Typography>
+                </TableCell>
+                <TableCell sx={{ backgroundColor: 'inherit' }}>
+                  <Typography variant="caption" fontWeight="bold">
+                    Owner
+                  </Typography>
+                </TableCell>
+                <TableCell sx={{ backgroundColor: 'inherit' }}>
+                  <Typography variant="caption" fontWeight="bold">
+                    Visibility
+                  </Typography>
+                </TableCell>
+                <TableCell sx={{ backgroundColor: 'inherit' }}>
+                  <Typography variant="caption" fontWeight="bold">
+                    Nodes
+                  </Typography>
+                </TableCell>
+                <TableCell sx={{ backgroundColor: 'inherit' }}>
+                  <Typography variant="caption" fontWeight="bold">
+                    Edges
+                  </Typography>
+                </TableCell>
+                <TableCell sx={{ backgroundColor: 'inherit' }}>
+                  <Typography variant="caption" fontWeight="bold">
+                    Last modified
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            </TableHead>
+          )}
           <TableBody>
-            {networksToRender.map((network) => {
-              const {
-                externalId,
-                name,
-                owner,
-                nodeCount,
-                edgeCount,
-                modificationTime,
-                cx2FileSize,
-              } = network
-
-              // Ensure subnetworkIds is defined and is an array
-              let { subnetworkIds } = network
-              if (subnetworkIds === undefined) {
-                subnetworkIds = []
-              }
-
-              const selected = selectedNetworks.includes(externalId)
-              const networkAlreadyLoaded = networkIds.includes(externalId)
-              const networkCanBeSelected =
-                !networkAlreadyLoaded &&
-                networkPassesSizeThreshold(
-                  +nodeCount,
-                  +edgeCount,
-                  cx2FileSize,
-                ) &&
-                subnetworkIds.length === 0
-
-              const dateDisplay = dateFormatter(modificationTime)
-
-              const cellSx = {
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }
-
-              const disabledNetworkEntryRow = (
-                <TableRow
+            <FolderSection
+              folders={folders}
+              onFolderClick={handleFolderClick}
+            />
+            {networks.length > 0 && folders.length > 0 && (
+              <TableRow>
+                <TableCell
+                  colSpan={7}
                   sx={{
-                    backgroundColor: '#d9d9d9',
-                    cursor: 'not-allowed',
+                    py: 0.5,
+                    backgroundColor: (theme) =>
+                      theme.palette.background.default,
                   }}
-                  hover={false}
-                  selected={false}
                 >
-                  <TableCell padding="checkbox">
-                    <Checkbox disabled={true} />
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      maxWidth: 400,
-                      ...cellSx,
-                    }}
+                  <Typography variant="subtitle2" fontWeight="bold">
+                    Networks
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
+            {renderNetworkRows()}
+            {hasMoreResults && (
+              <TableRow>
+                <TableCell colSpan={7} sx={truncationNoticeSx}>
+                  <Button
+                    data-testid="load-from-ndex-load-more"
+                    size="small"
+                    disabled={loadingMore}
+                    onClick={() => void loadMoreResults()}
                   >
-                    {name}
-                  </TableCell>
-
-                  <TableCell sx={{ maxWidth: 100, ...cellSx }}>
-                    {owner}
-                  </TableCell>
-                  <TableCell sx={{ maxWidth: 10, ...cellSx }}>
-                    {nodeCount}
-                  </TableCell>
-                  <TableCell sx={{ maxWidth: 10, ...cellSx }}>
-                    {edgeCount}
-                  </TableCell>
-                  <TableCell sx={{ maxWidth: 10, ...cellSx }}>
-                    {dateDisplay}
-                  </TableCell>
-                </TableRow>
-              )
-
-              const networkEntryRow = (
-                <TableRow
-                  sx={{ cursor: 'pointer' }}
-                  key={externalId}
-                  hover={true}
-                  selected={selected}
-                  onClick={() => toggleSelectedNetwork(externalId)}
-                >
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      data-testid={`load-from-ndex-network-checkbox-${externalId}`}
-                      onClick={() => toggleSelectedNetwork(externalId)}
-                      checked={selected}
-                    />
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      maxWidth: 400,
-                      ...cellSx,
-                    }}
-                  >
-                    {name}
-                  </TableCell>
-
-                  <TableCell sx={{ maxWidth: 100, ...cellSx }}>
-                    {owner}
-                  </TableCell>
-                  <TableCell sx={{ maxWidth: 10, ...cellSx }}>
-                    {nodeCount}
-                  </TableCell>
-                  <TableCell sx={{ maxWidth: 10, ...cellSx }}>
-                    {edgeCount}
-                  </TableCell>
-                  <TableCell sx={{ maxWidth: 10, ...cellSx }}>
-                    {dateDisplay}
-                  </TableCell>
-                </TableRow>
-              )
-
-              if (networkCanBeSelected) {
-                return networkEntryRow
-              } else {
-                const tooltipMessage = networkAlreadyLoaded
-                  ? 'Network already loaded in the workspace'
-                  : subnetworkIds.length > 0
-                    ? 'Collections cannot be imported into Cytoscape Web'
-                    : `Networks is too large to be loaded into Cytoscape Web.`
-
-                return (
-                  <Tooltip key={externalId} title={tooltipMessage}>
-                    {disabledNetworkEntryRow}
-                  </Tooltip>
-                )
-              }
-            })}
+                    {loadingMore
+                      ? 'Loading…'
+                      : `Load more (${displayItems.length} of ${resultCount})`}
+                  </Button>
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </TableContainer>
-    </Box>
-  )
-  const content =
-    (errorMessage ?? '') !== ''
-      ? errorMessageContent
-      : loading
-        ? loadingContent
-        : networkListData.length === 0
-          ? emptyListMessageContent
-          : networkListContent
+    )
+  }
 
   return (
-    <Dialog
+    <CyDialog
       data-testid="load-from-ndex-dialog"
-      onKeyDown={(e) => {
-        e.stopPropagation()
-        e.preventDefault()
-      }}
-      onClick={(e) => {
-        e.stopPropagation()
-        e.preventDefault()
-      }}
       PaperProps={{
         sx: {
           minHeight: 600,
         },
       }}
-      fullWidth={true}
+      fullWidth
       maxWidth="lg"
       open={open}
-      onClose={handleClose}
     >
       <DialogTitle>NDEx - Network Browser</DialogTitle>
       <DialogContent>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs
-            data-testid="load-from-ndex-tabs"
-            value={currentTabIndex}
-            onChange={(e, val) => setCurrentTabIndex(val)}
+        {/* Search bar */}
+        <NetworkSearchField
+          startSearch={executeSearch}
+          handleClose={handleClose}
+          open={open}
+          initialValue={initialQuery ?? ''}
+        />
+
+        {/* Only mine checkbox */}
+        {authenticated && (
+          <Tooltip
+            arrow
+            placement="bottom"
+            title="When checked, only show networks you own. When unchecked, show all networks."
           >
-            <Tab
-              data-testid="load-from-ndex-search-tab"
-              sx={{ textTransform: 'none' }}
-              label={<Typography>SEARCH NDEx</Typography>}
+            <FormControlLabel
+              control={
+                <Checkbox
+                  data-testid="load-from-ndex-only-mine-checkbox"
+                  checked={onlyMine}
+                  size="small"
+                  onChange={(_e, checked) => {
+                    logUi.info('[LoadFromNdexDialog]: Only mine changed', {
+                      checked,
+                    })
+                    setOnlyMine(checked)
+                    void executeSearch(lastSearchQuery, checked)
+                  }}
+                />
+              }
+              label="Only mine"
+              sx={{ my: 1 }}
             />
-            {myNetworksTab}
-          </Tabs>
-        </Box>
-        {currentTabIndex === 0 && (
-          <NetworkSeachField
-            startSearch={fetchSearchResults}
-            handleClose={props.handleClose}
+          </Tooltip>
+        )}
+        {lastSearchQuery !== '' && (
+          <Box
+            data-testid="load-from-ndex-result-count"
+            sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}
+          >
+            <Typography variant="body2">Results</Typography>
+            <Chip label={resultCount} size="small" variant="outlined" />
+          </Box>
+        )}
+
+        {/* Breadcrumbs — always show if we have a path */}
+        {breadcrumbPath.length > 0 && (
+          <FolderBreadcrumbs
+            path={breadcrumbPath}
+            onNavigate={handleBreadcrumbNavigate}
+            hasError={!!errorMessage}
           />
         )}
-        {loading ? <CircularProgress /> : null}
-        {content}
+
+        {/* Content */}
+        {renderContent()}
       </DialogContent>
       <DialogActions
         sx={{
@@ -503,6 +1056,7 @@ export const LoadFromNdexDialog = (
         <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
           <Button
             data-testid="load-from-ndex-cancel-button"
+            variant="outlined"
             color="primary"
             onClick={handleClose}
             sx={{ mr: 1 }}
@@ -511,16 +1065,7 @@ export const LoadFromNdexDialog = (
           </Button>
           <Button
             data-testid="load-from-ndex-open-button"
-            sx={{
-              color: '#FFFFFF',
-              backgroundColor: '#337ab7',
-              '&:hover': {
-                backgroundColor: '#285a9b',
-              },
-              '&:disabled': {
-                backgroundColor: 'transparent',
-              },
-            }}
+            variant="contained"
             disabled={selectedNetworks.length === 0}
             onClick={() => {
               setErrorMessage(undefined)
@@ -534,11 +1079,10 @@ export const LoadFromNdexDialog = (
               handleClose()
             }}
           >
-            {`Open ${selectedNetworks.length} Network${selectedNetworks.length > 1 ? 's' : ''}`}
+            {`Open ${selectedNetworks.length > 0 ? selectedNetworks.length : ''} Network${selectedNetworks.length !== 1 ? 's' : ''}`}
           </Button>
-          {/* </Box> */}
         </Box>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }

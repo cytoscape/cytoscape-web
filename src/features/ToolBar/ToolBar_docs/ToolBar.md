@@ -33,16 +33,22 @@ The ToolBar is organized into menu categories, each with its own submenu system.
 - **FileUpload**: File upload dialog
 - **GenericFileUploadDialog**: Generic file upload UI
 - **DatabaseSnapshotFileUpload**: Database snapshot upload
-- **DropdownMenu**: Reusable dropdown menu component
+- **MenuBar**: Container for the top-level menus; owns which one is open (`useMenuBarMenu(id)` hands each menu its shared open flag)
+- **DropdownMenu**: Reusable non-modal dropdown menu component with submenus
 - **NestedMenu**: Support for nested menu structures
 
 ## Behavior
 
 ### Menu System
-- Menus open on hover or click (depending on implementation)
-- Submenus support nested structures
+- The bar behaves like a desktop menubar: a click opens a menu, and while any menu is open, hovering another trigger (mouse only, not touch) or pressing ArrowLeft/ArrowRight moves the open menu there in one step
+- `MenuBar` is the single source of truth for which menu is open; each menu reads its flag through `useMenuBarMenu(id)` and keeps `setOpen(false)` for its own close paths
+- Dropdowns are `Popper`s, not `Popover`s: a Popover is a modal whose invisible backdrop ate the click on the next trigger, so every switch used to cost two clicks
+- The bar is a single Tab stop (roving tabindex): Tab lands on the trigger last used (initially the first enabled one), and ArrowLeft/ArrowRight move between triggers; a trigger that becomes disabled hands the stop to the first enabled one
+- Keyboard: ArrowDown/Enter/Space open a menu with focus on its first row; ArrowUp/Down, Home/End move within a level; ArrowRight opens a submenu or moves to the next menu; ArrowLeft closes a submenu or moves to the previous menu; Escape closes and returns focus to the trigger; Tab or a click elsewhere closes
+- Submenus open on hover and support nested structures
 - Menu items can be enabled/disabled based on context
-- Menu items trigger actions or open dialogs
+- Menu items trigger actions or open dialogs. A row never renders the dialog itself: the menu component owns it, and the row's click closes the menu before the dialog shows (#784; enforced by `menuRowDialogs.test.ts`). A dialog inside a row lives only as long as the menu stays open, and the menu has no reliable way to tell the dialog's clicks, focus changes and keys from ones outside it
+- Click-away is decided on mousedown, where the user pressed: a press inside the menu released outside fires its click on `<body>`. The focus-out check runs as a task, after the browser has settled the new focus target
 
 ### Search Functionality
 - Search box in toolbar

@@ -1,20 +1,37 @@
 import { act, renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { IdType } from '../../../models/IdType'
 import { OpaqueAspects } from '../../../models/OpaqueAspectModel'
 import { useOpaqueAspectStore } from './OpaqueAspectStore'
 
 // Mock the database operations to avoid IndexedDB issues in tests
-jest.mock('../../db', () => ({
-  ...jest.requireActual('../../db'),
-  putOpaqueAspectsToDb: jest.fn().mockResolvedValue(undefined),
-  deleteOpaqueAspectsFromDb: jest.fn().mockResolvedValue(undefined),
-}))
-
-// Mock idb-keyval
-jest.mock('idb-keyval', () => ({
-  clear: jest.fn().mockResolvedValue(undefined),
-}))
+vi.mock('../../db', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../db')>()
+  return {
+    ...actual,
+    putNetworkToDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworksFromDb: vi.fn().mockResolvedValue(undefined),
+    putTableToDb: vi.fn().mockResolvedValue(undefined),
+    deleteTableFromDb: vi.fn().mockResolvedValue(undefined),
+    clearTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    putViewModelToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewsToDb: vi.fn().mockResolvedValue(undefined),
+    deleteViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearViewModelsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    putTablesToDb: vi.fn().mockResolvedValue(undefined),
+    getNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    getTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    getViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+    putOpaqueAspectsToDb: vi.fn().mockResolvedValue(undefined),
+    deleteOpaqueAspectsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearOpaqueAspectsFromDb: vi.fn().mockResolvedValue(undefined),
+  }
+})
 
 describe('useOpaqueAspectStore', () => {
   beforeEach(() => {
@@ -173,7 +190,9 @@ describe('useOpaqueAspectStore', () => {
         result.current.deleteSingleAspect(networkId, 'aspect-1')
       })
 
-      expect(result.current.opaqueAspects[networkId]['aspect-1']).toBeUndefined()
+      expect(
+        result.current.opaqueAspects[networkId]['aspect-1'],
+      ).toBeUndefined()
       expect(result.current.opaqueAspects[networkId]['aspect-2']).toEqual([
         { id: 2 },
       ])
@@ -301,5 +320,38 @@ describe('useOpaqueAspectStore', () => {
       expect(result.current.opaqueAspects).toEqual({})
     })
   })
-})
 
+  // REVIEW.md R2-4: deleteAll used to call idb-keyval's clear(), which wipes
+  // idb-keyval's default `keyval-store` database — NOT cyweb-db. The opaque
+  // aspects live in cyweb-db via putOpaqueAspectsToDb, so "delete all
+  // networks" left every network's aspects orphaned in IndexedDB forever.
+  describe('IndexedDB persistence (regression: R2-4)', () => {
+    it('deleteAll clears the opaque aspects from cyweb-db', async () => {
+      const { clearOpaqueAspectsFromDb } = await import('../../db')
+      const { result } = renderHook(() => useOpaqueAspectStore())
+
+      act(() => {
+        result.current.add('network-1', 'aspect-1', [{ id: 1 }])
+      })
+      vi.mocked(clearOpaqueAspectsFromDb).mockClear()
+
+      act(() => {
+        result.current.deleteAll()
+      })
+
+      expect(clearOpaqueAspectsFromDb).toHaveBeenCalled()
+    })
+
+    it('delete removes the network aspects row from cyweb-db', async () => {
+      const { deleteOpaqueAspectsFromDb } = await import('../../db')
+      const { result } = renderHook(() => useOpaqueAspectStore())
+
+      act(() => {
+        result.current.add('network-1', 'aspect-1', [{ id: 1 }])
+        result.current.delete('network-1')
+      })
+
+      expect(deleteOpaqueAspectsFromDb).toHaveBeenCalledWith('network-1')
+    })
+  })
+})

@@ -1,1 +1,1 @@
-export { Ui } from './Ui'
+export type { Ui } from './Ui'

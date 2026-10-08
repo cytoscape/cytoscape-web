@@ -1,0 +1,147 @@
+name: CI
+
+on:
+  push:
+    branches: [master, development]
+  pull_request:
+    branches: [master, development]
+
+# Cancel superseded runs on rapid pushes, but let every push to the
+# long-lived branches run to completion so each merged commit keeps a
+# full CI result.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' && github.ref != 'refs/heads/development' }}
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-node-dependencies
+
+      - name: Run lint
+        run: npm run lint
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-node-dependencies
+
+      - name: Run build
+        run: npm run build
+
+      # Must stay in THIS job, right after the build: the verifier reads dist/,
+      # and dist/ does not survive a job boundary. A separate verify job would
+      # silently verify nothing.
+      - name: Verify Module Federation build output
+        run: npm run verify:federation
+
+  # Nothing else in CI compiles packages/api-types. The root tsconfig.json
+  # excludes `packages`, so `lint:tsc` cannot see it, and `lint:oxlint` is
+  # scoped to src/. Since packages/api-types/src/index.ts re-exports
+  # ../../../src/app-api/types, the tsup declaration build walks the whole
+  # public type graph of this application — so a refactor in src/app-api/types/
+  # that breaks it would otherwise surface for the first time on release day.
+  #
+  # The NAME is load-bearing: the release workflow's CI gate
+  # (scripts/check-required-checks.mjs) matches on the display name reported by
+  # the Checks API, not on the job id.
+  api-types:
+    name: API Types Package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-node-dependencies
+
+      - name: Build the declaration bundle
+        run: npm run build:api-types
+
+      # --ignore-scripts: `prepack` would rebuild what was just built, and its
+      # tsup output on stdout breaks `npm pack --json` parsing.
+      - name: Pack
+        id: pack
+        run: |
+          set -euo pipefail
+          FILE="$(npm pack -w packages/api-types --ignore-scripts --json --silent | node -pe "JSON.parse(require('fs').readFileSync(0,'utf8'))[0].filename")"
+          echo "tarball=$(realpath "$FILE")" >> "$GITHUB_OUTPUT"
+
+      # Everything below must stay in THIS job: packages/api-types/dist/ and the
+      # tarball do not survive a job boundary, and separate jobs would verify
+      # nothing — the same trap the Build job documents above.
+      - name: Verify tarball contents
+        run: npm run --silent verify:api-types-pack -- "${{ steps.pack.outputs.tarball }}"
+
+      # The size and filename checks above are sanity checks. Only a compiler
+      # settles whether the published declarations actually work for a consumer,
+      # and this is the last place it can be caught for free — after a release,
+      # a broken version can only be superseded.
+      - name: Type-check a consumer against the tarball
+        run: npm run --silent verify:api-types-consumer -- "${{ steps.pack.outputs.tarball }}"
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-node-dependencies
+
+      - name: Run unit tests with coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  integration-tests:
+    name: Integration Tests (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    container:
+      image: mcr.microsoft.com/playwright:v1.61.0-noble
+      options: --user 1001
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-node-dependencies
+        with:
+          cache-suffix: playwright-noble
+
+      - name: Run integration tests
+        run: npm run test:e2e -- --project=${{ matrix.browser }}
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results-${{ matrix.browser }}
+          path: test-results/
+          retention-days: 7

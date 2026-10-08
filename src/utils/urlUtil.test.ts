@@ -1,4 +1,7 @@
-import { getDomain,isValidUrl } from './urlUtil'
+// @vitest-environment node
+import { describe, expect, test } from 'vitest'
+
+import { getDomain, isValidUrl } from './urlUtil'
 
 describe('urlUtil', () => {
   describe('isValidUrl', () => {

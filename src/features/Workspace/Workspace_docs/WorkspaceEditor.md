@@ -12,7 +12,7 @@ The WorkspaceEditor follows a **container component pattern** where:
 - It uses Allotment for resizable panel layouts
 - It coordinates with multiple Zustand stores for state management
 - It uses React Router's `<Outlet />` for nested routing
-- It subscribes to store changes to detect network modifications
+- It no longer tracks network modifications; `markNetworkModified` does (#680)
 
 ## Component Structure
 
@@ -42,17 +42,18 @@ The main workspace editor component that provides layout and network management.
   - Uses loading ref to prevent concurrent loads
   - Shows error state if network fails to load
 
-- **Modification Tracking:**
-  - Monitors view model changes (excluding selection state)
-  - Monitors visual style changes
-  - Sets `networkModified` flag when changes are detected
-  - Only tracks modifications if network is not already marked as modified
+- **Modification Tracking:** none, as of #680.
+  - This component used to carry two store subscriptions — one diffing the view model of `currentNetworkId` (selection omitted), one diffing its visual style — that set the `networkModified` flag.
+  - They leaked (registered in the component body, one listener added per render) and they keyed on `currentNetworkId`, so an app API write naming any other resident network was never marked.
+  - `markNetworkModified` (`src/app-api/core/undo.ts`) replaces both. It is called from `useUndoStack.postEdit` and from `corePostEdit`, so every recorded edit marks the network it actually mutated.
+  - Paths that record no undo entry mark the network themselves: table column sort/move/resize/duplicate/insert, the Vizmapper lock checkboxes, style duplicate/rename/delete, the table-file join, and a service-app network update.
 
 - **Layout Application:**
   - Automatically applies default layout to networks without layouts
   - Fits viewport after layout is applied
   - Updates network summary with `hasLayout: true` after layout
-  - Sets network as unmodified after layout completes
+  - Sets network as unmodified after layout completes, unless the user edited the network while the layout was running
+  - Completion logic lives in `layoutCompletion.ts` (`createLayoutCompletionHandler`), which snapshots `networkModified` before applying layout positions so the layout's own view model write is not mistaken for a user edit
 
 - **HCX Validation:**
   - Validates HCX networks on load
@@ -81,7 +82,7 @@ The main workspace editor component that provides layout and network management.
 
 **Design Decisions:**
 
-1. **Loading Prevention:** Uses `isLoadingRef` to prevent concurrent network loads, avoiding race conditions and duplicate API calls
+1. **One Load at a Time:** `useUrlNetworkLoad` runs one network load at a time. A load whose network was removed meanwhile leaves the stores alone, a load whose URL moved on does not change the current network, and the network the URL names when a load settles is loaded next. `useUrlFollowsNetworkRemoval` moves the URL off a network that leaves the workspace, because the URL is the only network-load trigger
 
 2. **Modification Detection:** Excludes selection state (selectedNodes, selectedEdges) from modification detection because selection changes are temporary UI state, not network modifications
 
@@ -138,10 +139,10 @@ The WorkspaceEditor integrates with the following stores and services:
 
 ## Modification Detection Flow
 
-1. **Store Subscription:** Subscribe to ViewModelStore and VisualStyleStore changes
-2. **Change Detection:** Compare current and previous values (excluding selection state for view model)
-3. **Modification Check:** Check if network is already marked as modified
-4. **Set Flag:** If changed and not already modified, set `networkModified` flag
+Moved out of this component in #680 — see **Modification Tracking** above.
+The flag is written by `markNetworkModified(networkId)`, called from
+`postEdit`/`corePostEdit`, plus a short list of explicit call sites for
+operations that are not undoable.
 
 ## Layout Application Flow
 
@@ -149,10 +150,11 @@ The WorkspaceEditor integrates with the following stores and services:
 2. **Select Default:** Get default layout based on network size and threshold
 3. **Find Engine:** Find layout engine matching default layout
 4. **Apply Layout:** Call engine.apply with nodes, edges, and callback
-5. **Update Positions:** Update node positions in view model
-6. **Fit Viewport:** Call fit function to center network
-7. **Update Summary:** Update summary with `hasLayout: true`
-8. **Reset Modified:** Set network as unmodified (layout is not a user modification)
+5. **Snapshot Modified:** Read the live `networkModified` flag before touching the view model
+6. **Update Positions:** Update node positions in view model
+7. **Fit Viewport:** Call fit function to center network
+8. **Update Summary:** Update summary with `hasLayout: true`
+9. **Reset Modified:** Set network as unmodified only if the snapshot showed no user modification (layout is not a user modification)
 
 ## Design Decisions
 
@@ -181,7 +183,7 @@ The WorkspaceEditor integrates with the following stores and services:
 - Table browser loading has `data-testid="workspace-editor-table-browser-loading"`
 - Network loading can be tested by changing URL parameters
 - Panel state can be tested by checking panel visibility
-- Modification detection can be tested by making changes and checking networkModified flag
+- Modification detection is covered by `src/app-api/core/undo.test.ts` and the app API core specs, not here
 
 ## Future Improvements
 

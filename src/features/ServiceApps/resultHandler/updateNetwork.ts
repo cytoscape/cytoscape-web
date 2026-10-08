@@ -1,6 +1,5 @@
 import { useCallback } from 'react'
 
-import { logApi, logStore } from '../../../debug'
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useOpaqueAspectStore } from '../../../data/hooks/stores/OpaqueAspectStore'
@@ -12,8 +11,8 @@ import {
 } from '../../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { logApi, logStore } from '../../../debug'
 import { Cx2 } from '../../../models/CxModel/Cx2'
-import { CoreAspectTag } from '../../../models/CxModel/Cx2/CoreAspectTag'
 import { getCyNetworkFromCx2 } from '../../../models/CxModel/impl'
 import {
   getAttributeDeclarations,
@@ -123,6 +122,11 @@ export const useUpdateNetwork = (): (({
         })
         setVisualStyleOptions(networkId, visualStyleOptions)
         setTables(networkId, nodeTable, edgeTable)
+        // Deliberately no style set: this updates a network the user already
+        // owns. A service returns plain CX2, so its set is a single "Default"
+        // built from the standard aspects, and passing it would delete the
+        // user's named styles. Omitting it keeps the existing set and replaces
+        // only the active style's content — see MULTIPLE_VISUAL_STYLES.md §2.
         setVisualStyle(networkId, visualStyle)
         if (otherAspects !== undefined) {
           addAllOpaqueAspects(networkId, otherAspects, true)
@@ -133,6 +137,8 @@ export const useUpdateNetwork = (): (({
           type: networkView.type ?? DEF_VIEW_TYPE,
           viewId: `${networkId}-${networkView.type ?? DEF_VIEW_TYPE}-updatedByService`,
         })
+        // A service-app result replaces the network wholesale and records no
+        // undo entry, so it marks the network here rather than via postEdit.
         setNetworkModified(networkId, true)
       } catch (e) {
         logStore.warn(

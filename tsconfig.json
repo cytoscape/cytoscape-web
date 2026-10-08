@@ -3,6 +3,8 @@
     "typeRoots": ["./node_modules/@types", "./src/types"],
     "allowSyntheticDefaultImports": true,
     "outDir": "./dist/",
+    "incremental": true,
+    "tsBuildInfoFile": "node_modules/.cache/tsc/tsbuildinfo.json",
     "noImplicitAny": true,
     "module": "ESNext",
     "target": "ES2022",
@@ -10,13 +12,16 @@
     "jsx": "react-jsx",
     "allowJs": true,
     "esModuleInterop": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "sourceMap": true,
+    "strict": true,
     "strictNullChecks": true,
     "resolveJsonModule": true,
-    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "exclude": ["node_modules", "dist", "scripts", "**/*.test.ts", "**/*.spec.ts"]
+  "exclude": ["node_modules", "dist", "scripts", "packages", "scratch", "test/fixtures/api-types-consumer"]
 }

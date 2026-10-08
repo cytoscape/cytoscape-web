@@ -1,7 +1,13 @@
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { Box, IconButton, Stack, Theme, useTheme } from '@mui/material'
 import Slider from '@mui/material/Slider'
-import { MutableRefObject, useEffect, useRef, useState } from 'react'
+import {
+  MutableRefObject,
+  SyntheticEvent,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 
 import { useLayoutStore } from '../../data/hooks/stores/LayoutStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
@@ -128,7 +134,10 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
     setSliderValue(value as number)
   }
 
-  const handleUpdate = (event: Event, value: number | number[]): void => {
+  const handleUpdate = (
+    event: Event | SyntheticEvent,
+    value: number | number[],
+  ): void => {
     const valueAsNumber: number = typeof value === 'number' ? value : value[0]
     setSliderValue(valueAsNumber)
     const scalingFactor = calcScale(valueAsNumber)

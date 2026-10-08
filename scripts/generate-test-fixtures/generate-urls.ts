@@ -1,12 +1,12 @@
-#!/usr/bin/env ts-node
+#!/usr/bin/env tsx
 /**
  * Script to generate URL test fixtures for Cytoscape Web routing and state management testing.
  *
  * Usage:
- *   ts-node scripts/generate-test-fixtures/generate-urls.ts --type network-id --network-id abc-123 --workspace-id ws-456 --output test/fixtures/urls/network-id-valid.txt
- *   ts-node scripts/generate-test-fixtures/generate-urls.ts --type import --import-url https://example.com/network.cx2 --output test/fixtures/urls/import-parameter-valid.txt
- *   ts-node scripts/generate-test-fixtures/generate-urls.ts --type query --selected-nodes "n1 n2 n3" --output test/fixtures/urls/state-selected-nodes.txt
- *   ts-node scripts/generate-test-fixtures/generate-urls.ts --type invalid --error invalid-workspace-id --output test/fixtures/urls/invalid-workspace-id.txt
+ *   tsx scripts/generate-test-fixtures/generate-urls.ts --type network-id --network-id abc-123 --workspace-id ws-456 --output test/fixtures/urls/network-id-valid.txt
+ *   tsx scripts/generate-test-fixtures/generate-urls.ts --type import --import-url https://example.com/network.cx2 --output test/fixtures/urls/import-parameter-valid.txt
+ *   tsx scripts/generate-test-fixtures/generate-urls.ts --type query --selected-nodes "n1 n2 n3" --output test/fixtures/urls/state-selected-nodes.txt
+ *   tsx scripts/generate-test-fixtures/generate-urls.ts --type invalid --error invalid-workspace-id --output test/fixtures/urls/invalid-workspace-id.txt
  */
 
 import { writeFileSync, mkdirSync } from 'fs'

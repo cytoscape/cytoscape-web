@@ -36,7 +36,15 @@ export const fetchUrlCx = async (
     if (!fullResponse.ok) {
       throw new Error(`HTTP error! status: ${fullResponse.status}`)
     }
-    const data: Cx2 = await fullResponse.json()
+    // The HEAD Content-Length check above is only a fast-fail: the header
+    // may be absent (chunked transfer, CORS). Enforce the limit on the
+    // actual body before parsing (REVIEW.md B15 — previously a missing
+    // header meant no limit at all)
+    const body = await fullResponse.text()
+    if (body.length > maxSize) {
+      throw new Error('CX network too large')
+    }
+    const data: Cx2 = JSON.parse(body)
 
     const uuid = uuidv4()
     const network = getCyNetworkFromCx2(uuid, data)

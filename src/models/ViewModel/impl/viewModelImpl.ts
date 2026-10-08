@@ -1,10 +1,9 @@
 import { Edge as CxEdge } from '../../CxModel/Cx2/CoreAspects/Edge'
 import { Node as CxNode } from '../../CxModel/Cx2/CoreAspects/Node'
-import { translateCXEdgeId } from '../../CxModel/impl/converters'
-import { IdType } from '../../IdType'
-import { Edge, Node } from '../../NetworkModel'
-import { Network } from '../../NetworkModel'
-import { isEdgeId } from '../../NetworkModel/impl/networkImpl'
+import { translateCXEdgeId } from '@/models/NetworkModel/impl/edgeIds'
+import { IdType } from '@/models/IdType'
+import type { Network } from '@/models/NetworkModel'
+import { isEdgeId } from '@/models/NetworkModel/impl/edgeIds'
 import { VisualPropertyValueType } from '../../VisualStyleModel'
 import {
   EdgeVisualPropertyName,
@@ -336,10 +335,19 @@ export const deleteObjects = (
     }
   })
 
+  // Deleted elements must not linger in the selection state
+  const deletedIds = new Set(ids)
+
   return {
     ...networkView,
     nodeViews: newNodeViews,
     edgeViews: newEdgeViews,
+    selectedNodes: networkView.selectedNodes.filter(
+      (id) => !deletedIds.has(id),
+    ),
+    selectedEdges: networkView.selectedEdges.filter(
+      (id) => !deletedIds.has(id),
+    ),
   }
 }
 

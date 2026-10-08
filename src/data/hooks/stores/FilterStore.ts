@@ -1,10 +1,8 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
-import { deleteFilterFromDb, putFilterToDb } from '../../db'
-import { toPlainObject } from '../../db/serialization'
 import { logStore } from '../../../debug'
-import { FilterConfig } from '../../../models/FilterModel'
+import { DiscreteFilterValue, FilterConfig } from '../../../models/FilterModel'
 import * as FilterStoreImpl from '../../../models/FilterModel/impl/filterStoreImpl'
 import { Search, SearchOptions } from '../../../models/FilterModel/Search'
 import { SearchState } from '../../../models/FilterModel/SearchState'
@@ -12,7 +10,16 @@ import { IdType } from '../../../models/IdType'
 import { GraphObjectType } from '../../../models/NetworkModel'
 import { DiscreteRange } from '../../../models/PropertyModel/DiscreteRange'
 import { NumberRange } from '../../../models/PropertyModel/NumberRange'
-import { ValueType } from '../../../models/TableModel'
+import {
+  clearFiltersFromDb,
+  deleteFilterFromDb,
+  deleteFiltersFromDb,
+  deleteNetworkFiltersFromDb,
+  putFilterToDb,
+} from '../../db'
+import { toPlainObject } from '../../db/serialization'
+import { isHydrating } from './hydrationContext'
+
 /**
  * The store for both search and filter.
  *
@@ -32,6 +39,8 @@ interface FilterAction {
   ) => void
   getIndex: <T>(networkId: IdType, type: GraphObjectType) => T
   setIndex: <T>(networkId: string, type: GraphObjectType, index: T) => void
+  deleteNetworkIndex: (networkId: string) => void
+  deleteAllNetworkIndexes: () => void
   setConverter: (converter: (result: any) => IdType[]) => void
   setOptions: (options: SearchOptions) => void
 
@@ -42,8 +51,16 @@ interface FilterAction {
 
   updateRange: (
     name: string,
-    range: NumberRange | DiscreteRange<ValueType>,
+    range: NumberRange | DiscreteRange<DiscreteFilterValue>,
   ) => void
+  setFilterEnabled: (name: string, enabled: boolean) => void
+
+  // Restore the configs saved in the database at startup (#774). Keeps those
+  // owned by a network in the workspace and deletes the other rows.
+  hydrate: (configs: FilterConfig[], networkIds: IdType[]) => void
+  // Delete the configs of a network and its subnetworks (delete cascade)
+  deleteNetworkFilterConfigs: (networkId: IdType) => void
+  deleteAllFilterConfigs: () => void
 }
 
 type FilterStore = FilterState<any> & FilterAction
@@ -96,6 +113,20 @@ export const useFilterStore = create(
         return state
       })
     },
+    deleteNetworkIndex: (networkId: string) => {
+      set((state) => {
+        const newState = FilterStoreImpl.deleteNetworkIndex(state, networkId)
+        state.search = newState.search
+        return state
+      })
+    },
+    deleteAllNetworkIndexes: () => {
+      set((state) => {
+        const newState = FilterStoreImpl.deleteAllNetworkIndexes(state)
+        state.search = newState.search
+        return state
+      })
+    },
     setOptions: (options: SearchOptions) => {
       set((state) => {
         const newState = FilterStoreImpl.setOptions(state, options)
@@ -127,18 +158,20 @@ export const useFilterStore = create(
         const newState = FilterStoreImpl.addFilterConfig(state, filter)
         // Convert to plain object before saving (filter may be an Immer proxy)
         const plainFilter = toPlainObject(filter)
-        putFilterToDb(plainFilter)
-          .then(() => {
-            logStore.info(
-              `[${useFilterStore.name}]: New filter saved to db: ${filter.name}`,
-            )
-          })
-          .catch((e) => {
-            logStore.error(
-              `[${useFilterStore.name}]: Failed to store the new filter to db: ${filter.name}`,
-              e,
-            )
-          })
+        if (!isHydrating()) {
+          void putFilterToDb(plainFilter)
+            .then(() => {
+              logStore.info(
+                `[${useFilterStore.name}]: New filter saved to db: ${filter.name}`,
+              )
+            })
+            .catch((e) => {
+              logStore.error(
+                `[${useFilterStore.name}]: Failed to store the new filter to db: ${filter.name}`,
+                e,
+              )
+            })
+        }
         state.filterConfigs = newState.filterConfigs
         return state
       })
@@ -146,7 +179,17 @@ export const useFilterStore = create(
     deleteFilterConfig: (name: string) => {
       set((state) => {
         const newState = FilterStoreImpl.deleteFilterConfig(state, name)
-        deleteFilterFromDb(name)
+        // Guarded like every other write here: during hydration this store is
+        // being filled FROM the database, and deleting the row back out would
+        // mint a change record every peer tab then hydrates in turn.
+        if (!isHydrating()) {
+          void deleteFilterFromDb(name).catch((e) => {
+            logStore.error(
+              `[${useFilterStore.name}]: Failed to delete the filter from db: ${name}`,
+              e,
+            )
+          })
+        }
         state.filterConfigs = newState.filterConfigs
         return state
       })
@@ -156,14 +199,21 @@ export const useFilterStore = create(
         const newState = FilterStoreImpl.updateFilterConfig(state, name, filter)
         // Convert to plain object before saving (filter may be an Immer proxy)
         const plainFilter = toPlainObject(filter)
-        putFilterToDb(plainFilter)
+        if (!isHydrating()) {
+          void putFilterToDb(plainFilter).catch((e) => {
+            logStore.error(
+              `[${useFilterStore.name}]: Failed to update the filter in db: ${name}`,
+              e,
+            )
+          })
+        }
         state.filterConfigs = newState.filterConfigs
         return state
       })
     },
     updateRange: (
       name: string,
-      range: NumberRange | DiscreteRange<ValueType>,
+      range: NumberRange | DiscreteRange<DiscreteFilterValue>,
     ) => {
       set((state) => {
         const newState = FilterStoreImpl.updateRange(state, name, range)
@@ -171,22 +221,99 @@ export const useFilterStore = create(
         if (newFilter) {
           // Convert Immer proxy to plain object before saving
           const plainFilter = toPlainObject(newFilter)
-          putFilterToDb(plainFilter)
-            .then(() => {
-              logStore.info(
-                `[${useFilterStore.name}]: Range updated in db: ${name}`,
-              )
-            })
-            .catch((e) => {
-              logStore.error(
-                `[${useFilterStore.name}]: Failed to update range in db: ${name}`,
-                e,
-              )
-            })
+          if (!isHydrating()) {
+            putFilterToDb(plainFilter)
+              .then(() => {
+                logStore.info(
+                  `[${useFilterStore.name}]: Range updated in db: ${name}`,
+                )
+              })
+              .catch((e) => {
+                logStore.error(
+                  `[${useFilterStore.name}]: Failed to update range in db: ${name}`,
+                  e,
+                )
+              })
+          }
         }
         state.filterConfigs = newState.filterConfigs
         return state
       })
+    },
+    setFilterEnabled: (name: string, enabled: boolean) => {
+      set((state) => {
+        const newState = FilterStoreImpl.setFilterEnabled(state, name, enabled)
+        const newFilter = newState.filterConfigs[name]
+        if (newFilter && !isHydrating()) {
+          // Convert Immer proxy to plain object before saving
+          putFilterToDb(toPlainObject(newFilter)).catch((e) => {
+            logStore.error(
+              `[${useFilterStore.name}]: Failed to update enabled state in db: ${name}`,
+              e,
+            )
+          })
+        }
+        state.filterConfigs = newState.filterConfigs
+        return state
+      })
+    },
+    hydrate: (configs: FilterConfig[], networkIds: IdType[]) => {
+      const { owned, orphaned } = FilterStoreImpl.partitionFilterConfigsByOwner(
+        configs,
+        networkIds,
+      )
+      // The configs come from the database, so they are not written back
+      set((state) => {
+        owned.forEach((config) => {
+          state.filterConfigs[config.name] = config
+        })
+        return state
+      })
+      if (orphaned.length > 0) {
+        const names = orphaned.map((config) => config.name)
+        logStore.info(
+          `[${useFilterStore.name}]: Deleting filters without a network: ${names.join(', ')}`,
+        )
+        void deleteFiltersFromDb(names).catch((e) => {
+          logStore.error(
+            `[${useFilterStore.name}]: Failed to delete orphaned filters from db`,
+            e,
+          )
+        })
+      }
+    },
+    deleteNetworkFilterConfigs: (networkId: IdType) => {
+      set((state) => {
+        const newState = FilterStoreImpl.deleteNetworkFilterConfigs(
+          state,
+          networkId,
+        )
+        state.filterConfigs = newState.filterConfigs
+        return state
+      })
+      // Deletes by prefix in the db too, so rows missing from the store go
+      if (!isHydrating()) {
+        void deleteNetworkFiltersFromDb(networkId).catch((e) => {
+          logStore.error(
+            `[${useFilterStore.name}]: Failed to delete the filters of network ${networkId} from db`,
+            e,
+          )
+        })
+      }
+    },
+    deleteAllFilterConfigs: () => {
+      set((state) => {
+        state.filterConfigs = {}
+        return state
+      })
+      if (!isHydrating()) {
+        void clearFiltersFromDb().catch((e) => {
+          logStore.error(
+            `[${useFilterStore.name}]: Failed to clear filters from db`,
+            e,
+          )
+        })
+      }
     },
   })),
 )

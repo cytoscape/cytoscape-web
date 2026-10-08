@@ -1,4 +1,4 @@
-import { MenuItem, Tooltip } from '@mui/material'
+import AddIcon from '@mui/icons-material/Add'
 import { ReactElement, useEffect, useState } from 'react'
 
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
@@ -9,9 +9,14 @@ import { useCreateEdge } from '../../../data/hooks/useCreateEdge'
 import { isHCX } from '../../../features/HierarchyViewer/utils/hierarchyUtil'
 import { NetworkView } from '../../../models'
 import { IdType } from '../../../models/IdType'
-import { BaseMenuProps } from '../BaseMenuProps'
+import { BaseMenuItemProps } from '../BaseMenuItemProps'
+import { DropdownMenuItem } from '../DropdownMenu'
 
-export const CreateEdgeMenuItem = (props: BaseMenuProps): ReactElement => {
+// Stable fallback so the `selectedNodes` dep does not change identity
+// on every render when no view model exists
+const EMPTY_NODES: IdType[] = []
+
+export const CreateEdgeMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const { createEdge } = useCreateEdge()
 
   const [disabled, setDisabled] = useState<boolean>(true)
@@ -38,21 +43,17 @@ export const CreateEdgeMenuItem = (props: BaseMenuProps): ReactElement => {
   )
 
   const selectedNodes: IdType[] =
-    viewModel !== undefined ? viewModel.selectedNodes : []
+    viewModel !== undefined ? viewModel.selectedNodes : EMPTY_NODES
 
-  // Check if current view supports creation
-  const canCreateInView = (): boolean => {
-    if (viewModel === undefined) {
-      return true // Default view supports creation
-    }
-    const viewType = viewModel.type
-    // Only allow creation in node-link diagrams
-    return viewType === undefined || viewType === 'nodeLink'
-  }
+  // Check if current view supports creation:
+  // only node-link diagrams (or the default view) allow creation
+  const isCreationEnabled: boolean =
+    viewModel === undefined ||
+    viewModel.type === undefined ||
+    viewModel.type === 'nodeLink'
+  const isHierarchy: boolean = networkSummary ? isHCX(networkSummary) : false
 
   useEffect(() => {
-    const isCreationEnabled = canCreateInView()
-    const isHierarchy = networkSummary ? isHCX(networkSummary) : false
     // Disable the menu item if fewer than 2 nodes are selected,
     // if the sub network view is selected, creation is not enabled, or network is a hierarchy
     if (
@@ -65,8 +66,13 @@ export const CreateEdgeMenuItem = (props: BaseMenuProps): ReactElement => {
     } else {
       setDisabled(true)
     }
-  }, [selectedNodes, targetNetworkId, currentNetworkId, viewModel, networkSummary])
-
+  }, [
+    selectedNodes,
+    targetNetworkId,
+    currentNetworkId,
+    isCreationEnabled,
+    isHierarchy,
+  ])
 
   const handleCreateEdge = (): void => {
     // Use the first two selected nodes
@@ -77,11 +83,9 @@ export const CreateEdgeMenuItem = (props: BaseMenuProps): ReactElement => {
     createEdge(currentNetworkId, sourceNodeId, targetNodeId, {
       attributes: {},
     })
-    props.handleClose()
+    props.onClick()
   }
 
-  const isCreationEnabled = canCreateInView()
-  const isHierarchy = networkSummary ? isHCX(networkSummary) : false
   const tooltipText = isHierarchy
     ? 'Creation not available for hierarchy networks'
     : !isCreationEnabled
@@ -93,12 +97,12 @@ export const CreateEdgeMenuItem = (props: BaseMenuProps): ReactElement => {
           : ''
 
   return (
-    <Tooltip title={tooltipText} placement="left">
-      <span>
-        <MenuItem disabled={disabled} onClick={handleCreateEdge}>
-          Create Edge
-        </MenuItem>
-      </span>
-    </Tooltip>
+    <DropdownMenuItem
+      label="Create Edge"
+      icon={<AddIcon />}
+      disabled={disabled}
+      onClick={handleCreateEdge}
+      tooltip={tooltipText}
+    />
   )
 }

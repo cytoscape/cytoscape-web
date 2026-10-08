@@ -1,76 +1,403 @@
+import DeleteIcon from '@mui/icons-material/Delete'
+import MoreVertIcon from '@mui/icons-material/MoreVert'
 import {
   Box,
-  Checkbox,
-  List,
-  ListItem,
-  ListItemText,
+  Button,
+  Chip,
+  CircularProgress,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  IconButton,
+  Menu,
+  MenuItem,
+  Paper,
+  Switch,
+  Tooltip,
   Typography,
 } from '@mui/material'
+import { useState } from 'react'
 
+import { CyDialog } from '@/components/CyDialog'
 import { useAppStore } from '../../data/hooks/stores/AppStore'
-import { CyApp } from '../../models/AppModel'
+import { AppCatalogEntry } from '../../models/AppModel/AppCatalogEntry'
+import {
+  AppLoadFailure,
+  isRetryableAppLoadFailure,
+} from '../../models/AppModel/AppLoadFailure'
+import { AppLoadState } from '../../models/AppModel/AppLoadState'
 import { AppStatus } from '../../models/AppModel/AppStatus'
+import { CyApp } from '../../models/AppModel/CyApp'
+import { appLoadFailureMessage } from '../../models/AppModel/impl/appLoadFailureMessage'
+import { AppSource } from '../../models/AppModel/InstalledApp'
+import { useAppManagerCommands } from './AppManagerCommandsContext'
 
-interface AppListPanelProps {
-  setAppStateUpdated: (updated: boolean) => void
+/**
+ * Merged view of a catalog entry with its runtime state.
+ */
+interface AppDisplayEntry {
+  id: string
+  name: string
+  description?: string
+  version?: string
+  author?: string
+  inCatalog: boolean
+  loadState: AppLoadState | undefined
+  /** Why the load failed; set only when `loadState` is `'failed'` */
+  failure: AppLoadFailure | undefined
+  status: AppStatus | undefined
+  /** Provenance of the catalog entry (undefined for orphans) */
+  source?: AppSource
+  /** Whether this row can be uninstalled from the workspace (§12.3) */
+  removable: boolean
 }
 
-export const AppListPanel = ({ setAppStateUpdated }: AppListPanelProps) => {
+/**
+ * Chip marking where a row's entry came from. Manifest rows carry no chip —
+ * that is the default and needs no label.
+ */
+function sourceChipLabel(source: AppSource | undefined): string | undefined {
+  if (source === 'snapshot') return 'Snapshot'
+  if (source === 'appstore') return 'App Store'
+  return undefined
+}
+
+/**
+ * Determine the primary action for an app based on its catalog/load/status.
+ */
+function getAction(
+  entry: AppDisplayEntry,
+): 'enable' | 'disable' | 'retry' | 'loading' | 'remove' | 'none' {
+  if (entry.inCatalog) {
+    if (entry.loadState === 'loading') return 'loading'
+    // Retry re-runs activation and nothing else, so it can only help the one
+    // cause that is not deterministic in-tab: a failed mount. For the other
+    // four it fails identically, forever — the row states the reason instead
+    // (#719).
+    if (entry.loadState === 'failed')
+      return isRetryableAppLoadFailure(entry.failure) ? 'retry' : 'none'
+    if (entry.loadState === 'loaded' && entry.status === AppStatus.Active)
+      return 'disable'
+    // unloaded or loaded+inactive → enable
+    return 'enable'
+  }
+
+  // Orphan (not in catalog)
+  if (entry.loadState === 'failed') return 'none'
+  if (entry.status === AppStatus.Active) return 'disable'
+  if (entry.status === AppStatus.Inactive) return 'remove'
+  return 'none'
+}
+
+export const AppListPanel = () => {
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
-  const setStatus = useAppStore((state) => state.setStatus)
+  const catalog: Record<string, AppCatalogEntry> = useAppStore(
+    (state) => state.catalog,
+  )
+  const catalogSources: Record<string, AppSource> = useAppStore(
+    (state) => state.catalogSources,
+  )
+  const manifestIds: string[] = useAppStore((state) => state.manifestIds)
+  const loadStates: Record<string, AppLoadState> = useAppStore(
+    (state) => state.loadStates,
+  )
+  const loadErrors: Record<string, AppLoadFailure> = useAppStore(
+    (state) => state.loadErrors,
+  )
+  const { activateApp, deactivateApp, retryApp, removeOrphan, uninstallApp } =
+    useAppManagerCommands()
+
+  // Overflow (kebab) menu and uninstall-confirmation state
+  const [menu, setMenu] = useState<{
+    anchorEl: HTMLElement
+    entry: AppDisplayEntry
+  } | null>(null)
+  const [confirm, setConfirm] = useState<AppDisplayEntry | null>(null)
+
+  // Build merged display list: catalog entries + orphan apps
+  const displayEntries: AppDisplayEntry[] = []
+  const seenIds = new Set<string>()
+  const manifestIdSet = new Set(manifestIds)
+
+  // 1. All catalog entries
+  for (const entry of Object.values(catalog)) {
+    seenIds.add(entry.id)
+    const app = apps[entry.id]
+    const source = catalogSources[entry.id]
+    const inManifest = manifestIdSet.has(entry.id)
+    displayEntries.push({
+      id: entry.id,
+      name: entry.name ?? entry.id,
+      description: entry.description ?? app?.description,
+      version: entry.version ?? app?.version,
+      author: entry.author,
+      inCatalog: true,
+      loadState: loadStates[entry.id],
+      failure: loadErrors[entry.id],
+      status: app?.status,
+      source,
+      // Only workspace-installed apps are uninstallable; anything the manifest
+      // still ships is disable-only (§12.3). A pinned App Store or snapshot
+      // install shadows the manifest source tag, so `source` alone is not the
+      // test — uninstalling such a row would drop the pinned URL and
+      // immediately re-add the app from the manifest.
+      removable:
+        !inManifest && (source === 'appstore' || source === 'snapshot'),
+    })
+  }
+
+  // 2. Orphan apps (in apps store but not in catalog)
+  for (const [id, app] of Object.entries(apps)) {
+    if (seenIds.has(id)) continue
+    // Skip failed orphans (not displayable per spec)
+    if (loadStates[id] === 'failed') continue
+    displayEntries.push({
+      id,
+      name: app.name ?? id,
+      description: app.description,
+      version: app.version,
+      author: undefined,
+      inCatalog: false,
+      loadState: loadStates[id],
+      failure: loadErrors[id],
+      status: app.status,
+      // Orphans keep the existing (unconfirmed) removeOrphan path, not the
+      // kebab uninstall.
+      removable: false,
+    })
+  }
 
   return (
     <Box>
-      <Typography
-        sx={{ display: 'inline' }}
-        component="span"
-        variant="h6"
-        color="text.primary"
-      >
-        Apps Manager
-      </Typography>
-      <Typography variant="body1">
-        {Object.keys(apps).length === 0
-          ? '(No Apps are currently registered)'
-          : ''}
-      </Typography>
-
-      <List>
-        {Object.values(apps).map((app: CyApp) => (
-          <ListItem
-            key={app.id}
-            secondaryAction={
-              <Checkbox
-                edge="end"
-                onChange={(e) => {
-                  // Tell parents that the app state has been changed
-                  setAppStateUpdated(true)
-                  setStatus(
-                    app.id,
-                    e.target.checked ? AppStatus.Active : AppStatus.Inactive,
-                  )
+      {displayEntries.length === 0 ? (
+        <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+          No apps available in catalog.
+        </Typography>
+      ) : (
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 1,
+            maxHeight: 300,
+            overflowY: 'auto',
+          }}
+        >
+          {displayEntries.map((entry) => {
+            const action = getAction(entry)
+            const chipLabel = sourceChipLabel(entry.source)
+            const isActive =
+              entry.loadState === 'loaded' && entry.status === AppStatus.Active
+            return (
+              <Paper
+                key={entry.id}
+                variant="outlined"
+                sx={{
+                  p: 1.5,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  borderColor: isActive ? 'primary.main' : 'divider',
+                  borderLeftWidth: isActive ? 3 : 1,
                 }}
-                disabled={app.status === AppStatus.Error}
-                checked={app.status === AppStatus.Active}
-              />
-            }
-          >
-            <ListItemText
-              primary={<Typography variant="h6">{app.name}</Typography>}
-              secondary={
-                <Typography
-                  sx={{ display: 'inline' }}
-                  component="span"
-                  variant="body1"
-                  color="text.primary"
+              >
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.5,
+                      flexWrap: 'wrap',
+                    }}
+                  >
+                    <Typography variant="subtitle2" noWrap>
+                      {entry.name}
+                    </Typography>
+                    {entry.version && (
+                      <Typography variant="caption" color="text.secondary">
+                        v{entry.version}
+                      </Typography>
+                    )}
+                    {!entry.inCatalog && (
+                      <Chip
+                        label="orphan"
+                        size="small"
+                        color="warning"
+                        sx={{ height: 20, fontSize: '0.7rem' }}
+                      />
+                    )}
+                    {entry.loadState === 'failed' && (
+                      <Chip
+                        label="failed"
+                        size="small"
+                        color="error"
+                        sx={{ height: 20, fontSize: '0.7rem' }}
+                      />
+                    )}
+                    {isActive && (
+                      <Chip
+                        label="active"
+                        size="small"
+                        color="primary"
+                        variant="outlined"
+                        sx={{ height: 20, fontSize: '0.7rem' }}
+                      />
+                    )}
+                    {chipLabel !== undefined && (
+                      <Chip
+                        label={chipLabel}
+                        size="small"
+                        variant="outlined"
+                        sx={{ height: 20, fontSize: '0.7rem' }}
+                      />
+                    )}
+                  </Box>
+                  {entry.description && (
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{
+                        mt: 0.25,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                      }}
+                    >
+                      {entry.description}
+                    </Typography>
+                  )}
+                  {/*
+                    Persistent, not a tooltip: the reason is the only thing
+                    telling the user whether they can act, and a tooltip is
+                    undiscoverable and unusable on touch (#719).
+                  */}
+                  {entry.failure !== undefined && (
+                    <Typography
+                      variant="caption"
+                      color="error"
+                      data-testid={`app-failure-${entry.id}`}
+                      sx={{ mt: 0.25, display: 'block' }}
+                    >
+                      {appLoadFailureMessage(entry.failure)}
+                    </Typography>
+                  )}
+                </Box>
+
+                <Box
+                  sx={{
+                    flexShrink: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                  }}
                 >
-                  {app.description}
-                </Typography>
+                  {action === 'loading' && <CircularProgress size={24} />}
+                  {(action === 'enable' || action === 'disable') && (
+                    <Switch
+                      data-testid={`app-toggle-${entry.id}`}
+                      size="small"
+                      checked={action === 'disable'}
+                      onChange={() => {
+                        if (action === 'disable') {
+                          void deactivateApp(entry.id)
+                        } else {
+                          void activateApp(entry.id)
+                        }
+                      }}
+                    />
+                  )}
+                  {action === 'retry' && (
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="warning"
+                      onClick={() => void retryApp(entry.id)}
+                    >
+                      Retry
+                    </Button>
+                  )}
+                  {action === 'remove' && (
+                    <Tooltip title="Remove orphan app">
+                      <IconButton
+                        size="small"
+                        onClick={() => removeOrphan(entry.id)}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                  {entry.removable && (
+                    <Tooltip title="More options">
+                      <IconButton
+                        size="small"
+                        data-testid={`app-kebab-${entry.id}`}
+                        onClick={(e) =>
+                          setMenu({ anchorEl: e.currentTarget, entry })
+                        }
+                      >
+                        <MoreVertIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                </Box>
+              </Paper>
+            )
+          })}
+        </Box>
+      )}
+
+      {/* Overflow menu for workspace-installed apps (§12.4) */}
+      <Menu
+        anchorEl={menu?.anchorEl}
+        open={menu !== null}
+        onClose={() => setMenu(null)}
+      >
+        <MenuItem
+          data-testid="app-uninstall-menuitem"
+          onClick={() => {
+            if (menu !== null) {
+              setConfirm(menu.entry)
+              setMenu(null)
+            }
+          }}
+        >
+          Uninstall
+        </MenuItem>
+      </Menu>
+
+      {/* Uninstall confirmation (§12.5) */}
+      <CyDialog
+        open={confirm !== null}
+        data-testid="app-uninstall-confirm-dialog"
+      >
+        <DialogTitle>Uninstall app</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Uninstall <strong>{confirm?.name}</strong>? It will be removed from
+            this workspace.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirm(null)}>Cancel</Button>
+          <Button
+            color="error"
+            variant="contained"
+            data-testid="app-uninstall-confirm-button"
+            onClick={() => {
+              if (confirm !== null) {
+                const id = confirm.id
+                setConfirm(null)
+                void uninstallApp(id)
               }
-            />
-          </ListItem>
-        ))}
-      </List>
+            }}
+          >
+            Uninstall
+          </Button>
+        </DialogActions>
+      </CyDialog>
     </Box>
   )
 }

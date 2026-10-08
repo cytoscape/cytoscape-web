@@ -3,8 +3,10 @@ import cloneDeep from 'lodash/cloneDeep'
 import { putNetworkSummaryToDb } from '../../../../data/db'
 import { CyNetwork } from '../../../../models/CyNetworkModel'
 import { IdType } from '../../../../models/IdType'
+import { OpaqueAspects } from '../../../../models/OpaqueAspectModel'
 import { NetworkAttributes } from '../../../../models/NetworkModel'
 import { NetworkSummary } from '../../../../models/NetworkSummaryModel'
+import { createNetworkSummary } from '../../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { Visibility } from '../../../../models/NetworkSummaryModel/Visibility'
 import { Column } from '../../../../models/TableModel/Column'
 import ViewModelFn, { NetworkView } from '../../../../models/ViewModel'
@@ -16,7 +18,6 @@ import { differenceMerge } from './DifferenceMerge'
 import { intersectionMerge } from './IntersectionMerge'
 import { mergeNetSummary } from './MergeNetSummary'
 import { unionMerge } from './UnionMerge'
-import { createNetworkSummary } from '../../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 
 export const createMergedNetwork = async (
   fromNetworks: IdType[],
@@ -32,6 +33,9 @@ export const createMergedNetwork = async (
   mergeWithinNetwork: boolean = false,
   mergeOnlyNodes: boolean = false,
   strictRemoveMode: boolean = false,
+  // Opaque (non-core) aspects merged from the source networks (CW-522),
+  // already concatenated + de-duplicated. Carried onto the output network.
+  mergedOpaqueAspects: OpaqueAspects[] = [],
 ): Promise<[CyNetwork, NetworkSummary]> => {
   if (
     checkAttribute(
@@ -158,8 +162,8 @@ export const createMergedNetwork = async (
       networkAttributes,
       undoRedoStack,
       visualStyleOptions,
+      otherAspects: mergedOpaqueAspects,
     },
     networkSummary,
   ]
 }
-

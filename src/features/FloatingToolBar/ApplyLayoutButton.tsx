@@ -1,18 +1,19 @@
-import { Refresh } from '@mui/icons-material'
+import Refresh from '@mui/icons-material/Refresh'
 import { Box, IconButton, Tooltip } from '@mui/material'
 import { useEffect, useState } from 'react'
 
-import { logUi } from '../../debug'
 import { useLayoutStore } from '../../data/hooks/stores/LayoutStore'
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { useRendererFunctionStore } from '../../data/hooks/stores/RendererFunctionStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { useUndoStack } from '../../data/hooks/useUndoStack'
+import { logUi } from '../../debug'
 import { IdType } from '../../models/IdType'
 import { LayoutAlgorithm, LayoutEngine } from '../../models/LayoutModel'
 import { Network } from '../../models/NetworkModel'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
+import { runEngineLayout } from '../../models/LayoutModel/impl/runEngineLayout'
 
 interface ApplyLayoutButtonProps {
   targetNetworkId?: IdType
@@ -122,9 +123,15 @@ export const ApplyLayoutButton = ({
 
   const handleClick = (): void => {
     if (network !== undefined && engine !== undefined) {
-      setIsRunning(true)
       setLayoutInfo(defaultLayout.displayName)
-      engine.apply(network.nodes, network.edges, afterLayout, defaultLayout)
+      runEngineLayout({
+        engine,
+        algorithm: defaultLayout,
+        network,
+        networkId,
+        afterLayout,
+        setIsRunning,
+      })
     } else {
       logUi.warn(
         `[${ApplyLayoutButton.name}]:[${handleClick.name}]: Engine or network not found`,

@@ -3,7 +3,7 @@ import { AxisBottom } from '@visx/axis'
 import { color } from 'd3-color'
 import { ScaleLinear } from 'd3-scale'
 import * as React from 'react'
-import { ContinuousMappingFunction, ValueType } from 'src/models'
+import { ContinuousMappingFunction, ValueType } from '@/models'
 
 import { getMapper } from '../../../../../models/VisualStyleModel/impl/mapperFactory'
 
@@ -16,7 +16,8 @@ export interface ColorGradiientProps {
   horizontalPadding: number
   verticalPadding: number
   valuePixelScale: ScaleLinear<number, number>
-  colorScale: ScaleLinear<string, string>
+  labelColor?: string
+  strokeColor?: string
   cm: ContinuousMappingFunction
 }
 
@@ -30,7 +31,8 @@ export function ColorGradient(props: ColorGradiientProps): React.ReactElement {
     horizontalPadding,
     verticalPadding,
     valuePixelScale,
-    colorScale,
+    labelColor = 'rgba(0, 0, 0, 0.7)',
+    strokeColor = 'rgba(0, 0, 0, 0.7)',
     cm,
   } = props
 
@@ -74,9 +76,18 @@ export function ColorGradient(props: ColorGradiientProps): React.ReactElement {
             labelProps={{
               fontSize: 14,
               textAnchor: 'middle',
+              fill: labelColor,
             }}
             label={domainLabel}
-            stroke={'#1b1a1e'}
+            stroke={strokeColor}
+            tickStroke={strokeColor}
+            tickLabelProps={() => ({
+              fill: labelColor,
+              fontSize: 10,
+              textAnchor: 'middle',
+              verticalAnchor: 'end',
+              dy: 2,
+            })}
           />
         </svg>
       </Box>

@@ -1,14 +1,11 @@
-import { ChevronRight } from '@mui/icons-material'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import { Box, Tooltip } from '@mui/material'
 import { Allotment } from 'allotment'
-import isEqual from 'lodash/isEqual'
-import omit from 'lodash/omit'
 import { lazy, Suspense, useContext, useEffect, useRef, useState } from 'react'
 import { Outlet, useParams } from 'react-router-dom'
 
-import { useCredentialStore } from '../../data/hooks/stores/CredentialStore'
 import { useLayoutStore } from '../../data/hooks/stores/LayoutStore'
-import { useMessageStore } from '../../data/hooks/stores/MessageStore'
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../data/hooks/stores/NetworkSummaryStore'
 import { useTableStore } from '../../data/hooks/stores/TableStore'
@@ -18,23 +15,25 @@ import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { useLoadCyNetwork } from '../../data/hooks/useLoadCyNetwork'
 import { useLoadNetworkSummaries } from '../../data/hooks/useLoadNetworkSummaries'
+import { useRemountKeyOnReveal } from '../../data/hooks/useRemountKeyOnReveal'
 import { IdType } from '../../models/IdType'
 import { LayoutEngine } from '../../models/LayoutModel'
 import { Ui } from '../../models/UiModel'
 import { Panel } from '../../models/UiModel/Panel'
 import { PanelState } from '../../models/UiModel/PanelState'
-import { NetworkView } from '../../models/ViewModel'
-import { Workspace } from '../../models/WorkspaceModel'
-import { HcxMetaTag } from '../HierarchyViewer/model/HcxMetaTag'
-import { validateHcx } from '../HierarchyViewer/model/impl/hcxValidators'
-import { useHcxValidatorStore } from '../HierarchyViewer/store/HcxValidatorStore'
 import { useHierarchyViewerManager } from '../HierarchyViewer/store/useHierarchyViewerManager'
 import { isHCX } from '../HierarchyViewer/utils/hierarchyUtil'
+import { validateAndRecordHcx } from '../HierarchyViewer/utils/validateAndRecordHcx'
 import { LayoutToolsBasePanel } from '../LayoutTools'
 import { SnackbarMessageList } from '../Messages'
+import { setTabNetworkId } from '@/data/tabState/tabNetwork'
+import { createLayoutCompletionHandler } from './layoutCompletion'
 import { NetworkBrowserPanel } from './NetworkBrowserPanel/NetworkBrowserPanel'
 import { OpenRightPanelButton } from './SidePanel/OpenRightPanelButton'
 import { SidePanel } from './SidePanel/SidePanel'
+import { toVerticalPaneSizes } from './splitPaneSizes'
+import { useUrlFollowsNetworkRemoval } from './useUrlFollowsNetworkRemoval'
+import { useUrlNetworkLoad } from './useUrlNetworkLoad'
 // Lazy load heavy TableDataLoader forms
 const CreateNetworkFromTableForm = lazy(() =>
   import(
@@ -47,16 +46,17 @@ const JoinTableToNetworkForm = lazy(() =>
   ).then((module) => ({ default: module.JoinTableToNetworkForm })),
 )
 import { AppConfigContext } from '../../AppConfigContext'
-import { logUi } from '../../debug'
-import { useAppManager } from '../../data/hooks/stores/useAppManager'
+import { markBoot } from '../../boot/metrics/bootMarks'
+import { publishBootReport } from '../../boot/metrics/bootReport'
 import { useOpaqueAspectStore } from '../../data/hooks/stores/OpaqueAspectStore'
 import { useRendererFunctionStore } from '../../data/hooks/stores/RendererFunctionStore'
 import { useUndoStore } from '../../data/hooks/stores/UndoStore'
-import { CyNetwork, VisualStyle } from '../../models'
+import { logUi } from '../../debug'
+import { CyNetwork } from '../../models'
 import { getDefaultLayout } from '../../models/LayoutModel/impl/layoutSelection'
-import { MessageSeverity } from '../../models/MessageModel'
 import { useCreateNetworkFromTableStore } from '../TableDataLoader/store/createNetworkFromTableStore'
 import { useJoinTableToNetworkStore } from '../TableDataLoader/store/joinTableToNetworkStore'
+
 const NetworkPanel = lazy(() => import('../NetworkPanel/NetworkPanel'))
 const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
 
@@ -79,25 +79,35 @@ const TableBrowser = lazy(() => import('../TableBrowser/TableBrowser'))
  * - Right Panel: Side panel with additional tools (collapsible)
  */
 const WorkSpaceEditor = (): JSX.Element => {
-  // Subscribers to the stores
-  useAppManager() // Register dynamically loaded apps to the store
-
   // Subscribers for optional features
   useHierarchyViewerManager()
 
+  // Last boot milestone: the editor is on screen, so no part of the boot shell
+  // remains. The canvas may still be drawing network data beyond this point.
+  useEffect(() => {
+    markBoot('workspace-editor-mounted')
+    publishBootReport()
+  }, [])
+
   // Indicates if a network failed to load
-  const [failedToLoad, setFailedToLoad] = useState<boolean>(false)
+  const [failedToLoad, setFailedToLoad] = useState<string>('')
   const showTableJoinForm = useJoinTableToNetworkStore((state) => state.setShow)
   const showCreateNetworkFromTableForm = useCreateNetworkFromTableStore(
     (state) => state.setShow,
   )
 
-  // Block multiple loading
-  const isLoadingRef = useRef<boolean>(false)
-
-  const getToken: () => Promise<string> = useCredentialStore(
-    (state) => state.getToken,
-  )
+  // The two table-loader forms are lazy, but mounting them unconditionally
+  // made React.lazy fetch their chunks (the whole table-import wizard) on
+  // every cold load. Mount only after the first open — latched via refs so
+  // the dialog close animation still plays and reopening is instant. Ref
+  // writes during render are safe here: the store flag flipping is itself
+  // what triggers the re-render that reads them.
+  const isJoinFormOpen = useJoinTableToNetworkStore((state) => state.show)
+  const isCreateFormOpen = useCreateNetworkFromTableStore((state) => state.show)
+  const hasOpenedJoinFormRef = useRef<boolean>(false)
+  if (isJoinFormOpen) hasOpenedJoinFormRef.current = true
+  const hasOpenedCreateFormRef = useRef<boolean>(false)
+  if (isCreateFormOpen) hasOpenedCreateFormRef.current = true
 
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
@@ -118,13 +128,8 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   const { panels, activeNetworkView } = ui
 
-  const workspace: Workspace = useWorkspaceStore((state) => state.workspace)
   const setCurrentNetworkId: (id: IdType) => void = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
-  )
-
-  const setValidationResult = useHcxValidatorStore(
-    (state) => state.setValidationResult,
   )
 
   const setNetworkModified: (id: IdType, isModified: boolean) => void =
@@ -132,57 +137,28 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   const addStack = useUndoStore((state) => state.addStack)
 
-  /**
-   * Monitors view model changes to detect network modifications
-   * Excludes selection state changes (selectedNodes, selectedEdges) from modification detection
-   * Sets networkModified flag when view model changes and network is not already marked as modified
-   */
-  useViewModelStore.subscribe(
-    (state) => state.getViewModel(currentNetworkId),
-    (nextViewModel: NetworkView, prevViewModel: NetworkView) => {
-      if (prevViewModel === undefined || nextViewModel === undefined) {
-        return
-      }
+  // The networkModified flag is NOT watched for here.
+  //
+  // This component used to carry two store subscriptions that diffed the view
+  // model and the visual style of `currentNetworkId` and flipped the flag.
+  // They were registered in the component body rather than in an effect, so
+  // every render added a listener and discarded its unsubscribe, and each
+  // listener closed over a render-time `workspace`. They also selected on
+  // `currentNetworkId` while every app API write names its own networkId, so
+  // a write to a resident but off-screen network was never marked (#680).
+  //
+  // Both are replaced by `markNetworkModified` (`src/app-api/core/undo.ts`),
+  // called from `useUndoStack.postEdit` and from `corePostEdit` in the app
+  // API — one choke point, keyed on the network the edit actually mutated.
 
-      // Compare view models excluding selection state
-      // Selection changes don't count as network modifications
-      const viewModelChanged = !isEqual(
-        omit(prevViewModel, ['selectedNodes', 'selectedEdges']),
-        omit(nextViewModel, ['selectedNodes', 'selectedEdges']),
-      )
-
-      const { networkModified } = workspace
-      const isCurrentNetworkUnmodified =
-        networkModified[currentNetworkId] === undefined ||
-        networkModified[currentNetworkId] === false
-
-      if (viewModelChanged && isCurrentNetworkUnmodified) {
-        setNetworkModified(currentNetworkId, true)
-      }
-    },
-  )
-
-  /**
-   * Monitors visual style changes to detect network modifications
-   * Sets networkModified flag when visual style changes and network is not already marked as modified
-   */
-  useVisualStyleStore.subscribe((next, prev) => {
-    const nextVisualStyle = next.visualStyles[currentNetworkId] as VisualStyle
-    const prevVisualStyle = prev.visualStyles[currentNetworkId] as VisualStyle
-    if (prevVisualStyle === undefined || nextVisualStyle === undefined) {
-      return
-    }
-
-    const visualStyleChanged = !isEqual(prevVisualStyle, nextVisualStyle)
-    const { networkModified } = workspace
-    const isCurrentNetworkUnmodified =
-      networkModified[currentNetworkId] === undefined ||
-      networkModified[currentNetworkId] === false
-
-    if (visualStyleChanged && isCurrentNetworkUnmodified) {
-      setNetworkModified(currentNetworkId, true)
-    }
-  })
+  // allotment's split-view bookkeeping does not survive a Suspense
+  // hide/reveal of this subtree (an ancestor boundary re-suspending, e.g. on
+  // a lazy app component): the reveal re-runs its layout effects, which
+  // recreate the split view empty while its previous-children refs survive,
+  // and the next conditional pane unmount then throws "Index out of bounds"
+  // in removeView. Remount the whole pane layout on reveal instead — see
+  // useRemountKeyOnReveal and its regression test.
+  const allotmentRemountKey = useRemountKeyOnReveal()
 
   const [tableBrowserHeight, setTableBrowserHeight] = useState(100)
   const [allotmentDimensions, setAllotmentDimensions] = useState<
@@ -196,8 +172,6 @@ const WorkSpaceEditor = (): JSX.Element => {
   const setIsRunning: (isRunning: boolean) => void = useLayoutStore(
     (state) => state.setIsRunning,
   )
-
-  const addMessage = useMessageStore((state) => state.addMessage)
 
   const updateSummary = useNetworkSummaryStore((state) => state.update)
 
@@ -222,22 +196,32 @@ const WorkSpaceEditor = (): JSX.Element => {
    * Loads a network by ID and populates all related stores
    * Handles network data, visual styles, tables, views, validation, and layout
    * @param networkId - The ID of the network to load
+   * @param isRemoved - True once the network has left the workspace during
+   *   the load; its data is then discarded rather than put back in the stores
+   * @returns true when the network loaded; false when it failed or was
+   *   discarded. Failures are reported through `setFailedToLoad` rather than
+   *   thrown, so the caller has no other way to tell them apart.
    */
-  const loadCurrentNetworkById = async (networkId: IdType): Promise<void> => {
+  const loadCurrentNetworkById = async (
+    networkId: IdType,
+    isRemoved: () => boolean,
+  ): Promise<boolean> => {
     try {
-      const currentToken = await getToken()
-
-      const summaryMap = await loadNetworkSummaries([networkId], currentToken)
+      // Cached summaries/content resolve immediately; the loaders only wait
+      // for the auth token when they actually fetch from NDEx (cache miss).
+      const summaryMap = await loadNetworkSummaries([networkId])
       const summary = summaryMap[networkId]
-      const cyNetworkData: CyNetwork = await loadCyNetwork(
-        networkId,
-        currentToken,
-      )
+      const cyNetworkData: CyNetwork = await loadCyNetwork(networkId)
+      // Deleted while it loaded: adding it now would bring it back
+      if (isRemoved()) {
+        return false
+      }
       const {
         network,
         nodeTable,
         edgeTable,
         visualStyle,
+        visualStyleSet,
         networkViews,
         visualStyleOptions,
         otherAspects,
@@ -246,7 +230,7 @@ const WorkSpaceEditor = (): JSX.Element => {
 
       setVisualStyleOptions(networkId, visualStyleOptions)
       addNewNetwork(network)
-      addVisualStyle(networkId, visualStyle)
+      addVisualStyle(networkId, visualStyle, visualStyleSet)
       addTable(networkId, nodeTable, edgeTable)
       addViewModel(networkId, networkViews[0])
       if (otherAspects !== undefined) {
@@ -256,34 +240,16 @@ const WorkSpaceEditor = (): JSX.Element => {
 
       // Validate HCX networks if applicable
       if (isHCX(summary)) {
-        const hcxVersion =
-          summary.properties.find(
-            (p) => p.predicateString === HcxMetaTag.ndexSchema,
-          )?.value ?? ''
-        const validationResult = validateHcx(
-          hcxVersion as string,
-          summary,
-          nodeTable,
-        )
-
-        if (!validationResult.isValid) {
-          const HCX_WARNING_DURATION_MS = 5000
-          addMessage({
-            message: `This network is not a valid HCX network.  Some features may not work properly.`,
-            duration: HCX_WARNING_DURATION_MS,
-            severity: MessageSeverity.WARNING,
-          })
-        }
-        setValidationResult(networkId, validationResult)
+        validateAndRecordHcx(networkId, summary, nodeTable, edgeTable)
       }
 
       // Apply default layout if network doesn't have one
       if (!summary.hasLayout) {
         const totalNetworkElements = network.nodes.length + network.edges.length
         const defaultLayout = getDefaultLayout(
-          summary,
           totalNetworkElements,
           maxNetworkElementsThreshold,
+          isHCX(summary),
         )
 
         if (defaultLayout !== undefined) {
@@ -295,27 +261,33 @@ const WorkSpaceEditor = (): JSX.Element => {
             const summaryWithLayout = { ...summary, hasLayout: true }
 
             setIsRunning(true)
-            const handleLayoutComplete = (
-              positionMap: Map<IdType, [number, number]>,
-            ): void => {
-              updateNodePositions(networkId, positionMap)
-              const fitFunction = getFunction('cyjs', 'fit', networkId)
-
-              // Fit the viewport to center the initial layout
-              if (fitFunction !== undefined) {
-                fitFunction()
-              }
-
-              updateSummary(networkId, summaryWithLayout)
-              setIsRunning(false)
-              setNetworkModified(networkId, false)
-            }
+            const handleLayoutComplete = createLayoutCompletionHandler(
+              networkId,
+              {
+                // Read from the store directly to get the value current at
+                // callback time rather than the stale closure value.
+                isNetworkModified: (id) =>
+                  useWorkspaceStore.getState().workspace.networkModified[id] ===
+                  true,
+                updateNodePositions,
+                fitViewport: (id) => {
+                  const fitFunction = getFunction('cyjs', 'fit', id)
+                  if (fitFunction !== undefined) {
+                    fitFunction()
+                  }
+                },
+                markLayoutApplied: (id) => updateSummary(id, summaryWithLayout),
+                setLayoutRunning: setIsRunning,
+                setNetworkModified,
+              },
+            )
 
             layoutEngine.apply(
               network.nodes,
               network.edges,
               handleLayoutComplete,
               layoutEngine.algorithms[defaultLayout.algorithmName],
+              networkId,
             )
           }
         }
@@ -324,112 +296,120 @@ const WorkSpaceEditor = (): JSX.Element => {
       logUi.error(
         `[${WorkSpaceEditor.name}]:[${loadCurrentNetworkById.name}]: Failed to load network: ${error}`,
       )
-      setFailedToLoad(true)
+      if (isRemoved()) {
+        return false
+      }
+      // Show the message but not raw internals: `String(error)` can surface
+      // stack-ish text, internal URLs, or response bodies. The detail is logged
+      // just above for anyone debugging.
+      setFailedToLoad(
+        error instanceof Error && error.message !== ''
+          ? error.message
+          : 'Unknown error',
+      )
+      return false
     }
+    return true
   }
 
   const params = useParams()
 
-  /**
-   * Swaps the current network when URL parameter changes
-   * This is an expensive operation that loads network data, styles, tables, and views
-   * Uses a loading ref to prevent concurrent loads
-   */
-  useEffect(
-    function swapCurrentNetworkHook() {
-      const networkIdFromParams = params.networkId
-      if (networkIdFromParams === '' || networkIdFromParams === undefined) {
-        // No need to load new network
-        return
-      }
+  // The swap effect below is the only thing that loads a network, and it
+  // follows the URL. Removals that do not navigate (the App API's deletes)
+  // must still move the URL off the removed network.
+  useUrlFollowsNetworkRemoval(params.networkId)
 
-      if (isLoadingRef.current) {
-        return
-      }
-
-      isLoadingRef.current = true
-      setFailedToLoad(false)
-      logUi.info(
-        `[${WorkSpaceEditor.name}]:[${swapCurrentNetworkHook.name}]: Loading network: ${networkIdFromParams}`,
-      )
-
-      loadCurrentNetworkById(networkIdFromParams)
-        .then(() => {
-          // Handle the case where the back/forward button is pressed
-          setCurrentNetworkId(networkIdFromParams)
-          // Synchronize activeNetworkView with currentNetworkId
-          if (networkIdFromParams === '') {
-            setActiveNetworkView('')
-          } else {
-            setActiveNetworkView(networkIdFromParams)
-          }
-          // eslint-disable-next-line react-hooks/exhaustive-deps
-        })
-        .catch((error) => {
-          logUi.error(
-            `[${WorkSpaceEditor.name}]:[${swapCurrentNetworkHook.name}]: Failed to load network: ${error}`,
-          )
-        })
-        .finally(() => {
-          isLoadingRef.current = false
-        })
+  // Loads the network the URL names: an expensive operation that fills the
+  // network data, styles, tables and views. The hook runs one load at a time
+  // and discards a load that went stale while it ran.
+  useUrlNetworkLoad(params.networkId, {
+    load: (networkId, isRemoved) => {
+      setFailedToLoad('')
+      logUi.info(`[${WorkSpaceEditor.name}]: Loading network: ${networkId}`)
+      return loadCurrentNetworkById(networkId, isRemoved)
     },
-    [params.networkId],
-  )
+    onLoaded: (networkId, loaded) => {
+      // Handle the case where the back/forward button is pressed
+      setCurrentNetworkId(networkId)
+      if (!loaded) {
+        // Only on success. This is the network a cross-tab reload restores,
+        // and recording one that just failed to load makes the failure
+        // survive the reload (CW-722).
+        return
+      }
+      // Remember this tab's active network so a cross-tab reload restores it
+      // even if the URL loses its network segment (CW-722).
+      setTabNetworkId(networkId)
+      // Synchronize activeNetworkView with currentNetworkId
+      setActiveNetworkView(networkId)
+    },
+  })
 
   // Return the main component including the network panel, network view, and the table browser
   return (
     <Box
+      data-testid="workspace-editor"
       sx={{
         height: '100%',
         width: '100%',
         overflow: 'hidden',
       }}
     >
-      <Allotment data-testid="workspace-editor">
+      {/* Allotment / Allotment.Pane only forward their declared props, so a
+          data-testid put on them never reaches the DOM. Test ids live on the
+          wrapper Boxes inside each pane instead. */}
+      <Allotment key={allotmentRemountKey}>
         <Allotment
           vertical
           onChange={(sizes: number[]) => {
             // sizes[0] = height of top pane (network list, network renderer, vizmapper)
             // sizes[1] = height of bottom pane (table browser)
-            const [topPaneHeight, bottomPaneHeight] = sizes
+            const paneSizes = toVerticalPaneSizes(sizes)
+            if (paneSizes === undefined) return
+            const [topPaneHeight, bottomPaneHeight] = paneSizes
             setAllotmentDimensions([topPaneHeight, bottomPaneHeight])
             setTableBrowserHeight(bottomPaneHeight)
           }}
         >
           <Allotment>
             <Allotment.Pane
-              maxSize={panels.left === PanelState.OPEN ? 450 : 18}
+              maxSize={panels.left === PanelState.OPEN ? 450 : 30}
             >
               {panels.left === PanelState.CLOSED ? (
-                <Box
-                  data-testid="workspace-editor-left-panel-closed"
-                  sx={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Tooltip title="Open network panel" arrow placement="right">
-                    <ChevronRight
-                      data-testid="workspace-editor-open-left-panel-button"
-                      sx={{ cursor: 'pointer' }}
-                      onClick={() => setPanelState(Panel.LEFT, PanelState.OPEN)}
-                    />
-                  </Tooltip>
-                </Box>
+                <Tooltip title="Open network panel" arrow placement="right">
+                  <Box
+                    data-testid="workspace-editor-left-panel-closed"
+                    onClick={() => setPanelState(Panel.LEFT, PanelState.OPEN)}
+                    sx={{
+                      height: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: (theme) =>
+                        theme.palette.background.paper,
+                      color: (theme) => theme.palette.text.secondary,
+                      borderRight: (theme) =>
+                        `2px solid ${theme.palette.divider}`,
+                      cursor: 'pointer',
+                      '&:hover': {
+                        color: (theme) => theme.palette.text.primary,
+                      },
+                    }}
+                  >
+                    <ChevronRightIcon />
+                  </Box>
+                </Tooltip>
               ) : (
                 <Box
                   data-testid="workspace-editor-left-panel-open"
                   sx={{
                     width: '100%',
                     height: '100%',
-                    boxSizing: 'border-box',
                     display: 'flex',
                     flexDirection: 'column',
                     overflow: 'hidden',
+                    borderRight: (theme) =>
+                      `4px solid ${theme.palette.divider}`,
                   }}
                 >
                   <Box
@@ -443,65 +423,114 @@ const WorkSpaceEditor = (): JSX.Element => {
                       allotmentDimensions={allotmentDimensions}
                     />
                   </Box>
-                  <Box sx={{ borderTop: '1px solid #AAAAAA' }}>
+                  <Box
+                    sx={{
+                      borderTop: (theme) =>
+                        `2px solid ${theme.palette.divider}`,
+                    }}
+                  >
                     <LayoutToolsBasePanel />
                   </Box>
                 </Box>
               )}
             </Allotment.Pane>
-            <Allotment.Pane data-testid="workspace-editor-center-pane">
-              <Outlet />
-              <NetworkPanel
-                networkId={currentNetworkId}
-                failedToLoad={failedToLoad}
-              />
+            <Allotment.Pane>
+              {/* Always mounted whether or not a network is loaded — the
+                  onboarding tour anchors its canvas step here (see
+                  tours/visibleSteps.ts). */}
+              <Box
+                data-testid="workspace-editor-center-pane"
+                sx={{ height: '100%', width: '100%' }}
+              >
+                <Outlet />
+                <NetworkPanel
+                  networkId={currentNetworkId}
+                  failedToLoad={failedToLoad}
+                />
+              </Box>
             </Allotment.Pane>
           </Allotment>
           <Allotment.Pane
-            data-testid="workspace-editor-bottom-pane"
             minSize={28}
-            preferredSize={'20%'} // 20% of the total height is the default size
+            preferredSize={'25%'} // percentage of the total height of the workspace
             maxSize={
               // Max size is determined by the window height
-              panels.bottom === PanelState.OPEN ? window.innerHeight * 0.9 : 18
+              panels.bottom === PanelState.OPEN ? window.innerHeight * 0.9 : 28
             }
           >
-            <Suspense
-              fallback={
-                <div data-testid="workspace-editor-table-browser-loading">
-                  {`Loading from NDEx`}
-                </div>
-              }
-              key={currentNetworkId}
+            <Box
+              data-testid="workspace-editor-bottom-pane"
+              sx={{ height: '100%', width: '100%' }}
             >
-              <TableBrowser
-                setHeight={setTableBrowserHeight}
-                height={tableBrowserHeight}
-                currentNetworkId={
-                  activeNetworkView === undefined || activeNetworkView === ''
-                    ? currentNetworkId
-                    : activeNetworkView
-                }
-              />
-              <JoinTableToNetworkForm
-                handleClose={() => showTableJoinForm(false)}
-              />
-              <CreateNetworkFromTableForm
-                handleClose={() => showCreateNetworkFromTableForm(false)}
-              />
-            </Suspense>
+              {panels.bottom === PanelState.CLOSED ? (
+                <Tooltip title="Open table panel" arrow placement="top">
+                  <Box
+                    data-testid="workspace-editor-bottom-panel-closed"
+                    onClick={() => setPanelState(Panel.BOTTOM, PanelState.OPEN)}
+                    sx={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: (theme) =>
+                        theme.palette.background.paper,
+                      color: (theme) => theme.palette.text.secondary,
+                      borderTop: (theme) =>
+                        `2px solid ${theme.palette.divider}`,
+                      cursor: 'pointer',
+                      '&:hover': {
+                        color: (theme) => theme.palette.text.primary,
+                      },
+                    }}
+                  >
+                    <ExpandLessIcon />
+                  </Box>
+                </Tooltip>
+              ) : (
+                <Box
+                  data-testid="workspace-editor-bottom-panel-open"
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    borderTop: (theme) => `4px solid ${theme.palette.divider}`,
+                  }}
+                >
+                  <Suspense
+                    fallback={
+                      <div data-testid="workspace-editor-table-browser-loading">
+                        {`Loading from NDEx`}
+                      </div>
+                    }
+                    key={currentNetworkId}
+                  >
+                    <TableBrowser
+                      setHeight={setTableBrowserHeight}
+                      height={tableBrowserHeight}
+                      currentNetworkId={
+                        activeNetworkView === undefined ||
+                        activeNetworkView === ''
+                          ? currentNetworkId
+                          : activeNetworkView
+                      }
+                    />
+                  </Suspense>
+                </Box>
+              )}
+            </Box>
           </Allotment.Pane>
         </Allotment>
 
         {panels.right === PanelState.OPEN && (
-          <Allotment.Pane data-testid="workspace-editor-right-pane">
+          <Allotment.Pane>
             <Box
+              data-testid="workspace-editor-right-pane"
               sx={{
                 width: '100%',
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
                 minWidth: 0, // For shrink to hide
+                borderLeft: (theme) => `4px solid ${theme.palette.divider}`,
               }}
             >
               <OpenRightPanelButton
@@ -509,7 +538,15 @@ const WorkSpaceEditor = (): JSX.Element => {
                 title="Close panel"
                 show={panels.right === PanelState.OPEN}
               />
-              <Box sx={{ flexGrow: 1, width: '100%' }}>
+              <Box
+                sx={{
+                  flexGrow: 1,
+                  width: '100%',
+                  minHeight: 0,
+                  overflow: 'hidden',
+                  backgroundColor: (theme) => theme.palette.background.paper,
+                }}
+              >
                 <SidePanel />
               </Box>
             </Box>
@@ -522,6 +559,21 @@ const WorkSpaceEditor = (): JSX.Element => {
         title="Open panel"
         show={panels.right === PanelState.CLOSED}
       />
+      {/* Local Suspense on purpose: without it the first open would suspend
+          up to the App-level boundary and flash the boot shell over the
+          whole editor. */}
+      {hasOpenedJoinFormRef.current && (
+        <Suspense fallback={null}>
+          <JoinTableToNetworkForm onClick={() => showTableJoinForm(false)} />
+        </Suspense>
+      )}
+      {hasOpenedCreateFormRef.current && (
+        <Suspense fallback={null}>
+          <CreateNetworkFromTableForm
+            onClick={() => showCreateNetworkFromTableForm(false)}
+          />
+        </Suspense>
+      )}
     </Box>
   )
 }

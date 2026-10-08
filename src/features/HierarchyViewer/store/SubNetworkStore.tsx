@@ -8,6 +8,10 @@ interface SubNetworkState {
   rootNetworkHost: string // URL of the server hosting the root network data
   selectedNodes: IdType[]
   selectedHierarchyNodeNames: string[]
+  // Id of the subnetwork currently rendered in the interaction viewer, of the
+  // form `<hierarchyId>_<subsystemNodeId>`. Empty when none is shown. Used so
+  // the hierarchy-side share URL can capture the shown subnetwork (CW-654).
+  currentSubNetworkId: IdType
 }
 
 interface SubNetworkAction {
@@ -15,6 +19,7 @@ interface SubNetworkAction {
   setRootNetworkHost: (rootNetworkHost: string) => void
   setSelectedNodes: (selectedNodes: IdType[]) => void
   setSelectedHierarchyNodes: (selectedHierarchyNodeNames: string[]) => void
+  setCurrentSubNetworkId: (currentSubNetworkId: IdType) => void
 }
 
 export type SubNetworkStore = SubNetworkState & SubNetworkAction
@@ -30,6 +35,7 @@ export const useSubNetworkStore = create(
     rootNetworkHost: '',
     selectedNodes: [],
     selectedHierarchyNodeNames: [],
+    currentSubNetworkId: '',
     setRootNetworkId: (rootNetworkId) => {
       set((state) => {
         state.rootNetworkId = rootNetworkId
@@ -48,6 +54,11 @@ export const useSubNetworkStore = create(
     setSelectedHierarchyNodes: (selectedHierarchyNodeNames: string[]) => {
       set((state) => {
         state.selectedHierarchyNodeNames = selectedHierarchyNodeNames
+      })
+    },
+    setCurrentSubNetworkId: (currentSubNetworkId) => {
+      set((state) => {
+        state.currentSubNetworkId = currentSubNetworkId
       })
     },
   })),

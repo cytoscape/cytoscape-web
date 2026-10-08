@@ -2,7 +2,7 @@ import { IdType } from '../../IdType'
 import { GraphObjectType } from '../../NetworkModel'
 import { DiscreteRange } from '../../PropertyModel/DiscreteRange'
 import { NumberRange } from '../../PropertyModel/NumberRange'
-import { ValueType } from '../../TableModel'
+import { DiscreteFilterValue } from '../DiscreteFilterValue'
 import { FilterConfig } from '../FilterConfig'
 import { IndexedColumns, Indices, Search, SearchOptions } from '../Search'
 import { SearchState } from '../SearchState'
@@ -120,9 +120,9 @@ export const getIndex = <T, I>(
   if (indexObject === undefined) {
     return undefined
   }
-  return (type === GraphObjectType.NODE
-    ? indexObject.node
-    : indexObject.edge) as I | undefined
+  return (
+    type === GraphObjectType.NODE ? indexObject.node : indexObject.edge
+  ) as I | undefined
 }
 
 /**
@@ -185,11 +185,64 @@ export const deleteFilterConfig = <T>(
   state: FilterState<T>,
   name: string,
 ): FilterState<T> => {
-  const { [name]: deleted, ...restFilterConfigs } = state.filterConfigs
+  const restFilterConfigs = { ...state.filterConfigs }
+  delete restFilterConfigs[name]
   return {
     ...state,
     filterConfigs: restFilterConfigs,
   }
+}
+
+/**
+ * Whether a filter config belongs to a network. Configs are keyed by the id
+ * of the network they filter: a Hierarchy Viewer subnetwork's id is
+ * `<networkId>_<subsystemNodeId>`, so a network owns its own config and those
+ * of its subnetworks (#774).
+ */
+export const isFilterOwnedBy = (name: string, networkId: IdType): boolean =>
+  name === networkId || name.startsWith(`${networkId}_`)
+
+/**
+ * Delete the filter configs of a network and its subnetworks
+ */
+export const deleteNetworkFilterConfigs = <T>(
+  state: FilterState<T>,
+  networkId: IdType,
+): FilterState<T> => {
+  const names = Object.keys(state.filterConfigs).filter((name) =>
+    isFilterOwnedBy(name, networkId),
+  )
+  if (names.length === 0) {
+    return state
+  }
+
+  const restFilterConfigs = { ...state.filterConfigs }
+  names.forEach((name) => {
+    delete restFilterConfigs[name]
+  })
+  return {
+    ...state,
+    filterConfigs: restFilterConfigs,
+  }
+}
+
+/**
+ * Split stored filter configs into those owned by a network in the workspace
+ * and orphans (their network was deleted, or no network owns them).
+ */
+export const partitionFilterConfigsByOwner = (
+  configs: FilterConfig[],
+  networkIds: IdType[],
+): { owned: FilterConfig[]; orphaned: FilterConfig[] } => {
+  const owned: FilterConfig[] = []
+  const orphaned: FilterConfig[] = []
+  configs.forEach((config) => {
+    const hasOwner = networkIds.some((networkId) =>
+      isFilterOwnedBy(config.name, networkId),
+    )
+    ;(hasOwner ? owned : orphaned).push(config)
+  })
+  return { owned, orphaned }
 }
 
 /**
@@ -215,7 +268,7 @@ export const updateFilterConfig = <T>(
 export const updateRange = <T>(
   state: FilterState<T>,
   name: string,
-  range: NumberRange | DiscreteRange<ValueType>,
+  range: NumberRange | DiscreteRange<DiscreteFilterValue>,
 ): FilterState<T> => {
   const filter = state.filterConfigs[name]
   if (filter === undefined) {
@@ -234,3 +287,66 @@ export const updateRange = <T>(
   }
 }
 
+/**
+ * Switch a filter on or off
+ */
+export const setFilterEnabled = <T>(
+  state: FilterState<T>,
+  name: string,
+  enabled: boolean,
+): FilterState<T> => {
+  const filter = state.filterConfigs[name]
+  if (filter === undefined) {
+    return state
+  }
+
+  return {
+    ...state,
+    filterConfigs: {
+      ...state.filterConfigs,
+      [name]: {
+        ...filter,
+        enabled,
+      },
+    },
+  }
+}
+
+/**
+ * Remove all per-network search state (index + indexed columns) for a
+ * deleted network. Without this, indexes leaked in memory for the rest of
+ * the session (REVIEW.md round-2 P2, cleaned via the delete orchestrator).
+ */
+export const deleteNetworkIndex = <T>(
+  state: FilterState<T>,
+  networkId: IdType,
+): FilterState<T> => {
+  const index = { ...state.search.index }
+  const indexedColumns = { ...state.search.indexedColumns }
+  delete index[networkId]
+  delete indexedColumns[networkId]
+  return {
+    ...state,
+    search: {
+      ...state.search,
+      index,
+      indexedColumns,
+    },
+  }
+}
+
+/**
+ * Remove all per-network search state for every network.
+ */
+export const deleteAllNetworkIndexes = <T>(
+  state: FilterState<T>,
+): FilterState<T> => {
+  return {
+    ...state,
+    search: {
+      ...state.search,
+      index: {},
+      indexedColumns: {},
+    },
+  }
+}

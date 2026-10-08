@@ -1,5 +1,5 @@
-import { Box, MenuItem, Tooltip } from '@mui/material'
-import { ReactElement } from 'react'
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
+import { ReactElement, ReactNode } from 'react'
 
 import { fetchGeneNamesFromIds } from '../../../data/external-api/ndex'
 import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
@@ -18,11 +18,14 @@ import {
   SubsystemTag,
 } from '../../HierarchyViewer/model/HcxMetaTag'
 import { isHCX } from '../../HierarchyViewer/utils/hierarchyUtil'
-import { BaseMenuProps } from '../../ToolBar/BaseMenuProps'
+import { BaseMenuItemProps } from '../../ToolBar/BaseMenuItemProps'
+import { DropdownMenuItem } from '../../ToolBar/DropdownMenu'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
+import { isLLMConfigured, selectApiKey } from '../model/LLMProvider'
 import { useLLMQueryStore } from '../store'
+import { HcxDisabledTooltip } from './HcxDisabledTooltip'
 
-export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
+export const RunLLMQueryMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const activeNetworkId: IdType = useUiStateStore(
     (state) => state.ui.activeNetworkView,
   )
@@ -39,6 +42,9 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
   const setLLMResult = useLLMQueryStore((state) => state.setLLMResult)
   const setGeneQuery = useLLMQueryStore((state) => state.setGeneQuery)
   const LLMApiKey = useLLMQueryStore((state) => state.LLMApiKey)
+  const LLMCustomApiKey = useLLMQueryStore((state) => state.LLMCustomApiKey)
+  const LLMProvider = useLLMQueryStore((state) => state.LLMProvider)
+  const LLMBaseUrl = useLLMQueryStore((state) => state.LLMBaseUrl)
   const LLMModel = useLLMQueryStore((state) => state.LLMModel)
   const LLMTemplate = useLLMQueryStore((state) => state.LLMTemplate)
 
@@ -110,7 +116,13 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
     return []
   }
 
-  const disabled = !isHCX(summary) || loading || LLMApiKey === ''
+  // Keys are provider-scoped: the OpenAI key must never reach another endpoint
+  const providerApiKey = selectApiKey(LLMProvider, {
+    openAiKey: LLMApiKey,
+    customKey: LLMCustomApiKey,
+  })
+  const llmConfigured = isLLMConfigured(LLMProvider, providerApiKey, LLMBaseUrl)
+  const disabled = !isHCX(summary) || loading || !llmConfigured
   const runLLMQuery = async (): Promise<void> => {
     setLoading(true)
     setPanelState('left', 'open')
@@ -124,7 +136,7 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
         message: `Failed to get gene symbols for the selected subsystem nodes from NDEx server.  The visibility of the network in the ${
           HcxMetaTag.interactionNetworkUUID
         } attribute is most likely private. Error message: ${
-          e.message as string
+          e instanceof Error ? e.message : String(e)
         }`,
         duration: 8000,
         severity: MessageSeverity.ERROR,
@@ -152,21 +164,20 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
       duration: 6000,
       severity: MessageSeverity.INFO,
     })
-    props.handleClose()
+    props.onClick()
 
     try {
       const message = LLMTemplate.fn(geneNames.join(', '))
-      const LLMResponse = await analyzeSubsystemGeneSet(
-        message,
-        LLMApiKey,
-        LLMModel,
-        false,
-      )
+      const LLMResponse = await analyzeSubsystemGeneSet(message, {
+        apiKey: providerApiKey,
+        baseUrl: LLMBaseUrl,
+        model: LLMModel,
+      })
 
       setLLMResult(LLMResponse)
     } catch (e) {
       addMessage({
-        message: `Error querying LLM model: ${e.message as string}`,
+        message: `Error querying LLM model: ${e instanceof Error ? e.message : String(e)}`,
         duration: 10000,
         severity: MessageSeverity.ERROR,
       })
@@ -176,27 +187,24 @@ export const RunLLMQueryMenuItem = (props: BaseMenuProps): ReactElement => {
     setLoading(false)
   }
 
-  const menuItem = (
-    <MenuItem
-      data-testid="run-llm-query-menu-item"
-      disabled={disabled}
-      onClick={runLLMQuery}
-    >
-      Run LLM Query
-    </MenuItem>
-  )
-  if (!disabled) {
-    return menuItem
-  } else {
-    const tooltipTitle = loading
-      ? 'Generating response...'
-      : LLMApiKey === ''
-        ? 'Enter your Open AI API key in the Analysis -> LLM Query Options menu item to run LLM queries'
-        : 'LLM query is only available for HCX networks'
-    return (
-      <Tooltip arrow title={tooltipTitle} placement="right">
-        <Box>{menuItem}</Box>
-      </Tooltip>
+  let tooltipTitle: ReactNode = ''
+  if (disabled) {
+    tooltipTitle = loading ? (
+      'Generating response...'
+    ) : !llmConfigured ? (
+      'Configure an LLM provider (OpenAI API key, or a local Ollama endpoint) in the Analysis -> LLM Query Options menu item to run LLM queries'
+    ) : (
+      <HcxDisabledTooltip />
     )
   }
+
+  return (
+    <DropdownMenuItem
+      label="Run LLM Query"
+      tooltip={tooltipTitle}
+      icon={<AutoAwesomeIcon />}
+      disabled={disabled}
+      onClick={runLLMQuery}
+    />
+  )
 }

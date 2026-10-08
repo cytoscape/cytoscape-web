@@ -1,6 +1,8 @@
 import { useCallback, useContext } from 'react'
 
+import { markNetworkModified } from '../../app-api/core/undo'
 import { AppConfigContext } from '../../AppConfigContext'
+import { logHistory } from '../../debug'
 import {
   Edge,
   EdgeView,
@@ -9,23 +11,22 @@ import {
   TableType,
   ValueType,
 } from '../../models'
+import {
+  createEdgesCore,
+  type CreateEdgesParams,
+  createNodesCore,
+  type CreateNodesParams,
+  deleteEdgesCore,
+  deleteNodesCore,
+  type EdgeOperationStoreActions,
+  type NodeOperationStoreActions,
+} from '../../models/CyNetworkModel'
 import { DEFAULT_RENDERER_ID } from '../../models/RendererModel/impl/defaultRenderer'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { VisualPropertyName } from '../../models/VisualStyleModel/VisualPropertyName'
-import {
-  deleteNodesCore,
-  createNodesCore,
-  deleteEdgesCore,
-  createEdgesCore,
-  type NodeOperationStoreActions,
-  type EdgeOperationStoreActions,
-  type CreateNodesParams,
-  type CreateEdgesParams,
-} from '../../models/CyNetworkModel'
 import { useNetworkStore } from './stores/NetworkStore'
 import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import { useRendererFunctionStore } from './stores/RendererFunctionStore'
-import { useRendererStore } from './stores/RendererStore'
 import { useTableStore } from './stores/TableStore'
 import { useUiStateStore } from './stores/UiStateStore'
 import { useUndoStore } from './stores/UndoStore'
@@ -75,16 +76,14 @@ export const useUndoStack = () => {
 
   const setMapping = useVisualStyleStore((state) => state.setMapping)
   const createMapping = useVisualStyleStore((state) => state.createMapping)
+  const switchStyle = useVisualStyleStore((state) => state.switchStyle)
   const setTable = useTableStore((state) => state.setTable)
   const setColumnName = useTableStore((state) => state.setColumnName)
-  const addNodes = useNetworkStore((state) => state.addNodes)
   const addEdges = useNetworkStore((state) => state.addEdges)
   const editRows = useTableStore((state) => state.editRows)
-  const setNetwork = useNetworkStore((state) => state.setNetwork)
   const deleteColumn = useTableStore((state) => state.deleteColumn)
   const addNodesAndEdges = useNetworkStore((state) => state.addNodesAndEdges)
   const setValues = useTableStore((state) => state.setValues)
-  const setViewport = useRendererStore((state) => state.setViewport)
   const { undoStackSize } = useContext(AppConfigContext)
 
   // ID of the network on focus (can be different from the main network)
@@ -95,9 +94,6 @@ export const useUndoStack = () => {
     (state) => state.workspace.currentNetworkId,
   )
 
-  const activeNetworkViewTabIndex =
-    useUiStateStore((state) => state.ui?.networkViewUi?.activeTabIndex) ?? 0
-
   const targetNetworkId: IdType =
     activeNetworkViewId === '' ? currentNetworkId : activeNetworkViewId
 
@@ -106,7 +102,33 @@ export const useUndoStack = () => {
   ) ?? { undoStack: [], redoStack: [] }
 
   const undoStack = undoRedoStack.undoStack
-  const redoStack = undoRedoStack.redoStack
+
+  /**
+   * Replay a style switch, failing loudly when the target style is gone.
+   *
+   * switchStyle() only logs a warning and no-ops on an unknown style. Returning
+   * quietly would let the framework move the edit onto the redo stack as though
+   * it had worked, and every older edit in the stack would then be replayed
+   * against whichever style happened to be active. Throwing routes into the
+   * command runner's catch, which logs and discards the edit (REVIEW.md B5).
+   */
+  const switchStyleOrThrow = useCallback(
+    (networkId: IdType, styleId: IdType) => {
+      if (switchStyle(networkId, styleId)) {
+        return
+      }
+      // switchStyle also returns false for a no-op — the target style is
+      // already active. That is the state the edit asked for, so treating it as
+      // a failure discarded a perfectly replayable edit (and, with it, every
+      // older edit behind it in the stack).
+      const styleSet = useVisualStyleStore.getState().styleSets[networkId]
+      if (styleSet?.activeStyleId === styleId) {
+        return
+      }
+      throw new Error(`Cannot switch network ${networkId} to style ${styleId}`)
+    },
+    [switchStyle],
+  )
 
   const postEdit = useCallback(
     (
@@ -114,6 +136,17 @@ export const useUndoStack = () => {
       description: string,
       undoParams: any[],
       redoParams: any[],
+      /**
+       * Network whose stack this edit belongs on. Defaults to the focused
+       * network, which is right for edits driven by the current view.
+       *
+       * Pass it when the caller already knows which network it mutated. The
+       * default is derived from live store state, while a component's own
+       * notion of its target network is often useEffect-derived state — for one
+       * render after the focus changes the two disagree, and the edit would be
+       * filed against a network it did not touch.
+       */
+      networkId?: IdType,
     ) => {
       // Get the LATEST targetNetworkId at the moment of execution
       // This is necessary to avoid "stale closure" issues
@@ -122,10 +155,14 @@ export const useUndoStack = () => {
       const latestActiveNetworkViewId = latestUiState.ui.activeNetworkView
       const latestCurrentNetworkId =
         latestWorkspaceState.workspace.currentNetworkId
+      // Undo stacks are per-network. Callers that know which network they
+      // mutated pass it explicitly; otherwise fall back to the focused
+      // network (correct for UI call sites, which only edit that network).
       const currentTargetNetworkId =
-        latestActiveNetworkViewId === ''
+        networkId ??
+        (latestActiveNetworkViewId === ''
           ? latestCurrentNetworkId
-          : latestActiveNetworkViewId
+          : latestActiveNetworkViewId)
 
       // Get the latest undo stack for the current network
       const currentState = useUndoStore.getState()
@@ -136,12 +173,22 @@ export const useUndoStack = () => {
 
       const newEdit = { undoCommand, description, undoParams, redoParams }
 
-      const nextUndoStack = [...currentUndoStack, newEdit].slice(-undoStackSize)
+      // slice(-0) === slice(0), so a size of 0 must be handled explicitly:
+      // it disables undo rather than unbounding the stack (REVIEW.md B10)
+      const nextUndoStack =
+        undoStackSize > 0
+          ? [...currentUndoStack, newEdit].slice(-undoStackSize)
+          : []
+
+      // Same choke point the app API uses (corePostEdit calls it too), so
+      // every recorded edit marks the network it mutated. Before the stack
+      // write, so undoStackSize: 0 still marks.
+      markNetworkModified(currentTargetNetworkId)
 
       setUndoStack(currentTargetNetworkId, nextUndoStack)
       setRedoStack(currentTargetNetworkId, [])
     },
-    [targetNetworkId, setUndoStack, setRedoStack, undoStackSize],
+    [setUndoStack, setRedoStack, undoStackSize],
   )
 
   const undoLastEdit = useCallback(() => {
@@ -333,12 +380,63 @@ export const useUndoStack = () => {
         // Use the pure function to delete edges
         deleteEdgesCore(networkId, edgeIds, network, storeActions)
       },
+      [UndoCommandType.CREATE_NODES_BATCH]: (params: any[]) => {
+        // Undo batch node creation by deleting the created nodes
+        const networkId: IdType = params[0]
+        const nodeIds: IdType[] = params[1]
+        const network = useNetworkStore.getState().networks.get(networkId)
+        if (!network) {
+          throw new Error(`Network ${networkId} not found`)
+        }
+        const storeActions: NodeOperationStoreActions = {
+          deleteNodesFromNetwork,
+          addNode,
+          deleteRows,
+          editRows,
+          deleteViewObjects,
+          addNodeView,
+          updateNetworkSummary,
+          networks,
+          tables,
+          viewModels,
+          visualStyles,
+        }
+        deleteNodesCore(networkId, nodeIds, network, storeActions)
+      },
+      [UndoCommandType.CREATE_EDGES_BATCH]: (params: any[]) => {
+        // Undo batch edge creation by deleting the created edges
+        const networkId: IdType = params[0]
+        const edgeIds: IdType[] = params[1]
+        const network = useNetworkStore.getState().networks.get(networkId)
+        if (!network) {
+          throw new Error(`Network ${networkId} not found`)
+        }
+        const storeActions: EdgeOperationStoreActions = {
+          deleteEdgesFromNetwork,
+          addEdge,
+          deleteRows,
+          editRows,
+          deleteViewObjects,
+          addEdgeView,
+          updateNetworkSummary,
+          networks,
+          tables,
+          viewModels,
+          visualStyles,
+        }
+        deleteEdgesCore(networkId, edgeIds, network, storeActions)
+      },
 
       [UndoCommandType.MOVE_NODES]: (params: any[]) => {
         const networkId: IdType = params[0]
         const nodeId: IdType = params[1]
         const nodePositions: [number, number] = params[2]
         setNodePosition(networkId, nodeId, nodePositions)
+      },
+      [UndoCommandType.MOVE_EDGES]: (params: any[]) => {
+        useNetworkStore
+          .getState()
+          .moveEdge(params[0], params[1], params[2], params[3])
       },
 
       [UndoCommandType.SET_BYPASS]: (params: any[]) => {
@@ -377,40 +475,84 @@ export const useUndoStack = () => {
       [UndoCommandType.DELETE_DISCRETE_VALUE_MAP]: (params: any[]) => {
         setMapping(params[0], params[1], params[2])
       },
+      [UndoCommandType.SET_CONTINUOUS_MAPPING]: (params: any[]) => {
+        setMapping(params[0], params[1], params[2])
+      },
+      [UndoCommandType.SWITCH_STYLE]: (params: any[]) => {
+        switchStyleOrThrow(params[0], params[1])
+      },
     }
 
-    const lastEdit = undoStack[undoStack.length - 1]
-    const nextUndoStack = undoStack.slice(0, undoStack.length - 1)
+    // Read the LATEST state at execution time — the render-captured
+    // undoStack/targetNetworkId are stale when undo is invoked twice
+    // before a re-render (REVIEW.md B4; postEdit was already fixed
+    // this way)
+    const latestActiveNetworkViewId =
+      useUiStateStore.getState().ui.activeNetworkView
+    const latestTargetNetworkId =
+      latestActiveNetworkViewId === ''
+        ? useWorkspaceStore.getState().workspace.currentNetworkId
+        : latestActiveNetworkViewId
+    const latestStacks = useUndoStore.getState().undoRedoStacks[
+      latestTargetNetworkId
+    ] ?? { undoStack: [], redoStack: [] }
+    const latestUndoStack = latestStacks.undoStack
+    const latestRedoStack = latestStacks.redoStack
+
+    const lastEdit = latestUndoStack[latestUndoStack.length - 1]
+    const nextUndoStack = latestUndoStack.slice(0, latestUndoStack.length - 1)
     if (lastEdit) {
       const undoCommand = commandMap[lastEdit.undoCommand]
-      undoCommand(lastEdit.undoParams)
-      setRedoStack(targetNetworkId, [...redoStack, lastEdit])
-      setUndoStack(targetNetworkId, nextUndoStack)
+      if (undoCommand === undefined) {
+        // A stack persisted by a different app version can contain a
+        // command this build does not know. Discard the edit so the
+        // stack is not wedged (REVIEW.md B5)
+        logHistory.warn(
+          `[useUndoStack] Discarding edit with unknown undo command: ${String(lastEdit.undoCommand)}`,
+        )
+        setUndoStack(latestTargetNetworkId, nextUndoStack)
+        return
+      }
+      try {
+        undoCommand(lastEdit.undoParams)
+      } catch (e) {
+        // A failing command (e.g. its network no longer exists) must not
+        // escape into the click handler or wedge the stack; pop the edit
+        // and do NOT move it to redo (its state is unknown) (REVIEW.md B5)
+        logHistory.warn(
+          '[useUndoStack] Undo command failed; discarding edit:',
+          e,
+        )
+        setUndoStack(latestTargetNetworkId, nextUndoStack)
+        return
+      }
+      // Replaying an edit leaves the network differing from what NDEx holds,
+      // so undo is itself a modification. It used to be marked as a side
+      // effect of the view-model/visual-style subscriptions in
+      // WorkspaceEditor; those are gone, and undoing after a save would
+      // otherwise leave the network looking saved.
+      markNetworkModified(latestTargetNetworkId)
+
+      setRedoStack(latestTargetNetworkId, [...latestRedoStack, lastEdit])
+      setUndoStack(latestTargetNetworkId, nextUndoStack)
     }
   }, [
-    targetNetworkId,
     updateNetworkSummary,
     setValues,
     setCellValue,
     setDefault,
-    undoStack,
-    redoStack,
     setUndoStack,
     setRedoStack,
     setNodePosition,
     updateNodePositions,
     setMapping,
     setDiscreteMappingValue,
-    deleteDiscreteMappingValue,
     setBypass,
     setBypassMap,
     setTable,
     setColumnName,
     addEdges,
-    addNodes,
     editRows,
-    setNetwork,
-    setViewport,
     deleteNodesFromNetwork,
     deleteEdgesFromNetwork,
     deleteRows,
@@ -423,9 +565,10 @@ export const useUndoStack = () => {
     tables,
     viewModels,
     visualStyles,
-    deleteBypass,
     addNodeViews,
     addEdgeViews,
+    addNodesAndEdges,
+    switchStyleOrThrow,
   ])
 
   const redoLastEdit = useCallback(() => {
@@ -579,11 +722,85 @@ export const useUndoStack = () => {
         // Use the pure function to create edges
         createEdgesCore(paramsObj, storeActions)
       },
+      [UndoCommandType.CREATE_NODES_BATCH]: (params: any[]) => {
+        // Redo batch node creation — recreate each node with its own
+        // position and attributes (fidelity CREATE_NODES cannot provide)
+        const networkId: IdType = params[0]
+        const specs: Array<{
+          nodeId: IdType
+          position: [number, number, number?]
+          attributes: Record<string, ValueType>
+        }> = params[1]
+        const storeActions: NodeOperationStoreActions = {
+          deleteNodesFromNetwork,
+          addNode,
+          deleteRows,
+          editRows,
+          deleteViewObjects,
+          addNodeView,
+          updateNetworkSummary,
+          networks,
+          tables,
+          viewModels,
+          visualStyles,
+        }
+        for (const spec of specs) {
+          createNodesCore(
+            {
+              networkId,
+              nodeIds: [spec.nodeId],
+              position: spec.position,
+              attributes: spec.attributes,
+            },
+            storeActions,
+          )
+        }
+      },
+      [UndoCommandType.CREATE_EDGES_BATCH]: (params: any[]) => {
+        // Redo batch edge creation — recreate each edge individually
+        const networkId: IdType = params[0]
+        const specs: Array<{
+          edgeId: IdType
+          sourceId: IdType
+          targetId: IdType
+          attributes: Record<string, ValueType>
+        }> = params[1]
+        const storeActions: EdgeOperationStoreActions = {
+          deleteEdgesFromNetwork,
+          addEdge,
+          deleteRows,
+          editRows,
+          deleteViewObjects,
+          addEdgeView,
+          updateNetworkSummary,
+          networks,
+          tables,
+          viewModels,
+          visualStyles,
+        }
+        for (const spec of specs) {
+          createEdgesCore(
+            {
+              networkId,
+              edgeIds: [spec.edgeId],
+              sourceId: spec.sourceId,
+              targetId: spec.targetId,
+              attributes: spec.attributes,
+            },
+            storeActions,
+          )
+        }
+      },
       [UndoCommandType.MOVE_NODES]: (params: any[]) => {
         const networkId: IdType = params[0]
         const nodeId: IdType = params[1]
         const nodePositions: [number, number] = params[2]
         setNodePosition(networkId, nodeId, nodePositions)
+      },
+      [UndoCommandType.MOVE_EDGES]: (params: any[]) => {
+        useNetworkStore
+          .getState()
+          .moveEdge(params[0], params[1], params[2], params[3])
       },
       [UndoCommandType.SET_BYPASS]: (params: any[]) => {
         setBypass(params[0], params[1], params[2], params[3])
@@ -645,22 +862,55 @@ export const useUndoStack = () => {
       [UndoCommandType.DELETE_DISCRETE_VALUE]: (params: any[]) => {
         deleteDiscreteMappingValue(params[0], params[1], params[2])
       },
+      [UndoCommandType.SET_CONTINUOUS_MAPPING]: (params: any[]) => {
+        setMapping(params[0], params[1], params[2])
+      },
+      [UndoCommandType.SWITCH_STYLE]: (params: any[]) => {
+        switchStyleOrThrow(params[0], params[1])
+      },
     }
-    const lastEdit = redoStack[redoStack.length - 1]
-    const nextRedoStack = redoStack.slice(0, redoStack.length - 1)
+    // Same latest-state discipline as undoLastEdit (REVIEW.md B4/B5)
+    const latestActiveNetworkViewId =
+      useUiStateStore.getState().ui.activeNetworkView
+    const latestTargetNetworkId =
+      latestActiveNetworkViewId === ''
+        ? useWorkspaceStore.getState().workspace.currentNetworkId
+        : latestActiveNetworkViewId
+    const latestStacks = useUndoStore.getState().undoRedoStacks[
+      latestTargetNetworkId
+    ] ?? { undoStack: [], redoStack: [] }
+    const latestUndoStack = latestStacks.undoStack
+    const latestRedoStack = latestStacks.redoStack
+
+    const lastEdit = latestRedoStack[latestRedoStack.length - 1]
+    const nextRedoStack = latestRedoStack.slice(0, latestRedoStack.length - 1)
     if (lastEdit) {
       const undoCommand = commandMap[lastEdit.undoCommand]
 
-      if (undoCommand) {
-        undoCommand(lastEdit.redoParams)
-        setRedoStack(targetNetworkId, nextRedoStack)
-        setUndoStack(targetNetworkId, [...undoStack, lastEdit])
+      if (undoCommand === undefined) {
+        logHistory.warn(
+          `[useUndoStack] Discarding edit with unknown redo command: ${String(lastEdit.undoCommand)}`,
+        )
+        setRedoStack(latestTargetNetworkId, nextRedoStack)
+        return
       }
+      try {
+        undoCommand(lastEdit.redoParams)
+      } catch (e) {
+        logHistory.warn(
+          '[useUndoStack] Redo command failed; discarding edit:',
+          e,
+        )
+        setRedoStack(latestTargetNetworkId, nextRedoStack)
+        return
+      }
+      // Redo is a modification for the same reason undo is.
+      markNetworkModified(latestTargetNetworkId)
+
+      setRedoStack(latestTargetNetworkId, nextRedoStack)
+      setUndoStack(latestTargetNetworkId, [...latestUndoStack, lastEdit])
     }
   }, [
-    redoStack,
-    undoStack,
-    targetNetworkId,
     updateNetworkSummary,
     setValues,
     setCellValue,
@@ -676,14 +926,9 @@ export const useUndoStack = () => {
     deleteBypass,
     setBypassMap,
     setBypass,
-    setTable,
     setColumnName,
-    addEdges,
-    addNodes,
     editRows,
-    setNetwork,
     deleteColumn,
-    setViewport,
     deleteNodesFromNetwork,
     deleteEdgesFromNetwork,
     deleteRows,
@@ -696,9 +941,21 @@ export const useUndoStack = () => {
     tables,
     viewModels,
     visualStyles,
+    switchStyleOrThrow,
   ])
 
-  const clearStack = useCallback(() => {}, [])
+  // Clears both stacks for the target network (this was a no-op before —
+  // REVIEW.md B6). deleteStack also removes the persisted row via the
+  // store's removeSlice wiring.
+  const clearStack = useCallback(() => {
+    const latestActiveNetworkViewId =
+      useUiStateStore.getState().ui.activeNetworkView
+    const latestTargetNetworkId =
+      latestActiveNetworkViewId === ''
+        ? useWorkspaceStore.getState().workspace.currentNetworkId
+        : latestActiveNetworkViewId
+    useUndoStore.getState().deleteStack(latestTargetNetworkId)
+  }, [])
 
   return { undoStack, postEdit, undoLastEdit, redoLastEdit, clearStack }
 }

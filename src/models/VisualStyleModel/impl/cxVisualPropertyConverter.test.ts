@@ -1,12 +1,13 @@
+// @vitest-environment node
+import { describe, expect, it } from 'vitest'
+
 import { ValueTypeName } from '../../TableModel'
 import { ContinuousMappingFunction } from '../VisualMappingFunction/ContinuousMappingFunction'
 import { DiscreteMappingFunction } from '../VisualMappingFunction/DiscreteMappingFunction'
 import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
 import { PassthroughMappingFunction } from '../VisualMappingFunction/PassthroughMappingFunction'
-import { VisualPropertyName } from '../VisualPropertyName'
 import { EdgeArrowShapeType } from '../VisualPropertyValue'
 import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
-import { VisualStyle } from '../VisualStyle'
 import {
   convertContinuousMappingToCX,
   convertDiscreteMappingToCX,
@@ -20,7 +21,6 @@ import {
   VPEdgeArrowShapeTypeConverter,
   VPFontTypeConverter,
   VPNodeLabelPositionConverter,
-  VPNodeShapeTypeConverter,
   VPNumberConverter,
   VPStringConverter,
   vpToCX,
@@ -56,6 +56,41 @@ describe('cxVisualPropertyConverter', () => {
       const result = vpToCX('nodeWidth', 100)
 
       expect(result).toBe(100)
+    })
+
+    it('should export custom-graphic sizes as floating-point strings for Desktop', () => {
+      // Desktop's CX2 importer casts NODE_CUSTOMGRAPHICS_SIZE to Double; a JSON integer
+      // (50) throws ClassCastException, so we emit "50.0".
+      expect(vpToCX('nodeImageChartSize1', 50)).toBe('50.0')
+    })
+
+    it('should label raster image custom graphics as the bitmap class', () => {
+      const cg = {
+        type: 'image',
+        name: 'org.cytoscape.ding.customgraphics.bitmap.URLImageCustomGraphics',
+        properties: { url: 'https://example.com/pic.png' },
+      }
+      const result = vpToCX('nodeImageChart1', cg as any) as any
+      expect(result.name).toBe(
+        'org.cytoscape.ding.customgraphics.bitmap.URLImageCustomGraphics',
+      )
+      expect(result.properties.tag).toBe('bitmap image')
+      expect(typeof result.properties.id).toBe('number')
+    })
+
+    it('should label SVG image custom graphics as the SVG class', () => {
+      // Even when the stored name is the bitmap class, SVG URL content must be
+      // re-labeled to the SVG factory or Desktop draws a "?" placeholder.
+      const cg = {
+        type: 'image',
+        name: 'org.cytoscape.ding.customgraphics.bitmap.URLImageCustomGraphics',
+        properties: { url: 'data:image/svg+xml,%3Csvg%3E%3C/svg%3E' },
+      }
+      const result = vpToCX('nodeImageChart1', cg as any) as any
+      expect(result.name).toBe(
+        'org.cytoscape.ding.customgraphics.image.SVGCustomGraphics',
+      )
+      expect(result.properties.tag).toBe('vector image')
     })
   })
 
@@ -158,9 +193,7 @@ describe('cxVisualPropertyConverter', () => {
           vpValue: 100,
           inclusive: true,
         },
-        controlPoints: [
-          { value: 50, vpValue: 50 },
-        ],
+        controlPoints: [{ value: 50, vpValue: 50 }],
         ltMinVpValue: 10,
         gtMaxVpValue: 100,
       }
@@ -191,9 +224,7 @@ describe('cxVisualPropertyConverter', () => {
           vpValue: 100,
           inclusive: true,
         },
-        controlPoints: [
-          { value: 50, vpValue: 50 },
-        ],
+        controlPoints: [{ value: 50, vpValue: 50 }],
         ltMinVpValue: 10,
         gtMaxVpValue: 100,
       }
@@ -340,14 +371,18 @@ describe('cxVisualPropertyConverter', () => {
 
   describe('VPCustomGraphicsSizeConverter', () => {
     it('should create a custom graphics size converter', () => {
-      const converter = VPCustomGraphicsSizeConverter('NODE_CUSTOMGRAPHICS_SIZE_1')
+      const converter = VPCustomGraphicsSizeConverter(
+        'NODE_CUSTOMGRAPHICS_SIZE_1',
+      )
 
       expect(converter.cxVPName).toBe('NODE_CUSTOMGRAPHICS_SIZE_1')
       expect(converter.valueConverter(100)).toBe(100)
     })
 
     it('should return default size when value is undefined', () => {
-      const converter = VPCustomGraphicsSizeConverter('NODE_CUSTOMGRAPHICS_SIZE_1')
+      const converter = VPCustomGraphicsSizeConverter(
+        'NODE_CUSTOMGRAPHICS_SIZE_1',
+      )
 
       // valueConverter accepts optional parameter, but we need to cast it
       expect(converter.valueConverter(undefined as any)).toBe(50)
@@ -391,4 +426,3 @@ describe('cxVisualPropertyConverter', () => {
     })
   })
 })
-
