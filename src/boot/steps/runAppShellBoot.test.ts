@@ -221,6 +221,34 @@ describe('runAppShellBoot: deep links and imports', () => {
     expect(useNetworkSummaryStore.getState().summaries['net-2']).toBeDefined()
   })
 
+  it('resolves a deep link with the share-link access key', async () => {
+    fetchNdexSummaries.mockResolvedValue([
+      { externalId: 'net-2', name: 'Net 2' },
+    ])
+    const ctx = makeContext({
+      networkIdParam: 'net-2',
+      pathname: '/ws-1/networks/net-2',
+      search: new URLSearchParams('accesskey=key-123'),
+    })
+
+    await runAppShellBoot(ctx)
+
+    expect(fetchNdexSummaries).toHaveBeenCalledWith(
+      'net-2',
+      expect.anything(),
+      undefined,
+      'key-123',
+    )
+    expect(useWorkspaceStore.getState().workspace.currentNetworkId).toBe(
+      'net-2',
+    )
+    // The key leaves the address bar with every other consumed param.
+    expect(ctx.navigate).toHaveBeenCalledWith(
+      { pathname: '/ws-1/networks/net-2', search: '' },
+      { replace: true },
+    )
+  })
+
   it('keeps importing after one URL fails', async () => {
     fetchUrlCx.mockRejectedValueOnce(new Error('404')).mockResolvedValueOnce({
       summary: { externalId: 'imported-1' },

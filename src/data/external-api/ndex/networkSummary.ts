@@ -138,19 +138,21 @@ export const normalizeNdexSummaries = (
  * @param id - Network ID(s) to fetch summaries for
  * @param accessToken - Optional authentication token
  * @param ndexUrl - Optional NDEx base URL (defaults to module configuration if not provided)
+ * @param accessKey - Optional share-link access key for a private network
  * @returns Promise resolving to array of processed network summaries in internal format
  */
 export const fetchNdexSummaries = async (
   id: IdType | IdType[],
   accessToken?: string,
   ndexUrl?: string,
+  accessKey?: string,
 ): Promise<NetworkSummary[]> => {
   const ndexClient = getNdexClient(accessToken, ndexUrl)
   const ids = Array.isArray(id) ? id : [id]
 
   const summaries: NdexNetworkSummary[] = await (
     ndexClient.networks as any
-  ).v2.getNetworkSummariesByUUIDs(ids)
+  ).v2.getNetworkSummariesByUUIDs(ids, accessKey)
 
   // The NDEx v2 API may return additional related summaries (e.g. subnetworks,
   // collection members) beyond the requested UUIDs. Filter to only the IDs

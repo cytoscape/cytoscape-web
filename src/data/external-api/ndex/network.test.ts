@@ -46,6 +46,7 @@ describe('fetchNdexNetwork', () => {
     expect(mockGetNdexClient).toHaveBeenCalledWith(mockAccessToken, undefined)
     expect(mockClient.networks.getRawCX2Network).toHaveBeenCalledWith(
       mockNetworkUuid,
+      { accesskey: undefined },
     )
     expect(result).toEqual(mockCx2Network)
   })
@@ -67,6 +68,7 @@ describe('fetchNdexNetwork', () => {
     expect(mockGetNdexClient).toHaveBeenCalledWith(undefined, undefined)
     expect(mockClient.networks.getRawCX2Network).toHaveBeenCalledWith(
       mockNetworkUuid,
+      { accesskey: undefined },
     )
     expect(result).toEqual(mockCx2Network)
   })
@@ -90,6 +92,7 @@ describe('fetchNdexNetwork', () => {
     expect(mockGetNdexClient).toHaveBeenCalledWith(undefined, undefined)
     expect(mockClient.networks.getRawCX2Network).toHaveBeenCalledWith(
       mockNetworkUuid,
+      { accesskey: undefined },
     )
   })
 
@@ -116,8 +119,33 @@ describe('fetchNdexNetwork', () => {
     expect(mockGetNdexClient).toHaveBeenCalledWith(mockAccessToken, mockNdexUrl)
     expect(mockClient.networks.getRawCX2Network).toHaveBeenCalledWith(
       mockNetworkUuid,
+      { accesskey: undefined },
     )
     expect(result).toEqual(mockCx2Network)
+  })
+})
+
+describe('fetchNdexNetwork with a share-link access key', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  // The client reads only the lowercase `accesskey` option; its own JSDoc
+  // example passes `accessKey`, which it silently ignores.
+  it('passes the key to NDEx as the lowercase accesskey option', async () => {
+    const mockClient = {
+      networks: {
+        getRawCX2Network: vi.fn().mockResolvedValue([]),
+      },
+    }
+    vi.mocked(getNdexClient).mockReturnValue(mockClient as any)
+
+    await fetchNdexNetwork('net-uuid', undefined, undefined, 'key-123')
+
+    expect(mockClient.networks.getRawCX2Network).toHaveBeenCalledWith(
+      'net-uuid',
+      { accesskey: 'key-123' },
+    )
   })
 })
 

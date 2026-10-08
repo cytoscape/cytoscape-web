@@ -31,11 +31,11 @@ From `ndex/index.ts`:
 - `getNdexClient(accessToken?, url?)`: Creates a configured NDEx client instance
 
 **Network Operations:**
-- `fetchNdexNetwork(ndexUuid, accessToken?, ndexUrl?)`: Fetches a network from NDEx as CX2
+- `fetchNdexNetwork(ndexUuid, accessToken?, ndexUrl?, accessKey?)`: Fetches a network from NDEx as CX2; `accessKey` is an NDEx share-link key
 - `updateNdexNetwork(networkId, cx, accessToken?, ndexUrl?)`: Updates a network in NDEx
 
 **Network Summary Operations:**
-- `fetchNdexSummaries(accessToken?, ndexUrl?)`: Fetches network summaries from NDEx
+- `fetchNdexSummaries(id, accessToken?, ndexUrl?, accessKey?)`: Fetches network summaries from NDEx; `accessKey` is an NDEx share-link key
 - `getNetworkValidationStatus(networkId, accessToken?, ndexUrl?)`: Gets validation status
 
 **Query Operations:**
