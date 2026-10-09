@@ -1,3 +1,4 @@
+import { color as parseColor } from 'd3-color'
 import * as d3Scale from 'd3-scale'
 
 import { logUi } from '../../../debug'
@@ -18,7 +19,6 @@ import {
   CustomGraphicsTypeType,
   isSvgImageUrl,
 } from '../VisualPropertyValue/CustomGraphicsType'
-// import * as d3Color from 'd3-color'
 import { VisualPropertyValueTypeName } from '../VisualPropertyValueTypeName'
 import { normalizeEnumValue } from './enumValueNormalization'
 import {
@@ -136,12 +136,39 @@ export const createDiscreteMapper = (dm: DiscreteMappingFunction): Mapper => {
   }
 }
 
+/**
+ * Resolve a cell to a color, as `#rrggbb`. Accepts any CSS color d3-color
+ * parses; anything else (an Ensembl id, an empty cell, `#GG0000`) takes the
+ * mapping default. Without this the raw text reached Cytoscape.js, which draws
+ * an invalid value in its own grey rather than the style default (#812).
+ *
+ * The alpha channel is dropped: transparency belongs to the matching opacity
+ * property, and every other color value in a style is `#rrggbb`.
+ */
+const colorPassthroughFn = (
+  pm: PassthroughMappingFunction,
+  value: ValueType,
+): VisualPropertyValueType => {
+  if (typeof value !== 'string') {
+    return pm.defaultValue
+  }
+  const parsed = parseColor(value)
+  // `transparent` parses to an rgb of NaNs, which displayable() rejects.
+  if (parsed === null || !parsed.displayable()) {
+    return pm.defaultValue
+  }
+  return parsed.formatHex()
+}
+
 export const createPassthroughMapper = (
   pm: PassthroughMappingFunction,
 ): Mapper => {
   return (value: ValueType): VisualPropertyValueType => {
     if (pm.visualPropertyType === VisualPropertyValueTypeName.CustomGraphic) {
       return customGraphicPassthroughFn(pm, value as VisualPropertyValueType)
+    }
+    if (pm.visualPropertyType === VisualPropertyValueTypeName.Color) {
+      return colorPassthroughFn(pm, value)
     }
     if (enumTypes.has(pm.visualPropertyType)) {
       return enumValueNormalizationFn(pm, value as VisualPropertyValueType)
