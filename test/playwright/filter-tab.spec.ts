@@ -143,3 +143,108 @@ test.describe('FILTER tab', () => {
     ).toHaveValue('ANY')
   })
 })
+
+// Drag and drop of conditions (@dnd-kit/core). Drags go through many small
+// moves: the pointer sensor starts a drag only after a few pixels.
+test.describe('FILTER tab: drag and drop', () => {
+  const center = async (page: Page, testId: string) => {
+    const box = await page.locator(`[data-testid="${testId}"]`).boundingBox()
+    expect(box).not.toBeNull()
+    return { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 }
+  }
+
+  const addConditions = async (page: Page, kinds: string[]) => {
+    await page
+      .locator('[data-testid="network-browser-panel-filter-tab"]')
+      .click()
+    for (const kind of kinds) {
+      await page.locator('[data-testid="filter-condition-root-add"]').click()
+      await page
+        .locator(`[data-testid="filter-condition-root-add-${kind}"]`)
+        .click()
+      // The menu fades out over the conditions; let it go before dragging
+      await expect(page.getByRole('menu', { includeHidden: true })).toHaveCount(
+        0,
+      )
+    }
+  }
+
+  test('groups a condition dropped on another and reorders by gaps (mouse)', async ({
+    page,
+  }) => {
+    await gotoAndWaitReady(page)
+    await seedNetwork(page)
+    await addConditions(page, ['column', 'degree'])
+
+    // Degree onto the column condition: both go into a new group
+    const from = await center(page, 'filter-condition-1-drag')
+    const onto = await center(page, 'filter-condition-0-row')
+    await page.mouse.move(from.x, from.y)
+    await page.mouse.down()
+    await page.mouse.move(from.x + 10, from.y - 5, { steps: 5 })
+    await expect(
+      page.locator('[data-testid="filter-condition-drag-preview"]'),
+    ).toHaveText('Degree filter')
+    await page.mouse.move(onto.x, onto.y, { steps: 10 })
+    await page.mouse.up()
+
+    await expect(
+      page.locator('[data-testid="filter-condition-0-match-type"]'),
+    ).toBeVisible()
+    await expect(
+      page.locator('[data-testid="filter-condition-0-1-edge-type"]'),
+    ).toHaveCount(1)
+
+    // Degree into the gap before the column condition, inside the group.
+    // Scrolled to the top first: a drag near the edge of the conditions
+    // pane scrolls it, which would move the gap from under the pointer.
+    await page
+      .locator('[data-testid="filter-conditions"]')
+      .evaluate((list) => list.parentElement?.scrollTo(0, 0))
+    const handle = await center(page, 'filter-condition-0-1-drag')
+    const gap = await center(page, 'filter-condition-0-gap-0')
+    await page.mouse.move(handle.x, handle.y)
+    await page.mouse.down()
+    await page.mouse.move(gap.x, gap.y, { steps: 10 })
+    await page.mouse.up()
+
+    await expect(
+      page.locator('[data-testid="filter-condition-0-0-edge-type"]'),
+    ).toHaveCount(1)
+  })
+
+  test('drags a condition by touch', async ({ page, browserName }) => {
+    // Touch input is driven through the Chrome DevTools Protocol
+    test.skip(browserName !== 'chromium', 'Chromium only')
+    await gotoAndWaitReady(page)
+    await seedNetwork(page)
+    await addConditions(page, ['column', 'degree'])
+
+    const from = await center(page, 'filter-condition-1-drag')
+    const onto = await center(page, 'filter-condition-0-row')
+    const cdp = await page.context().newCDPSession(page)
+    await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true })
+    const touch = (
+      type: 'touchStart' | 'touchMove' | 'touchEnd',
+      x: number,
+      y: number,
+    ) =>
+      cdp.send('Input.dispatchTouchEvent', {
+        type,
+        touchPoints: type === 'touchEnd' ? [] : [{ x, y }],
+      })
+    await touch('touchStart', from.x, from.y)
+    for (let step = 1; step <= 10; step++) {
+      await touch(
+        'touchMove',
+        from.x + ((onto.x - from.x) * step) / 10,
+        from.y + ((onto.y - from.y) * step) / 10,
+      )
+    }
+    await touch('touchEnd', onto.x, onto.y)
+
+    await expect(
+      page.locator('[data-testid="filter-condition-0-match-type"]'),
+    ).toBeVisible()
+  })
+})

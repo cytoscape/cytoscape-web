@@ -7,6 +7,8 @@ import { DisplayMode } from '../DisplayMode'
 import {
   ColumnFilterTarget,
   CompositeFilterNode,
+  FilterNode,
+  TopologyFilterNode,
   DegreeEdgeType,
   FilterPredicate,
   FilterTypeId,
@@ -14,6 +16,7 @@ import {
 } from '../FilterTree'
 import {
   appendChild,
+  canDropCondition,
   columnFilterFor,
   computeColumnRange,
   computeDegreeRange,
@@ -21,9 +24,11 @@ import {
   createCompositeFilter,
   createDegreeFilter,
   createTopologyFilter,
+  ConditionDropTarget,
   createWorkspaceFilter,
   getNodeAt,
   isNameTaken,
+  moveCondition,
   normalizeFilterName,
   removeNodeAt,
   replaceNodeAt,
@@ -221,5 +226,143 @@ describe('ranges', () => {
     expect(
       computeDegreeRange({ id: 'e', nodes: [], edges: [] }, DegreeEdgeType.ANY),
     ).toEqual({ min: 0, max: 0 })
+  })
+})
+
+describe('moveCondition (drag and drop)', () => {
+  // Distinct conditions, told apart by their column
+  const c = (name: string) => ({ ...createColumnFilter(), columnName: name })
+  const names = (node: FilterNode): unknown =>
+    node.type === FilterTypeId.Column
+      ? node.columnName
+      : isParent(node)
+        ? node.children.map(names)
+        : node.type
+  const isParent = (
+    node: FilterNode,
+  ): node is CompositeFilterNode | TopologyFilterNode => 'children' in node
+  const tree = (): CompositeFilterNode =>
+    createCompositeFilter(MatchType.ALL, [
+      c('a'),
+      c('b'),
+      createCompositeFilter(MatchType.ANY, [c('x'), c('y')]),
+      { ...createTopologyFilter(), children: [c('t')] },
+    ])
+
+  it('moves a condition into a gap, in the same group or another', () => {
+    expect(
+      names(
+        moveCondition(tree(), [0], { kind: 'gap', parentPath: [], index: 2 }),
+      ),
+    ).toEqual(['b', 'a', ['x', 'y'], ['t']])
+    expect(
+      names(
+        moveCondition(tree(), [1], { kind: 'gap', parentPath: [], index: 0 }),
+      ),
+    ).toEqual(['b', 'a', ['x', 'y'], ['t']])
+    expect(
+      names(
+        moveCondition(tree(), [0], { kind: 'gap', parentPath: [2], index: 1 }),
+      ),
+    ).toEqual(['b', ['x', 'a', 'y'], ['t']])
+    // To the end of the root, out of a nested group
+    expect(
+      names(
+        moveCondition(tree(), [2, 0], {
+          kind: 'gap',
+          parentPath: [],
+          index: 4,
+        }),
+      ),
+    ).toEqual(['a', 'b', ['y'], ['t'], 'x'])
+  })
+
+  it('adds a condition at the end of a group or a topology condition', () => {
+    expect(
+      names(moveCondition(tree(), [0], { kind: 'group', path: [2] })),
+    ).toEqual(['b', ['x', 'y', 'a'], ['t']])
+    expect(
+      names(moveCondition(tree(), [1], { kind: 'group', path: [3] })),
+    ).toEqual(['a', ['x', 'y'], ['t', 'b']])
+  })
+
+  it('groups a condition dropped on another, the target first', () => {
+    const moved = moveCondition(tree(), [0], { kind: 'condition', path: [1] })
+    expect(names(moved)).toEqual([['b', 'a'], ['x', 'y'], ['t']])
+    expect(moved.children[0]).toMatchObject({
+      type: FilterTypeId.Composite,
+      matchType: MatchType.ALL,
+    })
+    // A condition from a nested group onto one after it in the root
+    expect(
+      names(moveCondition(tree(), [2, 1], { kind: 'condition', path: [1] })),
+    ).toEqual(['a', ['b', 'y'], ['x'], ['t']])
+  })
+
+  it('removes the groups a move empties, but not a topology condition', () => {
+    const nested = createCompositeFilter(MatchType.ALL, [
+      c('a'),
+      createCompositeFilter(MatchType.ANY, [
+        createCompositeFilter(MatchType.ALL, [c('x')]),
+      ]),
+      { ...createTopologyFilter(), children: [c('t')] },
+    ])
+    expect(
+      names(
+        moveCondition(nested, [1, 0, 0], {
+          kind: 'gap',
+          parentPath: [],
+          index: 0,
+        }),
+      ),
+    ).toEqual(['x', 'a', ['t']])
+    expect(
+      names(
+        moveCondition(nested, [2, 0], {
+          kind: 'gap',
+          parentPath: [],
+          index: 0,
+        }),
+      ),
+    ).toEqual(['t', 'a', [['x']], []])
+  })
+
+  it('refuses drops that would change nothing or are impossible', () => {
+    const root = tree()
+    const refused: [number[], ConditionDropTarget][] = [
+      // The root, and paths that lead nowhere
+      [[], { kind: 'group', path: [2] }],
+      [[9], { kind: 'group', path: [2] }],
+      // Next to itself
+      [[1], { kind: 'gap', parentPath: [], index: 1 }],
+      [[1], { kind: 'gap', parentPath: [], index: 2 }],
+      // Into itself
+      [[2], { kind: 'group', path: [2] }],
+      [[2], { kind: 'gap', parentPath: [2], index: 0 }],
+      [[2], { kind: 'condition', path: [2, 0] }],
+      // Onto itself, or a target of the wrong kind
+      [[0], { kind: 'condition', path: [0] }],
+      [[0], { kind: 'condition', path: [2] }],
+      [[0], { kind: 'group', path: [1] }],
+      // Already last in its own group
+      [[2, 1], { kind: 'group', path: [2] }],
+      // Gaps out of range
+      [[0], { kind: 'gap', parentPath: [], index: 5 }],
+      [[0], { kind: 'gap', parentPath: [], index: -1 }],
+    ]
+    refused.forEach(([source, target]) => {
+      expect(canDropCondition(root, source, target)).toBe(false)
+      expect(moveCondition(root, source, target)).toBe(root)
+    })
+    expect(canDropCondition(root, [2, 0], { kind: 'group', path: [2] })).toBe(
+      true,
+    )
+  })
+
+  it('leaves the input untouched', () => {
+    const root = tree()
+    const before = JSON.stringify(root)
+    moveCondition(root, [0], { kind: 'condition', path: [1] })
+    expect(JSON.stringify(root)).toBe(before)
   })
 })
