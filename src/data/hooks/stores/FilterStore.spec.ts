@@ -23,7 +23,11 @@ import {
   clearFiltersFromDb,
   deleteFiltersFromDb,
   deleteNetworkFiltersFromDb,
+  clearAppliedWorkspaceFiltersFromDb,
+  deleteAppliedWorkspaceFiltersFromDb,
+  deleteNetworkAppliedWorkspaceFiltersFromDb,
   deleteWorkspaceFilterFromDb,
+  putAppliedWorkspaceFilterToDb,
   putFilterToDb,
   putWorkspaceFilterToDb,
 } from '../../db'
@@ -59,6 +63,12 @@ vi.mock('../../db', async (importOriginal) => {
     clearFiltersFromDb: vi.fn().mockResolvedValue(undefined),
     putWorkspaceFilterToDb: vi.fn().mockResolvedValue(undefined),
     deleteWorkspaceFilterFromDb: vi.fn().mockResolvedValue(undefined),
+    putAppliedWorkspaceFilterToDb: vi.fn().mockResolvedValue(undefined),
+    deleteAppliedWorkspaceFiltersFromDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkAppliedWorkspaceFiltersFromDb: vi
+      .fn()
+      .mockResolvedValue(undefined),
+    clearAppliedWorkspaceFiltersFromDb: vi.fn().mockResolvedValue(undefined),
   }
 })
 
@@ -568,6 +578,71 @@ describe('useFilterStore', () => {
       useFilterStore.getState().createWorkspaceFilter('Kept')
       useFilterStore.getState().deleteAllFilterConfigs()
       expect(names()).toEqual(['Kept'])
+    })
+  })
+  describe('applied workspace filters', () => {
+    const show = { filterId: 'f1', displayMode: DisplayMode.SHOW_HIDE }
+
+    beforeEach(() => {
+      useFilterStore.setState({ appliedWorkspaceFilters: {} })
+      vi.mocked(putAppliedWorkspaceFilterToDb).mockClear()
+      vi.mocked(deleteAppliedWorkspaceFiltersFromDb).mockClear()
+      vi.mocked(deleteNetworkAppliedWorkspaceFiltersFromDb).mockClear()
+      vi.mocked(clearAppliedWorkspaceFiltersFromDb).mockClear()
+    })
+
+    it('saves the record of each network', () => {
+      useFilterStore.getState().setAppliedWorkspaceFilter('net1', show)
+      expect(putAppliedWorkspaceFilterToDb).toHaveBeenCalledWith('net1', show)
+
+      useFilterStore.getState().deleteAppliedWorkspaceFilter('net1')
+      expect(deleteAppliedWorkspaceFiltersFromDb).toHaveBeenCalledWith(['net1'])
+      expect(useFilterStore.getState().appliedWorkspaceFilters).toEqual({})
+    })
+
+    it('deletes the records of a network and its subnetworks', () => {
+      useFilterStore.setState({
+        appliedWorkspaceFilters: { net1: show, net1_7: show, net2: show },
+      })
+      useFilterStore.getState().deleteNetworkAppliedWorkspaceFilters('net1')
+
+      expect(
+        Object.keys(useFilterStore.getState().appliedWorkspaceFilters),
+      ).toEqual(['net2'])
+      expect(deleteNetworkAppliedWorkspaceFiltersFromDb).toHaveBeenCalledWith(
+        'net1',
+      )
+
+      useFilterStore.getState().deleteAllAppliedWorkspaceFilters()
+      expect(clearAppliedWorkspaceFiltersFromDb).toHaveBeenCalledTimes(1)
+    })
+
+    it('hydrates the records of workspace networks and deletes the rest', () => {
+      useFilterStore
+        .getState()
+        .hydrateAppliedWorkspaceFilters(
+          { net1: show, net1_7: show, gone: show },
+          ['net1'],
+        )
+
+      expect(useFilterStore.getState().appliedWorkspaceFilters).toEqual({
+        net1: show,
+        net1_7: show,
+      })
+      expect(putAppliedWorkspaceFilterToDb).not.toHaveBeenCalled()
+      expect(deleteAppliedWorkspaceFiltersFromDb).toHaveBeenCalledWith(['gone'])
+    })
+
+    it('does not write changes applied from another tab', () => {
+      setHydrating(true)
+      try {
+        useFilterStore.getState().setAppliedWorkspaceFilter('net1', show)
+        useFilterStore.getState().deleteAppliedWorkspaceFilter('net1')
+      } finally {
+        setHydrating(false)
+      }
+      expect(putAppliedWorkspaceFilterToDb).not.toHaveBeenCalled()
+      expect(deleteAppliedWorkspaceFiltersFromDb).not.toHaveBeenCalled()
     })
   })
 })

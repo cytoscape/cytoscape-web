@@ -9,7 +9,10 @@ import { CyApp } from '../../models/AppModel/CyApp'
 import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { CyNetwork } from '../../models/CyNetworkModel'
 import { FilterConfig } from '../../models/FilterModel/FilterConfig'
-import type { WorkspaceFilter } from '../../models/FilterModel/FilterTree'
+import type {
+  AppliedWorkspaceFilter,
+  WorkspaceFilter,
+} from '../../models/FilterModel/FilterTree'
 import { IdType } from '../../models/IdType'
 // Type-only: the NetworkModel implementation is built on cytoscape.js, and a
 // value import here would put cytoscape on the boot-critical DATABASE phase.
@@ -40,6 +43,7 @@ import { toPlainObject } from './serialization'
 import { decodeRichValues, encodeRichValues } from './serialization/richValues'
 import {
   validateAppDataRow,
+  validateAppliedWorkspaceFilterRow,
   validateCyApp,
   validateNetwork,
   validateNetworkSummary,
@@ -82,7 +86,8 @@ export const DB_NAME: string = 'cyweb-db'
 // will not re-run a version whose number a client already has on disk.
 // v12 adds the `appData` store (the app API's local per-app data tier — see
 // AppDataStore).
-// v13 adds the `workspaceFilters` store (the FILTER tab's filters — see
+// v13 adds the `workspaceFilters` and `appliedWorkspaceFilters` stores (the
+// FILTER tab's filters, and the one last applied to each network — see
 // FilterStore).
 export const currentVersion: number = 13
 
@@ -126,6 +131,7 @@ export const ObjectStoreNames = {
 
   // From v13
   WorkspaceFilters: 'workspaceFilters',
+  AppliedWorkspaceFilters: 'appliedWorkspaceFilters',
 } as const
 
 // The type derived from the names of object stores
@@ -168,6 +174,9 @@ const Keys = {
 
   // Rows are keyed by the filter's id, which a rename does not change
   [ObjectStoreNames.WorkspaceFilters]: 'id',
+
+  // Rows are keyed by network id (subnetworks: `<networkId>_<nodeId>`)
+  [ObjectStoreNames.AppliedWorkspaceFilters]: 'id',
 } as const
 
 /**
@@ -249,7 +258,10 @@ class CyDB extends Dexie {
   [ObjectStoreNames.AppData]!: DxTable<AppDataRow>;
 
   // From v13
-  [ObjectStoreNames.WorkspaceFilters]!: DxTable<WorkspaceFilterRow>
+  [ObjectStoreNames.WorkspaceFilters]!: DxTable<WorkspaceFilterRow>;
+  [ObjectStoreNames.AppliedWorkspaceFilters]!: DxTable<
+    AppliedWorkspaceFilter & { id: IdType }
+  >
 
   constructor(dbName: string) {
     super(dbName)
@@ -1586,6 +1598,108 @@ export const deleteWorkspaceFilterFromDb = async (
 ): Promise<void> => {
   await db.transaction('rw', db.workspaceFilters, async () => {
     await db.workspaceFilters.delete(id)
+  })
+}
+
+// Applied workspace filters: the one last applied to each network, which in
+// show mode owns the visibility bypasses saved with the network's style
+
+export const putAppliedWorkspaceFilterToDb = async (
+  networkId: IdType,
+  applied: AppliedWorkspaceFilter,
+): Promise<void> => {
+  const row = {
+    id: networkId,
+    filterId: applied.filterId,
+    displayMode: applied.displayMode,
+  }
+  await db.transaction('rw', db.appliedWorkspaceFilters, async () => {
+    await db.appliedWorkspaceFilters.put(row)
+  })
+}
+
+const toAppliedWorkspaceFilter = (
+  row: unknown,
+): [IdType, AppliedWorkspaceFilter] => {
+  const { id, filterId, displayMode } = validateAppliedWorkspaceFilterRow(row)
+  return [id, { filterId, displayMode }]
+}
+
+/**
+ * The record of one network, or undefined when it is missing or malformed
+ */
+export const getAppliedWorkspaceFilterFromDb = async (
+  networkId: IdType,
+): Promise<AppliedWorkspaceFilter | undefined> => {
+  const row = await db.appliedWorkspaceFilters.get(networkId)
+  if (row === undefined) return undefined
+  try {
+    return toAppliedWorkspaceFilter(row)[1]
+  } catch (e) {
+    logDb.warn(
+      '[getAppliedWorkspaceFilterFromDb] ignoring malformed row:',
+      networkId,
+      e,
+    )
+    return undefined
+  }
+}
+
+/**
+ * Every record, by network id, to hydrate FilterStore at startup. A
+ * malformed row is logged and dropped.
+ */
+export const getAllAppliedWorkspaceFiltersFromDb = async (): Promise<
+  Record<IdType, AppliedWorkspaceFilter>
+> => {
+  const records: Record<IdType, AppliedWorkspaceFilter> = {}
+  try {
+    const rows = await db.appliedWorkspaceFilters.toArray()
+    rows.forEach((row) => {
+      try {
+        const [networkId, applied] = toAppliedWorkspaceFilter(row)
+        records[networkId] = applied
+      } catch (e) {
+        logDb.warn(
+          '[getAllAppliedWorkspaceFiltersFromDb] dropping malformed row:',
+          row,
+          e,
+        )
+      }
+    })
+  } catch (e) {
+    logDb.warn('[getAllAppliedWorkspaceFiltersFromDb] Failed to read', e)
+  }
+  return records
+}
+
+export const deleteAppliedWorkspaceFiltersFromDb = async (
+  networkIds: IdType[],
+): Promise<void> => {
+  await db.transaction('rw', db.appliedWorkspaceFilters, async () => {
+    await db.appliedWorkspaceFilters.bulkDelete(networkIds)
+  })
+}
+
+/**
+ * Delete the records of a network and its subnetworks (delete cascade)
+ */
+export const deleteNetworkAppliedWorkspaceFiltersFromDb = async (
+  networkId: IdType,
+): Promise<void> => {
+  await db.transaction('rw', db.appliedWorkspaceFilters, async () => {
+    await db.appliedWorkspaceFilters
+      .where('id')
+      .equals(networkId)
+      .or('id')
+      .startsWith(`${networkId}_`)
+      .delete()
+  })
+}
+
+export const clearAppliedWorkspaceFiltersFromDb = async (): Promise<void> => {
+  await db.transaction('rw', db.appliedWorkspaceFilters, async () => {
+    await db.appliedWorkspaceFilters.clear()
   })
 }
 

@@ -15,6 +15,9 @@ vi.mock('@/data/db', () => ({
   getUiStateFromDb: vi.fn(),
   getVisualStyleSetFromDb: vi.fn(),
   getWorkspaceFilterFromDb: vi.fn(),
+  getAppliedWorkspaceFilterFromDb: vi.fn(),
+  putAppliedWorkspaceFilterToDb: vi.fn().mockResolvedValue(undefined),
+  deleteAppliedWorkspaceFiltersFromDb: vi.fn().mockResolvedValue(undefined),
   putWorkspaceFilterToDb: vi.fn().mockResolvedValue(undefined),
   deleteWorkspaceFilterFromDb: vi.fn().mockResolvedValue(undefined),
   putUiStateToDb: vi.fn().mockResolvedValue(undefined),
@@ -25,6 +28,8 @@ vi.mock('@/data/db', () => ({
 
 import {
   deleteWorkspaceFilterFromDb,
+  getAppliedWorkspaceFilterFromDb,
+  putAppliedWorkspaceFilterToDb,
   getWorkspaceFilterFromDb,
   getWorkspaceFromDb,
   getUiStateFromDb,
@@ -305,5 +310,20 @@ describe('@/data/sync/crossTabHydration', () => {
 
     expect(useFilterStore.getState().workspaceFilters).toEqual({})
     expect(deleteWorkspaceFilterFromDb).not.toHaveBeenCalled()
+  })
+
+  it('applies the filter another tab applied to a network, without writing it', async () => {
+    useFilterStore.setState({ appliedWorkspaceFilters: {} })
+    const applied = { filterId: 'f1', displayMode: 'show_hide' as const }
+    vi.mocked(getAppliedWorkspaceFilterFromDb).mockResolvedValueOnce(applied)
+
+    await hydrateFromCrossTabChange([
+      { type: 1, table: 'appliedWorkspaceFilters', key: 'net1_7' },
+    ])
+
+    expect(useFilterStore.getState().appliedWorkspaceFilters).toEqual({
+      net1_7: applied,
+    })
+    expect(putAppliedWorkspaceFilterToDb).not.toHaveBeenCalled()
   })
 })

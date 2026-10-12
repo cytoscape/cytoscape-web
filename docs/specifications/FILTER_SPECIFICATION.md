@@ -208,10 +208,15 @@ elapsed time, or `filter-not-found`, `network-not-found`,
 - Applying a filter creates no undo entry, as in Cytoscape Desktop.
 
 **One applied filter per network.** `FilterStore.appliedWorkspaceFilters`
-records the filter last applied to each network and its mode (in memory
-only). Applying a select filter where a show filter was applied first shows
-every element again (Cytoscape Desktop's "show all" when switching from show
-to select). `setWorkspaceFilterDisplayModeAndApply` changes a filter's mode
+records the filter last applied to each network and its mode. The record is
+saved to the `appliedWorkspaceFilters` IndexedDB table (DB v13, keyed by
+network id), because in show mode it owns visibility bypasses that are saved
+with the style: after a reload, switching that filter to select must still
+show every element again. Records are restored at startup (those of networks
+no longer in the workspace are deleted), synced across tabs, and deleted with
+their network and its subnetworks. Applying a select filter where a show
+filter was applied first shows every element again (Cytoscape Desktop's "show
+all" when switching from show to select). `setWorkspaceFilterDisplayModeAndApply` changes a filter's mode
 and applies it at once, as Cytoscape Desktop's select/show radio buttons do.
 
 **The subnetwork's `filterWidgets` filter.** Applying a workspace filter (with

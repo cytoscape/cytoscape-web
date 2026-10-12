@@ -25,11 +25,15 @@ import { GraphObjectType } from '../../../models/NetworkModel'
 import { DiscreteRange } from '../../../models/PropertyModel/DiscreteRange'
 import { NumberRange } from '../../../models/PropertyModel/NumberRange'
 import {
+  clearAppliedWorkspaceFiltersFromDb,
   clearFiltersFromDb,
+  deleteAppliedWorkspaceFiltersFromDb,
+  deleteNetworkAppliedWorkspaceFiltersFromDb,
   deleteFilterFromDb,
   deleteFiltersFromDb,
   deleteNetworkFiltersFromDb,
   deleteWorkspaceFilterFromDb,
+  putAppliedWorkspaceFilterToDb,
   putFilterToDb,
   putWorkspaceFilterToDb,
 } from '../../db'
@@ -47,8 +51,9 @@ interface FilterState<T> {
   // The FILTER tab's filters, by id. They belong to the workspace, not to a
   // network (docs/specifications/FILTER_SPECIFICATION.md).
   workspaceFilters: WorkspaceFilters
-  // The workspace filter last applied to each network, by network id. Kept
-  // in memory only, like the subnetworks it mostly concerns.
+  // The workspace filter last applied to each network, by network id. Saved
+  // to the database, since in show mode it owns visibility bypasses that are
+  // saved with the network's style.
   appliedWorkspaceFilters: Record<IdType, AppliedWorkspaceFilter>
   // FILTER tab UI state of this browser tab, in memory only: the filter the
   // tab shows, and "Apply when filter changes" by network id
@@ -109,7 +114,7 @@ interface FilterAction {
   hydrateWorkspaceFilters: (filters: readonly WorkspaceFilter[]) => void
 
   // Bookkeeping for applyWorkspaceFilter (src/data/filter); it does not
-  // change the network itself
+  // change the network itself. Changes are written to the database.
   setAppliedWorkspaceFilter: (
     networkId: IdType,
     applied: AppliedWorkspaceFilter,
@@ -118,6 +123,12 @@ interface FilterAction {
   // Network delete cascade: the network and its subnetworks
   deleteNetworkAppliedWorkspaceFilters: (networkId: IdType) => void
   deleteAllAppliedWorkspaceFilters: () => void
+  // Restore the records saved in the database at startup. Keeps those of a
+  // network in the workspace (or one of its subnetworks) and deletes the rest.
+  hydrateAppliedWorkspaceFilters: (
+    records: Readonly<Record<IdType, AppliedWorkspaceFilter>>,
+    networkIds: IdType[],
+  ) => void
 
   setSelectedWorkspaceFilterId: (id: IdType | undefined) => void
   setWorkspaceFilterAutoApply: (networkId: IdType, autoApply: boolean) => void
@@ -512,11 +523,27 @@ export const useFilterStore = create(
       set((state) => {
         state.appliedWorkspaceFilters[networkId] = applied
       })
+      if (!isHydrating()) {
+        void putAppliedWorkspaceFilterToDb(networkId, applied).catch((e) => {
+          logStore.error(
+            `[${useFilterStore.name}]: Failed to save the filter applied to ${networkId}`,
+            e,
+          )
+        })
+      }
     },
     deleteAppliedWorkspaceFilter: (networkId: IdType) => {
       set((state) => {
         delete state.appliedWorkspaceFilters[networkId]
       })
+      if (!isHydrating()) {
+        void deleteAppliedWorkspaceFiltersFromDb([networkId]).catch((e) => {
+          logStore.error(
+            `[${useFilterStore.name}]: Failed to delete the filter applied to ${networkId}`,
+            e,
+          )
+        })
+      }
     },
     deleteNetworkAppliedWorkspaceFilters: (networkId: IdType) => {
       set((state) => {
@@ -526,11 +553,57 @@ export const useFilterStore = create(
           }
         })
       })
+      // By prefix in the db too, so rows missing from the store go
+      if (!isHydrating()) {
+        void deleteNetworkAppliedWorkspaceFiltersFromDb(networkId).catch(
+          (e) => {
+            logStore.error(
+              `[${useFilterStore.name}]: Failed to delete the filters applied to ${networkId}`,
+              e,
+            )
+          },
+        )
+      }
     },
     deleteAllAppliedWorkspaceFilters: () => {
       set((state) => {
         state.appliedWorkspaceFilters = {}
       })
+      if (!isHydrating()) {
+        void clearAppliedWorkspaceFiltersFromDb().catch((e) => {
+          logStore.error(
+            `[${useFilterStore.name}]: Failed to clear the applied filters`,
+            e,
+          )
+        })
+      }
+    },
+    hydrateAppliedWorkspaceFilters: (
+      records: Readonly<Record<IdType, AppliedWorkspaceFilter>>,
+      networkIds: IdType[],
+    ) => {
+      const orphaned: IdType[] = []
+      // The records come from the database, so they are not written back
+      set((state) => {
+        Object.entries(records).forEach(([networkId, applied]) => {
+          const hasOwner = networkIds.some((id) =>
+            FilterStoreImpl.isFilterOwnedBy(networkId, id),
+          )
+          if (hasOwner) {
+            state.appliedWorkspaceFilters[networkId] = applied
+          } else {
+            orphaned.push(networkId)
+          }
+        })
+      })
+      if (orphaned.length > 0) {
+        void deleteAppliedWorkspaceFiltersFromDb(orphaned).catch((e) => {
+          logStore.error(
+            `[${useFilterStore.name}]: Failed to delete applied filters without a network`,
+            e,
+          )
+        })
+      }
     },
     setSelectedWorkspaceFilterId: (id: IdType | undefined) => {
       set((state) => {

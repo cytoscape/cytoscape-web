@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DisplayMode } from '../../models/FilterModel/DisplayMode'
 import type { FilterConfig } from '../../models/FilterModel/FilterConfig'
@@ -24,6 +24,7 @@ import {
   NodeVisualPropertyName,
 } from '../../models/VisualStyleModel/VisualPropertyName'
 import { VisibilityType } from '../../models/VisualStyleModel/VisualPropertyValue/VisibilityType'
+import { getAllAppliedWorkspaceFiltersFromDb } from '../db'
 import { useFilterStore } from '../hooks/stores/FilterStore'
 import { useNetworkStore } from '../hooks/stores/NetworkStore'
 import { useTableStore } from '../hooks/stores/TableStore'
@@ -183,6 +184,31 @@ describe('applyWorkspaceFilter', () => {
 
     expect(visibility(NodeVisualPropertyName.NodeVisibility)).toEqual({})
     expect(selection()).toEqual({ nodes: ['n2', 'n3'], edges: [] })
+  })
+
+  it('remembers a show filter across a reload, so select shows everything again', async () => {
+    applyWorkspaceFilter(NET, 'show')
+    expect(visibility(NodeVisualPropertyName.NodeVisibility)).toEqual({
+      n1: VisibilityType.None,
+    })
+    // The record is saved, like the visibility bypasses it owns
+    let saved: Awaited<ReturnType<typeof getAllAppliedWorkspaceFiltersFromDb>> =
+      {}
+    await vi.waitFor(async () => {
+      saved = await getAllAppliedWorkspaceFiltersFromDb()
+      expect(saved[NET]).toEqual({
+        filterId: 'show',
+        displayMode: DisplayMode.SHOW_HIDE,
+      })
+    })
+
+    // A reload: the store starts empty and is hydrated from the database
+    useFilterStore.setState({ appliedWorkspaceFilters: {} })
+    useFilterStore.getState().hydrateAppliedWorkspaceFilters(saved, [NET])
+    setWorkspaceFilterDisplayModeAndApply(NET, 'show', DisplayMode.SELECT)
+
+    expect(visibility(NodeVisualPropertyName.NodeVisibility)).toEqual({})
+    expect(selection().nodes).toEqual(['n2', 'n3'])
   })
 
   it('switches the display mode and applies at once', () => {

@@ -1,4 +1,5 @@
 import {
+  getAppliedWorkspaceFilterFromDb,
   getFilterFromDb,
   getNetworkFromDb,
   getNetworkSummaryFromDb,
@@ -331,6 +332,18 @@ const prepareChange = async (
         return null
       }
       return () => useFilterStore.getState().putWorkspaceFilter(filter)
+    }
+
+    case 'appliedWorkspaceFilters': {
+      if (type === ChangeType.DELETED) {
+        return () => useFilterStore.getState().deleteAppliedWorkspaceFilter(key)
+      }
+      const applied = await getAppliedWorkspaceFilterFromDb(key)
+      if (!applied) {
+        return null
+      }
+      return () =>
+        useFilterStore.getState().setAppliedWorkspaceFilter(key, applied)
     }
 
     case 'opaqueAspects': {

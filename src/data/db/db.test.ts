@@ -45,6 +45,12 @@ import type { Workspace } from '../../models/WorkspaceModel'
 import { getNetworkViewId } from '../hooks/stores/ViewModelStore'
 import {
   clearAppDataFromDb,
+  clearAppliedWorkspaceFiltersFromDb,
+  deleteAppliedWorkspaceFiltersFromDb,
+  deleteNetworkAppliedWorkspaceFiltersFromDb,
+  getAllAppliedWorkspaceFiltersFromDb,
+  getAppliedWorkspaceFilterFromDb,
+  putAppliedWorkspaceFilterToDb,
   clearNetworksFromDb,
   clearNetworkSummaryFromDb,
   clearNetworkViewsFromDb,
@@ -1743,5 +1749,57 @@ describe('workspace filter storage (DB v13)', () => {
     await putWorkspaceFilterToDb(hubs)
     await deleteWorkspaceFilterFromDb('f1')
     expect(await getAllWorkspaceFiltersFromDb()).toEqual([])
+  })
+})
+
+describe('applied workspace filter storage (DB v13)', () => {
+  const show = { filterId: 'f1', displayMode: DisplayMode.SHOW_HIDE }
+  const select = { filterId: 'f2', displayMode: DisplayMode.SELECT }
+
+  it('round-trips the record of each network', async () => {
+    await setupFreshDb()
+    await putAppliedWorkspaceFilterToDb('net1', show)
+    await putAppliedWorkspaceFilterToDb('net1_7', select)
+
+    expect(await getAppliedWorkspaceFilterFromDb('net1')).toEqual(show)
+    expect(await getAllAppliedWorkspaceFiltersFromDb()).toEqual({
+      net1: show,
+      net1_7: select,
+    })
+  })
+
+  it('deletes a network with its subnetworks, by id, or all', async () => {
+    await setupFreshDb()
+    await putAppliedWorkspaceFilterToDb('net1', show)
+    await putAppliedWorkspaceFilterToDb('net1_7', show)
+    await putAppliedWorkspaceFilterToDb('net10', show)
+    await putAppliedWorkspaceFilterToDb('net2', show)
+
+    await deleteNetworkAppliedWorkspaceFiltersFromDb('net1')
+    expect(
+      Object.keys(await getAllAppliedWorkspaceFiltersFromDb()).sort(),
+    ).toEqual(['net10', 'net2'])
+
+    await deleteAppliedWorkspaceFiltersFromDb(['net10'])
+    expect(Object.keys(await getAllAppliedWorkspaceFiltersFromDb())).toEqual([
+      'net2',
+    ])
+
+    await clearAppliedWorkspaceFiltersFromDb()
+    expect(await getAllAppliedWorkspaceFiltersFromDb()).toEqual({})
+  })
+
+  it('drops a malformed row on read', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+    await putAppliedWorkspaceFilterToDb('net1', show)
+    await db.appliedWorkspaceFilters.put({
+      id: 'bad',
+      filterId: 'f1',
+      displayMode: 'hide',
+    } as any)
+
+    expect(await getAllAppliedWorkspaceFiltersFromDb()).toEqual({ net1: show })
+    expect(await getAppliedWorkspaceFilterFromDb('bad')).toBeUndefined()
   })
 })

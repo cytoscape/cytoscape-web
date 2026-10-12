@@ -339,6 +339,17 @@ const WorkspaceFilterRowSchema = z.object({
   filter: z.unknown(),
 })
 
+// Row shape of the `appliedWorkspaceFilters` store (added in DB v13): the
+// workspace filter last applied to a network, keyed by the network's id
+const AppliedWorkspaceFilterRowSchema = z.object({
+  // FilterStore keys these by network id in a plain object
+  id: IdTypeSchema.refine((id) => id !== '__proto__', {
+    message: 'id "__proto__" is reserved',
+  }),
+  filterId: IdTypeSchema,
+  displayMode: z.enum([DisplayMode.SELECT, DisplayMode.SHOW_HIDE]),
+})
+
 const FilterConfigWithRecordsSchema = FilterConfigSchema.extend({
   visualMapping: z
     .union([
@@ -585,6 +596,11 @@ export const validateWorkspaceFilterRow = (
   value: unknown,
 ): z.infer<typeof WorkspaceFilterRowSchema> =>
   WorkspaceFilterRowSchema.parse(value)
+
+export const validateAppliedWorkspaceFilterRow = (
+  value: unknown,
+): z.infer<typeof AppliedWorkspaceFilterRowSchema> =>
+  AppliedWorkspaceFilterRowSchema.parse(value)
 
 export const validateCyApp = (value: unknown): CyApp =>
   CyAppSchema.parse(value) as CyApp
