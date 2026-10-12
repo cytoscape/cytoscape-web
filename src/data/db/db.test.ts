@@ -12,6 +12,12 @@ import type { ServiceApp } from '../../models/AppModel/ServiceApp'
 import { DisplayMode } from '../../models/FilterModel/DisplayMode'
 import type { FilterConfig } from '../../models/FilterModel/FilterConfig'
 import { FilterWidgetType } from '../../models/FilterModel/FilterWidgetType'
+import { MatchType } from '../../models/FilterModel/FilterTree'
+import {
+  createCompositeFilter,
+  createDegreeFilter,
+  createWorkspaceFilter,
+} from '../../models/FilterModel/impl/filterTreeImpl'
 import { SelectionType } from '../../models/FilterModel/SelectionType'
 import { IdType } from '../../models/IdType'
 import type { Edge, Network, Node } from '../../models/NetworkModel'
@@ -39,6 +45,12 @@ import type { Workspace } from '../../models/WorkspaceModel'
 import { getNetworkViewId } from '../hooks/stores/ViewModelStore'
 import {
   clearAppDataFromDb,
+  clearAppliedWorkspaceFiltersFromDb,
+  deleteAppliedWorkspaceFiltersFromDb,
+  deleteNetworkAppliedWorkspaceFiltersFromDb,
+  getAllAppliedWorkspaceFiltersFromDb,
+  getAppliedWorkspaceFilterFromDb,
+  putAppliedWorkspaceFilterToDb,
   clearNetworksFromDb,
   clearNetworkSummaryFromDb,
   clearNetworkViewsFromDb,
@@ -49,6 +61,7 @@ import {
   clearVisualStyleFromDb,
   closeDb,
   CyNetworkCacheMissError,
+  DB_NAME,
   deleteAppDataFromDb,
   deleteAppFromDb,
   deleteAppSettingFromDb,
@@ -68,8 +81,10 @@ import {
   deleteUiStateFromDb,
   deleteUndoRedoStackFromDb,
   deleteVisualStyleFromDb,
+  deleteWorkspaceFilterFromDb,
   deleteNetworkScopedAppDataFromDb,
   getAllAppDataFromDb,
+  getAllWorkspaceFiltersFromDb,
   getAllNetworkKeys,
   getAllServiceAppsFromDb,
   getAllStyleTemplatesFromDb,
@@ -93,6 +108,7 @@ import {
   getStyleSetMetadataFromDb,
   getVisualStyleSetFromDb,
   LEGACY_STYLE_ID,
+  getWorkspaceFilterFromDb,
   getWorkspaceFromDb,
   initializeDb,
   putAppDataToDb,
@@ -112,6 +128,7 @@ import {
   putViewSelectionToDb,
   putVisualStyleSetToDb,
   putVisualStyleToDb,
+  putWorkspaceFilterToDb,
   putWorkspaceToDb,
   updateWorkspaceDb,
   verifyTransactionSourceStamp,
@@ -1663,5 +1680,168 @@ describe('app data storage (DB v12)', () => {
     await clearAppDataFromDb()
 
     expect(await getAllAppDataFromDb()).toEqual([])
+  })
+})
+
+describe('workspace filter storage (DB v13)', () => {
+  const hubs = {
+    ...createWorkspaceFilter('f1', 'Hubs', DisplayMode.SHOW_HIDE),
+    root: createCompositeFilter(MatchType.ANY, [createDegreeFilter()]),
+  }
+
+  it('round-trips a filter and reads every filter back', async () => {
+    await setupFreshDb()
+    expect(await getAllWorkspaceFiltersFromDb()).toEqual([])
+
+    await putWorkspaceFilterToDb(hubs)
+    await putWorkspaceFilterToDb(createWorkspaceFilter('f2', 'Kinases'))
+
+    expect(await getWorkspaceFilterFromDb('f1')).toEqual(hubs)
+    expect(await getWorkspaceFilterFromDb('nope')).toBeUndefined()
+    expect(
+      (await getAllWorkspaceFiltersFromDb()).map((filter) => filter.name),
+    ).toEqual(['Hubs', 'Kinases'])
+  })
+
+  it('stores the filter as an entry of a Cytoscape Desktop filter file', async () => {
+    await setupFreshDb()
+    await putWorkspaceFilterToDb(hubs)
+    const db = await getDb()
+    const row = await db.workspaceFilters.get('f1')
+    expect(row?.filter).toEqual({
+      name: 'Hubs',
+      transformers: [
+        {
+          id: 'org.cytoscape.CompositeFilter',
+          parameters: { type: 'ANY' },
+          transformers: [
+            {
+              id: 'org.cytoscape.DegreeFilter',
+              parameters: {
+                predicate: 'BETWEEN',
+                criterion: null,
+                edgeType: 'ANY',
+              },
+            },
+          ],
+        },
+      ],
+    })
+  })
+
+  it('drops a malformed row on read instead of failing the whole hydration', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+    await putWorkspaceFilterToDb(hubs)
+    await db.workspaceFilters.put({
+      id: 'bad',
+      displayMode: 'select',
+      filter: { name: 'Bad', transformers: [{ id: 'com.example.Foo' }] },
+    } as any)
+
+    expect(
+      (await getAllWorkspaceFiltersFromDb()).map((filter) => filter.id),
+    ).toEqual(['f1'])
+    expect(await getWorkspaceFilterFromDb('bad')).toBeUndefined()
+  })
+
+  it('deletes a filter', async () => {
+    await setupFreshDb()
+    await putWorkspaceFilterToDb(hubs)
+    await deleteWorkspaceFilterFromDb('f1')
+    expect(await getAllWorkspaceFiltersFromDb()).toEqual([])
+  })
+})
+
+describe('applied workspace filter storage (DB v14)', () => {
+  const show = { filterId: 'f1', displayMode: DisplayMode.SHOW_HIDE }
+  const select = { filterId: 'f2', displayMode: DisplayMode.SELECT }
+
+  it('round-trips the record of each network', async () => {
+    await setupFreshDb()
+    await putAppliedWorkspaceFilterToDb('net1', show)
+    await putAppliedWorkspaceFilterToDb('net1_7', select)
+
+    expect(await getAppliedWorkspaceFilterFromDb('net1')).toEqual(show)
+    expect(await getAllAppliedWorkspaceFiltersFromDb()).toEqual({
+      net1: show,
+      net1_7: select,
+    })
+  })
+
+  it('deletes a network with its subnetworks, by id, or all', async () => {
+    await setupFreshDb()
+    await putAppliedWorkspaceFilterToDb('net1', show)
+    await putAppliedWorkspaceFilterToDb('net1_7', show)
+    await putAppliedWorkspaceFilterToDb('net10', show)
+    await putAppliedWorkspaceFilterToDb('net2', show)
+
+    await deleteNetworkAppliedWorkspaceFiltersFromDb('net1')
+    expect(
+      Object.keys(await getAllAppliedWorkspaceFiltersFromDb()).sort(),
+    ).toEqual(['net10', 'net2'])
+
+    await deleteAppliedWorkspaceFiltersFromDb(['net10'])
+    expect(Object.keys(await getAllAppliedWorkspaceFiltersFromDb())).toEqual([
+      'net2',
+    ])
+
+    await clearAppliedWorkspaceFiltersFromDb()
+    expect(await getAllAppliedWorkspaceFiltersFromDb()).toEqual({})
+  })
+
+  it('drops a malformed row on read', async () => {
+    await setupFreshDb()
+    const db = await getDb()
+    await putAppliedWorkspaceFilterToDb('net1', show)
+    await db.appliedWorkspaceFilters.put({
+      id: 'bad',
+      filterId: 'f1',
+      displayMode: 'hide',
+    } as any)
+
+    expect(await getAllAppliedWorkspaceFiltersFromDb()).toEqual({ net1: show })
+    expect(await getAppliedWorkspaceFilterFromDb('bad')).toBeUndefined()
+  })
+})
+
+describe('schema upgrade from v13', () => {
+  const storeNamesOnDisk = (): Promise<string[]> =>
+    new Promise((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME)
+      request.onsuccess = () => {
+        const names = [...request.result.objectStoreNames]
+        request.result.close()
+        resolve(names)
+      }
+      request.onerror = () => reject(request.error)
+    })
+
+  // v13 shipped to local databases with `workspaceFilters` only; a store added
+  // to v13 afterwards was never created there, because Dexie does not re-run
+  // a version a database already has
+  it('creates appliedWorkspaceFilters in a database already at v13', async () => {
+    ensureDebugNamespace()
+    // deleteDb reopens the app's database at the full current schema, so
+    // close it before leaving an old one on disk in its place
+    await deleteDb()
+    await closeDb()
+    await Dexie.delete(DB_NAME)
+    const v13 = new Dexie(DB_NAME)
+    v13.version(13).stores({ workspaceFilters: 'id' })
+    await v13.open()
+    v13.close()
+
+    await initializeDb()
+
+    expect(await storeNamesOnDisk()).toContain('appliedWorkspaceFilters')
+    await putAppliedWorkspaceFilterToDb('net1', {
+      filterId: 'f1',
+      displayMode: DisplayMode.SHOW_HIDE,
+    })
+    expect(await getAppliedWorkspaceFilterFromDb('net1')).toEqual({
+      filterId: 'f1',
+      displayMode: DisplayMode.SHOW_HIDE,
+    })
   })
 })

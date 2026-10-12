@@ -7,6 +7,7 @@ This directory contains test resources for Cytoscape Web testing.
 - `cx2/` - CX2 network files
 - `hcx/` - HCX (Hierarchical Cell eXchange) files
 - `sif/` - SIF (Simple Interaction Format) files
+- `filters/` - Cytoscape Desktop filter files (FILTER tab import/export)
 - `tables/` - CSV, TSV, TXT table files
 - `ndex/` - NDEx network documentation
 - `urls/` - URL test cases

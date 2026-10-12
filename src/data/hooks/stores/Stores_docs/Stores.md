@@ -58,7 +58,7 @@ All stores use Zustand with Immer middleware, which wraps state in Immer proxies
 - `UiStateStore` - UI state and preferences
 - `UndoStore` - Undo/redo stacks
 - `WorkspaceStore` - Workspace configuration
-- `FilterStore` - Filter configurations
+- `FilterStore` - Subnetwork filter configurations and the FILTER tab's workspace filters (`workspaceFilters` table, see `docs/specifications/FILTER_SPECIFICATION.md`)
 - `TableStore` - Table data (uses serialization)
 - `ViewModelStore` - Network views (uses serialization)
 - `VisualStyleStore` - Visual styles (uses serialization)

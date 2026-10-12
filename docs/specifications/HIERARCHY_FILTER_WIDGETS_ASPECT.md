@@ -98,3 +98,10 @@ view it belongs to:
   fields.
 - Unknown keys are dropped. Parsed entries contain only the fields above, so
   `__proto__` or `constructor` keys in the input never reach the app.
+
+## FILTER tab filters
+
+The FILTER tab's workspace filters (`FILTER_SPECIFICATION.md`) are separate
+and never list this filter. Applying one to a subnetwork switches this filter
+off; switching it back on removes the visibility a workspace filter in show
+mode set, and changes no workspace filter.

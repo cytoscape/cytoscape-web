@@ -29,10 +29,11 @@ const panel = (
 ): RegisteredAppResource => ({ id, appId, slot: 'right-panel', ...overrides })
 
 describe('listLeftPanelTabs', () => {
-  it('lists workspace and style, in strip order', () => {
+  it('lists workspace, style and filter, in strip order', () => {
     expect(listLeftPanelTabs(false).map((t) => [t.tabId, t.index])).toEqual([
       ['workspace', 0],
       ['style', 1],
+      ['filter', 2],
     ])
   })
 
@@ -40,7 +41,8 @@ describe('listLeftPanelTabs', () => {
     expect(listLeftPanelTabs(true).map((t) => [t.tabId, t.index])).toEqual([
       ['workspace', 0],
       ['style', 1],
-      ['llm-query', 2],
+      ['filter', 2],
+      ['llm-query', 3],
     ])
   })
 })
@@ -90,7 +92,11 @@ describe('listRightPanelAppTabs', () => {
       ],
     } as CyApp
 
-    const tabs = listRightPanelAppTabs({ a: legacy }, [panel('a', 'P1')], 'net1')
+    const tabs = listRightPanelAppTabs(
+      { a: legacy },
+      [panel('a', 'P1')],
+      'net1',
+    )
 
     expect(tabs.map((t) => t.resourceId)).toEqual(['a::right-panel::P1'])
   })
