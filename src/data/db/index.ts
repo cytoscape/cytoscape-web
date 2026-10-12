@@ -86,10 +86,14 @@ export const DB_NAME: string = 'cyweb-db'
 // will not re-run a version whose number a client already has on disk.
 // v12 adds the `appData` store (the app API's local per-app data tier — see
 // AppDataStore).
-// v13 adds the `workspaceFilters` and `appliedWorkspaceFilters` stores (the
-// FILTER tab's filters, and the one last applied to each network — see
+// v13 adds the `workspaceFilters` store (the FILTER tab's filters — see
 // FilterStore).
-export const currentVersion: number = 13
+// v14 adds the `appliedWorkspaceFilters` store (the workspace filter last
+// applied to each network). Like v11, it is a separate version because v13
+// was already on disk in local databases: Dexie 3 does not create a store added
+// to a version a database already has, it only warns "Schema was extended
+// without increasing the number passed to db.version()".
+export const currentVersion: number = 14
 
 /**
  * Predefined object store names.
@@ -131,6 +135,8 @@ export const ObjectStoreNames = {
 
   // From v13
   WorkspaceFilters: 'workspaceFilters',
+
+  // From v14
   AppliedWorkspaceFilters: 'appliedWorkspaceFilters',
 } as const
 

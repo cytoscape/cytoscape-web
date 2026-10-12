@@ -211,6 +211,23 @@ describe('applyWorkspaceFilter', () => {
     expect(selection().nodes).toEqual(['n2', 'n3'])
   })
 
+  it('shows everything when a filter switches from show to select, even with no record', () => {
+    // Hidden by a show filter whose record was lost (e.g. never saved)
+    useVisualStyleStore
+      .getState()
+      .setBypassMap(
+        NET,
+        NodeVisualPropertyName.NodeVisibility,
+        new Map([['n1', VisibilityType.None]]),
+      )
+    expect(useFilterStore.getState().appliedWorkspaceFilters).toEqual({})
+
+    setWorkspaceFilterDisplayModeAndApply(NET, 'show', DisplayMode.SELECT)
+
+    expect(visibility(NodeVisualPropertyName.NodeVisibility)).toEqual({})
+    expect(selection().nodes).toEqual(['n2', 'n3'])
+  })
+
   it('switches the display mode and applies at once', () => {
     applyWorkspaceFilter(NET, 'show')
     const result = setWorkspaceFilterDisplayModeAndApply(

@@ -13,6 +13,7 @@
 
 ## Coding Patterns
 
+- [2026-10-12] Dexie schema: never add a store to a `currentVersion` that has run anywhere, your own localhost:5500 database included. Dexie 3 does not create it; it only warns "Schema was extended without increasing the number passed to db.version()", and every write to the store then fails. Bump the version. A test for it must seed the old schema AFTER `deleteDb()` + `closeDb()` + `Dexie.delete(DB_NAME)`: `deleteDb()` reopens the app's database at the full current schema, which hides the bug (see the v13 → v14 test in `db.test.ts`).
 - [2026-03-04] enableMapSet: Any new standalone test entry point MUST call `enableMapSet()` before Immer can handle Map/Set — omitting it causes cryptic test failures.
 - [2026-03-04] App API: Core functions in `src/app-api/core/` must have zero React imports. Use `useXxxStore.getState()` instead of hooks.
 - [2026-03-04] App API: All public API functions must return `ApiResult<T>` — never throw across the API boundary.

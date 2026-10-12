@@ -209,7 +209,7 @@ elapsed time, or `filter-not-found`, `network-not-found`,
 
 **One applied filter per network.** `FilterStore.appliedWorkspaceFilters`
 records the filter last applied to each network and its mode. The record is
-saved to the `appliedWorkspaceFilters` IndexedDB table (DB v13, keyed by
+saved to the `appliedWorkspaceFilters` IndexedDB table (DB v14, keyed by
 network id), because in show mode it owns visibility bypasses that are saved
 with the style: after a reload, switching that filter to select must still
 show every element again. Records are restored at startup (those of networks

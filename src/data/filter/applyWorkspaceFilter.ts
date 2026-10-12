@@ -207,8 +207,10 @@ export const applyWorkspaceFilter = (
 
 /**
  * Change a filter's display mode and apply it right away, as Cytoscape
- * Desktop's select/show radio buttons do. Switching from show to select
- * shows every element again first.
+ * Desktop's select/show radio buttons do. Switching a filter from show to
+ * select first shows every element of the network again, whatever the record
+ * of the applied filter says, as Cytoscape Desktop does ("show all" on
+ * switching to select).
  */
 export const setWorkspaceFilterDisplayModeAndApply = (
   networkId: IdType,
@@ -217,8 +219,15 @@ export const setWorkspaceFilterDisplayModeAndApply = (
 ): ApplyWorkspaceFilterResult => {
   const { workspaceFilters, setWorkspaceFilterDisplayMode } =
     useFilterStore.getState()
-  if (getWorkspaceFilter(workspaceFilters, filterId) === undefined) {
+  const filter = getWorkspaceFilter(workspaceFilters, filterId)
+  if (filter === undefined) {
     return { success: false, error: ApplyFilterError.FILTER_NOT_FOUND }
+  }
+  if (
+    filter.displayMode === DisplayMode.SHOW_HIDE &&
+    displayMode === DisplayMode.SELECT
+  ) {
+    showAll(networkId)
   }
   setWorkspaceFilterDisplayMode(filterId, displayMode)
   return applyWorkspaceFilter(networkId, filterId)

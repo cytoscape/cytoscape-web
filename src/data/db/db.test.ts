@@ -61,6 +61,7 @@ import {
   clearVisualStyleFromDb,
   closeDb,
   CyNetworkCacheMissError,
+  DB_NAME,
   deleteAppDataFromDb,
   deleteAppFromDb,
   deleteAppSettingFromDb,
@@ -1752,7 +1753,7 @@ describe('workspace filter storage (DB v13)', () => {
   })
 })
 
-describe('applied workspace filter storage (DB v13)', () => {
+describe('applied workspace filter storage (DB v14)', () => {
   const show = { filterId: 'f1', displayMode: DisplayMode.SHOW_HIDE }
   const select = { filterId: 'f2', displayMode: DisplayMode.SELECT }
 
@@ -1801,5 +1802,46 @@ describe('applied workspace filter storage (DB v13)', () => {
 
     expect(await getAllAppliedWorkspaceFiltersFromDb()).toEqual({ net1: show })
     expect(await getAppliedWorkspaceFilterFromDb('bad')).toBeUndefined()
+  })
+})
+
+describe('schema upgrade from v13', () => {
+  const storeNamesOnDisk = (): Promise<string[]> =>
+    new Promise((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME)
+      request.onsuccess = () => {
+        const names = [...request.result.objectStoreNames]
+        request.result.close()
+        resolve(names)
+      }
+      request.onerror = () => reject(request.error)
+    })
+
+  // v13 shipped to local databases with `workspaceFilters` only; a store added
+  // to v13 afterwards was never created there, because Dexie does not re-run
+  // a version a database already has
+  it('creates appliedWorkspaceFilters in a database already at v13', async () => {
+    ensureDebugNamespace()
+    // deleteDb reopens the app's database at the full current schema, so
+    // close it before leaving an old one on disk in its place
+    await deleteDb()
+    await closeDb()
+    await Dexie.delete(DB_NAME)
+    const v13 = new Dexie(DB_NAME)
+    v13.version(13).stores({ workspaceFilters: 'id' })
+    await v13.open()
+    v13.close()
+
+    await initializeDb()
+
+    expect(await storeNamesOnDisk()).toContain('appliedWorkspaceFilters')
+    await putAppliedWorkspaceFilterToDb('net1', {
+      filterId: 'f1',
+      displayMode: DisplayMode.SHOW_HIDE,
+    })
+    expect(await getAppliedWorkspaceFilterFromDb('net1')).toEqual({
+      filterId: 'f1',
+      displayMode: DisplayMode.SHOW_HIDE,
+    })
   })
 })

@@ -339,7 +339,7 @@ const WorkspaceFilterRowSchema = z.object({
   filter: z.unknown(),
 })
 
-// Row shape of the `appliedWorkspaceFilters` store (added in DB v13): the
+// Row shape of the `appliedWorkspaceFilters` store (added in DB v14): the
 // workspace filter last applied to a network, keyed by the network's id
 const AppliedWorkspaceFilterRowSchema = z.object({
   // FilterStore keys these by network id in a plain object
