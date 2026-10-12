@@ -1,4 +1,12 @@
-import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+  type Mock,
+} from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { createElement, ReactNode } from 'react'
 
@@ -12,10 +20,10 @@ import { migrateLegacyApps } from '../../../features/AppManager/install/migrateL
 import { loadRemoteApp } from '../../../features/AppManager/loader/loadRemoteApp'
 import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
-import { mountApp } from './appLifecycle'
+import { mountApp, unmountApp } from './appLifecycle'
 import { useAppStore } from './AppStore'
 import { useMessageStore } from './MessageStore'
-import { appRegistry, useAppManager } from './useAppManager'
+import { appRegistry, loadedAppUrls, useAppManager } from './useAppManager'
 import { useWorkspaceStore } from './WorkspaceStore'
 
 // Stub the app-api/core barrel — its layout API transitively imports the
@@ -61,6 +69,8 @@ const mockIsCatalogEntryAllowed = isCatalogEntryAllowed as Mock
 const mockIsHostCompatible = isHostCompatible as Mock
 const mockMigrate = migrateLegacyApps as Mock
 const mockLoadRemoteApp = loadRemoteApp as Mock
+const mockMountApp = mountApp as Mock
+const mockUnmountApp = unmountApp as Mock
 
 const entry = (id: string, version = '1.0.0'): AppCatalogEntry => ({
   id,
@@ -94,6 +104,7 @@ describe('useAppManager — install / uninstall', () => {
     mockIsCatalogEntryAllowed.mockReturnValue(true)
     mockIsHostCompatible.mockReturnValue(true)
     appRegistry.clear()
+    loadedAppUrls.clear()
     // Hydrated workspace so addInstalledApp persists and the readiness gate
     // resolves immediately.
     useWorkspaceStore.getState().set({
@@ -190,6 +201,136 @@ describe('useAppManager — install / uninstall', () => {
       })
 
       expect(installed().filter((a) => a.entry.id === 'hello')).toHaveLength(1)
+    })
+  })
+
+  // #810: an App Store link to a newer version updated the installed record
+  // but left the old module running until a reload. The module in memory was
+  // loaded from the old version's URL, and the fast re-enable path reused it.
+  describe('installApp — version update', () => {
+    beforeEach(() => {
+      useAppStore.setState({ loadStates: {}, loadErrors: {}, apps: {} })
+      mockLoadRemoteApp.mockImplementation(
+        async (id: string, url: string, registry: Map<string, unknown>) => {
+          const app = { id, name: id, status: AppStatus.Inactive, url }
+          registry.set(id, app)
+          return { ok: true, app }
+        },
+      )
+      // The real helpers keep the mounted-id set; the update path relies on it.
+      mockMountApp.mockImplementation(
+        async (app: { id: string }, _ctx: unknown, mounted: Set<string>) => {
+          mounted.add(app.id)
+        },
+      )
+      mockUnmountApp.mockImplementation(
+        async (app: { id: string }, mounted: Set<string>) => {
+          mounted.delete(app.id)
+        },
+      )
+    })
+
+    afterEach(() => {
+      mockMountApp.mockReset().mockResolvedValue(undefined)
+      mockUnmountApp.mockReset().mockResolvedValue(undefined)
+    })
+
+    it('unmounts the running version and loads the new one', async () => {
+      const { result } = await renderManager()
+      await act(async () => {
+        await result.current.installApp(entry('mcode', '1.0.0'), {
+          activate: true,
+        })
+      })
+      const oldApp = appRegistry.get('mcode')
+
+      await act(async () => {
+        await result.current.installApp(entry('mcode', '1.1.0'), {
+          activate: true,
+        })
+      })
+
+      expect(mockLoadRemoteApp).toHaveBeenLastCalledWith(
+        'mcode',
+        entry('mcode', '1.1.0').url,
+        appRegistry,
+      )
+      expect(mockUnmountApp).toHaveBeenCalledWith(oldApp, expect.any(Set))
+      expect(mockMountApp).toHaveBeenLastCalledWith(
+        expect.objectContaining({ url: entry('mcode', '1.1.0').url }),
+        expect.anything(),
+        expect.any(Set),
+      )
+      expect(useAppStore.getState().loadStates['mcode']).toBe('loaded')
+      expect(installed()[0].entry.version).toBe('1.1.0')
+    })
+
+    // The path in the issue: the page boots with 1.0.0 active, and the App
+    // Store link that opened it installs 1.1.0.
+    it('replaces a version the startup auto-load mounted', async () => {
+      useWorkspaceStore.getState().addInstalledApp({
+        entry: entry('mcode', '1.0.0'),
+        status: AppStatus.Active,
+        source: 'appstore',
+        installedAt: '2026-01-01T00:00:00.000Z',
+      })
+      const { result } = await renderManager()
+      await waitFor(() =>
+        expect(useAppStore.getState().loadStates['mcode']).toBe('loaded'),
+      )
+      const oldApp = appRegistry.get('mcode')
+
+      await act(async () => {
+        await result.current.installApp(entry('mcode', '1.1.0'), {
+          activate: true,
+        })
+      })
+
+      expect(mockUnmountApp).toHaveBeenCalledWith(oldApp, expect.any(Set))
+      expect(appRegistry.get('mcode')).toEqual(
+        expect.objectContaining({ url: entry('mcode', '1.1.0').url }),
+      )
+    })
+
+    it('updates an app that was loaded and then disabled', async () => {
+      const { result } = await renderManager()
+      await act(async () => {
+        await result.current.installApp(entry('mcode', '1.0.0'), {
+          activate: true,
+        })
+        await result.current.deactivateApp('mcode')
+      })
+
+      await act(async () => {
+        await result.current.installApp(entry('mcode', '1.1.0'), {
+          activate: true,
+        })
+      })
+
+      expect(mockLoadRemoteApp).toHaveBeenLastCalledWith(
+        'mcode',
+        entry('mcode', '1.1.0').url,
+        appRegistry,
+      )
+      expect(appRegistry.get('mcode')).toEqual(
+        expect.objectContaining({ url: entry('mcode', '1.1.0').url }),
+      )
+    })
+
+    it('reuses the module in memory when the URL has not changed', async () => {
+      const { result } = await renderManager()
+      await act(async () => {
+        await result.current.installApp(entry('mcode', '1.0.0'), {
+          activate: true,
+        })
+        await result.current.deactivateApp('mcode')
+        await result.current.installApp(entry('mcode', '1.0.0'), {
+          activate: true,
+        })
+      })
+
+      expect(mockLoadRemoteApp).toHaveBeenCalledTimes(1)
+      expect(mockMountApp).toHaveBeenCalledTimes(2)
     })
   })
 
@@ -409,6 +550,7 @@ describe('useAppManager — load failure reasons', () => {
     mockIsCatalogEntryAllowed.mockReturnValue(true)
     mockIsHostCompatible.mockReturnValue(true)
     appRegistry.clear()
+    loadedAppUrls.clear()
     seedWorkspace([])
     useAppStore.setState({ loadStates: {}, loadErrors: {}, apps: {} })
     useAppStore.getState().setCatalog([])

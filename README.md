@@ -23,21 +23,25 @@ Keiichiro Ono, Dylan Fong, Chengzhan Gao, Christopher Churas, Rudolf Pillich, Jo
 
 ## App Development
 
-Cytoscape Web is designed to expand with two types of **Apps**. We are actively researching and developing examples. Please visit the following pages for more details:
+You can extend Cytoscape Web with two types of **Apps**. Neither requires changes to this repository:
 
-> **⚠ New App API in active development (as of 2026)**
->
-> A new JavaScript/TypeScript App API (`window.CyWebApi` / Module Federation) is under active
-> development in the `new-app-api` branch. This API will become the recommended way to build
-> apps and is expected to **deprecate the current Module Federation raw-store approach** once
-> Phase 1 is complete. If you are starting a new app, consider waiting for or tracking
-> [`@cytoscape-web/api-types`](https://www.npmjs.com/package/@cytoscape-web/api-types)
-> (`@alpha`) which already publishes the Phase 0 type declarations.
-
-- [App examples](https://github.com/cytoscape/cytoscape-web-app-examples)
-- [Service-based app developer guide](<https://github.com/cytoscape/cytoscape-web/wiki/Specification-for-Service-App-in-Cytoscape-Web-(draft-v2)>)
+- **Module Federation apps** run inside Cytoscape Web and call the App API from
+  JavaScript or TypeScript. They can add panels, menu items and context menu
+  actions. Start at
+  [cytoscape-web-app-examples](https://github.com/cytoscape/cytoscape-web-app-examples),
+  which has the developer guides, the example apps and the
+  `npm create cytoscape-app` scaffolder. The App API is a developer preview:
+  [`@cytoscape-web/api-types`](https://www.npmjs.com/package/@cytoscape-web/api-types)
+  is at 1.0 beta and may change before 1.0.
+- **Service apps** are web services. Cytoscape Web sends them network or table
+  data and applies the result they return. See the
+  [service app specification](<https://github.com/cytoscape/cytoscape-web/wiki/Specification-for-Service-App-in-Cytoscape-Web-(draft-v2)>).
 
 # Developer's Guide
+
+This section is for developers working on Cytoscape Web itself. The
+[Core Developer's Guide](docs/guides/README.md) indexes the rest of the
+contributor documentation.
 
 ## Architecture
 
@@ -113,7 +117,9 @@ See [`AGENTS.md`](./AGENTS.md) and the specs under [`docs/specifications/`](./do
 Cytoscape Web is designed to have minimum dependency to the backend services,
 so you can easily run your own instance locally only with an HTTP server.
 
-To run Cytoscape Web locally with development http server, checkout this repository and run the following:
+To run Cytoscape Web locally with development http server, use Node 24 (see
+[Build dependencies](#build-dependencies)), checkout this repository and run
+the following:
 
 ```
 npm install
@@ -121,10 +127,6 @@ npm run dev
 ```
 
 This will start a local test server and opens a new browser tab.
-
----
-
-! The following section is not finished yet.
 
 ### Build dependencies
 
@@ -135,9 +137,10 @@ The required Node.js version is specified in `.nvmrc` at the repo root. Use [nvm
 nvm install   # downloads the version from .nvmrc if not already cached, then activates it
 ```
 
-**mise** (install mise first if needed — see [mise install guide](https://mise.jdx.dev/getting-started.html)):
+**mise** (install mise first if needed — see [mise install guide](https://mise.jdx.dev/getting-started.html)). By default, mise does not read `.nvmrc`, so enable that for Node once before installing:
 ```bash
-mise install  # installs and activates the version from .nvmrc
+mise settings add idiomatic_version_file_enable_tools node  # one-time: let mise read .nvmrc
+mise install  # installs the version from .nvmrc
 ```
 
 After switching, run `node -v` and `npm -v` to confirm. The correct version is enforced at install time — running `npm install` with the wrong Node version will fail.
@@ -146,7 +149,7 @@ After switching, run `node -v` and `npm -v` to confirm. The correct version is e
 
 Run a command using `npm <command>`. Run `npm install` before using other commands.
 
-- `dev`: run a dev server that watches code changes, open `localhost:5500` in your web browser. By default this app points to [NDEx dev server] (https://dev.ndexbio.org), please create an account on the NDEx dev server with a email that links to your Google account before trying to setup your own dev environment for Cytoscape Web.
+- `dev`: run a dev server that watches code changes, open `localhost:5500` in your web browser. By default this app points to the [NDEx dev server](https://dev1.ndexbio.org), please create an account on the NDEx dev server with an email that links to your Google account before trying to setup your own dev environment for Cytoscape Web.
 - `build`: build the app for production
 - `lint`: type-check with TypeScript and lint source code with oxlint
 - `format`: format source code with Prettier
@@ -254,6 +257,8 @@ This section lists solutions to problems you might encounter with Cytoscape web.
 ### Debug
 
 Use developer tools in browser to check the error message. Then we recommend using Visual Studio Code debugger to debug.
+
+Cytoscape Web also writes structured debug logs to the browser console, grouped by namespace. They are on by default in development builds. [DEBUG_GUIDE.md](docs/specifications/DEBUG_GUIDE.md) explains how to turn them on or off and how to filter them.
 
 ### Blank Workspace or Fail to Load Any Networks
 

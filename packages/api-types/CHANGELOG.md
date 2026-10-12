@@ -2,7 +2,28 @@
 
 All notable changes to `@cytoscape-web/api-types` are documented here.
 
-## 1.0.0-beta.5 (unpublished)
+## 1.0.0-beta.5 (2026-10-05)
+
+> **Host compatibility.** This release documents the App API as implemented by
+> the Cytoscape Web build tagged `api-types-v1.0.0-beta.5` on the `development`
+> branch. **No released version of Cytoscape Web implements it yet** — the Panel
+> API, the `'layout-algorithm'` slot and the `network:loaded` event, like
+> everything added in beta.4, exist on `development` only, so an app can compile
+> against methods a deployed host does not have.
+>
+> Where it runs: [dev1.ndexbio.org/cytoscape](https://dev1.ndexbio.org/cytoscape)
+> once `development` has been deployed there, which is done by hand and can lag.
+> Production (web.cytoscape.org) stays on the 1.0.x line until Cytoscape Web
+> 1.1.0. To check a given deployment, open **Help → About**: it shows the
+> build's commit as a seven-character prefix (plus a build date). A hash says
+> nothing about order, so check ancestry in a clone of
+> [cytoscape-web](https://github.com/cytoscape/cytoscape-web): the deployment
+> has this API when the release tag is an ancestor of its commit.
+>
+> ```bash
+> git fetch --tags origin development
+> git merge-base --is-ancestor api-types-v1.0.0-beta.5 <prefix> && echo yes
+> ```
 
 ### Added
 
@@ -66,12 +87,13 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
   alphabetically. Exported:
   `AppParameter`, `ParameterValue`, `LayoutParameterUiType`, and the
   `ParameterUiType`, `ValidationType`, `ColumnTypeFilter` consts. Spec:
-  `docs/specifications/APP_PARAMETERS_SPECIFICATION.md`. **Breaking against
-  the unpublished beta.4 / #736 shape**: the record keyed by name, the value
-  types `'string' | 'integer' | 'long' | 'double' | 'boolean'`, and `range`
-  are gone (`LayoutParameterType` and `LayoutParameterValue` are removed);
-  `registerLayout` rejects that shape with `APP9` and a message naming the
-  array spec.
+  `docs/specifications/APP_PARAMETERS_SPECIFICATION.md`. Not breaking for
+  any published version: an earlier shape — a record keyed by name, the
+  value types `'string' | 'integer' | 'long' | 'double' | 'boolean'`, and
+  `range` (`LayoutParameterType`, `LayoutParameterValue`) — existed only on
+  `development` between beta.4 and this release (#734, #736) and was never
+  published. An app written against it fails `registerLayout` with `APP9`
+  and a message naming the array spec.
 
 - **`PanelApi` — `panel.open(panel, tabId?)`** (#740) — opens one of the
   workspace's collapsible panes (`'left' | 'right' | 'bottom'`) and selects a
@@ -107,18 +129,38 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
   const at runtime (`type: ComponentType.Panel`) does not load at all:
   `cyweb/ApiTypes` no longer exports it, so evaluating the app's
   `./AppConfig` throws. Migrate each entry to a declaration in `resources`
-  (or a registration in `mount()`):
+  (or a registration in `mount()`). Both are declared on
+  `CyAppWithLifecycle`, the app type to annotate with — this package does not
+  export `CyApp`, so an app that typed itself with a local `CyApp`
+  declaration switches to it:
 
-  | Removed entry | Replacement |
-  | --- | --- |
-  | `{ id, type: ComponentType.Panel, component }` | `{ slot: 'right-panel', id, title, component }` |
-  | `{ id, type: ComponentType.Menu, component }` | `{ slot: 'apps-menu', id, label, onClick(apis) }`, with any UI opened from `onClick` through `apis.dialog.open({ render })` |
+  | Removed entry                                  | Replacement                                                                                                                 |
+  | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+  | `{ id, type: ComponentType.Panel, component }` | `{ slot: 'right-panel', id, title, component }`                                                                             |
+  | `{ id, type: ComponentType.Menu, component }`  | `{ slot: 'apps-menu', id, label, onClick(apis) }`, with any UI opened from `onClick` through `apis.dialog.open({ render })` |
 
   A panel that was loaded by name from the app's own Module Federation
   `exposes` (an entry without `component`) needs no `exposes` entry any more:
   only `./AppConfig` is loaded. Workspaces saved by an older host keep
   working: the field is dropped when an app enters the AppStore, though an
   app record in IndexedDB may keep it, unused.
+
+### Fixed
+
+- **`network.deleteNetwork` deletes a workspace network that has never been
+  shown** (#794). Until a workspace network becomes current it is only a
+  summary, so `deleteNetwork` failed with `APP1` for it — every sample but the
+  first after **Open Sample Networks**, and every network but the current one
+  after a reload — although the workspace listed it. `deleteCurrentNetwork`
+  failed the same way while the current network was still loading. A network
+  now exists for `deleteNetwork` when it is in the workspace or was created
+  with `addToWorkspace: false`; `APP1` means neither.
+- **Deleting the network the address bar names moves the URL** (#792).
+  `deleteNetwork`, `deleteCurrentNetwork` and `deleteAllNetworks` left the
+  deleted network's id in the URL, so the network that became current was
+  never loaded, and re-adding the deleted one showed "Loading network data..."
+  indefinitely. The host now replaces the history entry with the repaired
+  current network, or with `/<workspace>/networks` when none is left.
 
 ## 1.0.0-beta.4 (2026-09-11)
 

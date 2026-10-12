@@ -359,6 +359,14 @@ jobs:
       # ---------------------------------------------------------------- #
       # Read back what the registry actually has — assertions, not logs.   #
       # ---------------------------------------------------------------- #
+      # npm processes a publish asynchronously: `npm publish` returns before
+      # the version is visible, and 1.0.0-beta.5 took 3m14s to appear. This
+      # used to poll for 60 seconds, so that publish succeeded and the run
+      # still failed. Ten minutes fits inside the job's 20-minute timeout —
+      # everything before this step took about a minute for beta.5.
+      #
+      # On a re-run against the tag (decide said `skip`) the version is
+      # already visible and the wait returns on its first poll.
       - name: Verify the registry
         if: steps.params.outputs.dry_run != 'true'
         env:
@@ -367,16 +375,18 @@ jobs:
         run: |
           set -euo pipefail
 
-          # The registry CDN lags a publish by a few seconds.
-          for attempt in 1 2 3 4 5 6; do
-            if npm view "${PKG_NAME}@${VERSION}" version >/dev/null 2>&1; then break; fi
-            echo "  attempt ${attempt}: not visible yet, waiting 10s"
-            sleep 10
-          done
+          node scripts/wait-for-registry.mjs \
+            --package "${PKG_NAME}" \
+            --version "${VERSION}" \
+            --dist-tag "${DIST_TAG}" \
+            --timeout 600 \
+            --interval 15 \
+            --rerun-command "gh workflow run release-api-types.yml --ref ${GITHUB_REF_NAME} -f dry_run=false -f dist_tag=${DIST_TAG}"
 
           # Re-uses the decision script: at this point the published artifact
           # must match this run's tarball, provenance and commit exactly — which
-          # is precisely the "skip" condition. Anything else exits non-zero.
+          # is precisely the "skip" condition. --expect-published makes that
+          # literal: an absent version stops here instead of reading `publish`.
           INTEGRITY="$(node -p "require('${RUNNER_TEMP}/pack-result.json').integrity")"
           node scripts/decide-registry-action.mjs \
             --package "${PKG_NAME}" \
@@ -385,7 +395,8 @@ jobs:
             --repository "${{ github.repository }}" \
             --workflow "${WORKFLOW_PATH}" \
             --sha "${GITHUB_SHA}" \
-            --dist-tag "${DIST_TAG}"
+            --dist-tag "${DIST_TAG}" \
+            --expect-published
 
           RESOLVED="$(npm view "${PKG_NAME}@${DIST_TAG}" version)"
           if [ "$RESOLVED" != "$VERSION" ]; then

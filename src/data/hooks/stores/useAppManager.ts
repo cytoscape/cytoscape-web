@@ -41,6 +41,13 @@ import { useWorkspaceStore } from './WorkspaceStore'
 export const appRegistry = new Map<string, CyApp>()
 
 /**
+ * The remote entry URL each module in `appRegistry` was loaded from. The App
+ * Store publishes every version at its own URL, so a catalog URL that differs
+ * from this one means the installed version changed under a running module.
+ */
+export const loadedAppUrls = new Map<string, string>()
+
+/**
  * Command surface exposed by useAppManager.
  * UI components call these instead of manipulating AppStore directly.
  */
@@ -311,8 +318,29 @@ export const useAppManager = (): AppManagerCommands => {
       return
     }
 
-    const currentLoadState = loadStates[id]
+    let currentLoadState = loadStates[id]
     const existedBefore = currentApps[id] !== undefined
+
+    // A version update (#810): the catalog now names a different remote entry
+    // than the module in memory came from. Re-enabling that module would keep
+    // the old version running until a reload, so retire it and load anew.
+    const loadedUrl = loadedAppUrls.get(id)
+    if (
+      currentLoadState === 'loaded' &&
+      loadedUrl !== undefined &&
+      loadedUrl !== catalogEntry.url
+    ) {
+      const previous = appRegistry.get(id)
+      if (previous !== undefined) {
+        await unmountApp(previous, mountedApps.current)
+      }
+      appRegistry.delete(id)
+      loadedAppUrls.delete(id)
+      currentLoadState = 'unloaded'
+      logApp.info(
+        `[useAppManager]: App "${id}" changed from ${loadedUrl} to ${catalogEntry.url}; reloading`,
+      )
+    }
 
     if (currentLoadState === 'loaded') {
       // Fast re-enable path — module already in memory
@@ -350,6 +378,7 @@ export const useAppManager = (): AppManagerCommands => {
       )
       return
     }
+    loadedAppUrls.set(id, catalogEntry.url)
 
     try {
       await activateAndMount(id)
@@ -484,6 +513,7 @@ export const useAppManager = (): AppManagerCommands => {
     useWorkspaceStore.getState().removeInstalledApp(id)
     removeApp(id)
     appRegistry.delete(id)
+    loadedAppUrls.delete(id)
     recomposeCatalog()
     logApp.info(`[useAppManager]: Uninstalled app "${id}"`)
   }
@@ -495,6 +525,7 @@ export const useAppManager = (): AppManagerCommands => {
   const removeOrphan = (id: string): void => {
     removeApp(id)
     appRegistry.delete(id)
+    loadedAppUrls.delete(id)
     logApp.info(`[useAppManager]: Orphan app "${id}" removed`)
   }
 
@@ -662,6 +693,7 @@ export const useAppManager = (): AppManagerCommands => {
             )
             continue
           }
+          loadedAppUrls.set(id, catalog[id].url)
           try {
             await activateAndMount(id)
             setLoadState(id, 'loaded')

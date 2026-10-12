@@ -27,7 +27,9 @@ npm install     # install dependencies
 npm run dev     # start the dev server (opens at http://localhost:5500)
 ```
 
-Node's expected version is pinned in [`.nvmrc`](.nvmrc); using `nvm use` will select it for you.
+You need Node 24, the version pinned in [`.nvmrc`](.nvmrc); `nvm use` will select it for you. `npm install` refuses to run on an older Node. The README's [Build dependencies](README.md#build-dependencies) section also covers mise.
+
+The [Core Developer's Guide](docs/guides/README.md) indexes the rest of the contributor documentation: architecture, testing, debugging and the creation patterns for features, models and stores.
 
 ## Making your changes in a pull request
 
@@ -40,18 +42,18 @@ To propose a change:
 3. Make your change, keeping commits focused and their messages descriptive.
 4. Push your branch and open a [pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request) so the proposed changes can be reviewed.
 
-The codebase follows a strict three-layer architecture — models, stores, and features. Please try to keep your changes consistent with the existing structure. For a deeper overview of the architecture, conventions, and directory layout, see [`CLAUDE.md`](CLAUDE.md) and the specifications under [`docs/specifications/`](docs/specifications/).
+The codebase follows a strict three-layer architecture — models, stores, and features. Please try to keep your changes consistent with the existing structure. For a deeper overview of the architecture, conventions, and directory layout, see [`AGENTS.md`](AGENTS.md), [`docs/agents/architecture.md`](docs/agents/architecture.md) and the specifications under [`docs/specifications/`](docs/specifications/).
 
 If your change affects behaviour, please update the relevant documentation as well.
 
 ## Code style
 
-Cytoscape Web is written in TypeScript. Formatting and linting are enforced automatically:
+Cytoscape Web is written in TypeScript:
 
-- **Formatting** is handled by Prettier: no semicolons, single quotes, trailing commas, 2-space indentation, and an 80-character line width.
-- **Linting** is handled by ESLint, including import sorting (lint errors will fail the build).
+- **Formatting** is handled by Prettier: no semicolons, single quotes, trailing commas, 2-space indentation, and an 80-character line width. It is not checked automatically, so run `npm run format` before you commit.
+- **Linting** is handled by oxlint, and `npm run lint` also type-checks the code with TypeScript. CI runs it on every pull request, and lint errors fail the check. Import order is no longer checked by lint; keep imports sorted by convention.
 
-You can run the tooling from the terminal, or enable Prettier/ESLint support in your editor:
+You can run the tooling from the terminal, or enable Prettier and oxlint support in your editor:
 
 ```sh
 npm run lint        # check for lint errors

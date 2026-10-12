@@ -215,4 +215,4 @@ regression.
 
 - `src/boot/boot_docs/boot.md` — directory map and design reasoning
 - `docs/specifications/ROUTING_SPECIFICATION.md` — search params and navigation
-- `docs/specifications/DEBUG_GUIDE.MD` — logging policy
+- `docs/specifications/DEBUG_GUIDE.md` — logging policy

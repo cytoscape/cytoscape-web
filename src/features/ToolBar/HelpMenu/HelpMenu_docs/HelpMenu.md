@@ -16,7 +16,7 @@ The `HelpMenu` feature implements the **Help** toolbar menu. It centralizes link
 
 - **Menu Item Components** (rows only — each renders a `DropdownMenuItem` and calls the `onClick` it is given)
   - `AboutCytoscapeWebMenuItem`, `LicenseMenuItem`, `CitationMenuItem`, `BugReportMenuItem`, `ImportDatabaseMenuItem`: open a dialog owned by `HelpMenu`.
-  - `TakeATourMenuItem`, `TutorialMenuItem`, `DeveloperMenuItem`, `CodeRepositoryMenuItem`: navigate (tour, tutorials, developer guide, GitHub).
+  - `TakeATourMenuItem`, `TutorialMenuItem`, `DeveloperMenuItem`, `CodeRepositoryMenuItem`: navigate (tour, user manual, developer guide, GitHub).
   - `ExportDatabaseMenuItem`: Exports the internal Dexie/IndexedDB database to a file.
 
 - **Dialog Components** (rendered by `HelpMenu` next to the menu, never inside a row)
@@ -30,23 +30,32 @@ The `HelpMenu` feature implements the **Help** toolbar menu. It centralizes link
 
 ### Menu Layout
 
-The menu items are grouped logically:
+The menu, top to bottom (`---` marks a divider):
 
-- **General**
-  - About Cytoscape Web
-  - Tutorial
+- About Cytoscape Web
+- ---
+- Take a tour
+- User Manual: opens `web-manual.cytoscape.org`
+- **Developer** (submenu)
+  - Developer's Guide: opens the
+    [Cytoscape-Web-Developer-Tutorial](https://github.com/cytoscape/cytoscape-web/wiki/Cytoscape-Web-Developer-Tutorial)
+    wiki page, which sends app developers and core developers to their own
+    docs. Every released version links to this URL, so the page keeps its
+    name.
+  - Code Repository: opens the GitHub repository
+  - ---
+  - Export Database Snapshot
+  - Import Database Snapshot...
+- License
+- ---
+- Citation
+- ---
+- Report a Bug
 
-- **Developer Tools**
-  - Developer's Guide
-  - Export Database
-  - Import Database
-
-- **Project & Community**
-  - Code Repository
-  - Citation
-  - Bug Report
-
-Dividers are used to separate these groups visually.
+Items from service apps whose `cyWebMenuItem.root` resolves to Help are added
+by `appendServiceMenuItems`. A service submenu with the same label as a
+built-in submenu (for example **Developer**) is merged into it. Every other
+item is appended after a divider at the bottom.
 
 ### Interaction Flow
 

@@ -8,7 +8,7 @@ Each subdirectory is an independent npm package managed via [npm workspaces](htt
 
 | Package                                    | Version        | Description                                           |
 | ------------------------------------------ | -------------- | ----------------------------------------------------- |
-| [`@cytoscape-web/api-types`](./api-types/) | `1.0.0-beta.4` | TypeScript declarations for the Cytoscape Web App API |
+| [`@cytoscape-web/api-types`](./api-types/) | `1.0.0-beta.5` | TypeScript declarations for the Cytoscape Web App API |
 
 ## `@cytoscape-web/api-types`
 

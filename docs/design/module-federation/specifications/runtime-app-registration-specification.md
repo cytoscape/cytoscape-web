@@ -1072,6 +1072,14 @@ The orchestrator uses `loadStates` to decide the re-enable path:
 - `loaded` → skip `loadRemoteApp`, reuse `appRegistry` entry
 - `unloaded` or `failed` → call `loadRemoteApp` (full fetch)
 
+A version update is the exception (#810). `useAppManager` records the remote
+entry URL each module was loaded from (`loadedAppUrls`). When the catalog entry
+names a different URL — an App Store install of a newer version — `activateApp`
+unmounts the running module, drops it from `appRegistry`, and takes the full
+fetch path. The App Store publishes each version at its own URL, so a changed
+URL is a changed version. A version update at an unchanged URL is not detected:
+the browser's module cache would return the old code anyway.
+
 ### 9.7 Lifecycle State Machine
 
 The following table defines all valid state transitions for app activation and
@@ -1094,6 +1102,7 @@ in session-local `loadStates`).
 | 11 | Manifest refresh — app removed | `Active` | `loaded` | `Active` | `loaded` | No immediate action; app becomes session-only orphan (Section 7.5) |
 | 12 | Disable session-only orphan | `Active` | `loaded` | `Inactive` | `loaded` | `unmountApp(cyApp, mountedApps)`; re-enable not possible (no catalog entry) |
 | 13 | Remove orphan app | `Inactive` | `loaded` | n/a (entry removed) | n/a (entry removed) | `AppStore.remove(id)` (apps, loadStates, IndexedDB) + `appRegistry.delete(id)`; app disappears from UI |
+| 14 | Install a new version (catalog URL differs from the loaded one) | any | `loaded` | `Active` | `loading` → `loaded` | `unmountApp(old, mountedApps)` + `appRegistry.delete(id)` → full `loadRemoteApp` → register → declarative resources → `mount()` |
 
 **Invariants:**
 
