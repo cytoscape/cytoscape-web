@@ -29,6 +29,10 @@ interface PendingWrite {
 
 const pendingWrites = new Map<string, PendingWrite>()
 
+// Set once the database was deleted for a reset or an import: see
+// suspendWritesUntilReload
+let suspended = false
+
 // Writes whose `execute()` has started but not settled. A key leaves
 // `pendingWrites` the moment it starts running, so without this a write that
 // fired on its own timer would be invisible to `flushPendingWrites` and a
@@ -70,6 +74,9 @@ export const scheduleWrite = (
   label: string,
   execute: () => Promise<unknown>,
 ): void => {
+  if (suspended) {
+    return
+  }
   const existing = pendingWrites.get(key)
   if (existing !== undefined) {
     clearTimeout(existing.timer)
@@ -106,6 +113,25 @@ export const flushPendingWrites = async (): Promise<void> => {
     ...Array.from(pendingWrites.keys()).map(async (key) => await runWrite(key)),
     ...Array.from(inFlightWrites),
   ])
+}
+
+/**
+ * Drop every pending write and ignore new ones until the page reloads.
+ *
+ * For a workspace reset or import: once the database is deleted, the stores
+ * still hold the old workspace until the reload. A write that fires in that
+ * window (one already pending, or one scheduled by an edit, or the unload
+ * flush) would put the old state into the fresh database.
+ */
+export const suspendWritesUntilReload = (): void => {
+  suspended = true
+  pendingWrites.forEach((pending) => clearTimeout(pending.timer))
+  pendingWrites.clear()
+}
+
+/** Undo suspendWritesUntilReload, for tests (the app reloads instead). */
+export const resumeWritesForTesting = (): void => {
+  suspended = false
 }
 
 /** Number of writes currently waiting — exposed for tests/debugging. */

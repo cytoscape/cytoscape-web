@@ -80,3 +80,32 @@ describe('ColumnConditionEditor: numeric columns', () => {
     )
   })
 })
+
+describe('ColumnConditionEditor: imported conditions on both tables', () => {
+  it('shows a nodes+edges condition with its comparison', () => {
+    renderEditor({
+      ...scoreCondition(FilterPredicate.IS_NOT_BETWEEN, [2, 4]),
+      target: 'nodes+edges',
+    })
+
+    expect(screen.getByRole('combobox', { name: 'Column' }).textContent).toBe(
+      'Node + Edge: score',
+    )
+    expect((screen.getByTestId('c-range-low') as HTMLInputElement).value).toBe(
+      '2',
+    )
+    expect(openPredicateOptions()).toEqual(['is', 'is not'])
+  })
+
+  it('names a nodes+edges condition on a missing column as such', () => {
+    renderEditor({
+      ...scoreCondition(FilterPredicate.IS, 'x'),
+      columnName: 'missing',
+      target: 'nodes+edges',
+    })
+
+    expect(screen.getByRole('combobox', { name: 'Column' }).textContent).toBe(
+      'Node + Edge: missing',
+    )
+  })
+})

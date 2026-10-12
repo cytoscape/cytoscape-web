@@ -489,6 +489,28 @@ describe('topology condition', () => {
     )
   })
 
+  it('counts past the threshold for predicates decided above it', () => {
+    // A star: n1 has 3 neighbours
+    const net = network(
+      ['n1', 'n2', 'n3', 'n4'],
+      [
+        ['e1', 'n1', 'n2'],
+        ['e2', 'n1', 'n3'],
+        ['e3', 'n1', 'n4'],
+      ],
+    )
+    const ctx = () => createFilterContext(net, EMPTY, EMPTY)
+    const node = (predicate: FilterPredicate) =>
+      topology({ predicate, threshold: 2, distance: 1 })
+
+    expect(accepts(ctx(), node(P.GREATER_THAN), 'n1', NODE)).toBe(true)
+    expect(accepts(ctx(), node(P.LESS_THAN_OR_EQUAL), 'n1', NODE)).toBe(false)
+    expect(accepts(ctx(), node(P.IS), 'n1', NODE)).toBe(false)
+    expect(accepts(ctx(), node(P.IS_NOT), 'n1', NODE)).toBe(true)
+    expect(accepts(ctx(), node(P.GREATER_THAN_OR_EQUAL), 'n1', NODE)).toBe(true)
+    expect(accepts(ctx(), node(P.LESS_THAN), 'n1', NODE)).toBe(false)
+  })
+
   it('rejects every node without distance and threshold', () => {
     const ctx = createFilterContext(network(['n1']), EMPTY, EMPTY)
     expect(accepts(ctx, topology({ threshold: 0 }), 'n1', NODE)).toBe(false)

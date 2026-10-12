@@ -19,6 +19,7 @@ import { announceDatabaseReset } from '@/data/db/lifecycle'
 import { deleteDb, putWorkspaceToDb } from '../../db'
 import { toPlainObject } from '../../db/serialization'
 import { isHydrating } from './hydrationContext'
+import { suspendWritesUntilReload } from './persistenceScheduler'
 
 const EMPTY_WORKSPACE: Workspace = {
   id: '',
@@ -196,6 +197,10 @@ export const useWorkspaceStore = create(
               reason: 'The database could not be deleted. Nothing was changed.',
             }
           }
+
+          // The stores still hold the old workspace until the reload; a
+          // delayed write landing in the fresh database would bring it back
+          suspendWritesUntilReload()
 
           // Every remaining outcome means the data is gone or on its way out
           // (`delete-blocked` leaves the request queued in IndexedDB, so it can

@@ -45,6 +45,13 @@ describe('numericAccepts', () => {
     expect(numericAccepts(predicate, 5, 100, value)).toBe(expected)
   })
 
+  it('compares IS / IS_NOT with == like Cytoscape Desktop, not Double.compare', () => {
+    expect(numericAccepts(P.IS, NaN, NaN, NaN)).toBe(false)
+    expect(numericAccepts(P.IS_NOT, NaN, NaN, NaN)).toBe(true)
+    expect(numericAccepts(P.IS, 0, 0, -0)).toBe(true)
+    expect(numericAccepts(P.IS_NOT, 0, 0, -0)).toBe(false)
+  })
+
   it('treats BETWEEN as inclusive of both bounds', () => {
     expect(numericAccepts(P.BETWEEN, 200, 300, 200)).toBe(true)
     expect(numericAccepts(P.BETWEEN, 200, 300, 300)).toBe(true)

@@ -180,6 +180,24 @@ describe('FilterTab', () => {
     expect(selectedNodes()).toEqual(['n3'])
   })
 
+  it("clears the last run's result when another filter is picked", () => {
+    useFilterStore.setState({
+      workspaceFilters: {
+        f1: nameContains('a'),
+        f2: { ...nameContains('b'), id: 'f2', name: 'Others' },
+      },
+      selectedWorkspaceFilterId: 'f1',
+      workspaceFilterAutoApply: { [NET]: false },
+    })
+    render(<FilterTab networkId={NET} />)
+
+    fireEvent.click(screen.getByTestId('filter-apply-button'))
+    expect(screen.getByTestId('filter-status').textContent).toMatch(/^Selected/)
+
+    pick('filter-select', 'Others')
+    expect(screen.getByTestId('filter-status').textContent?.trim()).toBe('')
+  })
+
   it('switches to show mode and applies at once', () => {
     useFilterStore.setState({
       workspaceFilters: { f1: nameContains('alpha') },
@@ -225,7 +243,14 @@ describe('FilterTab', () => {
     })
     render(<FilterTab networkId={NET} />)
 
-    expect(screen.getByTestId('filter-condition-0-warning')).toBeTruthy()
+    const warning = screen.getByTestId('filter-condition-0-warning')
+    // Reachable by keyboard, and read out by screen readers
+    expect(warning.tabIndex).toBe(0)
+    expect(
+      screen.getByRole('img', {
+        name: 'Filter cannot be applied to this network: Node table does not have column "missing"',
+      }),
+    ).toBe(warning)
   })
 
   it('combines several conditions, nested groups and topology conditions', () => {

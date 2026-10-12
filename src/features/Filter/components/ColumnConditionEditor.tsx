@@ -17,10 +17,13 @@ import type { Table } from '@/models/TableModel/Table'
 import { ValueTypeName } from '@/models/TableModel/ValueTypeName'
 
 import {
+  bothTablesOption,
+  columnLabel,
   ColumnOption,
   columnOptionKey,
   isRangePredicate,
   listColumnOptions,
+  mergeRanges,
   numericPredicateOptions,
   STRING_PREDICATE_LABELS,
   toRangeCriterion,
@@ -54,29 +57,46 @@ export const ColumnConditionEditor = ({
   testId,
   onChange,
 }: ColumnConditionEditorProps): JSX.Element => {
-  const options: ColumnOption[] = useMemo(
-    () => listColumnOptions(nodeTable, edgeTable),
-    [nodeTable, edgeTable],
-  )
+  const { columnName, target } = node
+  const options: ColumnOption[] = useMemo(() => {
+    const listed = listColumnOptions(nodeTable, edgeTable)
+    // An imported condition on both tables: listed so it stays visible
+    const both =
+      target === ColumnFilterTarget.NODES_AND_EDGES && columnName !== null
+        ? bothTablesOption(columnName, nodeTable, edgeTable)
+        : undefined
+    return both === undefined ? listed : [both, ...listed]
+  }, [nodeTable, edgeTable, target, columnName])
   const selectedKey =
-    node.columnName === null
-      ? NO_COLUMN
-      : columnOptionKey(node.target, node.columnName)
+    columnName === null ? NO_COLUMN : columnOptionKey(target, columnName)
   const selected: ColumnOption | undefined = options.find(
     (option) => option.key === selectedKey,
   )
-  const table = node.target === ColumnFilterTarget.EDGES ? edgeTable : nodeTable
-  const range = useMemo(
-    () =>
-      selected === undefined
-        ? undefined
-        : computeColumnRange(table, selected.column.name),
-    [selected, table],
-  )
+  const range = useMemo(() => {
+    if (selected === undefined) return undefined
+    const name = selected.column.name
+    switch (selected.target) {
+      case ColumnFilterTarget.NODES:
+        return computeColumnRange(nodeTable, name)
+      case ColumnFilterTarget.EDGES:
+        return computeColumnRange(edgeTable, name)
+      default:
+        return mergeRanges(
+          computeColumnRange(nodeTable, name),
+          computeColumnRange(edgeTable, name),
+        )
+    }
+  }, [selected, nodeTable, edgeTable])
 
   const pickColumn = (key: string): void => {
     const option = options.find((candidate) => candidate.key === key)
-    if (option === undefined) return
+    // Picking the condition's own both-table column again changes nothing
+    if (
+      option === undefined ||
+      option.target === ColumnFilterTarget.NODES_AND_EDGES
+    ) {
+      return
+    }
     const optionTable =
       option.target === ColumnFilterTarget.EDGES ? edgeTable : nodeTable
     onChange(
@@ -100,10 +120,10 @@ export const ColumnConditionEditor = ({
       <MenuItem value={NO_COLUMN} disabled>
         Choose column...
       </MenuItem>
-      {selected === undefined && node.columnName !== null && (
+      {selected === undefined && columnName !== null && (
         // An imported condition on a column this network does not have
         <MenuItem value={selectedKey} disabled>
-          {`${node.target === ColumnFilterTarget.EDGES ? 'Edge' : 'Node'}: ${node.columnName}`}
+          {columnLabel(target, columnName)}
         </MenuItem>
       )}
       {options.map((option) => (

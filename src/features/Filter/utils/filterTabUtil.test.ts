@@ -8,6 +8,8 @@ import type { Table } from '@/models/TableModel/Table'
 
 import {
   AUTO_APPLY_ELEMENT_LIMIT,
+  bothTablesOption,
+  mergeRanges,
   defaultAutoApply,
   formatApplyStatus,
   listColumnOptions,
@@ -157,5 +159,32 @@ describe('toRangeCriterion', () => {
     expect(toRangeCriterion(FilterPredicate.LESS_THAN, -3, bounds)).toEqual([
       -3, -3,
     ])
+  })
+})
+
+describe('bothTablesOption', () => {
+  it('reads the column from the node table, else the edge table', () => {
+    expect(
+      bothTablesOption('weight', table(['name']), table(['weight'])),
+    ).toMatchObject({
+      key: 'nodes+edges:weight',
+      target: 'nodes+edges',
+      label: 'Node + Edge: weight',
+    })
+    expect(bothTablesOption('nope', table([]), table([]))).toBeUndefined()
+  })
+})
+
+describe('mergeRanges', () => {
+  it('covers both ranges', () => {
+    expect(mergeRanges({ min: 0, max: 5 }, { min: -2, max: 3 })).toEqual({
+      min: -2,
+      max: 5,
+    })
+    expect(mergeRanges(undefined, { min: 1, max: 2 })).toEqual({
+      min: 1,
+      max: 2,
+    })
+    expect(mergeRanges(undefined, undefined)).toBeUndefined()
   })
 })

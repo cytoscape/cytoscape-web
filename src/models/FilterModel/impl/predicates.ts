@@ -101,6 +101,8 @@ export const numericAccepts = (
     return false
   }
   switch (predicate) {
+    // IS / IS_NOT use Java's ==, not Double.compare, as Cytoscape Desktop's
+    // IsDelegate does: NaN equals nothing, and -0 equals 0
     case FilterPredicate.IS:
       return value === lower
     case FilterPredicate.IS_NOT:

@@ -34,7 +34,8 @@ export type ColumnTableTarget =
 export interface ColumnOption {
   // Unique among the options: the table and the column name
   readonly key: string
-  readonly target: ColumnTableTarget
+  // nodes+edges only for an imported condition (see bothTablesOption)
+  readonly target: ColumnFilterTarget
   readonly column: Column
   // "Node: name" or "Edge: name"
   readonly label: string
@@ -52,7 +53,7 @@ const optionsOf = (table: Table, target: ColumnTableTarget): ColumnOption[] =>
       key: columnOptionKey(target, column.name),
       target,
       column,
-      label: `${target === ColumnFilterTarget.NODES ? 'Node' : 'Edge'}: ${column.name}`,
+      label: columnLabel(target, column.name),
     }))
 
 /**
@@ -66,6 +67,55 @@ export const listColumnOptions = (
   ...optionsOf(nodeTable, ColumnFilterTarget.NODES),
   ...optionsOf(edgeTable, ColumnFilterTarget.EDGES),
 ]
+
+const TARGET_LABELS: Record<ColumnFilterTarget, string> = {
+  [ColumnFilterTarget.NODES]: 'Node',
+  [ColumnFilterTarget.EDGES]: 'Edge',
+  [ColumnFilterTarget.NODES_AND_EDGES]: 'Node + Edge',
+}
+
+/** "Node: name", "Edge: name" or "Node + Edge: name" */
+export const columnLabel = (
+  target: ColumnFilterTarget,
+  columnName: string,
+): string => `${TARGET_LABELS[target]}: ${columnName}`
+
+/**
+ * The option of an imported condition on both tables (`nodes+edges`). The
+ * picker never offers one; it is listed only to show such a condition. The
+ * column's type is read from the node table, else the edge table. Undefined
+ * when neither table has the column.
+ */
+export const bothTablesOption = (
+  columnName: string,
+  nodeTable: Table,
+  edgeTable: Table,
+): ColumnOption | undefined => {
+  const column =
+    nodeTable.columns.find((candidate) => candidate.name === columnName) ??
+    edgeTable.columns.find((candidate) => candidate.name === columnName)
+  return column === undefined
+    ? undefined
+    : {
+        key: columnOptionKey(ColumnFilterTarget.NODES_AND_EDGES, columnName),
+        target: ColumnFilterTarget.NODES_AND_EDGES,
+        column,
+        label: columnLabel(ColumnFilterTarget.NODES_AND_EDGES, columnName),
+      }
+}
+
+/**
+ * The smallest range holding both: for a column read from both tables.
+ * Undefined when both are.
+ */
+export const mergeRanges = (
+  a: NumberRange | undefined,
+  b: NumberRange | undefined,
+): NumberRange | undefined => {
+  if (a === undefined) return b
+  if (b === undefined) return a
+  return { min: Math.min(a.min, b.min), max: Math.max(a.max, b.max) }
+}
 
 /**
  * Filters in the order the filter picker lists them: by name, ignoring case

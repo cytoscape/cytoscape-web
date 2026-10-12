@@ -75,6 +75,12 @@ export const FilterTab = ({ networkId }: FilterTabProps): JSX.Element => {
   const autoApply = storedAutoApply ?? defaultAutoApply(network)
   const [status, setStatus] = useState<string | undefined>()
 
+  // The status line reports a run of this filter on this network: another
+  // filter or network starts without one
+  useEffect(() => {
+    setStatus(undefined)
+  }, [networkId, selected?.id])
+
   const apply = (): void => {
     if (selected === undefined) return
     setStatus(formatApplyStatus(applyWorkspaceFilter(networkId, selected.id)))

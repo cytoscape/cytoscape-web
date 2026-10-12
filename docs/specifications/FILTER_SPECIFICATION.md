@@ -91,7 +91,9 @@ Fields: `columnName`, `target` (`nodes`, `edges` or `nodes+edges`),
 #### Predicates
 
 The single-value numeric predicates compare against the lower bound. Numbers
-compare like Java's `Double.compare` (NaN is above every number).
+compare like Java's `Double.compare` (NaN is above every number), except `IS`
+and `IS_NOT`, which use Java's `==` as Cytoscape Desktop does (NaN equals
+nothing, `-0` equals `0`).
 
 | Predicate          | Missing value | Otherwise                               |
 | ------------------ | ------------- | --------------------------------------- |
@@ -384,12 +386,13 @@ Filter files come from anywhere:
 
 ## Differences from Cytoscape Desktop
 
-| Cytoscape Desktop                                                | Cytoscape Web                                         |
-| ---------------------------------------------------------------- | ----------------------------------------------------- |
-| An unknown condition id rejects the whole file                   | Only its entry is skipped                             |
-| `parameters` is required, keys must come in order                | Any key order; missing parameters take defaults       |
-| A single top-level topology condition is unwrapped into the root | It is kept whole                                      |
-| A criterion of the wrong kind can throw or match by accident     | It rejects every element and produces a warning       |
-| Degree In/Out counts only directed edges                         | Every CW edge counts as directed                      |
-| Java regular expressions                                         | JavaScript regular expressions, anchored at both ends |
-| Filters are saved in the session                                 | Filters are saved in the workspace (IndexedDB)        |
+| Cytoscape Desktop                                                                                           | Cytoscape Web                                                |
+| ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| An unknown condition id rejects the whole file                                                              | Only its entry is skipped                                    |
+| `parameters` is required, keys must come in order                                                           | Any key order; missing parameters take defaults              |
+| A single top-level topology condition is unwrapped into the root                                            | It is kept whole                                             |
+| A criterion of the wrong kind can throw or match by accident                                                | It rejects every element and produces a warning              |
+| Degree In/Out counts only directed edges                                                                    | Every CW edge counts as directed                             |
+| A topology condition stops counting at the threshold, which is wrong for predicates other than `>=` and `<` | Counting goes past the threshold when the predicate needs it |
+| Java regular expressions                                                                                    | JavaScript regular expressions, anchored at both ends        |
+| Filters are saved in the session                                                                            | Filters are saved in the workspace (IndexedDB)               |

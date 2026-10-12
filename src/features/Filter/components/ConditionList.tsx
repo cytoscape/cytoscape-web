@@ -277,12 +277,25 @@ const ConditionRow = ({
             </Box>
           }
         >
-          <WarningAmberIcon
-            color="warning"
-            fontSize="small"
+          {/* Focusable, with the reasons as its label, so keyboard and
+              screen reader users get them too (the tooltip opens on focus) */}
+          <Box
+            component="span"
+            role="img"
+            tabIndex={0}
+            aria-label={`Filter cannot be applied to this network: ${messages.join('; ')}`}
             data-testid={`${testId}-warning`}
-            sx={{ mt: 1 }}
-          />
+            sx={{
+              display: 'inline-flex',
+              mt: 1,
+              borderRadius: '50%',
+              '&:focus-visible': {
+                outline: (theme) => `2px solid ${theme.palette.primary.main}`,
+              },
+            }}
+          >
+            <WarningAmberIcon color="warning" fontSize="small" aria-hidden />
+          </Box>
         </Tooltip>
       )}
       <Box sx={{ flex: 1, minWidth: 0 }}>{editor}</Box>

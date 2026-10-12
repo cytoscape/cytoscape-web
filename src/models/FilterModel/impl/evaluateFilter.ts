@@ -314,9 +314,18 @@ const acceptsTopology = (
     matchType: node.matchType,
     children: node.children,
   }
+  // Counting can stop once the result is known. For "at least" and "less
+  // than" (the two the UI offers) that is at the threshold, where Cytoscape
+  // Desktop stops for every predicate; the others, which only files and
+  // commands can set, need to know whether the count goes past it.
+  const countLimit =
+    predicate === FilterPredicate.GREATER_THAN_OR_EQUAL ||
+    predicate === FilterPredicate.LESS_THAN
+      ? threshold
+      : threshold + 1
   const count = isAlwaysFalse(neighbours)
     ? 0
-    : countNeighbours(ctx, node, neighbours, id, distance, threshold)
+    : countNeighbours(ctx, node, neighbours, id, distance, countLimit)
   return numericAccepts(predicate, threshold, threshold, count)
 }
 
