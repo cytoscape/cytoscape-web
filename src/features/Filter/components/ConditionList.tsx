@@ -261,6 +261,7 @@ const ConditionRow = ({
     <Box
       ref={setRowRef}
       data-testid={`${testId}-row`}
+      data-drop-over={drop.isOver || undefined}
       sx={{
         display: 'flex',
         alignItems: 'flex-start',
@@ -368,6 +369,9 @@ const ConditionGap = ({
     <Box
       ref={setNodeRef}
       data-testid={`${testIdOf(parentPath)}-gap-${index}`}
+      // Set while a drop would land here; e2e drags wait for it, as a user
+      // waits for the line, before releasing (see filter-tab.spec.ts)
+      data-drop-over={isOver || undefined}
       // A constant height: drop targets are measured when a drag starts
       sx={{ height: 8, display: 'flex', alignItems: 'center' }}
     >
@@ -414,6 +418,7 @@ export const ConditionList = ({
     <Box
       ref={drop.setNodeRef}
       data-testid={isRoot ? 'filter-conditions' : testId}
+      data-drop-over={drop.isOver || undefined}
       sx={{
         width: '100%',
         borderRadius: 1,

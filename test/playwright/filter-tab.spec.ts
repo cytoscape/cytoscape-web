@@ -153,6 +153,21 @@ test.describe('FILTER tab: drag and drop', () => {
     return { x: box!.x + box!.width / 2, y: box!.y + box!.height / 2 }
   }
 
+  // dnd-kit drops on the target it last rendered as hovered, one render
+  // behind the pointer. A release right after the move that reaches a target
+  // lands on the one before it, as WebKit shows when the gap is entered only
+  // on the last step. Wait for the target to light up, as a user would.
+  const expectDropOver = (page: Page, testId: string) =>
+    expect(page.locator(`[data-testid="${testId}"]`)).toHaveAttribute(
+      'data-drop-over',
+      'true',
+    )
+
+  const scrollConditionsToTop = (page: Page) =>
+    page
+      .locator('[data-testid="filter-conditions"]')
+      .evaluate((list) => list.parentElement?.scrollTo(0, 0))
+
   const addConditions = async (page: Page, kinds: string[]) => {
     await page
       .locator('[data-testid="network-browser-panel-filter-tab"]')
@@ -186,6 +201,7 @@ test.describe('FILTER tab: drag and drop', () => {
       page.locator('[data-testid="filter-condition-drag-preview"]'),
     ).toHaveText('Degree filter')
     await page.mouse.move(onto.x, onto.y, { steps: 10 })
+    await expectDropOver(page, 'filter-condition-0-row')
     await page.mouse.up()
 
     await expect(
@@ -198,14 +214,13 @@ test.describe('FILTER tab: drag and drop', () => {
     // Degree into the gap before the column condition, inside the group.
     // Scrolled to the top first: a drag near the edge of the conditions
     // pane scrolls it, which would move the gap from under the pointer.
-    await page
-      .locator('[data-testid="filter-conditions"]')
-      .evaluate((list) => list.parentElement?.scrollTo(0, 0))
+    await scrollConditionsToTop(page)
     const handle = await center(page, 'filter-condition-0-1-drag')
     const gap = await center(page, 'filter-condition-0-gap-0')
     await page.mouse.move(handle.x, handle.y)
     await page.mouse.down()
     await page.mouse.move(gap.x, gap.y, { steps: 10 })
+    await expectDropOver(page, 'filter-condition-0-gap-0')
     await page.mouse.up()
 
     await expect(
@@ -258,6 +273,10 @@ test.describe('FILTER tab: drag and drop', () => {
     await seedNetwork(page)
     await addConditions(page, ['column', 'degree'])
     const handle = page.locator('[data-testid="filter-condition-1-drag"]')
+    // Adding the conditions leaves the pane scrolled, and the arrow keys
+    // smooth-scroll it before they move the card. A pick-up while that
+    // scroll still runs lands the card a gap too high, so start at the top.
+    await scrollConditionsToTop(page)
 
     // Picked up, moved onto the column condition, then cancelled
     await handle.focus()
@@ -278,6 +297,7 @@ test.describe('FILTER tab: drag and drop', () => {
     await page.keyboard.press('Space')
     await page.keyboard.press('ArrowUp')
     await page.keyboard.press('ArrowUp')
+    await expectDropOver(page, 'filter-condition-0-row')
     await page.keyboard.press('Space')
     await expect(
       page.locator('[data-testid="filter-condition-0-match-type"]'),
@@ -313,6 +333,7 @@ test.describe('FILTER tab: drag and drop', () => {
         from.y + ((onto.y - from.y) * step) / 10,
       )
     }
+    await expectDropOver(page, 'filter-condition-0-row')
     await touch('touchEnd', onto.x, onto.y)
 
     await expect(
