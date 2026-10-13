@@ -92,6 +92,26 @@ describe('mapFileListItem (via searchNdexFiles / fetchFolderContents)', () => {
 
     expect(items[0].targetId).toBe(TARGET_NETWORK_UUID)
   })
+
+  // The NDEx folder-list endpoint drops `attributes` (and so the shortcut
+  // target) unless the request asks for `format=compact` (#817).
+  it('requests the compact format so folder shortcuts keep their target', async () => {
+    const { attributes: _attributes, edges: _edges, ...defaultShape } =
+      rawShortcutItem
+    getFolderList.mockImplementation(
+      async (_id: string, _accessKey?: string, format?: string) =>
+        format === 'compact' ? [rawShortcutItem] : [defaultShape],
+    )
+
+    const items = await fetchFolderContents('some-folder', 'token')
+
+    expect(getFolderList).toHaveBeenCalledWith(
+      'some-folder',
+      undefined,
+      'compact',
+    )
+    expect(items[0].targetId).toBe(TARGET_NETWORK_UUID)
+  })
 })
 
 describe('getNetworkIdForFileItem', () => {
