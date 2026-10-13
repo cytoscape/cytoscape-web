@@ -22,8 +22,9 @@ vi.mock('@/data/external-api/ndex', () => ({
   fetchNdexSummaries: vi.fn(async () => []),
   fetchFolderContents: vi.fn(async () => []),
   fetchFolderInfo: vi.fn(async () => ({ name: 'folder' })),
-  enrichShortcutsWithTargetSummaries: vi.fn(async (items: unknown[]) => items),
+  enrichFileItemsWithSummaries: vi.fn(async (items: unknown[]) => items),
   getNetworkIdForFileItem: vi.fn((item: { uuid: string }) => item.uuid),
+  getUnavailableShortcutReason: vi.fn(() => undefined),
   fetchNdexUserName: vi.fn(async () => 'me-on-ndex'),
 }))
 
