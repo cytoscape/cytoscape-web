@@ -170,8 +170,12 @@ test.describe('Network summary overflow menu', () => {
       .click()
 
     const save = page.locator('[data-testid="network-save-status-menuitem"]')
-    await expect(save).toContainText('Save a Copy to NDEx')
-    await expect(save).toContainText('Sign in to save to NDEx')
+    await expect(
+      save.getByText('Save a Copy to NDEx', { exact: true }),
+    ).toBeVisible()
+    await expect(
+      save.getByText('Sign in to save to NDEx', { exact: true }),
+    ).toBeVisible()
     await expect(save).not.toContainText('No unsaved changes')
   })
 
