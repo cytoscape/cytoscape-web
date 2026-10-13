@@ -6,3 +6,27 @@ export { FilterWidgetType } from './FilterWidgetType'
 export { toDiscreteFilterValue } from './impl/discreteFilterValue'
 export { getBasicFilter } from './impl/simpleFilter'
 export { SelectionType } from './SelectionType'
+export {
+  ChainTransformerId,
+  ColumnFilterTarget,
+  DegreeEdgeType,
+  FilterElementKind,
+  FilterPredicate,
+  FilterTypeId,
+  MatchType,
+} from './FilterTree'
+export type {
+  AppliedWorkspaceFilter,
+  ColumnFilterCriterion,
+  ColumnFilterNode,
+  CompositeFilterNode,
+  DegreeFilterNode,
+  FilterNode,
+  FilterNodePath,
+  FilterResult,
+  NamedFilter,
+  NumberRangeCriterion,
+  ParentFilterNode,
+  TopologyFilterNode,
+  WorkspaceFilter,
+} from './FilterTree'

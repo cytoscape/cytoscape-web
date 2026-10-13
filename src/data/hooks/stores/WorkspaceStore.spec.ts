@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { logStore } from '../../../debug'
 import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
@@ -554,6 +554,13 @@ describe('useWorkspaceStore', () => {
   })
 
   describe('resetWorkspace', () => {
+    // A completed reset stops delayed writes until the reload, which never
+    // comes in a test
+    afterEach(async () => {
+      const { resumeWritesForTesting } = await import('./persistenceScheduler')
+      resumeWritesForTesting()
+    })
+
     it('should reset workspace to empty state', async () => {
       const { result } = renderHook(() => useWorkspaceStore())
 
@@ -586,6 +593,30 @@ describe('useWorkspaceStore', () => {
       })
 
       expect(outcome).toEqual({ status: 'reset' })
+    })
+
+    it('stops delayed writes once the database is gone, but not when it is kept', async () => {
+      const scheduler = await import('./persistenceScheduler')
+      const { deleteDb } = await import('../../db')
+      const { result } = renderHook(() => useWorkspaceStore())
+      try {
+        vi.mocked(deleteDb).mockResolvedValueOnce('delete-failed')
+        await act(async () => {
+          await result.current.resetWorkspace()
+        })
+        scheduler.scheduleWrite('kept', 'test', async () => undefined)
+        expect(scheduler.pendingWriteCount()).toBe(1)
+
+        await act(async () => {
+          await result.current.resetWorkspace()
+        })
+        // The stores still hold the old workspace until the reload
+        expect(scheduler.pendingWriteCount()).toBe(0)
+        scheduler.scheduleWrite('stale', 'test', async () => undefined)
+        expect(scheduler.pendingWriteCount()).toBe(0)
+      } finally {
+        scheduler.resumeWritesForTesting()
+      }
     })
 
     /**

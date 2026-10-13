@@ -13,6 +13,7 @@
 
 ## Coding Patterns
 
+- [2026-10-12] Dexie schema: never add a store to a `currentVersion` that has run anywhere, your own localhost:5500 database included. Dexie 3 does not create it; it only warns "Schema was extended without increasing the number passed to db.version()", and every write to the store then fails. Bump the version. A test for it must seed the old schema AFTER `deleteDb()` + `closeDb()` + `Dexie.delete(DB_NAME)`: `deleteDb()` reopens the app's database at the full current schema, which hides the bug (see the v13 → v14 test in `db.test.ts`).
 - [2026-03-04] enableMapSet: Any new standalone test entry point MUST call `enableMapSet()` before Immer can handle Map/Set — omitting it causes cryptic test failures.
 - [2026-03-04] App API: Core functions in `src/app-api/core/` must have zero React imports. Use `useXxxStore.getState()` instead of hooks.
 - [2026-03-04] App API: All public API functions must return `ApiResult<T>` — never throw across the API boundary.
@@ -92,6 +93,8 @@
 
 ## Agent Workflow
 
+- [2026-10-05] Browser pane checks: after creating a network with `CyWebApi.network.createNetworkFromEdgeList` (or switching with `workspace.switchCurrentNetwork`), navigate to the app's `<workspaceId>/networks/<newId>` route, under the deployment's base path if it has one (keep the prefix of the current URL; a bare `/<workspaceId>/...` leaves a based deployment). The URL otherwise still names the old network, and the app keeps loading that one back, re-rendering panels and closing open menus. Screenshots in the pane also often miss open MUI popovers (Select listboxes, Menus); confirm them with `find` / the DOM instead.
+- [2026-10-05] Prettier scope: run `npx prettier --write` on the files you touched, never on a directory. Many committed `.md` docs and some tests under `src/` are not Prettier-clean, so `prettier --write src/data` rewrites a dozen unrelated files into the diff.
 - [2026-09-06] Brainstorming: Do not commit brainstorming notes or exploratory design reports unless the user explicitly requests a commit. This overrides the automatic commit cadence below for brainstorming work.
 - [2026-09-07] Architecture reviews: Inventory existing host implementations and bridge contracts before proposing new integration layers. Verify where configuration thresholds are enforced before describing them as public API or rendering limits.
 

@@ -1,4 +1,5 @@
 import {
+  getAppliedWorkspaceFilterFromDb,
   getFilterFromDb,
   getNetworkFromDb,
   getNetworkSummaryFromDb,
@@ -9,6 +10,7 @@ import {
   getUndoRedoStackFromDb,
   getViewSelectionFromDb,
   getVisualStyleSetFromDb,
+  getWorkspaceFilterFromDb,
   getWorkspaceFromDb,
 } from '@/data/db'
 import { useFilterStore } from '@/data/hooks/stores/FilterStore'
@@ -319,6 +321,29 @@ const prepareChange = async (
         return null
       }
       return () => useFilterStore.getState().updateFilterConfig(key, filter)
+    }
+
+    case 'workspaceFilters': {
+      if (type === ChangeType.DELETED) {
+        return () => useFilterStore.getState().deleteWorkspaceFilter(key)
+      }
+      const filter = await getWorkspaceFilterFromDb(key)
+      if (!filter) {
+        return null
+      }
+      return () => useFilterStore.getState().putWorkspaceFilter(filter)
+    }
+
+    case 'appliedWorkspaceFilters': {
+      if (type === ChangeType.DELETED) {
+        return () => useFilterStore.getState().deleteAppliedWorkspaceFilter(key)
+      }
+      const applied = await getAppliedWorkspaceFilterFromDb(key)
+      if (!applied) {
+        return null
+      }
+      return () =>
+        useFilterStore.getState().setAppliedWorkspaceFilter(key, applied)
     }
 
     case 'opaqueAspects': {

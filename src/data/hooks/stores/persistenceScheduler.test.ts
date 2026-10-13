@@ -5,7 +5,9 @@ import {
   cancelWrite,
   flushPendingWrites,
   pendingWriteCount,
+  resumeWritesForTesting,
   scheduleWrite,
+  suspendWritesUntilReload,
   WRITE_DELAY_MS,
 } from './persistenceScheduler'
 
@@ -116,5 +118,26 @@ describe('persistenceScheduler', () => {
     await vi.runAllTimersAsync()
 
     expect(execute).toHaveBeenCalledTimes(1)
+  })
+
+  describe('suspendWritesUntilReload', () => {
+    afterEach(() => {
+      resumeWritesForTesting()
+    })
+
+    it('drops pending writes and ignores new ones, flush included', async () => {
+      const pending = vi.fn().mockResolvedValue(undefined)
+      scheduleWrite('store:old', 'store', pending)
+
+      suspendWritesUntilReload()
+      const later = vi.fn().mockResolvedValue(undefined)
+      scheduleWrite('store:edit', 'store', later)
+      await flushPendingWrites()
+      vi.advanceTimersByTime(WRITE_DELAY_MS + 1)
+
+      expect(pendingWriteCount()).toBe(0)
+      expect(pending).not.toHaveBeenCalled()
+      expect(later).not.toHaveBeenCalled()
+    })
   })
 })

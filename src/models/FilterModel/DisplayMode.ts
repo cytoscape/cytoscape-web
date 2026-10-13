@@ -15,7 +15,10 @@
  * Filters now always use SELECT mode, and visibility is controlled independently through
  * visibility bypass maps in the visual style store.
  *
- * SHOW_HIDE mode needs to be reworked in the future to properly account for all these cases.
+ * The FILTER tab's workspace filters (`WorkspaceFilter`) bring SHOW_HIDE back
+ * without touching the selection: `evaluateFilter` returns the elements to
+ * keep visible, which are applied as visibility bypasses
+ * (docs/specifications/FILTER_SPECIFICATION.md).
  */
 export const DisplayMode = {
   SELECT: 'select',

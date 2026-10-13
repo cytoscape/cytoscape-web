@@ -1,7 +1,9 @@
 import cloneDeep from 'lodash/cloneDeep'
 
 import {
+  getAllAppliedWorkspaceFiltersFromDb,
   getAllFilterConfigsFromDb,
+  getAllWorkspaceFiltersFromDb,
   getUiStateFromDb,
   getWorkspaceFromDb,
 } from '@/data/db'
@@ -89,14 +91,33 @@ export const loadWorkspaceState = async (
   // entry an app might ask for has to be in the store before the app API is
   // marked ready in publishWorkspace().
   // Saved filter configs are restored once the workspace is read, because
-  // telling owned rows from orphans needs its network ids (#774).
-  const [workspace, dbUiState, , filterConfigs] = await Promise.all([
+  // telling owned rows from orphans needs its network ids (#774). The FILTER
+  // tab's filters belong to the workspace, not to a network, so all are kept.
+  // The record of which one was last applied to each network is kept for the
+  // networks still in the workspace.
+  const [
+    workspace,
+    dbUiState,
+    ,
+    filterConfigs,
+    workspaceFilters,
+    appliedWorkspaceFilters,
+  ] = await Promise.all([
     getWorkspaceFromDb(),
     getUiStateFromDb(),
     useAppDataStore.getState().hydrate(),
     getAllFilterConfigsFromDb(),
+    getAllWorkspaceFiltersFromDb(),
+    getAllAppliedWorkspaceFiltersFromDb(),
   ])
   useFilterStore.getState().hydrate(filterConfigs, workspace.networkIds)
+  useFilterStore.getState().hydrateWorkspaceFilters(workspaceFilters)
+  useFilterStore
+    .getState()
+    .hydrateAppliedWorkspaceFilters(
+      appliedWorkspaceFilters,
+      workspace.networkIds,
+    )
   const summaries = await ctx.loadNetworkSummaries(workspace.networkIds)
 
   useUiStateStore

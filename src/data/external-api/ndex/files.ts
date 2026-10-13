@@ -122,7 +122,9 @@ export const fetchFolderContents = async (
 ): Promise<NdexFileItem[]> => {
   const ndexClient = getNdexClient(accessToken, ndexUrl)
   const id = folderId ?? 'home'
-  const items = await ndexClient.files.getFolderList(id)
+  // Without `format=compact` NDEx omits each item's `attributes`, so
+  // shortcuts lose their target and every row loses its counts (#817).
+  const items = await ndexClient.files.getFolderList(id, undefined, 'compact')
   return (items ?? [])
     .filter((item: any) => item != null && typeof item === 'object')
     .map(mapFileListItem)

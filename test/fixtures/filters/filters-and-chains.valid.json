@@ -1,0 +1,59 @@
+[ {
+  "name" : "Default filter",
+  "transformers" : [ {
+    "id" : "org.cytoscape.CompositeFilter",
+    "parameters" : {
+      "type" : "ALL"
+    },
+    "transformers" : [ {
+      "id" : "org.cytoscape.DegreeFilter",
+      "parameters" : {
+        "predicate" : "BETWEEN",
+        "criterion" : [ 2, 10 ],
+        "edgeType" : "OUTGOING"
+      }
+    } ]
+  } ]
+}, {
+  "name" : "Default chain",
+  "transformers" : [ {
+    "id" : "org.cytoscape.AdjacencyTransformer",
+    "parameters" : {
+      "action" : "ADD",
+      "output" : "NODES_AND_EDGES",
+      "edgesAre" : "INCOMING_AND_OUTGOING",
+      "filterTarget" : "NODES"
+    },
+    "transformers" : [ ]
+  } ]
+}, {
+  "name" : "Short ids",
+  "transformers" : [ {
+    "id" : "ColumnFilter",
+    "parameters" : {
+      "predicate" : "IS",
+      "criterion" : "pp",
+      "caseSensitive" : false,
+      "type" : "edges",
+      "anyMatch" : true,
+      "columnName" : "interaction"
+    }
+  }, {
+    "id" : "DegreeFilter",
+    "parameters" : {
+      "predicate" : "BETWEEN",
+      "criterion" : 1,
+      "edgeType" : "ANY"
+    }
+  } ]
+}, {
+  "name" : "Interaction chain",
+  "transformers" : [ {
+    "id" : "org.cytoscape.InteractionTransformer",
+    "parameters" : {
+      "selectSource" : true,
+      "selectTarget" : false,
+      "action" : "ADD"
+    }
+  } ]
+} ]

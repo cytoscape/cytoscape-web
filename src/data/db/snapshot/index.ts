@@ -114,6 +114,8 @@ export interface DatabaseSnapshot {
     [ObjectStoreNames.UndoStacks]?: any[]
     [ObjectStoreNames.StyleLibrary]?: any[]
     [ObjectStoreNames.AppSettings]?: any[]
+    [ObjectStoreNames.WorkspaceFilters]?: any[]
+    [ObjectStoreNames.AppliedWorkspaceFilters]?: any[]
   }
 }
 
@@ -388,6 +390,8 @@ export const importDatabaseSnapshot = async (
       [ObjectStoreNames.UndoStacks]: 'id',
       [ObjectStoreNames.StyleLibrary]: 'id',
       [ObjectStoreNames.AppSettings]: 'key',
+      [ObjectStoreNames.WorkspaceFilters]: 'id',
+      [ObjectStoreNames.AppliedWorkspaceFilters]: 'id',
     }
 
     // Helper function to get primary key for a store

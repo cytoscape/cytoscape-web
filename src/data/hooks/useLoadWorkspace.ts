@@ -21,6 +21,7 @@ import {
 } from '../db'
 import { announceDatabaseReset } from '../db/lifecycle'
 import { serviceFetcher } from './stores/AppStore'
+import { suspendWritesUntilReload } from './stores/persistenceScheduler'
 
 /**
  * Interface for a remote workspace from NDEx
@@ -100,6 +101,9 @@ export const useLoadWorkspace = (
           `Cannot import a workspace: the local database was not cleared (${outcome})`,
         )
       }
+      // The stores still hold the old workspace until the reload below; a
+      // delayed write would put it back into the database being filled
+      suspendWritesUntilReload()
 
       // Step 2: Create and write workspace to DB
       const workspace: Workspace = {

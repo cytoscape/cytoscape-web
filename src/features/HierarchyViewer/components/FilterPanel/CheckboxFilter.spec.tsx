@@ -78,6 +78,7 @@ describe('CheckboxFilter', () => {
     useVisualStyleStore.setState({
       visualStyles: { [networkId]: createVisualStyle() },
     })
+    useFilterStore.setState({ appliedWorkspaceFilters: {} })
   })
 
   it('hides the elements outside the range when enabled', () => {
@@ -155,6 +156,20 @@ describe('CheckboxFilter', () => {
     renderFilter(false)
 
     expect(edgeVisibilityBypass().size).toBe(0)
+  })
+
+  it('leaves the visibility a FILTER tab filter in show mode owns when disabled', () => {
+    renderFilter(true).unmount()
+    // A workspace filter applied in show mode took over the visibility
+    useFilterStore.setState({
+      appliedWorkspaceFilters: {
+        [networkId]: { filterId: 'f1', displayMode: DisplayMode.SHOW_HIDE },
+      },
+    })
+
+    renderFilter(false)
+
+    expect(edgeVisibilityBypass().size).toBe(3)
   })
 
   it('labels boolean options with their value', () => {
