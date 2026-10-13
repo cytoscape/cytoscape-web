@@ -241,6 +241,14 @@ Cytoscape Desktop's Filter tab:
 - The conditions of the filter, with "Match all (AND)" / "Match any (OR)" once
   there are two, and a "+" menu: Column filter, Degree filter, Topology
   filter, Group. Nested groups always show how they combine.
+- Conditions are moved and grouped by drag and drop, with Cytoscape Desktop's
+  rules (`moveCondition` / `canDropCondition` in `filterTreeImpl.ts`):
+  dropped in a gap, a condition moves there; onto a group or a topology
+  condition, it is added at its end; onto another condition, both go into a
+  new "match all" group in the target's place, the target first. A nested
+  group left empty by a move is removed (never the root or a topology
+  condition). Drops into the condition itself, or that would leave it where it
+  is, are refused. Mouse, touch and keyboard all work (`@dnd-kit/core`).
 - A column condition lists the node columns, then the edge columns ("Node:
   name", "Edge: weight"); its comparison follows the column type: text
   predicates and a text field, "is / is not" a range (slider plus fields) for
