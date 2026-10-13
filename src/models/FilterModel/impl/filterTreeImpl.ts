@@ -292,6 +292,207 @@ export const removeNodeAt = (
 }
 
 // ---------------------------------------------------------------------------
+// Moving conditions (drag and drop)
+// ---------------------------------------------------------------------------
+
+/**
+ * Where a dragged condition is dropped, as in Cytoscape Desktop's Filter
+ * panel (AbstractPanelController.handleFilterDrop):
+ *
+ * - `gap`: between two conditions of a group (or a topology condition's
+ *   neighbour conditions): the condition moves there. `index` is the
+ *   position, in the parent as it is before the move, of the condition the
+ *   gap comes before; the parent's child count is the gap after the last.
+ * - `group`: onto a group or a topology condition: added at its end.
+ * - `condition`: onto another condition: both go into a new "match all"
+ *   group, in the target's place, the target first.
+ */
+export type ConditionDropTarget =
+  | {
+      readonly kind: 'gap'
+      readonly parentPath: FilterNodePath
+      readonly index: number
+    }
+  | { readonly kind: 'group'; readonly path: FilterNodePath }
+  | { readonly kind: 'condition'; readonly path: FilterNodePath }
+
+const isPrefix = (prefix: FilterNodePath, path: FilterNodePath): boolean =>
+  prefix.length <= path.length && prefix.every((index, i) => path[i] === index)
+
+/**
+ * Whether dropping the condition at `sourcePath` on `target` would change
+ * the filter. Refused: moving the root, dropping a condition into itself or
+ * its own conditions, a gap next to the condition itself, a group target that
+ * is not a group, a condition target that is a group (that is a group target),
+ * and paths that lead nowhere.
+ */
+export const canDropCondition = (
+  root: CompositeFilterNode,
+  sourcePath: FilterNodePath,
+  target: ConditionDropTarget,
+): boolean => {
+  if (sourcePath.length === 0 || getNodeAt(root, sourcePath) === undefined) {
+    return false
+  }
+  const sourceParentPath = sourcePath.slice(0, -1)
+  const sourceIndex = sourcePath[sourcePath.length - 1]
+  switch (target.kind) {
+    case 'gap': {
+      const parent = getNodeAt(root, target.parentPath)
+      if (
+        parent === undefined ||
+        !isParentNode(parent) ||
+        !Number.isInteger(target.index) ||
+        target.index < 0 ||
+        target.index > parent.children.length ||
+        isPrefix(sourcePath, target.parentPath)
+      ) {
+        return false
+      }
+      // The gaps right before and after the condition leave it in place
+      const sameParent =
+        sourceParentPath.length === target.parentPath.length &&
+        isPrefix(sourceParentPath, target.parentPath)
+      return !(
+        sameParent &&
+        (target.index === sourceIndex || target.index === sourceIndex + 1)
+      )
+    }
+    case 'group': {
+      const group = getNodeAt(root, target.path)
+      if (
+        group === undefined ||
+        !isParentNode(group) ||
+        isPrefix(sourcePath, target.path)
+      ) {
+        return false
+      }
+      // Already the group's last condition: it would stay where it is
+      const isOwnGroup =
+        target.path.length === sourceParentPath.length &&
+        isPrefix(target.path, sourceParentPath)
+      return !(isOwnGroup && sourceIndex === group.children.length - 1)
+    }
+    case 'condition': {
+      const node = getNodeAt(root, target.path)
+      return (
+        node !== undefined &&
+        !isParentNode(node) &&
+        !isPrefix(sourcePath, target.path)
+      )
+    }
+  }
+}
+
+// A mutable copy of a filter tree, so a move can find nodes by identity
+// while the tree around them changes
+interface MovableNode {
+  node: FilterNode
+  children: MovableNode[]
+}
+
+const toMovable = (node: FilterNode): MovableNode => ({
+  node,
+  children: isParentNode(node) ? node.children.map(toMovable) : [],
+})
+
+const fromMovable = (movable: MovableNode): FilterNode =>
+  isParentNode(movable.node)
+    ? { ...movable.node, children: movable.children.map(fromMovable) }
+    : movable.node
+
+const movableAt = (
+  root: MovableNode,
+  path: FilterNodePath,
+): MovableNode | undefined => {
+  let current: MovableNode | undefined = root
+  for (const index of path) {
+    current = current?.children[index]
+  }
+  return current
+}
+
+const parentOf = (
+  root: MovableNode,
+  child: MovableNode,
+): MovableNode | undefined => {
+  if (root.children.includes(child)) return root
+  for (const node of root.children) {
+    const found = parentOf(node, child)
+    if (found !== undefined) return found
+  }
+  return undefined
+}
+
+/**
+ * Move the condition at `sourcePath` to `target` (see ConditionDropTarget).
+ * A nested group left empty by the move is removed, and so on up the tree,
+ * as in Cytoscape Desktop. Returns the root unchanged when the drop is not
+ * allowed (canDropCondition).
+ */
+export const moveCondition = (
+  root: CompositeFilterNode,
+  sourcePath: FilterNodePath,
+  target: ConditionDropTarget,
+): CompositeFilterNode => {
+  if (!canDropCondition(root, sourcePath, target)) return root
+
+  const tree = toMovable(root)
+  const source = movableAt(tree, sourcePath)!
+  const oldParent = movableAt(tree, sourcePath.slice(0, -1))!
+  // Resolve the target before anything moves: the paths describe the tree
+  // as it is now
+  const targetNode =
+    target.kind === 'gap'
+      ? movableAt(tree, target.parentPath)!
+      : movableAt(tree, target.path)!
+  // For a gap, the condition the gap comes before (undefined: the end)
+  const beforeNode =
+    target.kind === 'gap' ? targetNode.children[target.index] : undefined
+
+  oldParent.children.splice(oldParent.children.indexOf(source), 1)
+
+  switch (target.kind) {
+    case 'gap': {
+      const at =
+        beforeNode === undefined
+          ? targetNode.children.length
+          : targetNode.children.indexOf(beforeNode)
+      targetNode.children.splice(at, 0, source)
+      break
+    }
+    case 'group':
+      targetNode.children.push(source)
+      break
+    case 'condition': {
+      const parent = parentOf(tree, targetNode)!
+      const group: MovableNode = {
+        node: createCompositeFilter(MatchType.ALL),
+        children: [targetNode, source],
+      }
+      parent.children.splice(parent.children.indexOf(targetNode), 1, group)
+      break
+    }
+  }
+
+  // Remove the groups the move emptied, but never the root or a topology
+  // condition
+  let emptied: MovableNode | undefined = oldParent
+  while (
+    emptied !== undefined &&
+    emptied !== tree &&
+    emptied.node.type === FilterTypeId.Composite &&
+    emptied.children.length === 0
+  ) {
+    const parent = parentOf(tree, emptied)
+    parent?.children.splice(parent.children.indexOf(emptied), 1)
+    emptied = parent
+  }
+
+  return fromMovable(tree) as CompositeFilterNode
+}
+
+// ---------------------------------------------------------------------------
 // Names
 // ---------------------------------------------------------------------------
 

@@ -237,43 +237,81 @@ export const getNetworkIdForFileItem = (item: NdexFileItem): string =>
   item.targetId ?? item.uuid
 
 /**
- * Enriches network shortcuts with metadata from their target network summaries.
+ * Explains why a SHORTCUT cannot be opened, or returns undefined when it can.
  *
- * Shortcut items returned by NDEx don't carry full network metrics (node count,
- * file size, etc.), so their table rows would otherwise display zeros. This
- * batch-fetches the summaries of all network shortcut targets in one request and
- * copies the relevant fields onto the shortcut items.
+ * NDEx reports the target's state as `attributes.target_status` (compact
+ * listings and search results only): ACTIVE, IN_TRASH or DELETED. A shortcut
+ * whose target is gone cannot be opened, loaded or browsed into. An item with
+ * no status is treated as openable, so a response without the field changes
+ * nothing.
+ */
+export const getUnavailableShortcutReason = (
+  item: NdexFileItem,
+): string | undefined => {
+  if (item.type !== 'SHORTCUT') return undefined
+  const status = item.attributes?.target_status
+  if (status === undefined || status === 'ACTIVE') return undefined
+  const kind = item.attributes?.target_type === 'FOLDER' ? 'folder' : 'network'
+  return status === 'IN_TRASH'
+    ? `The ${kind} this shortcut points to is in the trash`
+    : `The ${kind} this shortcut points to no longer exists`
+}
+
+/**
+ * Returns the network whose summary fills in a file item's metrics, or
+ * undefined when the item needs none.
  *
- * Loading/selection already works via `targetId` alone; this only improves the
- * displayed metrics. If the summary fetch fails, the original items are returned
- * unchanged so browsing is never blocked.
+ * - A network SHORTCUT carries no metrics of its own; it reads its target's.
+ * - A plain NETWORK from a folder listing carries its edge count but never its
+ *   node count or file size, even in the compact format (#819). Search results
+ *   carry both, so a NETWORK that already has a node count is left alone.
+ */
+const summarySourceId = (item: NdexFileItem): string | undefined => {
+  if (item.type === 'SHORTCUT') {
+    return item.attributes?.target_type === 'NETWORK'
+      ? item.targetId
+      : undefined
+  }
+  if (item.type === 'NETWORK' && item.nodeCount === undefined) {
+    return item.uuid
+  }
+  return undefined
+}
+
+/**
+ * Enriches file items with metrics from NDEx network summaries.
+ *
+ * Network shortcuts and folder-listed networks arrive without full network
+ * metrics (node count, file size, etc.), so their table rows would otherwise
+ * display zeros. This batch-fetches the needed summaries in one request and
+ * copies the relevant fields onto the items. See `summarySourceId` for which
+ * items need a summary.
+ *
+ * Loading/selection already works without it; this only improves the
+ * displayed metrics and the size check. If the summary fetch fails, the
+ * original items are returned unchanged so browsing is never blocked.
  *
  * @param items - File items from a search or folder listing
  * @param accessToken - Optional authentication token
  * @param ndexUrl - Optional NDEx base URL
- * @returns Promise resolving to items with network shortcuts enriched
+ * @returns Promise resolving to items with missing metrics filled in
  */
-export const enrichShortcutsWithTargetSummaries = async (
+export const enrichFileItemsWithSummaries = async (
   items: NdexFileItem[],
   accessToken?: string,
   ndexUrl?: string,
 ): Promise<NdexFileItem[]> => {
-  const networkShortcutTargets = items
-    .filter(
-      (item) =>
-        item.type === 'SHORTCUT' &&
-        item.attributes?.target_type === 'NETWORK' &&
-        typeof item.targetId === 'string',
-    )
-    .map((item) => item.targetId as string)
+  const sourceIds = items
+    .map(summarySourceId)
+    .filter((id): id is string => typeof id === 'string')
 
-  if (networkShortcutTargets.length === 0) {
+  if (sourceIds.length === 0) {
     return items
   }
 
   try {
     const summaries = await fetchNdexSummaries(
-      Array.from(new Set(networkShortcutTargets)),
+      Array.from(new Set(sourceIds)),
       accessToken,
       ndexUrl,
     )
@@ -282,10 +320,11 @@ export const enrichShortcutsWithTargetSummaries = async (
     )
 
     return items.map((item) => {
-      if (item.type !== 'SHORTCUT' || item.targetId === undefined) {
+      const sourceId = summarySourceId(item)
+      if (sourceId === undefined) {
         return item
       }
-      const summary = summaryByExternalId.get(item.targetId)
+      const summary = summaryByExternalId.get(sourceId)
       if (summary === undefined) {
         return item
       }

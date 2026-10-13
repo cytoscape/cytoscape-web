@@ -14,6 +14,7 @@ import { DEFAULT_FILTER_NAME } from '@/models/FilterModel/impl/workspaceFiltersI
 import type { IdType } from '@/models/IdType'
 
 import { ApplyPanel } from './components/ApplyPanel'
+import { ConditionDndProvider } from './components/ConditionDnd'
 import {
   ConditionEditorContext,
   ConditionList,
@@ -169,7 +170,12 @@ export const FilterTab = ({ networkId }: FilterTabProps): JSX.Element => {
             Open a network to edit and apply filters.
           </Typography>
         ) : (
-          <ConditionList parent={selected.root} path={[]} context={context} />
+          <ConditionDndProvider
+            root={selected.root}
+            onRootChange={context.onRootChange}
+          >
+            <ConditionList parent={selected.root} path={[]} context={context} />
+          </ConditionDndProvider>
         )}
       </Box>
       <ApplyPanel
