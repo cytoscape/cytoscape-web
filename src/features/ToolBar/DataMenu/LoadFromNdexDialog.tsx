@@ -38,7 +38,7 @@ import {
 
 import { AppConfigContext } from '../../../AppConfigContext'
 import {
-  enrichShortcutsWithTargetSummaries,
+  enrichFileItemsWithSummaries,
   fetchFolderContents,
   fetchFolderInfo,
   fetchNdexSummaries,
@@ -503,7 +503,7 @@ export const LoadFromNdexDialog = (
         fetchFolderContents(folderId, token, ndexBaseUrl),
         fetchFolderInfo(folderId, token, ndexBaseUrl),
       ])
-      const enriched = await enrichShortcutsWithTargetSummaries(
+      const enriched = await enrichFileItemsWithSummaries(
         items,
         token,
         ndexBaseUrl,
@@ -536,7 +536,7 @@ export const LoadFromNdexDialog = (
     try {
       const token = await getToken()
       const items = await fetchFolderContents(folderId, token, ndexBaseUrl)
-      const enriched = await enrichShortcutsWithTargetSummaries(
+      const enriched = await enrichFileItemsWithSummaries(
         items,
         token,
         ndexBaseUrl,
@@ -612,7 +612,7 @@ export const LoadFromNdexDialog = (
         SEARCH_PAGE_SIZE,
         ndexBaseUrl,
       )
-      const enriched = await enrichShortcutsWithTargetSummaries(
+      const enriched = await enrichFileItemsWithSummaries(
         result.files,
         token,
         ndexBaseUrl,
@@ -656,7 +656,7 @@ export const LoadFromNdexDialog = (
         SEARCH_PAGE_SIZE,
         ndexBaseUrl,
       )
-      const enriched = await enrichShortcutsWithTargetSummaries(
+      const enriched = await enrichFileItemsWithSummaries(
         result.files,
         token,
         ndexBaseUrl,

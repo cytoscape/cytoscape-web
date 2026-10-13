@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getNdexClient } from './client'
 import {
-  enrichShortcutsWithTargetSummaries,
+  enrichFileItemsWithSummaries,
   fetchFolderContents,
   getNetworkIdForFileItem,
   NdexFileItem,
@@ -96,8 +96,11 @@ describe('mapFileListItem (via searchNdexFiles / fetchFolderContents)', () => {
   // The NDEx folder-list endpoint drops `attributes` (and so the shortcut
   // target) unless the request asks for `format=compact` (#817).
   it('requests the compact format so folder shortcuts keep their target', async () => {
-    const { attributes: _attributes, edges: _edges, ...defaultShape } =
-      rawShortcutItem
+    const {
+      attributes: _attributes,
+      edges: _edges,
+      ...defaultShape
+    } = rawShortcutItem
     getFolderList.mockImplementation(
       async (_id: string, _accessKey?: string, format?: string) =>
         format === 'compact' ? [rawShortcutItem] : [defaultShape],
@@ -133,7 +136,7 @@ describe('getNetworkIdForFileItem', () => {
   })
 })
 
-describe('enrichShortcutsWithTargetSummaries', () => {
+describe('enrichFileItemsWithSummaries', () => {
   const shortcutItem: NdexFileItem = {
     uuid: SHORTCUT_UUID,
     name: 'galFiltered.sif - Shortcut',
@@ -169,7 +172,7 @@ describe('enrichShortcutsWithTargetSummaries', () => {
       },
     ])
 
-    const [network, shortcut] = await enrichShortcutsWithTargetSummaries([
+    const [network, shortcut] = await enrichFileItemsWithSummaries([
       networkItem,
       shortcutItem,
     ])
@@ -185,8 +188,8 @@ describe('enrichShortcutsWithTargetSummaries', () => {
     expect(shortcut.targetId).toBe(TARGET_NETWORK_UUID)
   })
 
-  it('does not fetch when there are no network shortcuts', async () => {
-    const result = await enrichShortcutsWithTargetSummaries([networkItem])
+  it('does not fetch when every item already has its metrics', async () => {
+    const result = await enrichFileItemsWithSummaries([networkItem])
 
     expect(fetchNdexSummaries).not.toHaveBeenCalled()
     expect(result).toEqual([networkItem])
@@ -195,7 +198,7 @@ describe('enrichShortcutsWithTargetSummaries', () => {
   it('requests each target uuid once', async () => {
     ;(fetchNdexSummaries as any).mockResolvedValue([])
 
-    await enrichShortcutsWithTargetSummaries([
+    await enrichFileItemsWithSummaries([
       shortcutItem,
       { ...shortcutItem, uuid: 'another-shortcut' },
     ])
@@ -208,10 +211,44 @@ describe('enrichShortcutsWithTargetSummaries', () => {
     )
   })
 
+  // A compact folder listing gives a NETWORK its edge count but never its
+  // node count or file size (#819).
+  it('fills in a plain network that arrived without a node count', async () => {
+    ;(fetchNdexSummaries as any).mockResolvedValue([
+      {
+        externalId: TARGET_NETWORK_UUID,
+        nodeCount: 330,
+        edgeCount: 359,
+        cx2FileSize: 260452,
+        subnetworkIds: [],
+        visibility: 'PRIVATE',
+      },
+    ])
+    const folderNetworkItem: NdexFileItem = {
+      uuid: TARGET_NETWORK_UUID,
+      name: 'galFiltered.sif',
+      type: 'NETWORK',
+      modificationTime: 1773262924310,
+      edges: 359,
+    }
+
+    const [network] = await enrichFileItemsWithSummaries([folderNetworkItem])
+
+    expect(fetchNdexSummaries).toHaveBeenCalledWith(
+      [TARGET_NETWORK_UUID],
+      undefined,
+      undefined,
+    )
+    expect(network.nodeCount).toBe(330)
+    expect(network.nodes).toBe(330)
+    expect(network.edges).toBe(359)
+    expect(network.cx2FileSize).toBe(260452)
+  })
+
   it('returns the original items (with targetId intact) when the summary fetch fails', async () => {
     ;(fetchNdexSummaries as any).mockRejectedValue(new Error('network error'))
 
-    const result = await enrichShortcutsWithTargetSummaries([shortcutItem])
+    const result = await enrichFileItemsWithSummaries([shortcutItem])
 
     expect(result[0]).toBe(shortcutItem)
     expect(result[0].targetId).toBe(TARGET_NETWORK_UUID)

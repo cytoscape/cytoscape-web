@@ -47,7 +47,7 @@ export {
 // File/folder operations
 export type { NdexFileItem, NdexFileSearchResult } from './files'
 export {
-  enrichShortcutsWithTargetSummaries,
+  enrichFileItemsWithSummaries,
   fetchFolderContents,
   fetchFolderInfo,
   getNetworkIdForFileItem,
