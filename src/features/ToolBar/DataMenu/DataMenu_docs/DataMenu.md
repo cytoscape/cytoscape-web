@@ -71,6 +71,7 @@ No row renders a dialog. A row is unmounted with the menu, and a dialog rendered
 - A flow whose dialog opens only after async work (the NDEx saves) lives in a hook the menu calls. It returns `{ start, dialogs }` and reads network data from the stores when the save runs, so the always-mounted menu subscribes to none of it.
 - A dialog that stays mounted and only toggles `open` re-keys itself on every open, so its fields re-seed (`ExportImage`). A dialog that subscribes to the whole workspace mounts only while open (`WorkspaceNamingDialog`).
 - `src/features/ToolBar/menuRowDialogs.test.ts` fails if a row, or anything it renders or lazy-loads, renders a dialog.
+
 ### NDEx folders and shortcuts in `LoadFromNdexDialog`
 
 - Folder listings request `format=compact`. The default format omits each item's `attributes`, so a shortcut loses its target, target type and status (#817).
