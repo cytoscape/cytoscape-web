@@ -1,6 +1,5 @@
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
 import {
-  closestCenter,
   CollisionDetection,
   DndContext,
   DragEndEvent,
@@ -8,7 +7,7 @@ import {
   DragStartEvent,
   KeyboardSensor,
   PointerSensor,
-  pointerWithin,
+  UniqueIdentifier,
   useDraggable,
   useDroppable,
   useSensor,
@@ -61,18 +60,40 @@ const dropId = (target: ConditionDropTarget): string =>
 /**
  * Drop targets nest (a condition inside a group inside the root), and the
  * pointer is over all of them at once: the innermost, smallest one wins. The
- * keyboard sensor has no pointer, so it uses the nearest target.
+ * keyboard sensor has no pointer, so the center of the dragged card stands in
+ * for it.
+ *
+ * Every target takes part, including those the dragged condition cannot be
+ * dropped on (its own row, its own conditions): they must still hide the
+ * targets around them, or releasing a condition over itself would land in
+ * its enclosing group. A drop on them does nothing (moveCondition).
  */
-const innermostTarget: CollisionDetection = (args) => {
-  if (args.pointerCoordinates === null) {
-    return closestCenter(args)
+const innermostTarget: CollisionDetection = ({
+  collisionRect,
+  droppableContainers,
+  droppableRects,
+  pointerCoordinates,
+}) => {
+  const point = pointerCoordinates ?? {
+    x: collisionRect.left + collisionRect.width / 2,
+    y: collisionRect.top + collisionRect.height / 2,
   }
-  const hits = pointerWithin(args)
-  const area = (id: string | number): number => {
-    const rect = args.droppableRects.get(id)
-    return rect === undefined ? Infinity : rect.width * rect.height
-  }
-  return [...hits].sort((a, b) => area(a.id) - area(b.id))
+  const hits: { id: UniqueIdentifier; area: number }[] = []
+  droppableContainers.forEach(({ id }) => {
+    const rect = droppableRects.get(id)
+    if (
+      rect !== undefined &&
+      point.x >= rect.left &&
+      point.x <= rect.left + rect.width &&
+      point.y >= rect.top &&
+      point.y <= rect.top + rect.height
+    ) {
+      hits.push({ id, area: rect.width * rect.height })
+    }
+  })
+  return hits
+    .sort((a, b) => a.area - b.area)
+    .map(({ id, area }) => ({ id, data: { value: area } }))
 }
 
 interface ConditionDndProviderProps {
@@ -176,22 +197,21 @@ export const useConditionDrag = (path: FilterNodePath) => {
 }
 
 /**
- * Make an element a drop target. It accepts the dragged condition only when
- * the drop would change the filter (canDropCondition); `isOver` is true only
- * then.
+ * Make an element a drop target. `isOver` is true only when the drop would
+ * change the filter (canDropCondition). The target stays registered either
+ * way, so it hides the targets it is nested in (see innermostTarget).
  */
 export const useConditionDrop = (target: ConditionDropTarget) => {
   const { root, activePath } = useDndState()
-  const disabled =
-    activePath === undefined || !canDropCondition(root, activePath, target)
   const { setNodeRef, isOver } = useDroppable({
     id: dropId(target),
     data: { target },
-    disabled,
   })
+  const accepts =
+    activePath !== undefined && canDropCondition(root, activePath, target)
   return {
     setNodeRef,
-    isOver: isOver && !disabled,
+    isOver: isOver && accepts,
     isDragging: activePath !== undefined,
   }
 }

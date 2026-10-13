@@ -213,6 +213,78 @@ test.describe('FILTER tab: drag and drop', () => {
     ).toHaveCount(1)
   })
 
+  // The conditions in document order, nested ones included: a group row
+  // holds rows of its own, a degree condition has an edge-type picker
+  const order = (page: Page) =>
+    page
+      .locator('[data-testid="filter-conditions"] [data-testid$="-row"]')
+      .evaluateAll((rows) =>
+        rows.map((row) =>
+          row.querySelector('[data-testid$="-row"]') !== null
+            ? 'group'
+            : row.querySelector('[data-testid$="-edge-type"]') !== null
+              ? 'degree'
+              : 'column',
+        ),
+      )
+
+  test('leaves a condition dropped back on itself where it is', async ({
+    page,
+  }) => {
+    await gotoAndWaitReady(page)
+    await seedNetwork(page)
+    await addConditions(page, ['column', 'degree'])
+    expect(await order(page)).toEqual(['column', 'degree'])
+
+    // Start a drag on the first condition and release it over its own row
+    const from = await center(page, 'filter-condition-0-drag')
+    const row = await center(page, 'filter-condition-0-row')
+    await page.mouse.move(from.x, from.y)
+    await page.mouse.down()
+    await page.mouse.move(from.x + 20, from.y + 2, { steps: 5 })
+    await page.mouse.move(row.x, row.y, { steps: 5 })
+    await page.mouse.up()
+
+    await expect(
+      page.locator('[data-testid="filter-condition-drag-preview"]'),
+    ).toHaveCount(0)
+    expect(await order(page)).toEqual(['column', 'degree'])
+  })
+
+  test('moves a condition with the keyboard, and Escape cancels', async ({
+    page,
+  }) => {
+    await gotoAndWaitReady(page)
+    await seedNetwork(page)
+    await addConditions(page, ['column', 'degree'])
+    const handle = page.locator('[data-testid="filter-condition-1-drag"]')
+
+    // Picked up, moved onto the column condition, then cancelled
+    await handle.focus()
+    await page.keyboard.press('Space')
+    await expect(
+      page.locator('[data-testid="filter-condition-drag-preview"]'),
+    ).toHaveText('Degree filter')
+    await page.keyboard.press('ArrowUp')
+    await page.keyboard.press('ArrowUp')
+    await page.keyboard.press('Escape')
+    await expect(
+      page.locator('[data-testid="filter-condition-drag-preview"]'),
+    ).toHaveCount(0)
+    expect(await order(page)).toEqual(['column', 'degree'])
+
+    // The same moves, dropped with Space: the two are grouped
+    await handle.focus()
+    await page.keyboard.press('Space')
+    await page.keyboard.press('ArrowUp')
+    await page.keyboard.press('ArrowUp')
+    await page.keyboard.press('Space')
+    await expect(
+      page.locator('[data-testid="filter-condition-0-match-type"]'),
+    ).toBeVisible()
+    expect(await order(page)).toEqual(['group', 'column', 'degree'])
+  })
+
   test('drags a condition by touch', async ({ page, browserName }) => {
     // Touch input is driven through the Chrome DevTools Protocol
     test.skip(browserName !== 'chromium', 'Chromium only')
