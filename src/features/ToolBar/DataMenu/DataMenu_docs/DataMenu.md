@@ -71,6 +71,16 @@ No row renders a dialog. A row is unmounted with the menu, and a dialog rendered
 - A flow whose dialog opens only after async work (the NDEx saves) lives in a hook the menu calls. It returns `{ start, dialogs }` and reads network data from the stores when the save runs, so the always-mounted menu subscribes to none of it.
 - A dialog that stays mounted and only toggles `open` re-keys itself on every open, so its fields re-seed (`ExportImage`). A dialog that subscribes to the whole workspace mounts only while open (`WorkspaceNamingDialog`).
 - `src/features/ToolBar/menuRowDialogs.test.ts` fails if a row, or anything it renders or lazy-loads, renders a dialog.
+
+### NDEx folders and shortcuts in `LoadFromNdexDialog`
+
+- Folder listings request `format=compact`. The default format omits each item's `attributes`, so a shortcut loses its target, target type and status (#817).
+- A shortcut acts on its target: `getNetworkIdForFileItem` resolves the id that selecting, loading or opening a folder uses. Each row carries both ids: `data-testid` holds the row's own uuid, `data-target-id` the id it opens.
+- Shortcuts to a folder are listed under **Folders**; shortcuts to a network under **Networks**.
+- A shortcut whose target is `IN_TRASH` or `DELETED` is disabled, with a tooltip saying why (`getUnavailableShortcutReason`).
+- Folder listings never carry a network's node count or file size. `enrichFileItemsWithSummaries` fills them in, and a shortcut's counts, from one batched summary request (#819).
+- `test/playwright/load-from-ndex-folders.spec.ts` covers all of the above against a route-mocked NDEx.
+
 - **State & Store Integration**
   - Individual menu items integrate with various stores:
     - `WorkspaceStore` for managing networks/workspaces
