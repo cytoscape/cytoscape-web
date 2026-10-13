@@ -153,6 +153,28 @@ test.describe('Network summary overflow menu', () => {
     await expect(share).toContainText('Save this network to NDEx first')
   })
 
+  test('save entry of an unmodified local network asks to sign in, not for changes', async ({
+    page,
+  }) => {
+    // #640: a local network can always be saved as a copy (Data > Save Copy to
+    // NDEx), so an unchanged one must not be reported as having nothing to
+    // save. The e2e user is anonymous, so the only blocker left is sign-in.
+    expect(await waitForInitialLayout(page)).toBe(true)
+    await expect(
+      page.locator('[data-testid="network-unsaved-badge"]').first(),
+    ).not.toBeVisible()
+
+    await page
+      .locator('[data-testid="network-property-menu-button"]')
+      .first()
+      .click()
+
+    const save = page.locator('[data-testid="network-save-status-menuitem"]')
+    await expect(save).toContainText('Save a Copy to NDEx')
+    await expect(save).toContainText('Sign in to save to NDEx')
+    await expect(save).not.toContainText('No unsaved changes')
+  })
+
   test('duplicate action adds a second row to the workspace', async ({
     page,
   }) => {
