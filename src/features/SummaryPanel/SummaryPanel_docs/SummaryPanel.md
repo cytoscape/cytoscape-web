@@ -53,9 +53,13 @@ The SummaryPanel is composed of several components that work together to display
     - Save to NDEx — "Save to NDEx" for an NDEx network, "Save a Copy to NDEx"
       for a local one. The label always names the action; whatever blocks it is
       named on a second line, and the item is disabled whenever one is shown:
-      "No unsaved changes", "Sign in to save to NDEx" (anonymous user), or
-      "Open this network first" (only the currently open network's data is
-      loaded, so only it can be saved). See `networkSaveStatus.ts`.
+      "No unsaved changes" (an NDEx network already up to date with NDEx),
+      "Sign in to save to NDEx" (anonymous user), or "Open this network first"
+      (only the currently open network's data is loaded, so only it can be
+      saved). A local network never reports "No unsaved changes": it can always
+      be saved as a new copy, changed or not, just as Data > Save Copy to NDEx
+      allows (#640). The upload icon is orange only while the network has
+      unsaved changes. See `networkSaveStatus.ts`.
     - Edit Network Properties (opens property editor)
     - Open Network in Cytoscape Desktop
     - Duplicate Network

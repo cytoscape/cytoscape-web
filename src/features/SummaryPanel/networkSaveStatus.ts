@@ -5,15 +5,16 @@ export interface SaveButtonState {
   action: SaveAction
   /** True when there are no unsaved changes (the upload icon stays neutral). */
   upToDate: boolean
-  /** Tooltip text describing the current status / available action. */
-  tooltip: string
 }
 
 /**
  * Decide how the network's save entry should look and behave (CW-488).
- * Replaces the old red "modified" dot: an unsaved network offers a save that
- * runs on click and an orange upload icon, while an up-to-date network keeps the
- * same icon in the menu's own colour.
+ * Replaces the old red "modified" dot: an unsaved network gets an orange upload
+ * icon, while an up-to-date network keeps the same icon in the menu's own colour.
+ *
+ * Only an NDEx network can be "up to date with NDEx", so only it has nothing to
+ * save when unmodified. A local network can always be saved as a new copy, as
+ * Data > Save Copy to NDEx allows, whether or not it has changed (#640).
  * Anonymous users are told to sign in rather than being offered a broken save.
  */
 export const getSaveButtonState = ({
@@ -25,35 +26,17 @@ export const getSaveButtonState = ({
   isNdex: boolean
   authenticated: boolean
 }): SaveButtonState => {
-  if (!networkModified) {
-    return {
-      action: 'none',
-      upToDate: true,
-      tooltip: isNdex ? 'Up to date with NDEx' : 'No unsaved changes',
-    }
+  const upToDate = !networkModified
+
+  if (isNdex && upToDate) {
+    return { action: 'none', upToDate }
   }
 
   if (!authenticated) {
-    return {
-      action: 'signin',
-      upToDate: false,
-      tooltip: 'Unsaved changes — sign in to save this network to NDEx',
-    }
+    return { action: 'signin', upToDate }
   }
 
-  if (isNdex) {
-    return {
-      action: 'overwrite',
-      upToDate: false,
-      tooltip: 'Unsaved changes — click to save to NDEx',
-    }
-  }
-
-  return {
-    action: 'copy',
-    upToDate: false,
-    tooltip: 'Unsaved changes — click to save a copy to NDEx',
-  }
+  return { action: isNdex ? 'overwrite' : 'copy', upToDate }
 }
 
 export interface SaveMenuItemState {
