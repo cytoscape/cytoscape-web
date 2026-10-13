@@ -44,6 +44,7 @@ import {
   fetchNdexSummaries,
   fetchNdexUserName,
   getNetworkIdForFileItem,
+  getUnavailableShortcutReason,
   searchNdexFiles,
 } from '../../../data/external-api/ndex'
 import { NdexFileItem } from '../../../data/external-api/ndex/files'
@@ -202,6 +203,7 @@ const FolderBreadcrumbs = (props: {
 
   return (
     <Breadcrumbs
+      data-testid="load-from-ndex-breadcrumbs"
       separator={<ChevronRight fontSize="small" />}
       sx={{ mb: 1, mt: 1 }}
     >
@@ -231,6 +233,7 @@ const FolderBreadcrumbs = (props: {
         return isLast && !hasError ? (
           <Typography
             key={index}
+            data-testid={`load-from-ndex-breadcrumb-${index}`}
             color="text.primary"
             variant="body2"
             fontWeight="bold"
@@ -240,6 +243,7 @@ const FolderBreadcrumbs = (props: {
         ) : (
           <MuiLink
             key={index}
+            data-testid={`load-from-ndex-breadcrumb-${index}`}
             component="button"
             variant="body2"
             underline="hover"
@@ -309,39 +313,67 @@ const FolderSection = (props: {
           </Typography>
         </TableCell>
       </TableRow>
-      {folders.map((folder) => (
-        <TableRow
-          key={folder.uuid}
-          sx={{
-            cursor: 'pointer',
-          }}
-          hover
-          onClick={() => onFolderClick(getNetworkIdForFileItem(folder))}
-        >
-          <TableCell padding="checkbox" />
-          <TableCell sx={{ maxWidth: 400, ...cellSx }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <FolderIcon fontSize="small" sx={{ color: 'primary.light' }} />
-              {folder.name}
-            </Box>
-          </TableCell>
-          <TableCell sx={{ maxWidth: 100, ...cellSx }}>
-            {folder.owner ?? ''}
-          </TableCell>
-          <TableCell sx={{ maxWidth: 50, textAlign: 'center' }}>
-            <Typography
-              variant="caption"
-              sx={{ color: 'text.secondary', fontWeight: 'bold' }}
-            >
-              {folder.visibility}
-            </Typography>
-          </TableCell>
-          <TableCell colSpan={2} />
-          <TableCell sx={{ maxWidth: 10, ...cellSx }}>
-            {dateFormatter(folder.modificationTime)}
-          </TableCell>
-        </TableRow>
-      ))}
+      {folders.map((folder) => {
+        // A folder shortcut opens the folder it points to. The row's test id
+        // keeps the item's own uuid; data-target-id is the folder it opens.
+        const folderId = getNetworkIdForFileItem(folder)
+        const unavailableReason = getUnavailableShortcutReason(folder)
+        const row = (
+          <TableRow
+            key={folder.uuid}
+            data-testid={`load-from-ndex-folder-row-${folder.uuid}`}
+            data-target-id={folderId}
+            aria-disabled={unavailableReason !== undefined}
+            sx={{
+              cursor: unavailableReason ? 'not-allowed' : 'pointer',
+              color: unavailableReason
+                ? (theme) => theme.palette.text.disabled
+                : undefined,
+            }}
+            hover={unavailableReason === undefined}
+            onClick={
+              unavailableReason === undefined
+                ? () => onFolderClick(folderId)
+                : undefined
+            }
+          >
+            <TableCell padding="checkbox" />
+            <TableCell sx={{ maxWidth: 400, color: 'inherit', ...cellSx }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <FolderIcon
+                  fontSize="small"
+                  sx={{
+                    color: unavailableReason ? 'inherit' : 'primary.light',
+                  }}
+                />
+                {folder.name}
+              </Box>
+            </TableCell>
+            <TableCell sx={{ maxWidth: 100, color: 'inherit', ...cellSx }}>
+              {folder.owner ?? ''}
+            </TableCell>
+            <TableCell sx={{ maxWidth: 50, textAlign: 'center' }}>
+              <Typography
+                variant="caption"
+                sx={{ color: 'text.secondary', fontWeight: 'bold' }}
+              >
+                {folder.visibility}
+              </Typography>
+            </TableCell>
+            <TableCell colSpan={2} />
+            <TableCell sx={{ maxWidth: 10, color: 'inherit', ...cellSx }}>
+              {dateFormatter(folder.modificationTime)}
+            </TableCell>
+          </TableRow>
+        )
+        return unavailableReason === undefined ? (
+          row
+        ) : (
+          <Tooltip key={folder.uuid} title={unavailableReason}>
+            {row}
+          </Tooltip>
+        )
+      })}
     </>
   )
 }
@@ -749,7 +781,9 @@ export const LoadFromNdexDialog = (
 
       const selected = selectedNetworks.includes(externalId)
       const networkAlreadyLoaded = networkIds.includes(externalId)
+      const unavailableReason = getUnavailableShortcutReason(network)
       const networkCanBeSelected =
+        unavailableReason === undefined &&
         !networkAlreadyLoaded &&
         networkPassesSizeThreshold(
           +nodeCount,
@@ -764,6 +798,8 @@ export const LoadFromNdexDialog = (
         return (
           <TableRow
             key={rowKey}
+            data-testid={`load-from-ndex-network-row-${rowKey}`}
+            data-target-id={externalId}
             hover
             selected={selected}
             onClick={() => toggleSelectedNetwork(externalId)}
@@ -792,15 +828,20 @@ export const LoadFromNdexDialog = (
         )
       }
 
-      const tooltipMessage = networkAlreadyLoaded
-        ? 'Network already loaded in the workspace'
-        : subnetworkIds.length > 0
-          ? 'Collections cannot be imported into Cytoscape Web'
-          : 'Network is too large to be loaded into Cytoscape Web.'
+      const tooltipMessage = unavailableReason
+        ? unavailableReason
+        : networkAlreadyLoaded
+          ? 'Network already loaded in the workspace'
+          : subnetworkIds.length > 0
+            ? 'Collections cannot be imported into Cytoscape Web'
+            : 'Network is too large to be loaded into Cytoscape Web.'
 
       return (
         <Tooltip key={rowKey} title={tooltipMessage}>
           <TableRow
+            data-testid={`load-from-ndex-network-row-${rowKey}`}
+            data-target-id={externalId}
+            aria-disabled
             hover={false}
             selected={false}
             sx={{

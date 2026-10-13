@@ -237,6 +237,27 @@ export const getNetworkIdForFileItem = (item: NdexFileItem): string =>
   item.targetId ?? item.uuid
 
 /**
+ * Explains why a SHORTCUT cannot be opened, or returns undefined when it can.
+ *
+ * NDEx reports the target's state as `attributes.target_status` (compact
+ * listings and search results only): ACTIVE, IN_TRASH or DELETED. A shortcut
+ * whose target is gone cannot be opened, loaded or browsed into. An item with
+ * no status is treated as openable, so a response without the field changes
+ * nothing.
+ */
+export const getUnavailableShortcutReason = (
+  item: NdexFileItem,
+): string | undefined => {
+  if (item.type !== 'SHORTCUT') return undefined
+  const status = item.attributes?.target_status
+  if (status === undefined || status === 'ACTIVE') return undefined
+  const kind = item.attributes?.target_type === 'FOLDER' ? 'folder' : 'network'
+  return status === 'IN_TRASH'
+    ? `The ${kind} this shortcut points to is in the trash`
+    : `The ${kind} this shortcut points to no longer exists`
+}
+
+/**
  * Returns the network whose summary fills in a file item's metrics, or
  * undefined when the item needs none.
  *

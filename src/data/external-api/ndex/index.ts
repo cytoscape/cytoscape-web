@@ -51,6 +51,7 @@ export {
   fetchFolderContents,
   fetchFolderInfo,
   getNetworkIdForFileItem,
+  getUnavailableShortcutReason,
   resolveShortcut,
   searchNdexFiles,
 } from './files'

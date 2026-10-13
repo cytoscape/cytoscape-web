@@ -6,6 +6,7 @@ import {
   enrichFileItemsWithSummaries,
   fetchFolderContents,
   getNetworkIdForFileItem,
+  getUnavailableShortcutReason,
   NdexFileItem,
   searchNdexFiles,
 } from './files'
@@ -133,6 +134,55 @@ describe('getNetworkIdForFileItem', () => {
       type: 'NETWORK',
     } as NdexFileItem
     expect(getNetworkIdForFileItem(network)).toBe(TARGET_NETWORK_UUID)
+  })
+})
+
+describe('getUnavailableShortcutReason', () => {
+  const shortcut = (attributes: Record<string, any>): NdexFileItem => ({
+    uuid: SHORTCUT_UUID,
+    name: 'shortcut',
+    type: 'SHORTCUT',
+    modificationTime: 0,
+    attributes,
+  })
+
+  it('is undefined for an ACTIVE target and for a missing status', () => {
+    expect(
+      getUnavailableShortcutReason(
+        shortcut({ target_type: 'FOLDER', target_status: 'ACTIVE' }),
+      ),
+    ).toBeUndefined()
+    expect(
+      getUnavailableShortcutReason(shortcut({ target_type: 'FOLDER' })),
+    ).toBeUndefined()
+  })
+
+  it('names the trash for an IN_TRASH target', () => {
+    expect(
+      getUnavailableShortcutReason(
+        shortcut({ target_type: 'FOLDER', target_status: 'IN_TRASH' }),
+      ),
+    ).toBe('The folder this shortcut points to is in the trash')
+  })
+
+  it('says the target is gone for a DELETED target', () => {
+    expect(
+      getUnavailableShortcutReason(
+        shortcut({ target_type: 'NETWORK', target_status: 'DELETED' }),
+      ),
+    ).toBe('The network this shortcut points to no longer exists')
+  })
+
+  it('is undefined for plain networks and folders', () => {
+    expect(
+      getUnavailableShortcutReason({
+        uuid: TARGET_NETWORK_UUID,
+        name: 'n',
+        type: 'NETWORK',
+        modificationTime: 0,
+        attributes: { target_status: 'DELETED' },
+      }),
+    ).toBeUndefined()
   })
 })
 
