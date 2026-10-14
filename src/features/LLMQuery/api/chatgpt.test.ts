@@ -31,7 +31,7 @@ describe('analyzeSubsystemGeneSet', () => {
   it('talks to OpenAI by default without overriding the base URL', async () => {
     const result = await analyzeSubsystemGeneSet('hi', {
       apiKey: 'sk-abc',
-      model: 'gpt-4o-mini',
+      model: 'gpt-6-luna',
       baseUrl: '',
     })
 
@@ -45,7 +45,7 @@ describe('analyzeSubsystemGeneSet', () => {
     expect(ctorSpy.mock.calls[0][0]).not.toHaveProperty('baseURL')
     expect(createSpy).toHaveBeenCalledWith({
       messages: [{ role: 'user', content: 'hi' }],
-      model: 'gpt-4o-mini',
+      model: 'gpt-6-luna',
     })
   })
 
