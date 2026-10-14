@@ -1,9 +1,16 @@
-/* eslint-disable react/no-unescaped-entities */
-import CloseIcon from '@mui/icons-material/Close'
-import { Button, DialogContent, DialogTitle, IconButton } from '@mui/material'
+import {
+  Button,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  Paper,
+  Typography,
+} from '@mui/material'
 import { ReactElement, useEffect, useState } from 'react'
 
 import { CyDialog } from '@/components/CyDialog'
+import { DialogCloseButton } from '@/components/DialogCloseButton'
 import packageInfo from '../../../../package.json'
 
 function getIssueEnvironment(): string {
@@ -35,14 +42,19 @@ function getIssueEnvironment(): string {
   const osVersionInfo = osDetails + ' ' + osVersion
 
   const browserInfo = navigator.userAgent
-  const browserVersion =
-    browserInfo.match(
-      /(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*(\d+)/i,
-    ) || []
-  const browser =
-    browserVersion[1].toLowerCase() === 'trident' ? 'IE' : browserVersion[1]
-  const version = browserVersion[2]
-  const browserVersionInfo = browser + ' ' + version
+  const browserVersion = browserInfo.match(
+    /(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*(\d+)/i,
+  )
+  // A user agent with none of these tokens (embedded webviews, jsdom) has no
+  // match; report it as unknown rather than throwing inside the effect.
+  const browserVersionInfo =
+    browserVersion === null
+      ? 'Unknown'
+      : (browserVersion[1].toLowerCase() === 'trident'
+          ? 'IE'
+          : browserVersion[1]) +
+        ' ' +
+        browserVersion[2]
 
   return (
     'Cytoscape Web Version: ' +
@@ -106,44 +118,50 @@ export const BugReportDialog = ({
     <CyDialog
       data-testid="bug-report-dialog"
       open={open}
-      maxWidth="md"
+      maxWidth="sm"
       fullWidth
     >
-      <DialogTitle>
-        Report a Bug
-        <IconButton
-          data-testid="bug-report-dialog-close-button"
-          aria-label="close"
-          onClick={onClose}
-          sx={{
-            position: 'absolute',
-            right: 8,
-            top: 8,
-            color: (theme) => theme.palette.grey[500],
-          }}
-        >
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
+      <DialogTitle sx={{ pr: 6 }}>Report a Bug</DialogTitle>
+      <DialogCloseButton
+        data-testid="bug-report-dialog-close-button"
+        onClose={onClose}
+      />
       <DialogContent>
-        <p className="lead">
-          <b>TELL US: 1)</b> How to reproduce the bug. <b>2)</b> What operating
-          system you're using <b>3)</b> What Cytoscape Web version you're using.{' '}
-          <b>4)</b> What browser you're using. Try to reproduce the bug yourself{' '}
-          <b>before</b> you report it. Be sure to include any data we may need
-          to reproduce the bug.
-        </p>
-        <div id="myCustomTrigger">
-          <Button
-            variant="contained"
-            color="warning"
-            fullWidth
-            disabled={isLoading}
-          >
-            {isLoading ? 'Loading...' : 'Click here to report a bug'}
-          </Button>
-        </div>
+        <Paper variant="filled" sx={{ p: 2 }}>
+          <Typography variant="body1">Please tell us:</Typography>
+          <Typography variant="body1" component="ol" sx={{ mt: 1, mb: 0 }}>
+            <li>The steps that reproduce the bug.</li>
+            <li>Any data we need to reproduce it, such as the network file.</li>
+          </Typography>
+          <Divider sx={{ my: 2 }} />
+          <Typography variant="body2">
+            Your Cytoscape Web version, operating system and browser are added
+            to the report automatically.
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 2 }}>
+            Before reporting, please check that you can reproduce the bug
+            yourself.
+          </Typography>
+        </Paper>
       </DialogContent>
+      <DialogActions>
+        <Button
+          data-testid="bug-report-dialog-cancel-button"
+          variant="outlined"
+          onClick={onClose}
+        >
+          Cancel
+        </Button>
+        <Button
+          id="myCustomTrigger"
+          data-testid="bug-report-dialog-report-button"
+          variant="contained"
+          color="warning"
+          disabled={isLoading}
+        >
+          {isLoading ? 'Loading...' : 'Report a Bug'}
+        </Button>
+      </DialogActions>
     </CyDialog>
   )
 }

@@ -47,6 +47,19 @@ return (
 `CyDialog` removes `onClose` from the prop type, so passing one is a type error. The handler
 belongs on a button. Every other `DialogProps` forwards untouched.
 
+A read-only dialog with no action of its own (About, License, Citations) can use the shared
+corner "X" instead of a Cancel/Close row, `DialogCloseButton` (`src/components/DialogCloseButton.tsx`).
+Render it as a direct child of `CyDialog` and pad the title clear of it. Its label is always
+exactly "Close":
+
+```tsx
+<CyDialog data-testid="my-dialog" open={open}>
+  <DialogTitle sx={{ pr: 6 }}>…</DialogTitle>
+  <DialogCloseButton data-testid="my-dialog-close-button" onClose={onClose} />
+  <DialogContent>…</DialogContent>
+</CyDialog>
+```
+
 ## Which surfaces this covers
 
 **All 40 `<Dialog>` sites**, through `CyDialog`.
@@ -131,8 +144,11 @@ half-filled form, and no dialog closes into a state the user did not choose.
 
 - `src/components/CyDialog.spec.tsx` — asserts backdrop click and <kbd>Esc</kbd> leave the dialog
   open, and that the dialog's own buttons still fire.
+- `src/components/DialogCloseButton.spec.tsx` — the shared "X" is named exactly "Close" and fires
+  `onClose`.
 - `src/components/dialogPolicy.test.ts` — asserts **every** `CyDialog` in `src/` holds a control
-  whose label, `aria-label` or `data-testid` reads as a way out, and that the form popovers listed above
+  whose label, `aria-label` or `data-testid` reads as a way out (or a `<DialogCloseButton>`, which
+  it recognises by name), and that the form popovers listed above
   keep both guard props. A Submit-only dialog fails. This is the check that keeps a dialog from
   shipping with no exit; it caught the service-app run dialog.
 - `test/playwright/dialog-dismiss.spec.ts` — per dialog: <kbd>Esc</kbd> and a backdrop click leave
