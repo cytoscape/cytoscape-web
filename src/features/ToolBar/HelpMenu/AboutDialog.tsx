@@ -82,7 +82,9 @@ export const AboutDialog = ({
         data-testid="about-dialog-close-button"
         onClose={onClose}
       />
-      <DialogContent sx={{ minWidth: 360 }}>
+      {/* No minimum below `sm`: under ~424px the paper is narrower than 360px
+          and the content would scroll sideways. */}
+      <DialogContent sx={{ minWidth: { xs: 0, sm: 360 } }}>
         <Box
           sx={{
             display: 'flex',
