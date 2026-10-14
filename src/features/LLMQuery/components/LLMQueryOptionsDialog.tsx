@@ -18,6 +18,7 @@ import {
   Select,
   TextField,
   Tooltip,
+  Typography,
 } from '@mui/material'
 import { useEffect, useRef, useState } from 'react'
 
@@ -235,6 +236,15 @@ const LLMQueryOptionsDialogContent = (
     >
       <DialogTitle>LLM Query Options</DialogTitle>
       <DialogContent sx={{ p: 1 }}>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          data-testid="llm-query-options-usage"
+          sx={{ mt: 1, mb: 1 }}
+        >
+          Used by Run LLM Query and by the FILTER tab's "New filter from
+          description".
+        </Typography>
         <FormControl sx={{ mb: 2, mt: 1 }} fullWidth>
           <InputLabel>Provider</InputLabel>
           <Select
@@ -334,7 +344,14 @@ const LLMQueryOptionsDialogContent = (
           </Tooltip>
         )}
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            mt: 2,
+          }}
+        >
           <FormControl fullWidth>
             <InputLabel>Prompt</InputLabel>
             <Select
@@ -359,6 +376,7 @@ const LLMQueryOptionsDialogContent = (
                 )
               })}
             </Select>
+            <FormHelperText>Used for gene set queries only</FormHelperText>
           </FormControl>
           <ButtonGroup size="small" variant="contained" sx={{ ml: 1 }}>
             <Tooltip title="Preview selected prompt">

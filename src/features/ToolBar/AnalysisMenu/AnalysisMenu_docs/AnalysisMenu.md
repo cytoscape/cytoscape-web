@@ -22,7 +22,7 @@ The menu is intentionally thin: it delegates all domain-specific behavior to the
 
 - **Menu items**
   - **Run LLM Query**: Opens the LLM query UI to send gene lists or other domain data to the configured LLM.
-  - **LLM Query Options**: Opens a configuration dialog for model selection, API key, and templates.
+  - **LLM Query Options**: Opens a configuration dialog for model selection, API key, and templates. The FILTER tab's "New filter from description" uses the same provider, endpoint, model and key (`docs/specifications/LLM_FILTER_GENERATION_SPEC.md`).
 
 - **Closing behavior**
   - All menu items receive a `handleClose` callback from `AnalysisMenu`, ensuring the overlay is closed after an action is triggered.

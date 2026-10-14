@@ -234,10 +234,11 @@ the `filterWidgets` filter applies its own. No workspace filter is changed.
 The tab (`src/features/Filter/`, see `Filter_docs/Filter.md`) follows
 Cytoscape Desktop's Filter tab:
 
-- A filter picker (sorted by name) and an options menu: New filter, Rename,
-  Copy, Remove (with confirmation; not the last filter), Export filters,
-  Import filters. A new filter is suggested "My filter"; a rename to a taken
-  name is refused. There is always a filter ("Default filter").
+- A filter picker (sorted by name) and an options menu: New filter, New
+  filter from description (see "Generating filters" below), Rename, Copy,
+  Remove (with confirmation; not the last filter), Export filters, Import
+  filters. A new filter is suggested "My filter"; a rename to a taken name is
+  refused. There is always a filter ("Default filter").
 - The conditions of the filter, with "Match all (AND)" / "Match any (OR)" once
   there are two, and a "+" menu: Column filter, Degree filter, Topology
   filter, Group. Nested groups always show how they combine.
@@ -271,6 +272,30 @@ Cytoscape Desktop's Filter tab:
 
 The tab is `'filter'` in the App API's left pane (`panel.open('left',
 'filter')`); LLM QUERY moved to position 3.
+
+## Generating filters
+
+"New filter from description…" builds a filter from a request typed in
+words ("show only kinases with more than 5 interactions"), with the LLM set
+in Analysis › LLM Query Options. The full design is
+[`LLM_FILTER_GENERATION_SPEC.md`](./LLM_FILTER_GENERATION_SPEC.md); in
+short:
+
+- The LLM gets the network's size, degree ranges, column names and types,
+  number ranges and up to 8 sample values per text column, never whole
+  tables. A footnote in the popover says so and names the recipient.
+- Its answer is read as an untrusted filter file: through
+  `parseCyFilterJson`, then a stricter policy for generated filters (no
+  `REGEX`, range predicates for numbers, editable conditions only, at most
+  30 conditions nested 6 deep), then `validateFilter` against the network.
+  Problems go back to the LLM for at most two corrections.
+- The request picks the mode: "select …" (the default), "show only …" or
+  "hide …". A hide filter is the negation of the conditions the LLM wrote,
+  computed in code (`negateForHide`), in show mode. An element with no
+  value in a boolean column, or no list in a list column, fails a condition
+  and its negation, so a hide filter hides it too.
+- The result is always a new workspace filter, shown at once; existing
+  filters are never changed.
 
 ## File format
 

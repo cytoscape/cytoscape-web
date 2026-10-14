@@ -6,18 +6,20 @@ format are specified in `docs/specifications/FILTER_SPECIFICATION.md`.
 
 ## Structure
 
-| File                                   | Role                                                                       |
-| -------------------------------------- | -------------------------------------------------------------------------- |
-| `FilterTab.tsx`                        | The tab: picks the filter, wires editing, applying and auto-apply          |
-| `components/FilterHeader.tsx`          | Filter picker and options menu: new, rename, copy, remove, export, import  |
-| `components/FilterNameDialog.tsx`      | "Create New Filter" / "Rename Filter"                                      |
-| `components/ConditionList.tsx`         | A group's conditions (recursive), match all/any, "+" menu, topology header |
-| `components/ConditionDnd.tsx`          | Drag and drop of conditions: provider, drag handle and drop target hooks   |
-| `components/ColumnConditionEditor.tsx` | Column condition: column picker and a comparison for its type              |
-| `components/DegreeConditionEditor.tsx` | Degree condition                                                           |
-| `components/RangeInput.tsx`            | "between [low] and [high] inclusive" with a slider                         |
-| `components/ApplyPanel.tsx`            | "Apply when filter changes", select / show, Apply, status line             |
-| `utils/filterTabUtil.ts`               | Pure helpers: column options, labels, status text, defaults                |
+| File                                   | Role                                                                                            |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `FilterTab.tsx`                        | The tab: picks the filter, wires editing, applying and auto-apply                               |
+| `components/FilterHeader.tsx`          | Filter picker and options menu: new, new from description, rename, copy, remove, export, import |
+| `components/FilterNameDialog.tsx`      | "Create New Filter" / "Rename Filter"                                                           |
+| `components/FilterFromDescription.tsx` | "New filter from description": the popover asking the LLM for a filter                          |
+| `llm/generateFilter.ts`                | No React, no store: request → check the answer → at most two repairs                            |
+| `components/ConditionList.tsx`         | A group's conditions (recursive), match all/any, "+" menu, topology header                      |
+| `components/ConditionDnd.tsx`          | Drag and drop of conditions: provider, drag handle and drop target hooks                        |
+| `components/ColumnConditionEditor.tsx` | Column condition: column picker and a comparison for its type                                   |
+| `components/DegreeConditionEditor.tsx` | Degree condition                                                                                |
+| `components/RangeInput.tsx`            | "between [low] and [high] inclusive" with a slider                                              |
+| `components/ApplyPanel.tsx`            | "Apply when filter changes", select / show, Apply, status line                                  |
+| `utils/filterTabUtil.ts`               | Pure helpers: column options, labels, status text, defaults                                     |
 
 `index.tsx` default-exports `FilterTab`, which `NetworkBrowserPanel` loads
 lazily.
@@ -28,6 +30,17 @@ lazily.
   computing a new tree with the `filterTreeImpl` path functions and storing it
   with `setWorkspaceFilterRoot`.
 - Applying goes through `applyWorkspaceFilter` (`src/data/filter/`).
+- "New filter from description" (`docs/specifications/LLM_FILTER_GENERATION_SPEC.md`):
+  the popover reads the LLM settings (`useLLMQueryStore`, key scoped with
+  `selectApiKey`) and the target network and tables, and hands them to
+  `generateFilter`. That builds the network context and the messages
+  (`src/models/FilterModel/impl/generation/`), sends them with
+  `requestChatCompletion`, and reads each answer with `readFilterAnswer`.
+  The popover adds the result with `addWorkspaceFilters`, sets its display
+  mode and selects it, so "Apply when filter changes" applies it as for
+  any filter picked. `FilterHeader` gets the network id from `FilterTab`
+  only once the network and its tables are loaded, and closes the popover
+  (aborting its request) when the tab switches networks.
 - The tab targets the active network view, else the current network, like the
   STYLE tab.
 - UI state of the browser tab, in memory only: the shown filter

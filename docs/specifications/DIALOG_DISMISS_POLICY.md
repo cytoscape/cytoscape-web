@@ -83,15 +83,16 @@ of this, app dialogs are not rows in `test/playwright/dialog-dismiss.spec.ts`; t
 components at all any more — `'apps-menu'` entries are plain data the host renders — so a
 menu item cannot smuggle a dialog of its own into the shared menu.
 
-**The four modal form popovers.** These are anchored but behave as modal editors, so they follow
+**The five modal form popovers.** These are anchored but behave as modal editors, so they follow
 the same rule through their own props:
 
-| Popover                                       | Editing                     |
-| --------------------------------------------- | --------------------------- |
-| `Vizmapper/Forms/VisualPropertyValueForm.tsx` | a visual property's value   |
-| `Vizmapper/Forms/MappingForm/index.tsx`       | a visual property's mapping |
-| `Vizmapper/Forms/BypassForm.tsx`              | per-element bypasses        |
-| `SummaryPanel/NetworkPropertyEditor.tsx`      | the network summary         |
+| Popover                                       | Editing                             |
+| --------------------------------------------- | ----------------------------------- |
+| `Vizmapper/Forms/VisualPropertyValueForm.tsx` | a visual property's value           |
+| `Vizmapper/Forms/MappingForm/index.tsx`       | a visual property's mapping         |
+| `Vizmapper/Forms/BypassForm.tsx`              | per-element bypasses                |
+| `SummaryPanel/NetworkPropertyEditor.tsx`      | the network summary                 |
+| `Filter/components/FilterFromDescription.tsx` | a filter description sent to an LLM |
 
 `MappingForm` and `BypassForm` joined this list in the #628 sweep; before it they closed on
 click-away and had no button of their own, which is exactly the inconsistency the policy exists to

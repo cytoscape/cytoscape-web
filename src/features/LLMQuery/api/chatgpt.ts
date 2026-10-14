@@ -1,7 +1,13 @@
+import type { ChatCompletionCreateParamsNonStreaming } from 'openai/resources/chat/completions'
+
 import { logApi } from '../../../debug'
 import testGPTResponse from '../model/gpt-4-0613-response.json'
 import { LLMModel } from '../model/LLMModel'
 import { getEndpointError, resolveApiKey } from '../model/LLMProvider'
+
+type OpenAIResponseFormat = NonNullable<
+  ChatCompletionCreateParamsNonStreaming['response_format']
+>
 
 export interface LLMEndpoint {
   apiKey: string
@@ -51,6 +57,62 @@ export const analyzeSubsystemGeneSet = async (
     logApi.error(`[${analyzeSubsystemGeneSet.name}]: LLM error:`, e)
     throw e
   }
+}
+
+/** One message of a chat completion request */
+export interface LLMChatMessage {
+  readonly role: 'system' | 'user' | 'assistant'
+  readonly content: string
+}
+
+/**
+ * How the answer must be shaped: JSON following a schema (structured
+ * output), or any JSON object. Endpoints differ in which they accept.
+ */
+export type LLMResponseFormat =
+  | {
+      readonly type: 'json_schema'
+      readonly json_schema: {
+        readonly name: string
+        readonly strict: boolean
+        readonly schema: Record<string, unknown>
+      }
+    }
+  | { readonly type: 'json_object' }
+
+export interface LLMChatRequest extends LLMRequestOptions {
+  readonly messages: readonly LLMChatMessage[]
+  readonly responseFormat?: LLMResponseFormat
+  readonly signal?: AbortSignal
+}
+
+/**
+ * Sends a conversation to the configured endpoint and returns the text of
+ * the answer ('' when the model returned none). Errors, aborts included,
+ * are passed on for the caller to report.
+ */
+export const requestChatCompletion = async (
+  request: LLMChatRequest,
+): Promise<string> => {
+  const openai = await createClient(request)
+  const response = await openai.chat.completions.create(
+    {
+      model: request.model,
+      messages: request.messages.map(({ role, content }) => ({
+        role,
+        content,
+      })),
+      ...(request.responseFormat === undefined
+        ? {}
+        : {
+            response_format: {
+              ...request.responseFormat,
+            } as OpenAIResponseFormat,
+          }),
+    },
+    { signal: request.signal },
+  )
+  return response.choices[0]?.message.content ?? ''
 }
 
 /**

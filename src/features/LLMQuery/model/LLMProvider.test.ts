@@ -5,6 +5,7 @@ import {
   getEndpointError,
   getLLMProvider,
   isLLMConfigured,
+  llmRecipientLabel,
   OLLAMA_DEFAULT_BASE_URL,
   providers,
   resolveApiKey,
@@ -112,5 +113,35 @@ describe('getEndpointError', () => {
   it('rejects malformed URLs and non-HTTP schemes', () => {
     expect(getEndpointError('not a url', '')).toBeDefined()
     expect(getEndpointError('ftp://host/v1', '')).toBeDefined()
+  })
+})
+
+describe('llmRecipientLabel', () => {
+  it('names OpenAI for the OpenAI provider, whatever the endpoint field holds', () => {
+    expect(llmRecipientLabel('openai', '')).toBe('OpenAI')
+    expect(llmRecipientLabel('openai', 'https://elsewhere.example.org')).toBe(
+      'OpenAI',
+    )
+  })
+
+  it('names the local Ollama server with its host and port', () => {
+    expect(llmRecipientLabel('ollama', OLLAMA_DEFAULT_BASE_URL)).toBe(
+      'your local Ollama server (localhost:11434)',
+    )
+  })
+
+  it('names the host of a custom endpoint', () => {
+    expect(llmRecipientLabel('custom', 'https://llm.example.org/v1')).toBe(
+      'llm.example.org',
+    )
+    expect(llmRecipientLabel('custom', ' http://10.0.0.5:8080/v1 ')).toBe(
+      '10.0.0.5:8080',
+    )
+  })
+
+  it('falls back to a description when the endpoint does not parse', () => {
+    expect(llmRecipientLabel('custom', '')).toBe('the custom endpoint')
+    expect(llmRecipientLabel('custom', 'not a url')).toBe('the custom endpoint')
+    expect(llmRecipientLabel('ollama', 'nope')).toBe('your local Ollama server')
   })
 })

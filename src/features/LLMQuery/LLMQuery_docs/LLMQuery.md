@@ -30,8 +30,10 @@ The LLMQuery feature consists of:
   - Model selection: a free-text combo box with per-provider suggestions, plus a
     refresh button that lists the models the endpoint reports (`GET /v1/models`,
     i.e. the models pulled into Ollama)
-  - Template/prompt selection
+  - Template/prompt selection (gene set queries only, as its helper text says)
   - Template preview and copying
+  - A line under the title says the settings also serve the FILTER tab's
+    "New filter from description"
 
 ### Result Panel
 
@@ -48,6 +50,10 @@ The LLMQuery feature consists of:
   - Substitutes a placeholder API key when none is set, because the SDK refuses
     an empty key while Ollama ignores it
   - Lists the endpoint's models for the options dialog
+  - `requestChatCompletion`: a general chat call (messages, optional
+    `response_format`, abort signal) on the same `createClient`, so the key
+    scoping and the endpoint check apply. Used by the FILTER tab's
+    "New filter from description"
   - Supports mock mode for testing
 
 ### Store
@@ -63,7 +69,9 @@ The LLMQuery feature consists of:
 - **LLMModel.ts**: OpenAI model suggestions (the first entry, `gpt-6-luna`, is
   the default)
 - **LLMProvider.ts**: Provider definitions (`openai`, `ollama`, `custom`), the
-  `isLLMConfigured` gate used by the run buttons, and the placeholder-key rule
+  `isLLMConfigured` gate used by the run buttons, the placeholder-key rule,
+  and `llmRecipientLabel` (who a disclosure names: OpenAI, the local Ollama
+  server, or a custom endpoint's host)
 - **LLMTemplate.ts**: Prompt templates for different use cases
 - **GPTTemplate.ts**: Template function implementations
 
@@ -120,6 +128,9 @@ The LLMQuery feature consists of:
 - **UiStateStore**: Manages panel state and navigation
 - **MessageStore**: Displays status messages and errors
 - **NDEx API**: Fetches gene names when needed
+- **Filter (FILTER tab)**: "New filter from description" reuses the provider,
+  endpoint, model and scoped key, and `requestChatCompletion`
+  (`docs/specifications/LLM_FILTER_GENERATION_SPEC.md`)
 
 ## Design Decisions
 

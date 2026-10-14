@@ -130,3 +130,33 @@ export const getEndpointError = (
   }
   return undefined
 }
+
+/**
+ * Who receives what is sent to the configured endpoint, for disclosures
+ * ("Sent to …"): OpenAI, the local Ollama server, or a custom endpoint's
+ * host
+ */
+export const llmRecipientLabel = (
+  providerId: LLMProviderId,
+  baseUrl: string,
+): string => {
+  const hostOf = (): string | undefined => {
+    try {
+      return new URL(baseUrl.trim()).host || undefined
+    } catch {
+      return undefined
+    }
+  }
+  switch (getLLMProvider(providerId).id) {
+    case 'openai':
+      return 'OpenAI'
+    case 'ollama': {
+      const host = hostOf()
+      return host === undefined
+        ? 'your local Ollama server'
+        : `your local Ollama server (${host})`
+    }
+    case 'custom':
+      return hostOf() ?? 'the custom endpoint'
+  }
+}

@@ -157,7 +157,11 @@ export const FilterTab = ({ networkId }: FilterTabProps): JSX.Element => {
       }}
     >
       <Box sx={{ p: 1, backgroundColor: 'background.default' }}>
-        <FilterHeader filters={filters} selected={selected} />
+        <FilterHeader
+          filters={filters}
+          selected={selected}
+          networkId={context === undefined ? undefined : networkId}
+        />
       </Box>
       <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', px: 1 }}>
         {context === undefined ? (

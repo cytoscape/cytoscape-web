@@ -17,7 +17,11 @@ vi.mock('openai', () => ({
   },
 }))
 
-import { analyzeSubsystemGeneSet, listLLMModels } from './chatgpt'
+import {
+  analyzeSubsystemGeneSet,
+  listLLMModels,
+  requestChatCompletion,
+} from './chatgpt'
 
 describe('analyzeSubsystemGeneSet', () => {
   beforeEach(() => {
@@ -116,5 +120,84 @@ describe('listLLMModels', () => {
 
     expect(ids).toEqual(['llama3.1', 'qwen2.5'])
     expect(ctorSpy.mock.calls[0][0].baseURL).toBe('http://localhost:11434/v1')
+  })
+})
+
+describe('requestChatCompletion', () => {
+  const messages = [
+    { role: 'system' as const, content: 'rules' },
+    { role: 'user' as const, content: 'request' },
+  ]
+
+  beforeEach(() => {
+    ctorSpy.mockReset()
+    createSpy.mockReset()
+    createSpy.mockResolvedValue({
+      choices: [{ message: { content: '{"outcome": "filter"}' } }],
+    })
+  })
+
+  it('sends the messages, the response format and the abort signal', async () => {
+    const controller = new AbortController()
+    const responseFormat = {
+      type: 'json_schema' as const,
+      json_schema: { name: 'answer', strict: true, schema: { type: 'object' } },
+    }
+
+    const result = await requestChatCompletion({
+      apiKey: 'sk-abc',
+      baseUrl: '',
+      model: 'gpt-6-luna',
+      messages,
+      responseFormat,
+      signal: controller.signal,
+    })
+
+    expect(result).toBe('{"outcome": "filter"}')
+    expect(createSpy).toHaveBeenCalledWith(
+      {
+        model: 'gpt-6-luna',
+        messages,
+        response_format: responseFormat,
+      },
+      { signal: controller.signal },
+    )
+  })
+
+  it('sends no response format when none is given', async () => {
+    await requestChatCompletion({
+      apiKey: '',
+      baseUrl: 'http://localhost:11434/v1',
+      model: 'llama3.1',
+      messages,
+    })
+
+    expect(createSpy.mock.calls[0][0]).toEqual({ model: 'llama3.1', messages })
+  })
+
+  it('answers an empty string when the model returns no content', async () => {
+    createSpy.mockResolvedValue({ choices: [{ message: { content: null } }] })
+    await expect(
+      requestChatCompletion({ apiKey: 'k', baseUrl: '', model: 'm', messages }),
+    ).resolves.toBe('')
+  })
+
+  it('refuses to send a key over plain HTTP to a non-loopback host', async () => {
+    await expect(
+      requestChatCompletion({
+        apiKey: 'secret',
+        baseUrl: 'http://llm.example.org/v1',
+        model: 'm',
+        messages,
+      }),
+    ).rejects.toThrow(/https/i)
+    expect(createSpy).not.toHaveBeenCalled()
+  })
+
+  it('passes errors on', async () => {
+    createSpy.mockRejectedValue(new Error('429 Too many requests'))
+    await expect(
+      requestChatCompletion({ apiKey: 'k', baseUrl: '', model: 'm', messages }),
+    ).rejects.toThrow('429 Too many requests')
   })
 })

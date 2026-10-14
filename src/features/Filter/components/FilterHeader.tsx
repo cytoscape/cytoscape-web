@@ -26,8 +26,10 @@ import {
   FilterNameError,
   filterNamesOf,
 } from '@/models/FilterModel/impl/workspaceFiltersImpl'
+import type { IdType } from '@/models/IdType'
 import { MessageSeverity } from '@/models/MessageModel'
 
+import { FilterFromDescription } from './FilterFromDescription'
 import { FilterNameDialog } from './FilterNameDialog'
 
 /** File name of an export */
@@ -75,6 +77,9 @@ type NameDialogMode = 'new' | 'rename'
 interface FilterHeaderProps {
   filters: readonly WorkspaceFilter[]
   selected: WorkspaceFilter
+  // The network the tab targets, once it is loaded: "New filter from
+  // description" needs it
+  networkId?: IdType
 }
 
 /**
@@ -84,6 +89,7 @@ interface FilterHeaderProps {
 export const FilterHeader = ({
   filters,
   selected,
+  networkId,
 }: FilterHeaderProps): JSX.Element => {
   const createWorkspaceFilter = useFilterStore(
     (state) => state.createWorkspaceFilter,
@@ -109,7 +115,15 @@ export const FilterHeader = ({
   const [nameDialog, setNameDialog] = useState<NameDialogMode | undefined>()
   const [nameError, setNameError] = useState<string | undefined>()
   const [confirmRemove, setConfirmRemove] = useState<boolean>(false)
+  // The network "New filter from description" was opened for
+  const [describeFor, setDescribeFor] = useState<IdType | undefined>()
   const fileInput = useRef<HTMLInputElement>(null)
+  const optionsButton = useRef<HTMLButtonElement>(null)
+
+  // Switching networks closes the popover, which aborts its request
+  if (describeFor !== undefined && describeFor !== networkId) {
+    setDescribeFor(undefined)
+  }
 
   const closeMenuAnd = (action: () => void) => (): void => {
     setMenuAnchor(null)
@@ -192,6 +206,7 @@ export const FilterHeader = ({
       </Select>
       <Tooltip title="Options...">
         <IconButton
+          ref={optionsButton}
           size="small"
           aria-label="Filter options"
           data-testid="filter-options-button"
@@ -210,6 +225,13 @@ export const FilterHeader = ({
           onClick={closeMenuAnd(() => openNameDialog('new'))}
         >
           New filter
+        </MenuItem>
+        <MenuItem
+          data-testid="filter-describe-menu-item"
+          disabled={networkId === undefined}
+          onClick={closeMenuAnd(() => setDescribeFor(networkId))}
+        >
+          New filter from description...
         </MenuItem>
         <MenuItem
           data-testid="filter-rename-menu-item"
@@ -258,6 +280,14 @@ export const FilterHeader = ({
         data-testid="filter-import-input"
         onChange={(event) => void importFile(event)}
       />
+      {describeFor !== undefined && (
+        <FilterFromDescription
+          anchorEl={optionsButton.current}
+          open={true}
+          networkId={describeFor}
+          onClose={() => setDescribeFor(undefined)}
+        />
+      )}
       <FilterNameDialog
         open={nameDialog !== undefined}
         title={nameDialog === 'new' ? 'Create New Filter' : 'Rename Filter'}
