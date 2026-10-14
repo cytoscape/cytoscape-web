@@ -2,10 +2,11 @@
 
 All notable changes to Cytoscape Web are documented here.
 
-## [1.1.0] — 2026-10-05
+## [1.1.0] — 2026-10-14
 
-Dark mode, several named visual styles per network, app installs from the App Store,
-an NDEx search bar, and local LLM models for gene-set queries, on a build that loads faster and ships 25% less code.
+Dark mode, several named visual styles per network, a FILTER tab ported from Cytoscape
+Desktop, app installs from the App Store, an NDEx search bar, and local LLM models for
+gene-set queries, on a build that loads faster and ships 25% less code.
 
 ### Breaking
 
@@ -62,6 +63,14 @@ an NDEx search bar, and local LLM models for gene-set queries, on a build that l
 - Image custom graphics are carried through CX2 import and export (#612)
 - Cytoscape Web warns when exported content may not render in Cytoscape Desktop (#612)
 
+**Filters**
+
+- Filter nodes and edges from a FILTER tab in the left panel, ported from Cytoscape
+  Desktop: column, degree and topology conditions in "Match all" or "Match any" groups (#814)
+- A filter either selects the nodes and edges that pass, or shows only them (#814)
+- Filters belong to the workspace and survive a reload (#814)
+- Import and export Cytoscape Desktop filter files (#814)
+
 **Search**
 
 - Search NDEx from a search bar at the top of the Workspace tab (#691)
@@ -117,6 +126,9 @@ an NDEx search bar, and local LLM models for gene-set queries, on a build that l
   no longer dismisses them (#683)
 - App messages now appear at the bottom center, so they no longer cover the network tabs (#783)
 - The App Manager's Manifest Source editor is now behind an Advanced toggle (#725)
+- The left panel's tab strip scrolls when its tabs do not fit (#814)
+- In the NDEx browser, a shortcut whose network or folder is deleted or in the trash is
+  disabled, and its tooltip says why (#820)
 - The network view and the Cell View now stay centered when a panel or the window is
   resized (#750, #752)
 - Hierarchy Viewer now rejects a malformed `filterWidgets` aspect instead of drawing a
@@ -144,6 +156,11 @@ an NDEx search bar, and local LLM models for gene-set queries, on a build that l
 - Fix issue where interconnect query results were not output as CX2 (#622)
 - Fix issue where opening a network or folder shortcut in the NDEx browser loaded
   nothing (#581)
+- Fix issue where network shortcuts inside an NDEx folder did not load, and every row in
+  the folder showed 0 nodes and 0 edges (#818)
+- Fix issue where networks inside an NDEx folder showed 0 nodes (#820)
+- Fix issue where installing a newer version of an app left the old version running until
+  the page was reloaded (#811)
 - Fix issue where a discrete mapping on node fill color rendered as a pie chart (#565)
 - Fix issue where the continuous mapping form crashed on an empty value (#623)
 - Fix issue where the mapping attribute selection reverted to blank (#607)
@@ -211,6 +228,7 @@ an NDEx search bar, and local LLM models for gene-set queries, on a build that l
 - BREAKING: `CyApp.components` is removed; use `resources` (#787)
 - Apps can now register layout algorithms that run in the host's layout engine (#746)
 - Apps can now open a side panel and select one of its tabs with `panel.open` (#748)
+- Apps can now open the FILTER tab with `panel.open('left', 'filter')` (#814)
 - Apps can now listen for `network:loaded`, which fires once a lazily loaded network's data
   is ready (#741)
 - Apps can now read all edges with `getEdges`, read a table's columns with `getColumns`,
@@ -222,10 +240,10 @@ an NDEx search bar, and local LLM models for gene-set queries, on a build that l
 
 ### Internal
 
-The build moved from webpack to Vite 8 and TypeScript 7 (#739). The other 41 internal
+The build moved from webpack to Vite 8 and TypeScript 7 (#739). The other 42 internal
 pull requests covered test coverage and quiet test runners, strict TypeScript, CI
-workflows (#544), the `@cytoscape-web/api-types` beta.4 release (#726), contributor
-documentation, and the agent tooling in `.claude/`.
+workflows (#544), the `@cytoscape-web/api-types` beta.4 release and its publish check
+(#726, #804), contributor documentation, and the agent tooling in `.claude/`.
 
 ## [1.0.8] — 2026-07-07
 
