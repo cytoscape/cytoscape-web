@@ -29,10 +29,10 @@ const valueType2BaseType: Record<
   [VisualPropertyValueTypeName.NodeBorderLine]: 'string',
   [VisualPropertyValueTypeName.Visibility]: 'string',
   [VisualPropertyValueTypeName.Number]: 'number',
-  // null (not 'string') keeps current behavior: no generic
-  // single-value → color passthrough. Whether a string column should be
-  // passthrough-mappable to a color VP is an open product question (see
-  // REVIEW.md R2-22 status).
+  // null (not 'string'): 'string' would let every single-value column
+  // passthrough onto a color through the "anything maps to a string" rule.
+  // Only a string column can hold a color, so typesCanBeMapped admits that one
+  // case explicitly (#812).
   [VisualPropertyValueTypeName.Color]: null,
   // 'string' (not null) deliberately enables string column → custom graphic
   // passthrough, which is how image custom graphics are authored: the Vizmapper
@@ -99,6 +99,12 @@ export const typesCanBeMapped = (
     // the mapping for those columns produces a mapping that silently falls back
     // to the VP default at render time (see mapperFactory's string parsing).
     if (vpValueTypeName === VisualPropertyValueTypeName.CustomGraphic) {
+      return valueTypeName === ValueTypeName.String
+    }
+    // A string column of CSS colors (`#14961e`, `red`, `rgb(...)`) — the shape
+    // Desktop-authored networks carry. Cells that are not a color fall back to
+    // the default in createPassthroughMapper (#812).
+    if (vpValueTypeName === VisualPropertyValueTypeName.Color) {
       return valueTypeName === ValueTypeName.String
     }
     return typesMatch || singleStringType
