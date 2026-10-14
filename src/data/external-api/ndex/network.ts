@@ -12,15 +12,20 @@ import { getNdexClient } from './client'
  * @param ndexUuid - Network UUID in NDEx
  * @param accessToken - Optional authentication token
  * @param ndexUrl - Optional NDEx base URL (defaults to module configuration if not provided)
+ * @param accessKey - Optional share-link access key for a private network
  * @returns Promise resolving to Cx2 network data
  */
 export const fetchNdexNetwork = async (
   ndexUuid: string,
   accessToken?: string,
   ndexUrl?: string,
+  accessKey?: string,
 ): Promise<Cx2> => {
   const ndexClient = getNdexClient(accessToken, ndexUrl)
-  const result = await (ndexClient.networks as any).getRawCX2Network(ndexUuid)
+  // Lowercase `accesskey`: the client ignores `accessKey`, despite its JSDoc.
+  const result = await (ndexClient.networks as any).getRawCX2Network(ndexUuid, {
+    accesskey: accessKey,
+  })
   return result as Cx2
 }
 

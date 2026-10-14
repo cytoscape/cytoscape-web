@@ -8,6 +8,10 @@ import {
   getNetworkSummaryFromDb,
 } from '../db'
 import { fetchNdexNetwork } from '../external-api/ndex'
+import {
+  clearNdexAccessKeysForTesting,
+  rememberNdexAccessKey,
+} from '../external-api/ndex/accessKeys'
 import { useCredentialStore } from './stores/CredentialStore'
 import { useNetworkStore } from './stores/NetworkStore'
 import { useOpaqueAspectStore } from './stores/OpaqueAspectStore'
@@ -56,6 +60,7 @@ describe('useLoadCyNetwork', () => {
 
   afterEach(() => {
     useCredentialStore.setState({ getToken: originalGetToken })
+    clearNdexAccessKeysForTesting()
     vi.clearAllMocks()
   })
 
@@ -82,9 +87,35 @@ describe('useLoadCyNetwork', () => {
 
       const result = await loadCyNetwork()(NET_ID, 'token-123')
 
-      expect(fetchNdexNetwork).toHaveBeenCalledWith(NET_ID, 'token-123')
+      expect(fetchNdexNetwork).toHaveBeenCalledWith(
+        NET_ID,
+        'token-123',
+        undefined,
+        undefined,
+      )
       expect(getCyNetworkFromCx2).toHaveBeenCalledWith(NET_ID, cx2)
       expect(result).toBe(convertedNetwork)
+    })
+
+    it('passes a share-link access key remembered at boot to NDEx', async () => {
+      rememberNdexAccessKey(NET_ID, 'key-123')
+      vi.mocked(getCyNetworkFromDb).mockRejectedValue(
+        new CyNetworkCacheMissError(NET_ID, 'Network'),
+      )
+      vi.mocked(getNetworkSummaryFromDb).mockResolvedValue({
+        isNdex: true,
+      } as any)
+      vi.mocked(fetchNdexNetwork).mockResolvedValue([] as any)
+      vi.mocked(getCyNetworkFromCx2).mockReturnValue(convertedNetwork)
+
+      await loadCyNetwork()(NET_ID, 'token-123')
+
+      expect(fetchNdexNetwork).toHaveBeenCalledWith(
+        NET_ID,
+        'token-123',
+        undefined,
+        'key-123',
+      )
     })
 
     it('also tries NDEx when no summary exists (unknown origin)', async () => {
@@ -305,7 +336,12 @@ describe('useLoadCyNetwork', () => {
       const result = await loadCyNetwork()(NET_ID)
 
       expect(getTokenSpy).toHaveBeenCalledTimes(1)
-      expect(fetchNdexNetwork).toHaveBeenCalledWith(NET_ID, 'lazy-token')
+      expect(fetchNdexNetwork).toHaveBeenCalledWith(
+        NET_ID,
+        'lazy-token',
+        undefined,
+        undefined,
+      )
       expect(result).toBe(convertedNetwork)
     })
 
@@ -322,7 +358,12 @@ describe('useLoadCyNetwork', () => {
       await loadCyNetwork()(NET_ID, 'explicit-token')
 
       expect(getTokenSpy).not.toHaveBeenCalled()
-      expect(fetchNdexNetwork).toHaveBeenCalledWith(NET_ID, 'explicit-token')
+      expect(fetchNdexNetwork).toHaveBeenCalledWith(
+        NET_ID,
+        'explicit-token',
+        undefined,
+        undefined,
+      )
     })
   })
 })
