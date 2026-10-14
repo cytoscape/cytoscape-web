@@ -27,18 +27,19 @@ Precise behavioral rules and creation patterns that both humans and LLMs referen
 
 ### Behavioral Specifications
 
-| Document                                                                                  | Scope                                                                                                |
-| ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| [ROUTING_SPECIFICATION.md](specifications/ROUTING_SPECIFICATION.md)                       | URL routing rules, navigation patterns, search parameter handling                                    |
-| [EXTERNAL_INPUT_VALIDATION_POLICY.md](specifications/EXTERNAL_INPUT_VALIDATION_POLICY.md) | CX2 data validation requirements for all external inputs                                             |
-| [DEBUG_GUIDE.md](specifications/DEBUG_GUIDE.md)                                           | Structured logging policy, debug namespaces, browser inspection                                      |
-| [STARTUP_SPECIFICATION.md](specifications/STARTUP_SPECIFICATION.md)                       | Boot phase contract, failure policy, timing milestones                                               |
-| [DIALOG_DISMISS_POLICY.md](specifications/DIALOG_DISMISS_POLICY.md)                       | Button-only dialog dismissal, the `CyDialog` wrapper, modal form popovers                            |
-| [MULTIPLE_VISUAL_STYLES.md](specifications/MULTIPLE_VISUAL_STYLES.md)                     | Named visual style sets per network, the `cyWebVisualStyles` CX2 aspect, the workspace style library |
-| [MULTI_TAB_AWARENESS.md](specifications/MULTI_TAB_AWARENESS.md)                           | Cross-tab synchronization of the shared IndexedDB workspace                                          |
-| [APP_PARAMETERS_SPECIFICATION.md](specifications/APP_PARAMETERS_SPECIFICATION.md)         | User-editable parameters for service apps, app-registered layouts and built-in layouts               |
-| [HIERARCHY_FILTER_WIDGETS_ASPECT.md](specifications/HIERARCHY_FILTER_WIDGETS_ASPECT.md)   | Hierarchy Viewer `filterWidgets` aspect format and validation                                        |
-| [VISUAL_PROPERTY_VALIDATION_SPEC.md](specifications/VISUAL_PROPERTY_VALIDATION_SPEC.md)   | Visual property validation for the CX2 validator (design proposal, not yet implemented)              |
+| Document                                                                                  | Scope                                                                                                         |
+| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| [ROUTING_SPECIFICATION.md](specifications/ROUTING_SPECIFICATION.md)                       | URL routing rules, navigation patterns, search parameter handling                                             |
+| [EXTERNAL_INPUT_VALIDATION_POLICY.md](specifications/EXTERNAL_INPUT_VALIDATION_POLICY.md) | CX2 data validation requirements for all external inputs                                                      |
+| [DEBUG_GUIDE.md](specifications/DEBUG_GUIDE.md)                                           | Structured logging policy, debug namespaces, browser inspection                                               |
+| [STARTUP_SPECIFICATION.md](specifications/STARTUP_SPECIFICATION.md)                       | Boot phase contract, failure policy, timing milestones                                                        |
+| [DIALOG_DISMISS_POLICY.md](specifications/DIALOG_DISMISS_POLICY.md)                       | Button-only dialog dismissal, the `CyDialog` wrapper, modal form popovers                                     |
+| [MULTIPLE_VISUAL_STYLES.md](specifications/MULTIPLE_VISUAL_STYLES.md)                     | Named visual style sets per network, the `cyWebVisualStyles` CX2 aspect, the workspace style library          |
+| [MULTI_TAB_AWARENESS.md](specifications/MULTI_TAB_AWARENESS.md)                           | Cross-tab synchronization of the shared IndexedDB workspace                                                   |
+| [APP_PARAMETERS_SPECIFICATION.md](specifications/APP_PARAMETERS_SPECIFICATION.md)         | User-editable parameters for service apps, app-registered layouts and built-in layouts                        |
+| [HIERARCHY_FILTER_WIDGETS_ASPECT.md](specifications/HIERARCHY_FILTER_WIDGETS_ASPECT.md)   | Hierarchy Viewer `filterWidgets` aspect format and validation                                                 |
+| [VISUAL_PROPERTY_VALIDATION_SPEC.md](specifications/VISUAL_PROPERTY_VALIDATION_SPEC.md)   | Visual property validation for the CX2 validator (design proposal, not yet implemented)                       |
+| [LLM_FILTER_GENERATION_SPEC.md](specifications/LLM_FILTER_GENERATION_SPEC.md)             | FILTER tab filters generated by an LLM from a natural-language request (design proposal, not yet implemented) |
 
 ### Creation Patterns
 
