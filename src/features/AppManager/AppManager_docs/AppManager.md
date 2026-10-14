@@ -20,6 +20,10 @@ The AppManager feature consists of:
 ### AppSettingsDialog.tsx
 - Main dialog for app management
 - Contains AppListPanel and ServiceListPanel
+- One Install from URL field above both tabs (#827). It fetches the URL and
+  `classifyInstallPayload` decides the kind: a React app manifest goes through
+  the origin and host-version gates to `installApp` (inactive); service
+  metadata goes to `addService`, and the dialog switches to Service Apps
 - Provides close button
 - Modal dialog interface
 
@@ -31,12 +35,9 @@ The AppManager feature consists of:
 - Shows message when no apps are registered
 
 ### ServiceListPanel.tsx
-- Manages service endpoints
-- Text field for adding new service URLs
-- Validates and adds services
-- Shows warning for duplicate services
+- Lists registered service endpoints, with Refresh all
 - Displays ServiceList or ExampleServicePanel
-- Provides "Add Service" button
+- Has no URL field: services are added through the dialog's Install from URL
 
 ### ServiceList.tsx
 - Displays list of registered services

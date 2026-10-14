@@ -31,13 +31,19 @@ import { AppConfigContext } from '../../AppConfigContext'
 
 import { useAppStore } from '../../data/hooks/stores/AppStore'
 import { logApp } from '../../debug'
+import { AppType } from '../../models/AppModel/AppType'
+import {
+  invalidRootMessage,
+  normalizeServiceAppUrl,
+  resolveRootMenu,
+} from '../../models/AppModel/impl'
 import { AppListPanel } from './AppListPanel'
 import { useAppManagerCommands } from './AppManagerCommandsContext'
+import { classifyInstallPayload } from './install/classifyInstallPayload'
 import {
   isAllowedOrigin,
   validateManifestUrl,
   isHostCompatible,
-  parseSingleEntryManifest,
 } from './install/installGate'
 import { parseManifest } from './manifest/parseManifest'
 import { ServiceListPanel } from './ServiceListPanel'
@@ -53,9 +59,8 @@ interface AppSettingsDialogProps {
  * The App menu keeps this dialog mounted and only toggles `openDialog`, so the
  * dialog is re-created (by key) on every open: it starts on the Apps tab with
  * the Advanced section hidden and every URL field empty, and nothing typed
- * before Close comes back. The service URL field lives in `ServiceListPanel`,
- * which mounts only on the Service Apps tab, so it resets with the rest. The
- * key is stable while closing, so the exit transition still plays.
+ * before Close comes back. The key is stable while closing, so the exit
+ * transition still plays.
  */
 export const AppSettingsDialog = (props: AppSettingsDialogProps) => {
   const [wasOpen, setWasOpen] = useState(props.openDialog)
@@ -82,6 +87,7 @@ const AppSettingsDialogContent = ({
   const { setManifestSource, refreshCatalog, installApp } =
     useAppManagerCommands()
   const currentSource = useAppStore((state) => state.manifestSource)
+  const addService = useAppStore((state) => state.addService)
   const { appInstallAllowedOrigins, allowsLocalhostAppsOn } =
     useContext(AppConfigContext)
 
@@ -96,24 +102,59 @@ const AppSettingsDialogContent = ({
   const [previewTitle, setPreviewTitle] = useState('')
   const [installUrl, setInstallUrl] = useState('')
   const [installError, setInstallError] = useState<string | undefined>()
+  const [installWarning, setInstallWarning] = useState<string | undefined>()
   const [installing, setInstalling] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   /**
-   * Install a single app from a manifest URL (§12.8). Validates the entry
-   * inline through the same trust-boundary gates as installApp, so errors are
-   * shown in-place rather than as a toast. Manual installs arrive inactive.
+   * Add a service app found by Install from URL. `addService` fetches the
+   * endpoint again: it owns the ServiceApp shape and its persistence, the same
+   * trade `installConfirmedApps` makes for `?installApp=`.
+   */
+  const addServiceFromUrl = async (url: string): Promise<void> => {
+    const serviceUrl = normalizeServiceAppUrl(url)
+    // Re-registering overwrites the stored ServiceApp and discards the
+    // parameter values the user set on it.
+    if (useAppStore.getState().serviceApps[serviceUrl] !== undefined) {
+      setInstallError(`This service is already added: ${serviceUrl}`)
+      return
+    }
+    try {
+      await addService(serviceUrl)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      setInstallError(`The service could not be added: ${message}`)
+      logApp.warn('[AppSettingsDialog]: Add service from URL failed:', err)
+      return
+    }
+    // An unrecognized menu root still registers, under the default menu.
+    const added = useAppStore.getState().serviceApps[serviceUrl]
+    const resolution = resolveRootMenu(added?.cyWebMenuItem?.root)
+    if (added !== undefined && !resolution.valid) {
+      setInstallWarning(invalidRootMessage(resolution.requested))
+    }
+    setInstallUrl('')
+    setTabIndex(1)
+  }
+
+  /**
+   * Install from URL (§12.8, #827). One field for both app kinds: the fetched
+   * payload decides whether the URL is a React app manifest or a service app
+   * endpoint, through the same classifier as `?installApp=`. React apps pass
+   * the trust-boundary gates inline, so errors show in place rather than as a
+   * toast, and arrive inactive. Service apps have no origin gate.
    */
   const handleInstallFromUrl = async (): Promise<void> => {
     const url = installUrl.trim()
     if (url === '') return
     setInstallError(undefined)
+    setInstallWarning(undefined)
     setInstalling(true)
     try {
       const response = await fetch(url)
       if (!response.ok) {
         setInstallError(
-          `The manifest could not be fetched (HTTP ${response.status}).`,
+          `The URL could not be fetched (HTTP ${response.status}).`,
         )
         return
       }
@@ -129,11 +170,18 @@ const AppSettingsDialogContent = ({
         )
         return
       }
-      const entry = parseSingleEntryManifest(data)
-      if (entry === undefined) {
-        setInstallError('No valid app entry found in the manifest')
+      const classified = classifyInstallPayload(data)
+      if (classified === undefined) {
+        setInstallError(
+          'That URL is neither a Cytoscape Web app manifest nor a service app.',
+        )
         return
       }
+      if (classified.type === AppType.Service) {
+        await addServiceFromUrl(url)
+        return
+      }
+      const { entry } = classified
       if (
         !isAllowedOrigin(
           entry.url,
@@ -155,7 +203,7 @@ const AppSettingsDialogContent = ({
       // an offline network. `fetch` reports all of them as "Failed to fetch",
       // which alone tells the user nothing about what to change.
       setInstallError(
-        'The manifest could not be fetched. Check the URL and your connection.',
+        'The URL could not be fetched. Check it and your connection.',
       )
       logApp.warn('[AppSettingsDialog]: Install from URL failed:', err)
     } finally {
@@ -286,50 +334,58 @@ const AppSettingsDialogContent = ({
       </Box>
 
       <DialogContent sx={{ pt: 2, pb: 1 }}>
+        {/* Issue #827: one field for both app kinds, shown on both tabs, so
+            the user does not have to know which kind of app the URL serves. */}
+        <Box
+          sx={{
+            mb: 2,
+            p: 1.5,
+            border: `1px solid ${theme.palette.divider}`,
+            borderRadius: 1,
+          }}
+        >
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>
+            Install from URL
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+            <TextField
+              size="small"
+              label="App manifest or service URL"
+              value={installUrl}
+              onChange={(e) => {
+                setInstallUrl(e.target.value)
+                setInstallError(undefined)
+                setInstallWarning(undefined)
+              }}
+              error={installError !== undefined}
+              helperText={installError}
+              fullWidth
+              inputProps={{ 'data-testid': 'install-from-url-input' }}
+            />
+            <Button
+              variant="contained"
+              size="small"
+              data-testid="install-from-url-button"
+              onClick={() => void handleInstallFromUrl()}
+              disabled={installUrl.trim() === '' || installing}
+              startIcon={
+                installing ? <CircularProgress size={16} /> : undefined
+              }
+              sx={{ whiteSpace: 'nowrap', height: 40 }}
+            >
+              Install
+            </Button>
+          </Box>
+          {installWarning !== undefined && (
+            <Alert severity="warning" sx={{ mt: 1 }}>
+              {installWarning}
+            </Alert>
+          )}
+        </Box>
+
         {tabIndex === 0 && (
           <Box>
             <AppListPanel />
-
-            <Box
-              sx={{
-                mt: 2,
-                p: 1.5,
-                border: `1px solid ${theme.palette.divider}`,
-                borderRadius: 1,
-              }}
-            >
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                Install from URL
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                <TextField
-                  size="small"
-                  label="Single-entry manifest URL"
-                  value={installUrl}
-                  onChange={(e) => {
-                    setInstallUrl(e.target.value)
-                    setInstallError(undefined)
-                  }}
-                  error={installError !== undefined}
-                  helperText={installError}
-                  fullWidth
-                  inputProps={{ 'data-testid': 'install-from-url-input' }}
-                />
-                <Button
-                  variant="contained"
-                  size="small"
-                  data-testid="install-from-url-button"
-                  onClick={() => void handleInstallFromUrl()}
-                  disabled={installUrl.trim() === '' || installing}
-                  startIcon={
-                    installing ? <CircularProgress size={16} /> : undefined
-                  }
-                  sx={{ whiteSpace: 'nowrap', height: 40 }}
-                >
-                  Install
-                </Button>
-              </Box>
-            </Box>
 
             {/* Issue #703: the manifest editor is a developer tool. It hides
                 behind the footer's Advanced button so first-time users only
