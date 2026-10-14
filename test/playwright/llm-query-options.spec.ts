@@ -118,7 +118,7 @@ test.describe('LLM Query Options Dialog', () => {
     ).toHaveCount(0)
     await expect(
       page.locator('[data-testid="llm-query-options-model-input"]'),
-    ).toHaveValue('gpt-3.5-turbo')
+    ).toHaveValue('gpt-6-luna')
   })
 
   test('preview button toggles prompt template preview', async ({ page }) => {

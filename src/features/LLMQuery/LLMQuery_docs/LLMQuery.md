@@ -60,7 +60,8 @@ The LLMQuery feature consists of:
 
 ### Models
 
-- **LLMModel.ts**: OpenAI model suggestions (the first entry is the default)
+- **LLMModel.ts**: OpenAI model suggestions (the first entry, `gpt-6-luna`, is
+  the default)
 - **LLMProvider.ts**: Provider definitions (`openai`, `ollama`, `custom`), the
   `isLLMConfigured` gate used by the run buttons, and the placeholder-key rule
 - **LLMTemplate.ts**: Prompt templates for different use cases
@@ -127,6 +128,21 @@ The LLMQuery feature consists of:
 - LLM queries are designed for hierarchical networks
 - Subsystem nodes contain gene membership information
 - Non-HCX networks don't have required structure
+
+### Default Model
+
+- The default is `gpt-6-luna`: the cheapest OpenAI model that supports
+  Structured Outputs and has no shutdown date (checked 2026-10-14). Structured
+  Outputs matter beyond the gene set query, since later AI features are
+  expected to reuse these settings and need reliable JSON output
+- It replaced `gpt-3.5-turbo`, which OpenAI shuts down on 2026-10-23 (#832)
+- The suggestion list holds only models OpenAI has not scheduled for shutdown
+  (see the [deprecations page](https://developers.openai.com/api/docs/deprecations));
+  any other model name can still be typed
+- `gpt-6-luna` is a reasoning model, and its reasoning tokens are billed as
+  output. The request sends only `model` and `messages`, so it needs no
+  reasoning-specific parameters
+- The settings are not persisted, so changing the default needs no migration
 
 ### API Key Storage
 
