@@ -1,5 +1,4 @@
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline'
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import {
@@ -39,7 +38,6 @@ import type { Table } from '@/models/TableModel/Table'
 
 import { pathKey } from '../utils/filterTabUtil'
 import { ColumnConditionEditor } from './ColumnConditionEditor'
-import { useConditionDrag, useConditionDrop } from './ConditionDnd'
 import { DegreeConditionEditor } from './DegreeConditionEditor'
 
 /**
@@ -221,14 +219,6 @@ const ConditionRow = ({
   const messages = warnings.get(pathKey(path))
   const onChange = (next: FilterNode): void =>
     onRootChange(replaceNodeAt(root, path, next))
-  const drag = useConditionDrag(path)
-  // Dropping another condition here groups the two; a group row is not a
-  // target itself (its condition list is, see ConditionList)
-  const drop = useConditionDrop({ kind: 'condition', path })
-  const setRowRef = (element: HTMLElement | null): void => {
-    drag.setNodeRef(element)
-    drop.setNodeRef(element)
-  }
 
   let editor: JSX.Element
   switch (node.type) {
@@ -259,17 +249,8 @@ const ConditionRow = ({
 
   return (
     <Box
-      ref={setRowRef}
       data-testid={`${testId}-row`}
-      sx={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: 0.5,
-        borderRadius: 1,
-        // The condition stays in place, faded, while its preview is dragged
-        opacity: drag.isDragging ? 0.4 : 1,
-        bgcolor: drop.isOver ? 'action.selected' : undefined,
-      }}
+      sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5, py: 0.5 }}
     >
       <Tooltip title="Remove this condition">
         <IconButton
@@ -280,30 +261,6 @@ const ConditionRow = ({
         >
           <RemoveCircleOutlineIcon fontSize="small" />
         </IconButton>
-      </Tooltip>
-      <Tooltip title="Drag this condition to another condition to group them, or drop it in a gap to reorder.">
-        <Box
-          component="span"
-          aria-label="Move this condition"
-          data-testid={`${testId}-drag`}
-          {...drag.handleProps}
-          sx={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            mt: 0.75,
-            color: 'action.active',
-            cursor: 'grab',
-            borderRadius: 1,
-            // Let the pointer sensor have touch moves on the handle, rather
-            // than the browser scrolling the panel
-            touchAction: 'none',
-            '&:focus-visible': {
-              outline: (theme) => `2px solid ${theme.palette.primary.main}`,
-            },
-          }}
-        >
-          <DragIndicatorIcon fontSize="small" />
-        </Box>
       </Tooltip>
       {messages !== undefined && (
         <Tooltip
@@ -346,43 +303,6 @@ const ConditionRow = ({
   )
 }
 
-interface ConditionGapProps {
-  parentPath: FilterNodePath
-  index: number
-}
-
-/**
- * The space before a condition (or after the last): dropping a condition
- * here moves it there. A line marks it while a drop would land in it.
- */
-const ConditionGap = ({
-  parentPath,
-  index,
-}: ConditionGapProps): JSX.Element => {
-  const { setNodeRef, isOver } = useConditionDrop({
-    kind: 'gap',
-    parentPath,
-    index,
-  })
-  return (
-    <Box
-      ref={setNodeRef}
-      data-testid={`${testIdOf(parentPath)}-gap-${index}`}
-      // A constant height: drop targets are measured when a drag starts
-      sx={{ height: 8, display: 'flex', alignItems: 'center' }}
-    >
-      <Box
-        sx={{
-          height: 3,
-          width: '100%',
-          borderRadius: 1,
-          bgcolor: isOver ? 'primary.main' : 'transparent',
-        }}
-      />
-    </Box>
-  )
-}
-
 interface ConditionListProps {
   parent: ParentFilterNode
   path: FilterNodePath
@@ -407,17 +327,12 @@ export const ConditionList = ({
   // As in Cytoscape Desktop: a nested group always shows how it combines;
   // the root and a topology condition only once there is something to combine
   const showMatchType = (!isRoot && !isTopology) || parent.children.length > 1
-  // Dropping a condition on the list adds it at its end
-  const drop = useConditionDrop({ kind: 'group', path })
 
   return (
     <Box
-      ref={drop.setNodeRef}
       data-testid={isRoot ? 'filter-conditions' : testId}
       sx={{
         width: '100%',
-        borderRadius: 1,
-        bgcolor: drop.isOver ? 'action.hover' : undefined,
         ...(isRoot || isTopology
           ? {}
           : {
@@ -459,20 +374,15 @@ export const ConditionList = ({
         </Select>
       )}
       {parent.children.map((child, index) => (
-        // Conditions have no id; an index key re-creates editors after a
-        // removal or a move, which is what keeps their local text in step
-        <Box key={`${index}:${child.type}`}>
-          <ConditionGap parentPath={path} index={index} />
-          <ConditionRow
-            node={child}
-            path={[...path, index]}
-            context={context}
-          />
-        </Box>
+        <ConditionRow
+          // Conditions have no id; an index key re-creates editors after a
+          // removal, which is what keeps their local text in step
+          key={`${index}:${child.type}`}
+          node={child}
+          path={[...path, index]}
+          context={context}
+        />
       ))}
-      {parent.children.length > 0 && (
-        <ConditionGap parentPath={path} index={parent.children.length} />
-      )}
       <AddConditionButton
         tooltip={
           isTopology ? 'Add neighbour condition...' : 'Add new condition...'
