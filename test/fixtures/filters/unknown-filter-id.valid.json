@@ -1,0 +1,34 @@
+[ {
+  "name" : "Known",
+  "transformers" : [ {
+    "id" : "org.cytoscape.CompositeFilter",
+    "parameters" : {
+      "type" : "ANY"
+    },
+    "transformers" : [ {
+      "id" : "org.cytoscape.ColumnFilter",
+      "parameters" : {
+        "predicate" : "IS",
+        "criterion" : 42,
+        "caseSensitive" : false,
+        "type" : "nodes",
+        "anyMatch" : true,
+        "columnName" : "count"
+      }
+    } ]
+  } ]
+}, {
+  "name" : "From an app",
+  "transformers" : [ {
+    "id" : "org.cytoscape.CompositeFilter",
+    "parameters" : {
+      "type" : "ALL"
+    },
+    "transformers" : [ {
+      "id" : "com.example.FooFilter",
+      "parameters" : {
+        "foo" : 1
+      }
+    } ]
+  } ]
+} ]

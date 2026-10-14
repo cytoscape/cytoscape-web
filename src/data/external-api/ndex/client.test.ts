@@ -1,46 +1,59 @@
+// @vitest-environment node
+import { NDExClient } from '@js4cytoscape/ndex-client'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { getNdexClient } from './client'
 import { getNDExBaseUrl } from './config'
 
 // Mock the NDEx client module
-jest.mock('@js4cytoscape/ndex-client', () => {
+vi.mock('@js4cytoscape/ndex-client', () => {
+  const mockUpdateConfig = vi.fn()
+  const MockClient = vi.fn()
+  MockClient.prototype.updateConfig = mockUpdateConfig
+  MockClient.prototype.networks = {}
+  MockClient.prototype.workspace = {}
+  MockClient.prototype.user = {}
+  MockClient.prototype.files = {}
   return {
-    NDEx: jest.fn().mockImplementation((url: string) => {
-      return {
-        url,
-        setAuthToken: jest.fn(),
-      }
-    }),
+    NDExClient: MockClient,
   }
 })
 
 // Mock the config module
-jest.mock('./config', () => ({
-  getNDExBaseUrl: jest.fn(() => 'https://default.ndex.org'),
+vi.mock('./config', () => ({
+  getNDExBaseUrl: vi.fn(() => 'https://default.ndex.org'),
 }))
 
 describe('getNdexClient', () => {
-  const mockGetNDExBaseUrl = getNDExBaseUrl as jest.MockedFunction<
+  const mockGetNDExBaseUrl = getNDExBaseUrl as import('vitest').MockedFunction<
     typeof getNDExBaseUrl
+  >
+  const MockNDExClient = NDExClient as import('vitest').MockedClass<
+    typeof NDExClient
   >
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     mockGetNDExBaseUrl.mockReturnValue('https://default.ndex.org')
   })
 
   it('should create a client with default URL when no URL is provided', () => {
-    const client = getNdexClient()
+    getNdexClient()
 
     expect(mockGetNDExBaseUrl).toHaveBeenCalled()
-    expect(client.url).toBe('https://default.ndex.org')
+    expect(MockNDExClient).toHaveBeenCalledWith({
+      baseURL: 'https://default.ndex.org',
+    })
   })
 
   it('should create a client with provided URL', () => {
     const customUrl = 'https://custom.ndex.org'
-    const client = getNdexClient(undefined, customUrl)
+    getNdexClient(undefined, customUrl)
 
     expect(mockGetNDExBaseUrl).not.toHaveBeenCalled()
-    expect(client.url).toBe(customUrl)
+    expect(MockNDExClient).toHaveBeenCalledWith({
+      baseURL: customUrl,
+    })
   })
 
   it('should create a client with access token and default URL', () => {
@@ -48,8 +61,15 @@ describe('getNdexClient', () => {
     const client = getNdexClient(accessToken)
 
     expect(mockGetNDExBaseUrl).toHaveBeenCalled()
-    expect(client.url).toBe('https://default.ndex.org')
-    expect(client.setAuthToken).toHaveBeenCalledWith(accessToken)
+    expect(MockNDExClient).toHaveBeenCalledWith({
+      baseURL: 'https://default.ndex.org',
+    })
+    expect(client.updateConfig).toHaveBeenCalledWith({
+      auth: {
+        type: 'oauth',
+        idToken: accessToken,
+      },
+    })
   })
 
   it('should create a client with access token and custom URL', () => {
@@ -58,23 +78,30 @@ describe('getNdexClient', () => {
     const client = getNdexClient(accessToken, customUrl)
 
     expect(mockGetNDExBaseUrl).not.toHaveBeenCalled()
-    expect(client.url).toBe(customUrl)
-    expect(client.setAuthToken).toHaveBeenCalledWith(accessToken)
+    expect(MockNDExClient).toHaveBeenCalledWith({
+      baseURL: customUrl,
+    })
+    expect(client.updateConfig).toHaveBeenCalledWith({
+      auth: {
+        type: 'oauth',
+        idToken: accessToken,
+      },
+    })
   })
 
   it('should use custom URL when provided, even with default base URL available', () => {
     const customUrl = 'https://test.ndex.org'
-    const client = getNdexClient(undefined, customUrl)
+    getNdexClient(undefined, customUrl)
 
-    expect(client.url).toBe(customUrl)
-    // Verify default URL wasn't used
-    expect(client.url).not.toBe('https://default.ndex.org')
+    expect(MockNDExClient).toHaveBeenCalledWith({
+      baseURL: customUrl,
+    })
   })
 
-  it('should not set auth token when not provided', () => {
+  it('should not call updateConfig when access token is not provided', () => {
     const client = getNdexClient()
 
-    expect(client.setAuthToken).not.toHaveBeenCalled()
+    expect(client.updateConfig).not.toHaveBeenCalled()
   })
 
   it('should handle URL override with access token', () => {
@@ -82,8 +109,15 @@ describe('getNdexClient', () => {
     const customUrl = 'https://override.ndex.org'
     const client = getNdexClient(accessToken, customUrl)
 
-    expect(client.url).toBe(customUrl)
-    expect(client.setAuthToken).toHaveBeenCalledWith(accessToken)
-    expect(client.setAuthToken).toHaveBeenCalledTimes(1)
+    expect(MockNDExClient).toHaveBeenCalledWith({
+      baseURL: customUrl,
+    })
+    expect(client.updateConfig).toHaveBeenCalledWith({
+      auth: {
+        type: 'oauth',
+        idToken: accessToken,
+      },
+    })
+    expect(client.updateConfig).toHaveBeenCalledTimes(1)
   })
 })

@@ -1,6 +1,19 @@
-import { Alert, Button, CircularProgress, Grid, Snackbar, Typography } from '@mui/material'
-import debounce from 'lodash/debounce'
-import { ReactElement, useContext, useEffect, useState, useRef } from 'react'
+import {
+  Alert,
+  Button,
+  CircularProgress,
+  Grid,
+  Snackbar,
+  Typography,
+} from '@mui/material'
+import {
+  ReactElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import {
   isRouteErrorResponse,
   useLocation,
@@ -8,22 +21,28 @@ import {
   useRouteError,
 } from 'react-router-dom'
 
-import { AppConfigContext, type AppConfig } from '../AppConfigContext'
-import { useWorkspaceStore } from '../data/hooks/stores/WorkspaceStore'
-import { useCrashDataConsent } from '../data/hooks/useCrashDataConsent'
+import { type AppConfig, AppConfigContext } from '../AppConfigContext'
+import {
+  type DatabaseSnapshot,
+  exportDatabaseSnapshot,
+} from '../data/db/snapshot'
 import {
   createCrashReportPayload,
-  sendErrorReport,
   exportPartialSnapshotForNetwork,
+  sendErrorReport,
 } from '../data/external-api/error-report'
-import { exportDatabaseSnapshot, type DatabaseSnapshot } from '../data/db/snapshot'
+import {
+  type ResetWorkspaceResult,
+  useResetWorkspace,
+} from '../data/hooks/useResetWorkspace'
+import { useWorkspaceStore } from '../data/hooks/stores/WorkspaceStore'
+import { useCrashDataConsent } from '../data/hooks/useCrashDataConsent'
 import { logDb } from '../debug'
 
 export const Error = (): ReactElement => {
   const error: any = useRouteError()
   const navigate = useNavigate()
   const location = useLocation()
-  const resetWorkspace = useWorkspaceStore((state) => state.resetWorkspace)
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -33,6 +52,8 @@ export const Error = (): ReactElement => {
   const [isSendingReport, setIsSendingReport] = useState(false)
   const [reportSent, setReportSent] = useState(false)
   const [reportError, setReportError] = useState<string | null>(null)
+  const { reset, isResetting } = useResetWorkspace()
+  const [resetError, setResetError] = useState<string | null>(null)
   const hasReportedRef = useRef(false)
 
   useEffect(() => {
@@ -40,16 +61,11 @@ export const Error = (): ReactElement => {
     navigate('/error', { replace: true })
   }, [navigate])
 
-  // Send error report if user has consented
-  useEffect(() => {
-    if (hasConsented && !hasReportedRef.current) {
-      hasReportedRef.current = true
-      sendErrorReportAsync()
-    }
-  }, [hasConsented])
-
-  const sendErrorReportAsync = async (): Promise<void> => {
-    if (!appConfig.errorReportEndpoint || appConfig.errorReportEndpoint === '') {
+  const sendErrorReportAsync = useCallback(async (): Promise<void> => {
+    if (
+      !appConfig.errorReportEndpoint ||
+      appConfig.errorReportEndpoint === ''
+    ) {
       return
     }
 
@@ -62,8 +78,7 @@ export const Error = (): ReactElement => {
       const errorStack = error?.stack
       const errorRoute = location.pathname
 
-      const maxSizeBytes =
-        appConfig.maxErrorReportSnapshotSizeMB * 1024 * 1024
+      const maxSizeBytes = appConfig.maxErrorReportSnapshotSizeMB * 1024 * 1024
 
       let snapshot: DatabaseSnapshot
       let snapshotType: 'full' | 'partial'
@@ -86,14 +101,12 @@ export const Error = (): ReactElement => {
           // Snapshot is too large, try to export partial snapshot with just the current network
           if (currentNetworkId && currentNetworkId !== '') {
             try {
-              const partialSnapshot = await exportPartialSnapshotForNetwork(
-                currentNetworkId,
-              )
+              const partialSnapshot =
+                await exportPartialSnapshotForNetwork(currentNetworkId)
               snapshotType = 'partial'
               snapshot = partialSnapshot
-              snapshotSizeBytes = new Blob([
-                JSON.stringify(partialSnapshot),
-              ]).size
+              snapshotSizeBytes = new Blob([JSON.stringify(partialSnapshot)])
+                .size
               logDb.info(
                 `[Error] Full snapshot too large (${fullSnapshotSizeBytes} bytes), using partial snapshot for ${currentNetworkId} (${snapshotSizeBytes} bytes)`,
               )
@@ -153,7 +166,8 @@ export const Error = (): ReactElement => {
         /^\/(?<workspaceId>[^/]+)(?:\/networks\/(?<networkId>[^/?#]+))?/,
       )
       const workspaceId = routeMatch?.groups?.workspaceId
-      const networkId = routeMatch?.groups?.networkId || currentNetworkId || undefined
+      const networkId =
+        routeMatch?.groups?.networkId || currentNetworkId || undefined
 
       const payload = createCrashReportPayload({
         url: window.location.href,
@@ -182,18 +196,42 @@ export const Error = (): ReactElement => {
       logDb.info('[Error] Error report sent successfully')
     } catch (e: unknown) {
       logDb.error('[Error] Failed to send error report:', e)
-      setReportError(e instanceof Error ? (e as Error).message : 'Failed to send error report')
+      // globalThis.Error: this component shadows the Error constructor for
+      // the whole module, and `instanceof <arrow function>` throws a
+      // TypeError ("Function has non-object prototype 'undefined'") — which
+      // used to replace the report-failure message with a second crash.
+      setReportError(
+        e instanceof globalThis.Error
+          ? e.message
+          : 'Failed to send error report',
+      )
     } finally {
       setIsSendingReport(false)
     }
-  }
+  }, [appConfig, error, location, currentNetworkId])
 
+  // Send error report if user has consented
+  useEffect(() => {
+    if (hasConsented && !hasReportedRef.current) {
+      hasReportedRef.current = true
+      sendErrorReportAsync()
+    }
+  }, [hasConsented, sendErrorReportAsync])
+
+  /**
+   * This is the reset a stuck user is most likely to reach, so every path has to
+   * end somewhere: the button shows progress while the reset runs (deleting the
+   * database can wait on another tab that still has it open), and both failure
+   * modes report rather than leaving a dead button.
+   */
   const handleReset = (): void => {
-    resetWorkspace().then(() => {
-      debounce(() => {
-        navigate('/')
-        navigate(0)
-      }, 1500)()
+    setResetError(null)
+    void reset().then((result: ResetWorkspaceResult) => {
+      // Only 'failed' leaves the user here; the other two are already
+      // navigating away, so there is nothing to render for them.
+      if (result.status === 'failed') {
+        setResetError(result.reason)
+      }
     })
   }
 
@@ -257,10 +295,25 @@ export const Error = (): ReactElement => {
             variant="outlined"
             color={'warning'}
             onClick={handleReset}
+            disabled={isResetting}
+            startIcon={isResetting ? <CircularProgress size={16} /> : undefined}
           >
-            Reset Workspace and Reload Cytoscape
+            {isResetting
+              ? 'Resetting workspace...'
+              : 'Reset Workspace and Reload Cytoscape'}
           </Button>
         </Grid>
+        {resetError !== null && (
+          <Grid item xs={12}>
+            <Alert
+              data-testid="error-reset-workspace-error"
+              severity="error"
+              onClose={() => setResetError(null)}
+            >
+              {resetError}
+            </Alert>
+          </Grid>
+        )}
       </Grid>
       <Snackbar
         open={reportSent}

@@ -1,4 +1,4 @@
-import { Box, Divider } from '@mui/material'
+import { Box } from '@mui/material'
 
 import { ApplyLayoutButton } from './ApplyLayoutButton'
 import { FitButton } from './FitButton'
@@ -7,6 +7,11 @@ import { ShareNetworkButton } from './ShareNetworkButton'
 interface FloatingToolBarProps {
   // All actions to be performed on the target network if provided
   targetNetworkId?: string
+
+  // Network drawn in the view this toolbar sits in. Only the fit button uses
+  // it: unlike targetNetworkId it leaves the share and open-in-Cytoscape
+  // fallbacks to the active view untouched. Defaults to targetNetworkId.
+  viewNetworkId?: string
 
   // Label for the network to be used if the network has no summary
   networkLabel?: string
@@ -17,6 +22,7 @@ interface FloatingToolBarProps {
 
 export const FloatingToolBar = ({
   targetNetworkId,
+  viewNetworkId,
   networkLabel,
   rendererId,
 }: FloatingToolBarProps): JSX.Element => {
@@ -32,17 +38,23 @@ export const FloatingToolBar = ({
         right: '1em',
         zIndex: 1,
         borderRadius: '0.5em',
-        backgroundColor: 'rgba(250, 250, 250, 0.8)',
-        border: '1px solid #AAAAAA',
+        backgroundColor: (theme) => theme.palette.background.paper,
+        border: (theme) => `1px solid ${theme.palette.grey[800]}`,
+        opacity: 0.8,
+        '&:hover': {
+          opacity: 1,
+        },
       }}
     >
-      <Divider orientation="vertical" flexItem />
       <ApplyLayoutButton
         targetNetworkId={targetNetworkId}
         disabled={isCirclePackingRenderer}
         rendererId={rendererId}
       />
-      <FitButton rendererId={rendererId} />
+      <FitButton
+        rendererId={rendererId}
+        targetNetworkId={viewNetworkId ?? targetNetworkId}
+      />
       <OpenInCytoscapeButton
         targetNetworkId={targetNetworkId}
         networkLabel={networkLabel}

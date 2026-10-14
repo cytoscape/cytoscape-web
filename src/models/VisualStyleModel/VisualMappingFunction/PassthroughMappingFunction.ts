@@ -1,2 +1,2 @@
 import { VisualMappingFunction } from '.'
-export interface PassthroughMappingFunction extends VisualMappingFunction {}
+export type PassthroughMappingFunction = VisualMappingFunction

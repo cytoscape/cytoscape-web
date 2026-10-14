@@ -1,7 +1,7 @@
 import {
   MenuItem,
-  Paper,
   Select,
+  SelectChangeEvent,
   Table,
   TableBody,
   TableCell,
@@ -30,7 +30,6 @@ export const MatchingColumnTable = React.memo(
     toMergeNetworksList,
     matchingCols,
   }: MatchingTableProps) => {
-    const placeHolderForMatchingCol = 'Please select networks to merge...'
     const setMatchingCols = useMatchingColumnsStore(
       (state) => state.setMatchingCols,
     )
@@ -42,7 +41,7 @@ export const MatchingColumnTable = React.memo(
     )
     // Handler for the 'Matching Columns' dropdown changes
     const handleSetMatchingCols =
-      (networkId: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      (networkId: string) => (event: SelectChangeEvent<string>) => {
         const colType =
           networkRecords[networkId]?.nodeTable?.columns.find(
             (col) => col.name === event.target.value,
@@ -61,27 +60,49 @@ export const MatchingColumnTable = React.memo(
       }
 
     return (
-      <TableContainer component={Paper}>
+      <TableContainer
+        sx={{
+          overflowY: 'auto',
+          border: (theme) => `1px solid ${theme.palette.divider}`,
+          borderRadius: 1,
+        }}
+      >
         <Table>
           <TableHead>
             {toMergeNetworksList.length > 0 ? (
-              <TableRow>
+              <TableRow
+                sx={{
+                  backgroundColor: (theme) => theme.palette.background.subtle,
+                }}
+              >
                 {toMergeNetworksList.map((net) => (
-                  <TableCell key={net[1]}>{net[0]}</TableCell>
+                  <TableCell key={net[1]} sx={{ py: 1 }}>
+                    {net[0]}
+                  </TableCell>
                 ))}
               </TableRow>
             ) : (
               <TableRow>
-                <TableCell>{placeHolderForMatchingCol}</TableCell>
+                <TableCell
+                  sx={{
+                    textAlign: 'center',
+                    color: (theme) => theme.palette.text.disabled,
+                    fontWeight: 'normal',
+                  }}
+                  colSpan={2}
+                >
+                  -- Please select networks to merge --
+                </TableCell>
               </TableRow>
             )}
           </TableHead>
           <TableBody>
             <TableRow>
               {toMergeNetworksList.map((net) => (
-                <TableCell key={net[1]}>
+                <TableCell key={net[1]} sx={{ py: 0.5 }}>
                   <Select
                     data-testid={`merge-matching-column-select-${net[1]}`}
+                    size="small"
                     value={matchingCols[net[1]]?.name || ''}
                     onChange={handleSetMatchingCols(net[1])}
                   >
@@ -100,3 +121,5 @@ export const MatchingColumnTable = React.memo(
     )
   },
 )
+
+MatchingColumnTable.displayName = 'MatchingColumnTable'

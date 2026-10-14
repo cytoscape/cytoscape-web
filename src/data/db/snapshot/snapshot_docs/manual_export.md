@@ -9,7 +9,7 @@ This guide explains how to manually export a database snapshot from previous ver
 
 ## Method 0: Using Built-in Debug Function (Recommended)
 
-If debug mode is enabled (`config.debug = true`), you can use the built-in export function directly from the browser console:
+When debug mode is enabled, you can use the built-in export function directly from the browser console. Press backtick/tilde to enable debug mode if necessary:
 
 ```javascript
 // Export with default app version (from package.json)
@@ -26,7 +26,7 @@ This function:
 - Downloads the file automatically
 - Provides detailed console output
 
-**Note**: This function is only available when `config.debug` is `true`. For production builds or when debug mode is disabled, use Method 1 below.
+**Note**: This function is available while debug mode is enabled. Development builds enable debug by default; production builds default to disabled but can be toggled with backtick/tilde. When debug mode is disabled, use Method 1 below.
 
 ## Method 1: Using Browser DevTools Console
 

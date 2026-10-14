@@ -1,23 +1,28 @@
 import { Box, Button, Tab, Tabs } from '@mui/material'
-import debounce from 'lodash.debounce'
 import React from 'react'
 import { ChromePicker, CompactPicker, SwatchesPicker } from 'react-color'
 
-import {
-  CompactCustomColors,
-  DivergingCustomColors,
-  SequentialCustomColors,
-  VirdisCustomColors,
-} from '../../../models/VisualStyleModel/impl/colorUtils'
-import { ColorType } from '../../../models/VisualStyleModel/VisualPropertyValue'
+import { getPaletteSwatchGroups } from '@/models/VisualStyleModel/impl/colorPalettes'
+import { CompactCustomColors } from '@/models/VisualStyleModel/impl/colorUtils'
+import { ColorType } from '@/models/VisualStyleModel/VisualPropertyValue'
+
+/**
+ * The swatch grids come from the palette table, grouped by `metadata.category`
+ * — the same taxonomy the palette pickers use. Reading the raw colorUtils
+ * arrays instead left this picker with its own idea of what "diverging" means.
+ */
+const SWATCH_GROUPS = {
+  sequential: getPaletteSwatchGroups('sequential'),
+  diverging: getPaletteSwatchGroups('diverging'),
+  viridis: getPaletteSwatchGroups('viridis'),
+} as const
 
 export function ColorPicker(props: {
   currentValue: ColorType | null
   onValueChange: (color: ColorType) => void
   closePopover: (reason: string) => void
 }): React.ReactElement {
-  const { onValueChange, currentValue } = props
-  const debouncedValueChange = debounce(onValueChange, 200)
+  const { currentValue } = props
   const [activeTab, setActiveTab] = React.useState(0)
 
   // use local state to appear instantaneous in the color picker,
@@ -31,12 +36,19 @@ export function ColorPicker(props: {
   }, [currentValue])
 
   return (
-    <Box>
+    // A definite width, so the pickers below can size themselves as a
+    // percentage of it. The popover Paper is shrink-to-fit and clips at
+    // `overflow-x: hidden`, so anything wider than the viewport is
+    // unreachable (#653).
+    <Box sx={{ width: 'min(1000px, calc(100vw - 64px))' }}>
       <Tabs
         data-testid="color-picker-tabs"
         value={activeTab}
         onChange={(event, newValue) => setActiveTab(newValue)}
         aria-label="Tab panel"
+        variant="scrollable"
+        scrollButtons="auto"
+        allowScrollButtonsMobile
       >
         <Tab
           data-testid="color-picker-sequential-tab"
@@ -71,12 +83,17 @@ export function ColorPicker(props: {
           justifyContent: 'center',
           p: 1,
           height: 275,
+          // The swatch grids are sized as a percentage of this box; letting
+          // flex shrink them below that would re-clip the last column.
+          '& > *': { flexShrink: 0 },
         }}
       >
         {activeTab === 0 && (
           <SwatchesPicker
-            width={945}
-            colors={SequentialCustomColors}
+            // @types/react-color types `width` as a number; the style hook
+            // takes the same value and accepts a CSS string.
+            styles={{ default: { picker: { width: 'min(945px, 100%)' } } }}
+            colors={SWATCH_GROUPS.sequential}
             color={localColorValue}
             onChange={(color: any) => {
               setLocalColorValue(color.hex)
@@ -85,8 +102,10 @@ export function ColorPicker(props: {
         )}
         {activeTab === 1 && (
           <SwatchesPicker
-            width={600}
-            colors={DivergingCustomColors}
+            // @types/react-color types `width` as a number; the style hook
+            // takes the same value and accepts a CSS string.
+            styles={{ default: { picker: { width: 'min(600px, 100%)' } } }}
+            colors={SWATCH_GROUPS.diverging}
             color={localColorValue}
             onChange={(color: any) => {
               setLocalColorValue(color.hex)
@@ -95,8 +114,10 @@ export function ColorPicker(props: {
         )}
         {activeTab === 2 && (
           <SwatchesPicker
-            width={231}
-            colors={VirdisCustomColors}
+            // @types/react-color types `width` as a number; the style hook
+            // takes the same value and accepts a CSS string.
+            styles={{ default: { picker: { width: 'min(231px, 100%)' } } }}
+            colors={SWATCH_GROUPS.viridis}
             color={localColorValue}
             onChange={(color: any) => {
               setLocalColorValue(color.hex)
@@ -121,10 +142,12 @@ export function ColorPicker(props: {
           />
         )}
       </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1 }}
+      >
         <Button
           data-testid="color-picker-cancel-button"
-          color="primary"
+          variant="outlined"
           onClick={() => {
             props.closePopover('cancel')
             setLocalColorValue(currentValue ?? `#ffffff`)
@@ -134,13 +157,7 @@ export function ColorPicker(props: {
         </Button>
         <Button
           data-testid="color-picker-confirm-button"
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-          }}
+          variant="contained"
           onClick={() => {
             props.onValueChange(localColorValue)
             props.closePopover('confirm')

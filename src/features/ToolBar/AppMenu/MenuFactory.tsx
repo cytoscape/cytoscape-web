@@ -1,43 +1,50 @@
 import {
   Box,
   Button,
-  Checkbox,
-  Dialog,
-  FormControlLabel,
   MenuItem,
-  Radio,
-  RadioGroup,
   Select,
-  TextField,
   Tooltip,
   Typography,
 } from '@mui/material'
-import { MenuItem as NestedMenuItem } from 'primereact/menuitem'
-import { useState } from 'react'
+import { CyDialog } from '@/components/CyDialog'
+import { ToolbarMenuItem as NestedMenuItem } from '@/features/ToolBar/menuItemModel'
 import React from 'react'
 
-import { logApp } from '../../../debug'
 import { useAppStore } from '../../../data/hooks/stores/AppStore'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
-import { inputColumnFilterFn } from '../../../models/AppModel/impl'
+import {
+  inputColumnFilterFn,
+  isAutoFilledParameter,
+  shouldShowServiceDescription,
+} from '../../../models/AppModel/impl'
+import { parameterKeys } from '../../../models/AppModel/impl/parameters'
 import { MenuPathElement } from '../../../models/AppModel/MenuPathElement'
-import { ParameterUiType } from '../../../models/AppModel/ParameterUiType'
 import { ServiceApp } from '../../../models/AppModel/ServiceApp'
 import { ServiceAppParameter } from '../../../models/AppModel/ServiceAppParameter'
 import { IdType } from '../../../models/IdType'
 import { getDomain } from '../../../utils/urlUtil'
+import { ParameterForm, useParameterErrors } from '../../ParameterForm'
 
-interface AppMenuItemProps {
+const NO_PARAMETERS: readonly ServiceAppParameter[] = []
+
+/** Props of the parameter dialog. The host menu owns it, not the menu row. */
+export interface AppMenuItemDialogProps {
   handleClose: () => void
   handleConfirm: () => Promise<void>
   app: ServiceApp
   open: boolean
+}
+
+interface AppMenuItemProps {
+  /** Reports the picked app to the host menu, which opens the dialog. */
+  onSelect: () => void
+  app: ServiceApp
   showTooltip?: boolean
 }
 
-export const InputColumns = (props: AppMenuItemProps) => {
+export const InputColumns = (props: AppMenuItemDialogProps) => {
   const { app } = props
   const isNodeType = app.serviceInputDefinition?.type === 'node'
 
@@ -52,9 +59,13 @@ export const InputColumns = (props: AppMenuItemProps) => {
 
   const edgeColumns =
     useTableStore(
-      (state) => state.tables?.[activeNetworkId]?.nodeTable?.columns,
+      (state) => state.tables?.[activeNetworkId]?.edgeTable?.columns,
     ) ?? []
 
+  // Initialize column defaults once per dialog open (this component remounts
+  // each time the dialog opens). Adding inputColumns/column deps would re-fire
+  // after the effect's own store write — an update loop that also reverts the
+  // user's dropdown selection back to the default.
   React.useEffect(() => {
     app.serviceInputDefinition?.inputColumns.forEach((inputColumn) => {
       const validColumns = (isNodeType ? nodeColumns : edgeColumns).filter(
@@ -64,6 +75,7 @@ export const InputColumns = (props: AppMenuItemProps) => {
         updateInputColumn(app.url, inputColumn.name, validColumns[0].name)
       }
     })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- init defaults once per dialog open
   }, [])
 
   return app.serviceInputDefinition?.inputColumns.map((inputColumn, i) => {
@@ -127,7 +139,7 @@ export const InputColumns = (props: AppMenuItemProps) => {
   })
 }
 
-export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
+export const AppMenuItemDialog: React.FC<AppMenuItemDialogProps> = (props) => {
   const { handleClose, handleConfirm, app, open } = props
   const serviceInputDefinition = app.serviceInputDefinition
   const isNodeType = serviceInputDefinition?.type === 'node'
@@ -150,209 +162,25 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
 
   const edgeColumns =
     useTableStore(
-      (state) => state.tables?.[activeNetworkId]?.nodeTable?.columns,
+      (state) => state.tables?.[activeNetworkId]?.edgeTable?.columns,
     ) ?? []
 
-  const renderParameter = (parameter: ServiceAppParameter) => {
-    switch (parameter.type) {
-      case ParameterUiType.Text:
-        return (
-          <Tooltip title={parameter.description ?? ''}>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <Typography>{parameter.displayName}</Typography>
-              <TextField
-                size="small"
-                label={parameter.displayName}
-                value={parameter.value ?? parameter.defaultValue ?? ''}
-                defaultValue={parameter.defaultValue ?? ''}
-                onChange={(e) =>
-                  updateServiceParameter(
-                    app.url,
-                    parameter.displayName,
-                    e.target.value,
-                  )
-                }
-              />
-            </Box>
-          </Tooltip>
-        )
-      case ParameterUiType.DropDown:
-        return (
-          <Tooltip title={parameter.description ?? ''}>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <Typography>{parameter.displayName}</Typography>
-              <Select
-                size="small"
-                label={parameter.displayName}
-                value={parameter.value || ''}
-              >
-                {(parameter.valueList ?? []).map((value, i) => (
-                  <MenuItem
-                    key={i}
-                    onClick={() =>
-                      updateServiceParameter(
-                        app.url,
-                        parameter.displayName,
-                        value,
-                      )
-                    }
-                  >
-                    {value}
-                  </MenuItem>
-                ))}
-              </Select>
-            </Box>
-          </Tooltip>
-        )
-      case ParameterUiType.Radio:
-        return (
-          <Tooltip title={parameter.description ?? ''}>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <Typography>{parameter.displayName}</Typography>
-              <RadioGroup
-                value={parameter.value || ''}
-                onChange={(e) =>
-                  updateServiceParameter(
-                    app.url,
-                    parameter.displayName,
-                    e.target.value,
-                  )
-                }
-              >
-                {(parameter.valueList ?? []).map((value, i) => (
-                  <FormControlLabel
-                    key={i}
-                    value={value}
-                    control={<Radio />}
-                    label={value}
-                  />
-                ))}
-              </RadioGroup>
-            </Box>
-          </Tooltip>
-        )
-      case ParameterUiType.CheckBox:
-        return (
-          <Tooltip title={parameter.description ?? ''}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={
-                    parameter.value === 'true' ||
-                    parameter.defaultValue === 'true' ||
-                    false
-                  }
-                  onChange={(e) =>
-                    updateServiceParameter(
-                      app.url,
-                      parameter.displayName,
-                      `${e.target.checked}`,
-                    )
-                  }
-                />
-              }
-              label={parameter.displayName}
-              labelPlacement="start"
-              sx={{
-                marginLeft: '0px !important',
-                display: 'flex',
-                justifyContent: 'space-between',
-                width: '100%',
-              }}
-            />
-          </Tooltip>
-        )
-
-      case ParameterUiType.NodeColumn:
-        return (
-          <Tooltip title={parameter.description ?? ''}>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <Typography>{parameter.displayName}</Typography>
-              <Select
-                size="small"
-                label={parameter.displayName}
-                value={parameter.value || ''}
-              >
-                {nodeColumns.map((column, i) => (
-                  <MenuItem
-                    key={i}
-                    onClick={() =>
-                      updateServiceParameter(
-                        app.url,
-                        parameter.displayName,
-                        column.name,
-                      )
-                    }
-                  >
-                    {column.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </Box>
-          </Tooltip>
-        )
-      case ParameterUiType.EdgeColumn:
-        return (
-          <Tooltip title={parameter.description ?? ''}>
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <Typography>{parameter.displayName}</Typography>
-              <Select
-                size="small"
-                label={parameter.displayName}
-                value={parameter.value || ''}
-              >
-                {edgeColumns.map((column, i) => (
-                  <MenuItem
-                    key={i}
-                    onClick={() =>
-                      updateServiceParameter(
-                        app.url,
-                        parameter.displayName,
-                        column.name,
-                      )
-                    }
-                  >
-                    {column.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </Box>
-          </Tooltip>
-        )
-      default:
-        return null
-    }
-  }
+  // The parameters render through the shared ParameterForm (array order,
+  // fieldsets from `groups`, host-filled types hidden). Values are the
+  // strings the service protocol uses; the form coerces for display and
+  // reports typed values, stringified back on the way to the store.
+  const parameters = app.parameters ?? NO_PARAMETERS
+  const parameterValues = React.useMemo(() => {
+    const keys = parameterKeys(parameters)
+    const values: Record<string, string | undefined> = {}
+    parameters.forEach((parameter, index) => {
+      values[keys[index]] = parameter.value ?? parameter.defaultValue
+    })
+    return values
+  }, [parameters])
+  const parameterErrors = useParameterErrors(parameters, parameterValues, {
+    networkId: activeNetworkId,
+  })
 
   const handleSubmit = () => {
     handleConfirm()
@@ -381,6 +209,11 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
     submitTooltip = "Unable to run service. There isn't an active network."
   }
 
+  if (Object.keys(parameterErrors).length > 0) {
+    serviceCanBeRun = false
+    submitTooltip = 'Please fix the validation errors in the parameters.'
+  }
+
   const inputDefinition = inputTypeIsElement ? (
     <Box sx={{ p: 3 }}>
       <Box>
@@ -390,140 +223,134 @@ export const AppMenuItemDialog: React.FC<AppMenuItemProps> = (props) => {
     </Box>
   ) : null
 
-  const parametersSection = app.parameters ? (
+  // Auto-filled parameters (ndexUUID, accessToken, ...) are resolved at run
+  // time; the form hides them, so the section only shows when a visible
+  // parameter exists.
+  const hasVisibleParameters = parameters.some(
+    (parameter) => !isAutoFilledParameter(parameter.type),
+  )
+
+  const parametersSection = hasVisibleParameters ? (
     <Box sx={{ p: 3 }}>
       <Typography sx={{ mb: 1, ml: -2 }}>Parameters</Typography>
-      {app.parameters?.map((parameter: ServiceAppParameter) => (
-        <Box key={parameter.displayName} style={{ marginBottom: '20px' }}>
-          {renderParameter(parameter)}
-        </Box>
-      ))}
+      <ParameterForm
+        parameters={parameters}
+        values={parameterValues}
+        onChange={(key, value) =>
+          updateServiceParameter(app.url, key, String(value))
+        }
+        networkId={activeNetworkId}
+        testIdPrefix="service-app-parameter"
+      />
     </Box>
   ) : null
 
-  const shouldAddMarginTop = !inputDefinition && !parametersSection
-
-  const submitButton = !serviceCanBeRun ? (
-    <Tooltip title={submitTooltip}>
-      <Box
-        display="flex"
-        justifyContent="flex-end"
-        sx={{
-          marginTop: shouldAddMarginTop ? '20px' : 0,
-        }}
-      >
-        <Button disabled>Submit</Button>
-      </Box>
-    </Tooltip>
-  ) : (
-    <Box
-      display="flex"
-      justifyContent="flex-end"
-      sx={{
-        marginTop: shouldAddMarginTop ? '20px' : 0,
-      }}
-    >
-      <Button onClick={handleSubmit} color="primary" variant="contained">
-        Submit
-      </Button>
-    </Box>
+  const showDescription = shouldShowServiceDescription(
+    app.description,
+    app.showDescriptionInDialog,
   )
 
+  const shouldAddMarginTop = !inputDefinition && !parametersSection
+
   return (
-    <Dialog
-      maxWidth="sm"
-      fullWidth
-      open={open}
-      onClose={handleClose}
-      onKeyDown={(e) => {
-        e.stopPropagation()
-      }}
-      onClick={(e) => {
-        e.stopPropagation()
-      }}
-    >
+    <CyDialog maxWidth="sm" fullWidth open={open}>
       <Box sx={{ p: 3.5 }}>
         <Typography variant="h5">{app.name}</Typography>
+        {showDescription ? (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ mt: 1, whiteSpace: 'pre-line' }}
+          >
+            {app.description}
+          </Typography>
+        ) : null}
         {inputDefinition}
         {parametersSection}
-        {submitButton}
+        {/* Cancel is the dialog's only exit: nothing dismisses on backdrop
+            click or Escape (docs/specifications/DIALOG_DISMISS_POLICY.md). */}
+        <Box
+          display="flex"
+          justifyContent="flex-end"
+          gap={1}
+          sx={{
+            marginTop: shouldAddMarginTop ? '20px' : 0,
+          }}
+        >
+          <Button
+            data-testid="service-app-dialog-cancel-button"
+            variant="outlined"
+            onClick={handleClose}
+          >
+            Cancel
+          </Button>
+          {!serviceCanBeRun ? (
+            <Tooltip title={submitTooltip}>
+              {/* A disabled Button swallows the pointer events Tooltip listens
+                  for, so the span carries them instead. */}
+              <span>
+                <Button disabled>Submit</Button>
+              </span>
+            </Tooltip>
+          ) : (
+            <Button onClick={handleSubmit} color="primary" variant="contained">
+              Submit
+            </Button>
+          )}
+        </Box>
       </Box>
-    </Dialog>
+    </CyDialog>
   )
 }
 
-export const AppMenuItem: React.FC<{
-  handleClose: () => void
-  handleConfirm: () => Promise<void>
-  app: ServiceApp
-  showTooltip?: boolean
-}> = (props: AppMenuItemProps) => {
-  const [openDialog, setOpenDialog] = useState<boolean>(false)
-
-  const { handleClose, app, showTooltip } = props
-  const handleOpenDialog = (): void => {
-    setOpenDialog(true)
-  }
-
-  const handleCloseDialog = (): void => {
-    setOpenDialog(false)
-    handleClose() // Call handleClose from props if needed
-  }
+/**
+ * One service app as a row in a menu. The row reports the pick and nothing
+ * else: the parameter dialog is rendered by the host menu (see
+ * `useServiceAppMenu`), so closing the menu no longer unmounts the form.
+ */
+export const AppMenuItem: React.FC<AppMenuItemProps> = (props) => {
+  const { onSelect, app, showTooltip } = props
 
   return (
-    <>
-      <Tooltip
-        title={
-          showTooltip ? (
-            <Box sx={{ maxWidth: '220px' }}>
-              <div>
-                <strong>Hosted at: </strong>
-                {getDomain(app.url)}
-              </div>
-              <div>
-                <strong>Version: </strong>
-                {app.version}
-              </div>
-              <div>
-                <strong>Author: </strong>
-                {app.author}
-              </div>
-            </Box>
-          ) : (
-            ''
-          )
-        }
-        arrow
-        placement="right"
-      >
-        <MenuItem onClick={() => handleOpenDialog()}>{app.name}</MenuItem>
-      </Tooltip>
-      <AppMenuItemDialog
-        handleConfirm={props.handleConfirm}
-        open={openDialog}
-        handleClose={handleCloseDialog}
-        app={app}
-      />
-    </>
+    <Tooltip
+      title={
+        showTooltip ? (
+          <Box sx={{ maxWidth: '220px' }}>
+            <div>
+              <strong>Hosted at: </strong>
+              {getDomain(app.url)}
+            </div>
+            <div>
+              <strong>Version: </strong>
+              {app.version}
+            </div>
+            <div>
+              <strong>Author: </strong>
+              {app.author}
+            </div>
+          </Box>
+        ) : (
+          ''
+        )
+      }
+      arrow
+      placement="right"
+    >
+      <MenuItem onClick={onSelect}>{app.name}</MenuItem>
+    </Tooltip>
   )
 }
 const path2menu = (
   app: ServiceApp,
   path: MenuPathElement[],
-  commandFn: (url: string) => Promise<void>,
+  onSelectApp: (app: ServiceApp) => void,
   existingMenuItems: Record<string, NestedMenuItem> = {},
 ): NestedMenuItem => {
-  const { url } = app
   if (path.length === 0) {
     throw new Error('Menu path is empty')
   }
 
-  const command = async (): Promise<void> => {
-    await commandFn(url)
-    logApp.info(
-      `[${path2menu.name}]:[${command.name}]: Task finished for url: ${url}`,
-    )
-  }
+  const onSelect = (): void => onSelectApp(app)
 
   // Case 1: Single menu item
   if (path.length === 1) {
@@ -532,9 +359,7 @@ const path2menu = (
       label: item.name,
       items: [],
     }
-    baseMenu.template = (
-      <AppMenuItem handleConfirm={command} handleClose={() => {}} app={app} />
-    )
+    baseMenu.template = <AppMenuItem onSelect={onSelect} app={app} />
     return baseMenu
   }
 
@@ -553,7 +378,7 @@ const path2menu = (
       label: itemName,
       items: [],
       template: isLastItem ? (
-        <AppMenuItem handleClose={() => {}} app={app} handleConfirm={command} />
+        <AppMenuItem onSelect={onSelect} app={app} />
       ) : undefined,
     }
     if (currentMenuItem.items === undefined) {
@@ -568,24 +393,17 @@ const path2menu = (
       if (isLastItem) {
         // add tooltip for the menu item to be added
         newMenuItem.template = (
-          <AppMenuItem
-            handleClose={() => {}}
-            app={app}
-            handleConfirm={command}
-            showTooltip={true}
-          />
+          <AppMenuItem onSelect={onSelect} app={app} showTooltip={true} />
         )
         // add tooltip for the existing duplicated menu item
         existingDupMenuItems.forEach((item) => {
           // Ensure item.template is a valid ReactElement before modifying it
           if (item.template && React.isValidElement(item.template)) {
-            const { app, handleConfirm } = item.template
-              .props as AppMenuItemProps
+            const existing = item.template.props as AppMenuItemProps
             item.template = (
               <AppMenuItem
-                handleClose={() => {}}
-                app={app}
-                handleConfirm={handleConfirm}
+                onSelect={existing.onSelect}
+                app={existing.app}
                 showTooltip={true}
               />
             )
@@ -598,7 +416,8 @@ const path2menu = (
       // and follow that path
       const intermediateItem = existingDupMenuItems.filter(
         (item) =>
-          !item.hasOwnProperty('template') || item.template === undefined,
+          !Object.prototype.hasOwnProperty.call(item, 'template') ||
+          item.template === undefined,
       ) as NestedMenuItem[]
 
       if (intermediateItem.length > 0) {
@@ -614,7 +433,7 @@ const path2menu = (
 
 export const createMenuItems = (
   serviceApps: Record<string, ServiceApp>,
-  commandFn: (url: string) => Promise<void>,
+  onSelectApp: (app: ServiceApp) => void,
 ): NestedMenuItem[] => {
   const appIds: string[] = Object.keys(serviceApps)
 
@@ -632,7 +451,7 @@ export const createMenuItems = (
     const app: ServiceApp = serviceApps[appId]
     const { cyWebMenuItem } = app
     const { path } = cyWebMenuItem
-    const baseMenu = path2menu(app, path, commandFn, existingMenuItems)
+    const baseMenu = path2menu(app, path, onSelectApp, existingMenuItems)
     existingMenuItems[baseMenu.label as string] = baseMenu
   })
 

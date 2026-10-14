@@ -3,17 +3,21 @@ import { deepOrange } from '@mui/material/colors'
 import Keycloak, { KeycloakTokenParsed } from 'keycloak-js'
 import { ReactElement, useContext, useState } from 'react'
 
-import { AppConfigContext } from '../../AppConfigContext'
-import { logApi } from '../../debug'
-import { KeycloakContext } from '../../init/keycloak'
+import { AppConfigContext } from '@/AppConfigContext'
+import { useCredentialStore } from '@/data/hooks/stores/CredentialStore'
+import { logApi } from '@/debug'
+import { KeycloakContext } from '@/boot/keycloak'
 import { LoginPanel } from './LoginPanel'
 
 export const LoginButton = (): ReactElement => {
   const [open, setOpen] = useState<boolean>(false)
 
   const client: Keycloak = useContext(KeycloakContext)
+  // The app renders before the SSO check settles (optimistic render); this
+  // flips to true when it does, re-rendering the avatar with the fresh token.
+  const authInitialized = useCredentialStore((state) => state.authInitialized)
   const { urlBaseName } = useContext(AppConfigContext)
-  const enabled = true
+  const enabled = authInitialized
   const handleClose = async (): Promise<void> => {
     if (!enabled) {
       // Button is not ready yet
@@ -70,8 +74,11 @@ export const LoginButton = (): ReactElement => {
   }
 
   const parsed: KeycloakTokenParsed = client.tokenParsed ?? {}
-  const tooltipTitle =
-    parsed.name === undefined ? 'Click to login' : parsed.name
+  const tooltipTitle = !authInitialized
+    ? 'Checking sign-in status...'
+    : parsed.name === undefined
+      ? 'Click to login'
+      : parsed.name
   return (
     <>
       <Tooltip title={tooltipTitle}>

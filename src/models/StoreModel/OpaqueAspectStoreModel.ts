@@ -9,7 +9,11 @@ export interface OpaqueAspectActions {
   add: (networkId: IdType, aspectName: string, aspectData: any[]) => void
 
   // Add multiple aspects to the store at once
-  addAll: (networkId: IdType, aspectList: Record<string, any[]>[], isUpdate?:boolean) => void
+  addAll: (
+    networkId: IdType,
+    aspectList: Record<string, any[]>[],
+    isUpdate?: boolean,
+  ) => void
 
   // Delete the entry from the store
   delete: (networkId: IdType) => void

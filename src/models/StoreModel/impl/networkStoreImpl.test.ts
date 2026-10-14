@@ -1,17 +1,19 @@
-import cytoscape from 'cytoscape'
+// @vitest-environment node
+import { describe, expect, it } from 'vitest'
 
 import { IdType } from '../../IdType'
-import NetworkFn, { Edge, Network } from '../../NetworkModel'
+import NetworkFn, { Network } from '../../NetworkModel'
 import { UpdateEventType } from '../NetworkStoreModel'
 import {
   add,
-  addEdgeToNetwork,
   addEdgesToNetwork,
-  addNodeToNetwork,
+  addEdgeToNetwork,
   addNodesAndEdgesToNetwork,
   addNodesToNetwork,
+  addNodeToNetwork,
   createDeleteEdgesEvent,
   createDeleteNodesEvent,
+  bumpTopologyVersion,
   deleteAll,
   deleteEdgesFromNetwork,
   deleteNetwork,
@@ -24,6 +26,7 @@ import {
 const createDefaultState = (): NetworkStoreState => {
   return {
     networks: new Map<IdType, Network>(),
+    topologyVersions: new Map<IdType, number>(),
   }
 }
 
@@ -239,10 +242,41 @@ describe('NetworkStoreImpl', () => {
       state = deleteNetwork(state, 'network-1')
       state = deleteAll(state)
 
+      // The chained operations produce a new state object
+      expect(state).not.toBe(original)
+
       // Verify original is unchanged
       expect(original.networks).toBe(originalNetworks)
       expect(original.networks.size).toBe(0)
     })
   })
-})
 
+  describe('bumpTopologyVersion', () => {
+    it('starts an unknown network at 1', () => {
+      const versions = new Map<IdType, number>()
+
+      bumpTopologyVersion(versions, 'net1')
+
+      expect(versions.get('net1')).toBe(1)
+    })
+
+    it('increments an existing version', () => {
+      const versions = new Map<IdType, number>([['net1', 3]])
+
+      bumpTopologyVersion(versions, 'net1')
+
+      expect(versions.get('net1')).toBe(4)
+    })
+
+    it('leaves other networks alone', () => {
+      const versions = new Map<IdType, number>([
+        ['net1', 1],
+        ['net2', 1],
+      ])
+
+      bumpTopologyVersion(versions, 'net1')
+
+      expect(versions.get('net2')).toBe(1)
+    })
+  })
+})

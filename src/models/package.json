@@ -1,6 +1,7 @@
 {
   "name": "@cytoscape-web/types",
   "version": "1.1.15",
+  "deprecated": "Deprecated: use @cytoscape-web/api-types instead. See https://www.npmjs.com/package/@cytoscape-web/api-types",
   "description": "Type definitions for Cytoscape Web data models",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

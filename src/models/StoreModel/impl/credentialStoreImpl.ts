@@ -22,9 +22,7 @@ export const setClient = (
 /**
  * Get a token from the client
  */
-export const getToken = async (
-  state: CredentialState,
-): Promise<string> => {
+export const getToken = async (state: CredentialState): Promise<string> => {
   const token: string | undefined = state.client.token
   if (token !== undefined) {
     await state.client.updateToken(REFRESH_MIN)
@@ -48,4 +46,3 @@ export const getParsedToken = async (
     return {}
   }
 }
-

@@ -1,4 +1,3 @@
-import { ValueTypeName } from '../../../../TableModel'
 import { LayoutAlgorithm } from '../../..'
 import { LayoutAlgorithmType } from '../../../LayoutAlgorithm'
 
@@ -14,20 +13,21 @@ export const grid: LayoutAlgorithm = {
     padding: 30,
     condense: false,
   },
-  editables: {
-    padding: {
+  editables: [
+    {
       name: 'padding',
+      displayName: 'Padding',
       description: 'Padding around the nodes',
-      type: ValueTypeName.Integer,
-      value: 30,
+      type: 'text',
+      validationType: 'digits',
       defaultValue: 30,
     },
-    condense: {
+    {
       name: 'condense',
+      displayName: 'Condense',
       description: 'uses minimal space on true',
-      type: ValueTypeName.Boolean,
-      value: false,
+      type: 'checkBox',
       defaultValue: false,
     },
-  },
+  ],
 }

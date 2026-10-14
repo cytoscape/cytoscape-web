@@ -1,8 +1,12 @@
-import Button from '@mui/material/Button'
-import Menu from '@mui/material/Menu'
-import { useState } from 'react'
+import { ToolbarMenuItem as MenuItem } from '@/features/ToolBar/menuItemModel'
+import { useCallback } from 'react'
 
-import { DropdownMenuProps } from '../DropdownMenuProps'
+import { RootMenu } from '../../../models/AppModel/RootMenu'
+import { appendServiceMenuItems } from '../AppMenu/appendServiceMenuItems'
+import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
+import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { DropdownMenu } from '../DropdownMenu'
+import { useMenuBarMenu } from '../MenuBar'
 import { CreateEdgeMenuItem } from './CreateEdgeMenuItem'
 import { CreateNodeMenuItem } from './CreateNodeMenuItem'
 import { DeleteSelectedEdgesMenuItem } from './DeleteSelectedEdgesMenuItem'
@@ -10,53 +14,63 @@ import { DeleteSelectedNodesMenuItem } from './DeleteSelectedNodesMenuItem'
 import { RedoMenuItem } from './RedoMenuItem'
 import { UndoMenuItem } from './UndoMenuItem'
 
-export const EditMenu = (props: DropdownMenuProps): JSX.Element => {
-  const { label } = props
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const open = Boolean(anchorEl)
+export const EditMenu = () => {
+  const { open, setOpen } = useMenuBarMenu('edit-menu')
 
-  const handleOpenDropdownMenu = (
-    event: React.MouseEvent<HTMLButtonElement>,
-  ): void => {
-    setAnchorEl(event.currentTarget)
-  }
+  const hasNoNetworks =
+    useWorkspaceStore((state) => state.workspace.networkIds).length === 0
 
   const handleClose = (): void => {
-    setAnchorEl(null)
+    setOpen(false)
   }
 
+  const closeMenu = useCallback((): void => {
+    setOpen(false)
+  }, [setOpen])
+
+  // Service apps whose cyWebMenuItem.root resolves to the Edit menu.
+  const { menuItems: serviceMenuItems, dialogs } = useServiceAppMenu(
+    RootMenu.Edit,
+    closeMenu,
+  )
+
+  const builtInItems: MenuItem[] = [
+    {
+      template: <CreateNodeMenuItem onClick={handleClose} />,
+    },
+    {
+      template: <CreateEdgeMenuItem onClick={handleClose} />,
+    },
+    {
+      template: <DeleteSelectedNodesMenuItem onClick={handleClose} />,
+    },
+    {
+      template: <DeleteSelectedEdgesMenuItem onClick={handleClose} />,
+    },
+    {
+      separator: true,
+    },
+    {
+      template: <UndoMenuItem onClick={handleClose} />,
+    },
+    {
+      template: <RedoMenuItem onClick={handleClose} />,
+    },
+  ]
+  const menuItems = appendServiceMenuItems(builtInItems, serviceMenuItems)
+
   return (
-    <div>
-      <Button
-        data-testid="toolbar-edit-menu-button"
-        sx={{
-          color: 'white',
-          textTransform: 'none',
-        }}
-        id={label}
-        aria-controls={open ? 'basic-menu' : undefined}
-        aria-haspopup="true"
-        aria-expanded={open ? 'true' : undefined}
-        onClick={handleOpenDropdownMenu}
-      >
-        {label}
-      </Button>
-      <Menu
-        data-testid="toolbar-edit-menu"
-        anchorEl={anchorEl}
+    <>
+      <DropdownMenu
+        id="edit-menu"
+        label="Edit"
+        menuItems={menuItems}
         open={open}
-        onClose={handleClose}
-        MenuListProps={{
-          'aria-labelledby': label,
-        }}
-      >
-        <CreateNodeMenuItem handleClose={handleClose} />
-        <CreateEdgeMenuItem handleClose={handleClose} />
-        <DeleteSelectedNodesMenuItem handleClose={handleClose} />
-        <DeleteSelectedEdgesMenuItem handleClose={handleClose} />
-        <UndoMenuItem handleClose={handleClose} />
-        <RedoMenuItem handleClose={handleClose} />
-      </Menu>
-    </div>
+        disabled={hasNoNetworks}
+        disabledTooltip="Load or create a network first"
+        onOpenChange={setOpen}
+      />
+      {dialogs}
+    </>
   )
 }

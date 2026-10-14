@@ -1,1 +1,1 @@
-export { Workspace } from './Workspace'
+export type { Workspace } from './Workspace'

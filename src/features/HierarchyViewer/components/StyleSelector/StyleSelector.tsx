@@ -4,7 +4,6 @@ import MenuItem from '@mui/material/MenuItem'
 import Select, { SelectChangeEvent } from '@mui/material/Select'
 import { useEffect, useState } from 'react'
 
-import { useUiStateStore } from '../../../../data/hooks/stores/UiStateStore'
 import { useVisualStyleSelectorStore } from '../../store/VisualStyleSelectorStore'
 
 export const StyleSelector = (): JSX.Element => {

@@ -1,10 +1,10 @@
-#!/usr/bin/env ts-node
+#!/usr/bin/env tsx
 /**
  * Script to generate a Mermaid diagram of model relationships
  *
  * Usage:
- *   npm install -D ts-node ts-morph
- *   npx ts-node scripts/generate-model-diagram.ts
+ *   npm install -D tsx ts-morph
+ *   npx tsx scripts/generate-model-diagram.ts
  */
 
 import { Project, SyntaxKind } from 'ts-morph'

@@ -1,24 +1,31 @@
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
+import { logStore } from '../../../debug'
+import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
+import { AppLoadFailure } from '../../../models/AppModel/AppLoadFailure'
+import { SettableAppLoadState } from '../../../models/AppModel/AppLoadState'
+import { AppStatus } from '../../../models/AppModel/AppStatus'
+import { CyApp } from '../../../models/AppModel/CyApp'
+import { AppSource } from '../../../models/AppModel/InstalledApp'
+import { ManifestSource } from '../../../models/AppModel/ManifestSource'
+import { ServiceApp } from '../../../models/AppModel/ServiceApp'
+import { ServiceAppTask } from '../../../models/AppModel/ServiceAppTask'
+import { parseServiceMetadata } from '../../../models/AppModel/serviceMetadataSchema'
+import { AppStore } from '../../../models/StoreModel/AppStoreModel'
+import { parameterKeys } from '../../../models/AppModel/impl/parameters'
+import * as AppStoreImpl from '../../../models/StoreModel/impl/appStoreImpl'
+import { RootMenu } from '../../../models/AppModel/RootMenu'
+import { resolveRootMenu } from '../../../models/AppModel/impl/menuRouting'
 import {
+  deleteAppFromDb,
+  deleteAppSettingFromDb,
   deleteServiceAppFromDb,
   getAllServiceAppsFromDb,
   getAppFromDb,
-  putAppToDb,
+  putAppSettingToDb,
   putServiceAppToDb,
 } from '../../db'
-import { toPlainObject } from '../../db/serialization'
-import { logStore } from '../../../debug'
-import { AppStatus } from '../../../models/AppModel/AppStatus'
-import { CyApp } from '../../../models/AppModel/CyApp'
-import { ServiceApp } from '../../../models/AppModel/ServiceApp'
-import { ServiceAppTask } from '../../../models/AppModel/ServiceAppTask'
-import { ServiceMetadata } from '../../../models/AppModel/ServiceMetadata'
-import { AppStore } from '../../../models/StoreModel/AppStoreModel'
-import * as AppStoreImpl from '../../../models/StoreModel/impl/appStoreImpl'
-
-const sampleUrl = 'https://cd.ndexbio.org/cy/cytocontainer/v1/louvain'
 
 export const serviceFetcher = async (url: string): Promise<ServiceApp> => {
   // Fetch the service app metadata from the given URL
@@ -33,10 +40,27 @@ export const serviceFetcher = async (url: string): Promise<ServiceApp> => {
     throw new Error('Failed to fetch the service metadata.')
   }
 
-  const metadata: ServiceMetadata = await response.json()
+  // The endpoint is user-supplied, so the payload is external input: validate it
+  // rather than casting. Without this, a malformed response registers as a
+  // service app and fails later, deep in the menu or the input dialog.
+  const metadata = parseServiceMetadata(await response.json())
+  if (metadata === undefined) {
+    throw new Error('The response is not valid service app metadata.')
+  }
+
   const serviceApp: ServiceApp = {
     url,
     ...metadata,
+  }
+
+  const { root } = resolveRootMenu(serviceApp.cyWebMenuItem?.root)
+  if (root === RootMenu.Layout) {
+    const actions = serviceApp.cyWebActions || []
+    if (actions.some((action) => action !== 'updateLayouts')) {
+      throw new Error(
+        `Service apps under the Layout menu may only declare the "updateLayouts" action.`,
+      )
+    }
   }
 
   return serviceApp
@@ -47,15 +71,16 @@ export const useAppStore = create(
     apps: {},
     serviceApps: {},
     currentTask: undefined,
+    catalog: {},
+    catalogSources: {},
+    manifestIds: [],
+    loadStates: {},
+    loadErrors: {},
+    manifestSource: undefined,
 
-    restore: async (appIds: string[]) => {
-      const apps = await Promise.all(
-        appIds.map(async (id) => {
-          const cached = await getAppFromDb(id)
-          return { id, cached }
-        }),
-      )
-
+    restore: async (apps: CyApp[]) => {
+      // apps are seeded by the caller from workspace.installedApps (the durable
+      // status source, §8.4); only serviceApps are still restored from the DB.
       const serviceApps = await getAllServiceAppsFromDb()
 
       set((state) => {
@@ -66,36 +91,16 @@ export const useAppStore = create(
       })
     },
 
-    add: (app: CyApp) => {
+    add: async (app: CyApp) => {
       const { id } = app
-      getAppFromDb(id).then((cachedApp: CyApp) => {
-        set((state) => {
-          const newState = AppStoreImpl.add(state, app, cachedApp)
-          if (newState.apps[id] !== state.apps[id]) {
-            // App was added, persist to DB if it's a new app
-            if (cachedApp === undefined) {
-              try {
-                // Convert to plain object before saving
-                const plainApp = toPlainObject(newState.apps[id])
-                putAppToDb(plainApp).catch((error) => {
-                  logStore.error(
-                    `[${useAppStore.name}]:[add] Failed to persist new app ${id}:`,
-                    error,
-                  )
-                  // Don't throw - prevent error propagation
-                })
-              } catch (cloneError) {
-                logStore.error(
-                  `[${useAppStore.name}]:[add] Failed to clone app ${id} before saving:`,
-                  cloneError,
-                )
-                // Don't throw - prevent error propagation
-              }
-            }
-          }
-          state.apps = newState.apps
-          return state
-        })
+      const cachedApp = await getAppFromDb(id)
+      // No persistence: the durable record is workspace.installedApps (§6.3).
+      // apps/CyApp are session-local; cachedApp resolves to undefined once the
+      // legacy table is migrated/empty.
+      set((state) => {
+        const newState = AppStoreImpl.add(state, app, cachedApp)
+        state.apps = newState.apps
+        return state
       })
     },
 
@@ -131,30 +136,51 @@ export const useAppStore = create(
       })
     },
 
+    refreshService: async (url: string) => {
+      if (get().serviceApps[url] === undefined) {
+        logStore.warn(
+          `[${useAppStore.name}]: Cannot refresh unregistered service app: ${url}`,
+        )
+        return
+      }
+      const serviceApp = await serviceFetcher(url)
+      await putServiceAppToDb(serviceApp)
+
+      set((state) => {
+        const newState = AppStoreImpl.refreshService(state, serviceApp)
+        state.serviceApps = newState.serviceApps
+        return state
+      })
+    },
+
+    refreshAllServices: async () => {
+      const urls = Object.keys(get().serviceApps)
+      await Promise.all(
+        urls.map(async (url) => {
+          try {
+            const serviceApp = await serviceFetcher(url)
+            await putServiceAppToDb(serviceApp)
+            set((state) => {
+              const newState = AppStoreImpl.refreshService(state, serviceApp)
+              state.serviceApps = newState.serviceApps
+              return state
+            })
+          } catch (error) {
+            logStore.error(
+              `[${useAppStore.name}]: Failed to refresh service app: ${url}`,
+              error,
+            )
+          }
+        }),
+      )
+    },
+
     setStatus: (id: string, status: AppStatus) => {
+      // Session-only: the durable status lives in workspace.installedApps and
+      // is reconciled by useAppManager (§8.4). No write to the global apps DB.
       set((state) => {
         const newState = AppStoreImpl.setStatus(state, id, status)
         state.apps = newState.apps
-        const newAppState = { ...newState.apps[id] }
-        if (newAppState) {
-          // Convert to plain object and handle errors to prevent infinite loops
-          try {
-            const plainApp = toPlainObject(newAppState)
-            putAppToDb(plainApp).catch((error) => {
-              logStore.error(
-                `[${useAppStore.name}]:[setStatus] Failed to persist app status for ${id}:`,
-                error,
-              )
-              // Don't throw - prevent error propagation that causes infinite loops
-            })
-          } catch (cloneError) {
-            logStore.error(
-              `[${useAppStore.name}]:[setStatus] Failed to clone app ${id} before saving:`,
-              cloneError,
-            )
-            // Don't throw - prevent error propagation
-          }
-        }
         return state
       })
     },
@@ -175,24 +201,23 @@ export const useAppStore = create(
       })
     },
 
-    updateServiceParameter(url: string, displayName: string, value: string) {
+    updateServiceParameter(url: string, key: string, value: string) {
       set((state) => {
         const serviceApp = state.serviceApps[url]
         if (serviceApp === undefined) {
           throw new Error(`Service not found for URL: ${url}`)
         }
 
-        const parameter = serviceApp.parameters.find(
-          (p) => p.displayName === displayName,
-        )
-        if (parameter === undefined) {
-          throw new Error(`Parameter not found for name: ${displayName}`)
+        // Addressed by the key rule (displayName, or the group path on a
+        // collision) — the key the ParameterForm reports.
+        if (!parameterKeys(serviceApp.parameters).includes(key)) {
+          throw new Error(`Parameter not found for key: ${key}`)
         }
 
         const newState = AppStoreImpl.updateServiceParameter(
           state,
           url,
-          displayName,
+          key,
           value,
         )
         state.serviceApps = newState.serviceApps
@@ -251,6 +276,87 @@ export const useAppStore = create(
             )
           })
         return state
+      })
+    },
+
+    setCatalog: (
+      entries: AppCatalogEntry[],
+      sources?: Record<string, AppSource>,
+      manifestIds?: string[],
+    ) => {
+      set((state) => {
+        const newState = AppStoreImpl.setCatalog(
+          state,
+          entries,
+          sources,
+          manifestIds,
+        )
+        state.catalog = newState.catalog
+        state.catalogSources = newState.catalogSources
+        state.manifestIds = newState.manifestIds
+        // A corrected bundle URL retires the failure recorded against the old
+        // one, so the row gets its Enable control back (#719).
+        state.loadStates = newState.loadStates
+        state.loadErrors = newState.loadErrors
+        return state
+      })
+    },
+
+    setLoadState: (id: string, loadState: SettableAppLoadState) => {
+      set((state) => {
+        const newState = AppStoreImpl.setLoadState(state, id, loadState)
+        state.loadStates = newState.loadStates
+        state.loadErrors = newState.loadErrors
+        return state
+      })
+    },
+
+    setLoadFailed: (id: string, failure: AppLoadFailure) => {
+      set((state) => {
+        const newState = AppStoreImpl.setLoadFailed(state, id, failure)
+        state.loadStates = newState.loadStates
+        state.loadErrors = newState.loadErrors
+        return state
+      })
+    },
+
+    setManifestSource: (source: ManifestSource | undefined) => {
+      set((state) => {
+        const newState = AppStoreImpl.setManifestSource(state, source)
+        state.manifestSource = newState.manifestSource
+        return state
+      })
+      // Persist to IndexedDB
+      if (source !== undefined) {
+        putAppSettingToDb('manifestSource', source).catch((error) => {
+          logStore.error(
+            `[${useAppStore.name}]:[setManifestSource] Failed to persist:`,
+            error,
+          )
+        })
+      } else {
+        deleteAppSettingFromDb('manifestSource').catch((error) => {
+          logStore.error(
+            `[${useAppStore.name}]:[setManifestSource] Failed to delete:`,
+            error,
+          )
+        })
+      }
+    },
+
+    remove: (id: string) => {
+      set((state) => {
+        const newState = AppStoreImpl.removeApp(state, id)
+        state.apps = newState.apps
+        state.loadStates = newState.loadStates
+        state.loadErrors = newState.loadErrors
+        return state
+      })
+      deleteAppFromDb(id).catch((error) => {
+        logStore.error(
+          `[${useAppStore.name}]:[remove] Failed to delete app ${id} from DB:`,
+          error,
+        )
       })
     },
   })),

@@ -22,16 +22,16 @@ export function ContinuousMappingForm(props: {
   const m: ContinuousMappingFunction | null = props.visualProperty
     ?.mapping as ContinuousMappingFunction
 
-  if (m == null) {
-    return <Box></Box>
-  }
-
   const group = props.visualProperty.group
   const tables: Record<IdType, { nodeTable: Table; edgeTable: Table }> =
     useTableStore((state) => state.tables)
   const nodeTable = tables[props.currentNetworkId]?.nodeTable
   const edgeTable = tables[props.currentNetworkId]?.edgeTable
   const table = group === VisualPropertyGroup.Node ? nodeTable : edgeTable
+
+  if (m == null) {
+    return <Box></Box>
+  }
 
   const { attribute } = m
   const attributeType = table.columns.find((c) => c.name === attribute)?.type

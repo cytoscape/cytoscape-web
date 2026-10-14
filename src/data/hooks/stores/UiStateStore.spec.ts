@@ -1,9 +1,10 @@
 import { act, renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { IdType } from '../../../models/IdType'
+import { TableType } from '../../../models/StoreModel/TableStoreModel'
 import { Panel } from '../../../models/UiModel/Panel'
 import { PanelState } from '../../../models/UiModel/PanelState'
-import { TableType } from '../../../models/StoreModel/TableStoreModel'
 import {
   TableDisplayConfiguration,
   VisualStyleOptions,
@@ -16,10 +17,29 @@ import {
 } from './UiStateStore'
 
 // Mock the database operations to avoid IndexedDB issues in tests
-jest.mock('../../db', () => ({
-  ...jest.requireActual('../../db'),
-  putUiStateToDb: jest.fn().mockResolvedValue(undefined),
-}))
+vi.mock('../../db', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../db')>()
+  return {
+    ...actual,
+    putNetworkToDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworksFromDb: vi.fn().mockResolvedValue(undefined),
+    putTableToDb: vi.fn().mockResolvedValue(undefined),
+    deleteTableFromDb: vi.fn().mockResolvedValue(undefined),
+    clearTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    putViewModelToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewsToDb: vi.fn().mockResolvedValue(undefined),
+    deleteViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearViewModelsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    putTablesToDb: vi.fn().mockResolvedValue(undefined),
+    getNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    getTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    getViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+  }
+})
 
 describe('useUiStateStore', () => {
   beforeEach(() => {
@@ -290,8 +310,8 @@ describe('useUiStateStore', () => {
       })
 
       expect(
-        result.current.ui.visualStyleOptions[networkId]
-          ?.visualEditorProperties.nodeSizeLocked,
+        result.current.ui.visualStyleOptions[networkId]?.visualEditorProperties
+          .nodeSizeLocked,
       ).toBe(true)
     })
 
@@ -333,8 +353,8 @@ describe('useUiStateStore', () => {
       })
 
       expect(
-        result.current.ui.visualStyleOptions[networkId]
-          ?.visualEditorProperties.arrowColorMatchesEdge,
+        result.current.ui.visualStyleOptions[networkId]?.visualEditorProperties
+          .arrowColorMatchesEdge,
       ).toBe(true)
     })
 
@@ -387,8 +407,8 @@ describe('useUiStateStore', () => {
       })
 
       expect(
-        result.current.ui.visualStyleOptions[networkId]
-          ?.visualEditorProperties.tableDisplayConfiguration,
+        result.current.ui.visualStyleOptions[networkId]?.visualEditorProperties
+          .tableDisplayConfiguration,
       ).toEqual(tableDisplayConfiguration)
     })
 
@@ -483,9 +503,8 @@ describe('useUiStateStore', () => {
   describe('deserializeColumnUIKey', () => {
     it('should deserialize column UI key', () => {
       const serialized = '9|network-1|4|node|8|column-1'
-      const [networkId, tableType, columnId] = deserializeColumnUIKey(
-        serialized,
-      )
+      const [networkId, tableType, columnId] =
+        deserializeColumnUIKey(serialized)
 
       expect(networkId).toBe('network-1')
       expect(tableType).toBe('node')
@@ -539,7 +558,12 @@ describe('useUiStateStore', () => {
         })
 
         // Set column width
-        result.current.setColumnWidth('network-1', TableType.NODE, 'column-1', 150)
+        result.current.setColumnWidth(
+          'network-1',
+          TableType.NODE,
+          'column-1',
+          150,
+        )
       })
 
       expect(result.current.ui.panels[Panel.LEFT]).toBe(PanelState.CLOSED)
@@ -553,4 +577,3 @@ describe('useUiStateStore', () => {
     })
   })
 })
-

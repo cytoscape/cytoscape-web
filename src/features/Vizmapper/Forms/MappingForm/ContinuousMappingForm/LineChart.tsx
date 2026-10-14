@@ -1,4 +1,4 @@
-import { AxisBottom,AxisLeft } from '@visx/axis'
+import { AxisBottom, AxisLeft } from '@visx/axis'
 import { LinearGradient } from '@visx/gradient'
 import { Group } from '@visx/group'
 import { scaleLinear as visXScaleLinear } from '@visx/scale'
@@ -15,6 +15,8 @@ export interface LineChartProps {
     bottom: number
     left: number
   }
+  labelColor?: string
+  strokeColor?: string
   data: Array<[number, number]>
   domain: number[]
   range: number[]
@@ -27,6 +29,8 @@ export function LineChart(props: LineChartProps): React.ReactElement {
     width,
     height,
     margin,
+    labelColor = 'rgba(0, 0, 0, 0.7)',
+    strokeColor = 'rgba(0, 0, 0, 0.7)',
     data,
     domain,
     range,
@@ -67,9 +71,18 @@ export function LineChart(props: LineChartProps): React.ReactElement {
           labelProps={{
             fontSize: 14,
             textAnchor: 'middle',
+            fill: labelColor,
           }}
           labelOffset={25}
-          stroke={'#1b1a1e'}
+          stroke={strokeColor}
+          tickStroke={strokeColor}
+          tickLabelProps={() => ({
+            fill: labelColor,
+            fontSize: 10,
+            textAnchor: 'end',
+            verticalAnchor: 'middle',
+            dx: -4,
+          })}
         />
         <AxisBottom
           scale={xScale}
@@ -78,9 +91,18 @@ export function LineChart(props: LineChartProps): React.ReactElement {
           labelProps={{
             fontSize: 14,
             textAnchor: 'middle',
+            fill: labelColor,
           }}
           label={domainLabel}
-          stroke={'#1b1a1e'}
+          stroke={strokeColor}
+          tickStroke={strokeColor}
+          tickLabelProps={() => ({
+            fill: labelColor,
+            fontSize: 10,
+            textAnchor: 'middle',
+            verticalAnchor: 'end',
+            dy: 2,
+          })}
         />
         <LinePath
           data={data}

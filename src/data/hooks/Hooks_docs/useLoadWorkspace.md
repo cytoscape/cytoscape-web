@@ -32,6 +32,8 @@ Each step is wrapped in try-catch blocks to ensure partial failures don't preven
 
 The hook starts by calling `deleteDb()`, which completely clears the IndexedDB database. This ensures a clean slate for the imported workspace and prevents data conflicts or inconsistencies.
 
+If `deleteDb()` reports anything other than `'deleted'`, the import throws instead of continuing: the database was not cleared, so the workspace would either be written into a database whose delete is still queued (and about to be destroyed underneath it) or fail row by row against a connection that never reopened.
+
 ### Workspace Import
 
 The remote workspace data is transformed into the local `Workspace` model and written to the database. The transformation includes:
@@ -45,11 +47,13 @@ The remote workspace data is transformed into the local `Workspace` model and wr
 ### App Status Synchronization
 
 The hook synchronizes app activation states between:
+
 - **Workspace configuration** - Which apps should be active (from `options.activeApps`)
 - **Current app store** - Which apps are currently active in memory
 - **Database** - Which apps are stored in IndexedDB
 
 The synchronization logic:
+
 - Activates apps that should be active but aren't
 - Deactivates apps that shouldn't be active but are
 - Adds new apps to the database if they exist in the current app store
@@ -82,11 +86,7 @@ This ensures that even if some operations fail (e.g., network issues fetching se
 ```typescript
 const loadWorkspace = useLoadWorkspace()
 
-await loadWorkspace(
-  remoteWorkspace,
-  currentApps,
-  currentServiceApps
-)
+await loadWorkspace(remoteWorkspace, currentApps, currentServiceApps)
 ```
 
 ### With Custom Service Fetcher
@@ -117,6 +117,7 @@ const loadWorkspace = useLoadWorkspace(customFetcher)
 ### Why Clear the Database First?
 
 Clearing the database before import ensures:
+
 - No data conflicts between old and new workspace
 - Clean state that matches the remote workspace exactly
 - Prevents orphaned data from previous sessions
@@ -125,6 +126,7 @@ Clearing the database before import ensures:
 ### Why Prefer Store Data Over Fetching?
 
 When a service app exists in the current store, the hook uses that data instead of fetching because:
+
 - Reduces unnecessary network requests
 - Faster workspace loading
 - Uses already-validated data
@@ -133,6 +135,7 @@ When a service app exists in the current store, the hook uses that data instead 
 ### Why Continue on Partial Failures?
 
 The hook continues with workspace import even if app/service app operations fail because:
+
 - Workspace data is the most critical
 - Users can still work with the workspace even if some apps aren't configured
 - Better user experience (workspace loads, then user can fix issues)
@@ -141,6 +144,7 @@ The hook continues with workspace import even if app/service app operations fail
 ### Why Separate Transactions?
 
 Each major operation (workspace write, app updates, service app updates) is in its own try-catch block to:
+
 - Isolate failures (one failure doesn't affect others)
 - Provide better error logging
 - Allow partial success

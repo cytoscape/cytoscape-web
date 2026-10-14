@@ -1,16 +1,12 @@
-import * as React from 'react'
-import {
-  Box,
-  Typography,
-  Button,
-} from '@mui/material'
 import PaletteIcon from '@mui/icons-material/Palette'
+import { Box, Button } from '@mui/material'
+import * as React from 'react'
+
 import { IdType } from '../../../../../models/IdType'
 import { AttributeName } from '../../../../../models/TableModel/AttributeName'
 import { ColorType } from '../../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
-import { COLORS } from '../utils/constants'
-import { PaletteForm } from './PaletteForm'
 import { CustomColorsForm } from './CustomColorsForm'
+import { PaletteForm } from './PaletteForm'
 
 interface ColorsFormProps {
   dataColumns: AttributeName[]
@@ -31,14 +27,15 @@ export const ColorsForm: React.FC<ColorsFormProps> = ({
   currentNetworkId,
   onUpdate,
 }) => {
-
   // State for palette picker popover
   const [paletteAnchorEl, setPaletteAnchorEl] =
     React.useState<HTMLButtonElement | null>(null)
   const paletteOpen = Boolean(paletteAnchorEl)
 
   // Handle opening palette picker
-  const handleOpenPalettePicker = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleOpenPalettePicker = (
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => {
     setPaletteAnchorEl(event.currentTarget)
   }
 
@@ -60,7 +57,13 @@ export const ColorsForm: React.FC<ColorsFormProps> = ({
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {/* Palette Selection Button */}
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          alignItems: 'center',
+        }}
+      >
         <Button
           variant="outlined"
           startIcon={<PaletteIcon />}
@@ -93,4 +96,3 @@ export const ColorsForm: React.FC<ColorsFormProps> = ({
     </Box>
   )
 }
-

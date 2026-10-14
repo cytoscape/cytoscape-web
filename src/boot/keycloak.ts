@@ -1,0 +1,90 @@
+import { NDExAuthError, NDExClient } from '@js4cytoscape/ndex-client'
+import Keycloak from 'keycloak-js'
+import { createContext } from 'react'
+
+import appConfig from '../assets/config.json'
+import { getNDExBaseUrl } from '../data/external-api/ndex/config'
+
+export const KeycloakContext = createContext<Keycloak>(new Keycloak())
+
+export interface UserVerificationStatus {
+  isVerified: boolean
+  userName?: string
+  userEmail?: string
+}
+
+/**
+ * Parses the NDEx error message to extract user information
+ * @param errorMessage - The error message from NDEx API
+ * @returns User name and email if found, null otherwise
+ *
+ * At module scope rather than inside initializeKeycloak so it can be tested
+ * directly — the regex is the whole behaviour and it is easy to get wrong.
+ */
+export const parseUserInfoFromErrorMessage = (
+  errorMessage: string,
+): { userName: string; userEmail: string } | null => {
+  const userInfoPattern = /NDEx user account ([\w.]+) <([\w.]+@[\w.]+)>/
+  const match = errorMessage.match(userInfoPattern)
+
+  if (match) {
+    const userName = match[1]
+    const userEmail = match[2]
+    return { userName, userEmail }
+  }
+  return null
+}
+
+export const initializeKeycloak = () => {
+  const { keycloakConfig, urlBaseName } = appConfig
+
+  const keycloak = new Keycloak(keycloakConfig)
+
+  const handleVerify = async () => {
+    window.location.reload()
+  }
+
+  const handleCancel = () => {
+    keycloak.logout({ redirectUri: window.location.origin + urlBaseName })
+  }
+
+  // Function to check if the user's email is verified
+  const checkUserVerification = async (): Promise<UserVerificationStatus> => {
+    try {
+      const ndexClient = new NDExClient({
+        baseURL: getNDExBaseUrl(),
+        auth: {
+          type: 'oauth',
+          idToken: keycloak.token as string,
+        },
+      })
+      await ndexClient.user.authenticate()
+      return {
+        isVerified: true,
+      }
+    } catch (e) {
+      // If response contains the verification error, trigger verification modal
+      if (
+        e instanceof NDExAuthError &&
+        e.errorCode === 'NDEx_User_Account_Not_Verified'
+      ) {
+        const userInfo = parseUserInfoFromErrorMessage(e.message)
+        return {
+          isVerified: false,
+          userName: userInfo?.userName,
+          userEmail: userInfo?.userEmail,
+        }
+      }
+      return {
+        isVerified: true,
+      }
+    }
+  }
+
+  return {
+    keycloak,
+    handleVerify,
+    handleCancel,
+    checkUserVerification,
+  }
+}

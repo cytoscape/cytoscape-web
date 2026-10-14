@@ -33,7 +33,7 @@ export function VisibilityPicker(props: {
   onValueChange: (visibility: VisibilityType) => void
   closePopover: (reason: string) => void
 }): React.ReactElement {
-  const { onValueChange, currentValue } = props
+  const { currentValue } = props
   const [localValue, setLocalValue] = React.useState(
     currentValue ?? VisibilityType.Element,
   )
@@ -55,7 +55,10 @@ export function VisibilityPicker(props: {
           <Box
             data-testid={`visibility-picker-option-${visibility}`}
             sx={{
-              color: localValue === visibility ? 'blue' : 'black',
+              color: (theme) =>
+                localValue === visibility
+                  ? theme.palette.primary.main
+                  : theme.palette.text.secondary,
               fontWeight: localValue === visibility ? 'bold' : 'normal',
               width: 100,
               p: 1,
@@ -76,10 +79,12 @@ export function VisibilityPicker(props: {
           </Box>
         ))}
       </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1 }}
+      >
         <Button
           data-testid="visibility-picker-cancel-button"
-          color="primary"
+          variant="outlined"
           onClick={() => {
             props.closePopover('cancel')
             setLocalValue(currentValue ?? VisibilityType.Element)
@@ -89,13 +94,7 @@ export function VisibilityPicker(props: {
         </Button>
         <Button
           data-testid="visibility-picker-confirm-button"
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-          }}
+          variant="contained"
           onClick={() => {
             props.onValueChange(localValue)
             props.closePopover('confirm')

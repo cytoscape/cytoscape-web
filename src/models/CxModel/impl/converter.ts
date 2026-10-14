@@ -8,7 +8,8 @@ import { Network, NetworkAttributes } from '../../NetworkModel'
 import { OpaqueAspects } from '../../OpaqueAspectModel'
 import { Table } from '../../TableModel'
 import { NetworkView } from '../../ViewModel'
-import { VisualStyle } from '../../VisualStyleModel'
+import { VisualStyle, VisualStyleSet } from '../../VisualStyleModel'
+import { createStyleSet } from '../../VisualStyleModel/impl/visualStyleSetImpl'
 import { VisualStyleOptions } from '../../VisualStyleModel/VisualStyleOptions'
 import { Cx2 } from '../Cx2'
 import {
@@ -18,6 +19,8 @@ import {
   createViewModelFromCX,
   createVisualStyleFromCx,
   createVisualStyleOptionsFromCx,
+  CY_WEB_VISUAL_STYLES_ASPECT_TAG,
+  parseCyWebVisualStylesAspect,
 } from './converters'
 import { getOptionalAspects } from './extractor'
 import { validateCX2 } from './validator'
@@ -46,6 +49,14 @@ export const createCyNetworkFromCx2 = (
     cxData,
   )
   const visualStyle: VisualStyle = createVisualStyleFromCx(cxData)
+  // The complete named-style set. undefined when the cyWebVisualStyles
+  // aspect is absent OR unusable (malformed / newer major version) — in the
+  // unusable case the RAW aspect stays in otherAspects below so it survives
+  // the next export instead of being destroyed.
+  const parsedStyleSet: VisualStyleSet | undefined =
+    parseCyWebVisualStylesAspect(cxData, visualStyle)
+  const visualStyleSet: VisualStyleSet =
+    parsedStyleSet ?? createStyleSet(visualStyle)
   const networkView: NetworkView = createViewModelFromCX(networkId, cxData)
   const networkAttributes: NetworkAttributes = createNetworkAttributesFromCx(
     networkId,
@@ -53,7 +64,14 @@ export const createCyNetworkFromCx2 = (
   )
   const visualStyleOptions: VisualStyleOptions =
     createVisualStyleOptionsFromCx(cxData)
-  const otherAspects: OpaqueAspects[] = getOptionalAspects(cxData)
+  // When the style-set aspect was faithfully consumed into visualStyleSet,
+  // drop the raw copy (it would re-export a stale version later). When it
+  // could NOT be consumed, keep it for opaque passthrough.
+  const otherAspects: OpaqueAspects[] = getOptionalAspects(cxData).filter(
+    (aspect) =>
+      parsedStyleSet === undefined ||
+      Object.keys(aspect)[0] !== CY_WEB_VISUAL_STYLES_ASPECT_TAG,
+  )
 
   const undoRedoStack = {
     undoStack: [],
@@ -65,6 +83,7 @@ export const createCyNetworkFromCx2 = (
     nodeTable,
     edgeTable,
     visualStyle,
+    visualStyleSet,
     networkViews: [networkView],
     networkAttributes,
     visualStyleOptions,

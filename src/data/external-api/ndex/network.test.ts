@@ -1,14 +1,17 @@
+// @vitest-environment node
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { Cx2 } from '../../../models/CxModel/Cx2'
 import { getNdexClient } from './client'
 import { fetchNdexNetwork, updateNdexNetwork } from './network'
 
 // Mock the NDEx client module
-jest.mock('./client', () => ({
-  getNdexClient: jest.fn(),
+vi.mock('./client', () => ({
+  getNdexClient: vi.fn(),
 }))
 
 describe('fetchNdexNetwork', () => {
-  const mockGetNdexClient = getNdexClient as jest.MockedFunction<
+  const mockGetNdexClient = getNdexClient as import('vitest').MockedFunction<
     typeof getNdexClient
   >
 
@@ -22,7 +25,7 @@ describe('fetchNdexNetwork', () => {
   }
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should fetch a network from NDEx by UUID', async () => {
@@ -31,8 +34,9 @@ describe('fetchNdexNetwork', () => {
     const mockCx2Network = createMockCx2Network()
 
     const mockClient = {
-      getCX2Network: jest.fn().mockResolvedValue(mockCx2Network),
-      setAuthToken: jest.fn(),
+      networks: {
+        getRawCX2Network: vi.fn().mockResolvedValue(mockCx2Network),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -40,7 +44,9 @@ describe('fetchNdexNetwork', () => {
     const result = await fetchNdexNetwork(mockNetworkUuid, mockAccessToken)
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(mockAccessToken, undefined)
-    expect(mockClient.getCX2Network).toHaveBeenCalledWith(mockNetworkUuid)
+    expect(mockClient.networks.getRawCX2Network).toHaveBeenCalledWith(
+      mockNetworkUuid,
+    )
     expect(result).toEqual(mockCx2Network)
   })
 
@@ -49,8 +55,9 @@ describe('fetchNdexNetwork', () => {
     const mockCx2Network = createMockCx2Network()
 
     const mockClient = {
-      getCX2Network: jest.fn().mockResolvedValue(mockCx2Network),
-      setAuthToken: jest.fn(),
+      networks: {
+        getRawCX2Network: vi.fn().mockResolvedValue(mockCx2Network),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -58,7 +65,9 @@ describe('fetchNdexNetwork', () => {
     const result = await fetchNdexNetwork(mockNetworkUuid)
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(undefined, undefined)
-    expect(mockClient.getCX2Network).toHaveBeenCalledWith(mockNetworkUuid)
+    expect(mockClient.networks.getRawCX2Network).toHaveBeenCalledWith(
+      mockNetworkUuid,
+    )
     expect(result).toEqual(mockCx2Network)
   })
 
@@ -67,8 +76,9 @@ describe('fetchNdexNetwork', () => {
     const mockError = new Error('Network not found')
 
     const mockClient = {
-      getCX2Network: jest.fn().mockRejectedValue(mockError),
-      setAuthToken: jest.fn(),
+      networks: {
+        getRawCX2Network: vi.fn().mockRejectedValue(mockError),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -78,7 +88,9 @@ describe('fetchNdexNetwork', () => {
     )
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(undefined, undefined)
-    expect(mockClient.getCX2Network).toHaveBeenCalledWith(mockNetworkUuid)
+    expect(mockClient.networks.getRawCX2Network).toHaveBeenCalledWith(
+      mockNetworkUuid,
+    )
   })
 
   it('should fetch a network with custom NDEx URL', async () => {
@@ -88,8 +100,9 @@ describe('fetchNdexNetwork', () => {
     const mockCx2Network = createMockCx2Network()
 
     const mockClient = {
-      getCX2Network: jest.fn().mockResolvedValue(mockCx2Network),
-      setAuthToken: jest.fn(),
+      networks: {
+        getRawCX2Network: vi.fn().mockResolvedValue(mockCx2Network),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -101,13 +114,15 @@ describe('fetchNdexNetwork', () => {
     )
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(mockAccessToken, mockNdexUrl)
-    expect(mockClient.getCX2Network).toHaveBeenCalledWith(mockNetworkUuid)
+    expect(mockClient.networks.getRawCX2Network).toHaveBeenCalledWith(
+      mockNetworkUuid,
+    )
     expect(result).toEqual(mockCx2Network)
   })
 })
 
 describe('updateNdexNetwork', () => {
-  const mockGetNdexClient = getNdexClient as jest.MockedFunction<
+  const mockGetNdexClient = getNdexClient as import('vitest').MockedFunction<
     typeof getNdexClient
   >
 
@@ -116,7 +131,7 @@ describe('updateNdexNetwork', () => {
   }
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should update a network in NDEx by ID', async () => {
@@ -125,8 +140,9 @@ describe('updateNdexNetwork', () => {
     const mockCx2Network = createMockCx2Network()
 
     const mockClient = {
-      updateNetworkFromRawCX2: jest.fn().mockResolvedValue(undefined),
-      setAuthToken: jest.fn(),
+      networks: {
+        updateNetworkFromRawCX2: vi.fn().mockResolvedValue(undefined),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -134,7 +150,7 @@ describe('updateNdexNetwork', () => {
     await updateNdexNetwork(mockNetworkId, mockCx2Network, mockAccessToken)
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(mockAccessToken, undefined)
-    expect(mockClient.updateNetworkFromRawCX2).toHaveBeenCalledWith(
+    expect(mockClient.networks.updateNetworkFromRawCX2).toHaveBeenCalledWith(
       mockNetworkId,
       mockCx2Network,
     )
@@ -147,8 +163,9 @@ describe('updateNdexNetwork', () => {
     const mockCx2Network = createMockCx2Network()
 
     const mockClient = {
-      updateNetworkFromRawCX2: jest.fn().mockResolvedValue(undefined),
-      setAuthToken: jest.fn(),
+      networks: {
+        updateNetworkFromRawCX2: vi.fn().mockResolvedValue(undefined),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -161,7 +178,7 @@ describe('updateNdexNetwork', () => {
     )
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(mockAccessToken, mockNdexUrl)
-    expect(mockClient.updateNetworkFromRawCX2).toHaveBeenCalledWith(
+    expect(mockClient.networks.updateNetworkFromRawCX2).toHaveBeenCalledWith(
       mockNetworkId,
       mockCx2Network,
     )
@@ -172,8 +189,9 @@ describe('updateNdexNetwork', () => {
     const mockCx2Network = createMockCx2Network()
 
     const mockClient = {
-      updateNetworkFromRawCX2: jest.fn().mockResolvedValue(undefined),
-      setAuthToken: jest.fn(),
+      networks: {
+        updateNetworkFromRawCX2: vi.fn().mockResolvedValue(undefined),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -181,7 +199,7 @@ describe('updateNdexNetwork', () => {
     await updateNdexNetwork(mockNetworkId, mockCx2Network)
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(undefined, undefined)
-    expect(mockClient.updateNetworkFromRawCX2).toHaveBeenCalledWith(
+    expect(mockClient.networks.updateNetworkFromRawCX2).toHaveBeenCalledWith(
       mockNetworkId,
       mockCx2Network,
     )
@@ -193,8 +211,9 @@ describe('updateNdexNetwork', () => {
     const mockError = new Error('Update failed')
 
     const mockClient = {
-      updateNetworkFromRawCX2: jest.fn().mockRejectedValue(mockError),
-      setAuthToken: jest.fn(),
+      networks: {
+        updateNetworkFromRawCX2: vi.fn().mockRejectedValue(mockError),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -204,7 +223,7 @@ describe('updateNdexNetwork', () => {
     ).rejects.toThrow('Update failed')
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(undefined, undefined)
-    expect(mockClient.updateNetworkFromRawCX2).toHaveBeenCalledWith(
+    expect(mockClient.networks.updateNetworkFromRawCX2).toHaveBeenCalledWith(
       mockNetworkId,
       mockCx2Network,
     )

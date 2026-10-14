@@ -1,11 +1,13 @@
-import { createFuseIndex, filterColumns, runSearch } from './searchUtil'
+// @vitest-environment node
+import { beforeEach, describe, expect, it } from 'vitest'
+
 import {
-  Table,
   Column,
-  ValueTypeName,
+  Table,
   ValueType,
+  ValueTypeName,
 } from '../../../models/TableModel'
-import { Operator } from '../../../models/FilterModel/Search'
+import { createFuseIndex, filterColumns, runSearch } from './searchUtil'
 
 // to run these: npx jest src/components/ToolBar/Search/SearchUtils.test.ts
 

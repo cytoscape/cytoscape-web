@@ -9,7 +9,6 @@
 {
   "ndexBaseUrl": "idekerlab.ndexbio.org",
   "options": {
-    "debug": true
   },
   "keycloakConfig": {
     "url": "https://test.ndexbio.org/auth2",

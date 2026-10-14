@@ -27,6 +27,12 @@ export const SearchOperatorSelector = (): JSX.Element => {
         name="operator-selector-group"
         value={options.operator}
         onChange={handleChange}
+        sx={{
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-start',
+        }}
       >
         <FormControlLabel
           value="AND"

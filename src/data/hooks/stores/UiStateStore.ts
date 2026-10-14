@@ -1,8 +1,12 @@
+/**
+ * @deprecated The Module Federation exposure of this store (cyweb/UiStateStore) is deprecated for external apps.
+ * This store is still actively used internally by the host application — it is NOT being removed.
+ * External apps should use the App API (e.g., `cyweb/NetworkApi`) instead of importing this store directly.
+ * This cyweb/UiStateStore Module Federation export will be removed after 2 release cycles.
+ */
 import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
-import { putUiStateToDb } from '../../db'
-import { toPlainObject } from '../../db/serialization'
 import { IdType } from '../../../models/IdType'
 import { TableType } from '../../../models/StoreModel/TableStoreModel'
 import { UiStateStore } from '../../../models/StoreModel/UiStateStoreModel'
@@ -15,6 +19,52 @@ import {
   TableDisplayConfiguration,
   VisualStyleOptions,
 } from '../../../models/VisualStyleModel/VisualStyleOptions'
+import {
+  saveTabViewState,
+  withoutTabViewState,
+} from '@/data/tabState/tabViewState'
+import { putUiStateToDb } from '../../db'
+import { toPlainObject } from '../../db/serialization'
+import { isHydrating } from './hydrationContext'
+import { scheduleWrite } from './persistenceScheduler'
+
+/** Coalescer key for the single shared `uiState` row. */
+const UI_STATE_WRITE_KEY = 'UiState'
+
+/**
+ * Persist UI state, splitting it by ownership.
+ *
+ * Per-tab view state (panels, active tab indices, transient dialogs) goes to
+ * this tab's sessionStorage; only genuinely shared fields — column widths,
+ * visual style options, custom tab names — reach the IndexedDB row that all
+ * tabs read. See `src/data/tabState/tabViewState.ts` for why the split lives here
+ * rather than in the cross-tab hydration path.
+ *
+ * The IndexedDB half goes through the 300 ms write coalescer. It used to run
+ * inside the Immer producer, so every setter paid a whole-row `toPlainObject`
+ * on the main thread — the last un-coalesced full-row write in the
+ * persistence layer, and slow enough that callers avoided the persisting
+ * setters altogether (see #685).
+ *
+ * `scheduleWrite` runs its callback at flush time, so the callback reads the
+ * committed store state instead of the `ui` handed in here: that argument is
+ * derived from the Immer draft, whose proxies are revoked once the producer
+ * returns.
+ */
+const persistUiState = (ui: Ui) => {
+  saveTabViewState(ui)
+  if (isHydrating()) return
+
+  scheduleWrite(UI_STATE_WRITE_KEY, 'UiStateStore', async () => {
+    // Re-checked at flush time: a cross-tab hydration may have started
+    // during the delay, and writing back mid-hydration echoes another
+    // tab's state into the shared row.
+    if (isHydrating()) return
+    await putUiStateToDb(
+      toPlainObject(withoutTabViewState(useUiStateStore.getState().ui)),
+    )
+  })
+}
 
 export const DEFAULT_UI_STATE = {
   panels: {
@@ -44,13 +94,13 @@ export const serializeColumnUIKey = UiImpl.serializeColumnUIKey
 export const deserializeColumnUIKey = UiImpl.deserializeColumnUIKey
 
 export const useUiStateStore = create(
-  immer<UiStateStore>((set, get) => ({
+  immer<UiStateStore>((set) => ({
     ui: DEFAULT_UI_STATE,
     setUi: (ui: Ui) => {
       set((state) => {
         state.ui = ui
         // Convert Immer proxy to plain object before saving
-        void putUiStateToDb(toPlainObject(ui))
+        persistUiState(ui)
         return state
       })
     },
@@ -124,7 +174,7 @@ export const useUiStateStore = create(
         )
 
         // Convert Immer proxy to plain object before saving
-        void putUiStateToDb(toPlainObject(nextUi))
+        persistUiState(nextUi)
 
         state.ui = nextUi
         return state
@@ -142,7 +192,7 @@ export const useUiStateStore = create(
         )
 
         // Convert Immer proxy to plain object before saving
-        void putUiStateToDb(toPlainObject(nextUi))
+        persistUiState(nextUi)
 
         state.ui = nextUi
         return state
@@ -157,7 +207,7 @@ export const useUiStateStore = create(
         )
 
         // Convert Immer proxy to plain object before saving
-        void putUiStateToDb(toPlainObject(nextUi))
+        persistUiState(nextUi)
 
         state.ui = nextUi
         return state
@@ -172,7 +222,7 @@ export const useUiStateStore = create(
         )
 
         // Convert Immer proxy to plain object before saving
-        void putUiStateToDb(toPlainObject(nextUi))
+        persistUiState(nextUi)
 
         state.ui = nextUi
         return state
@@ -190,7 +240,7 @@ export const useUiStateStore = create(
         )
 
         // Convert Immer proxy to plain object before saving
-        void putUiStateToDb(toPlainObject(nextUi))
+        persistUiState(nextUi)
 
         state.ui = nextUi
         return state
@@ -199,6 +249,39 @@ export const useUiStateStore = create(
     setCustomNetworkTabName: (rendererId: IdType, name: string) => {
       set((state) => {
         state.ui = UiImpl.setCustomNetworkTabName(state.ui, rendererId, name)
+        return state
+      })
+    },
+    // Remove per-network UI state when a network is deleted. Both
+    // visualStyleOptions and columnUiState are persisted via putUiStateToDb,
+    // so skipping this left orphaned rows in IndexedDB forever
+    // (REVIEW.md round-2 P2, called from the delete orchestrator).
+    // UiImpl.deleteNetworkUiState handles the serialized composite
+    // columnUiState keys correctly.
+    deleteNetworkUiState: (networkId: IdType) => {
+      set((state) => {
+        const nextUi = UiImpl.deleteNetworkUiState(state.ui, networkId)
+
+        // Convert Immer proxy to plain object before saving
+        persistUiState(nextUi)
+
+        state.ui = nextUi
+        return state
+      })
+    },
+    deleteAllNetworkUiState: () => {
+      set((state) => {
+        const nextUi = {
+          ...state.ui,
+          visualStyleOptions: {},
+          tableUi: { ...state.ui.tableUi, columnUiState: {} },
+          activeNetworkView: '',
+        }
+
+        // Convert Immer proxy to plain object before saving
+        persistUiState(nextUi)
+
+        state.ui = nextUi
         return state
       })
     },

@@ -3,7 +3,6 @@ import { useQuery } from '@tanstack/react-query'
 import { ReactElement, useContext, useEffect, useRef, useState } from 'react'
 
 import { AppConfigContext } from '../../../AppConfigContext'
-import { logApi, logUi } from '../../../debug'
 import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
 import { useFilterStore } from '../../../data/hooks/stores/FilterStore'
 import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
@@ -13,7 +12,7 @@ import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useUndoStore } from '../../../data/hooks/stores/UndoStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
-import { Aspect } from '../../../models/CxModel/Cx2/Aspect'
+import { logApi, logUi } from '../../../debug'
 import { FilterConfig } from '../../../models/FilterModel'
 import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
 import { IdType } from '../../../models/IdType'
@@ -28,10 +27,18 @@ import { FloatingToolBar } from '../../FloatingToolBar'
 import { MessagePanel } from '../../Messages'
 import { CyjsRenderer } from '../../NetworkPanel/CyjsRenderer'
 import { CirclePackingView } from '../model/CirclePackingView'
-import { FILTER_ASPECT_TAG, FilterAspects } from '../model/FilterAspects'
 import { useSubNetworkStore } from '../store/SubNetworkStore'
-import { createFilterFromAspect } from '../utils/getFilterAspect'
+import {
+  createFilterFromAspect,
+  findFilterAspect,
+} from '../utils/getFilterAspect'
 import { applyCpLayout } from '../utils/hierarchyUtil'
+import { registerFilterConfig } from '../utils/registerFilterConfig'
+import {
+  resolveShownSubNetworkId,
+  resolveSubNetworkPanelView,
+  SubNetworkPanelView,
+} from '../utils/resolveShownSubNetworkId'
 import {
   fetchNdexSubnetworkByQuery,
   NdexSubnetworkFetchError,
@@ -76,8 +83,9 @@ export const SubNetworkPanel = ({
   interactionNetworkHost,
 }: SubNetworkPanelProps): ReactElement => {
   const filterConfigs = useFilterStore((state) => state.filterConfigs)
-  const addFilterConfig = useFilterStore((state) => state.addFilterConfig)
   const [isProcessing, setIsProcessing] = useState<boolean>(false)
+  // Processing the fetched data ended without rendering it
+  const [renderFailed, setRenderFailed] = useState<boolean>(false)
 
   // Tracking processing progress
   const [processingProgress, setProcessingProgress] = useState<number>(0)
@@ -123,6 +131,14 @@ export const SubNetworkPanel = ({
   // For converting node names to node ids
   const tables = useTableStore((state) => state.tables)
 
+  // Background color of the subnetwork, from its visual style
+  const queryNetworkStyle: VisualStyle | undefined = useVisualStyleStore(
+    (state) => state.visualStyles[queryNetworkId],
+  )
+  const bgColor = queryNetworkStyle?.networkBackgroundColor?.defaultValue as
+    | string
+    | undefined
+
   // Selected nodes in the sub network
   const selectedNodes: IdType[] = useSubNetworkStore(
     (state) => state.selectedNodes,
@@ -152,6 +168,7 @@ export const SubNetworkPanel = ({
         logUi.info(`[${SubNetworkPanel.name}]: Other model: ${type}`)
       }
     })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- cpViewId is only a set-guard, written nowhere else
   }, [hierarchyViewModels])
 
   const queryNetworkViewModel: NetworkView | undefined =
@@ -163,6 +180,10 @@ export const SubNetworkPanel = ({
   const setSelectedHierarchyNodeNames: (
     selectedHierarchyNodeNames: string[],
   ) => void = useSubNetworkStore((state) => state.setSelectedHierarchyNodes)
+
+  const setCurrentSubNetworkId: (id: IdType) => void = useSubNetworkStore(
+    (state) => state.setCurrentSubNetworkId,
+  )
 
   useEffect(() => {
     // Convert node IDs to names
@@ -191,6 +212,7 @@ export const SubNetworkPanel = ({
       // Clear selection in the circle packing view
       setSelectedHierarchyNodeNames([])
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- selection change is the trigger; a tables dep would churn on every table write
   }, [queryNetworkViewModel?.selectedNodes])
 
   /**
@@ -230,6 +252,7 @@ export const SubNetworkPanel = ({
 
       exclusiveSelect(queryNetworkId, toBeSelected, [])
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires only on CP selection; other values are fresh at trigger time
   }, [selectedNodes])
 
   // For applying default layout
@@ -272,13 +295,16 @@ export const SubNetworkPanel = ({
     interactionSourceUrl = ndexBaseUrl
   }
 
+  // Convert query nodeIds to comma-separated string for the NDEx interconnect API
+  const queryString = query?.nodeIds?.join(',') ?? ''
+
   const result = useQuery({
     queryKey: [
       hierarchyId,
       interactionSourceUrl,
       rootNetworkId,
       subsystemNodeId,
-      query,
+      queryString,
       interactionNetworkId,
     ],
     queryFn: async ({ queryKey }) => {
@@ -289,7 +315,7 @@ export const SubNetworkPanel = ({
     },
     refetchOnReconnect: 'always',
   })
-  const { data, error, isFetching } = result
+  const { data, error, isFetching, isPaused } = result
 
   if (error !== undefined && error !== null) {
     logApi.error(`[${SubNetworkPanel.name}]: Failed to get network`, error)
@@ -302,13 +328,33 @@ export const SubNetworkPanel = ({
     setActiveNetworkView(queryNetworkId)
   }
 
+  // Only the subnetwork fetched for the selected subsystem counts as shown, not
+  // one left over while the next loads or after its fetch failed (#758).
+  const shownSubNetworkId: IdType = resolveShownSubNetworkId({
+    queryNetworkId,
+    fetchedNetworkId: data?.network.id,
+    hasError: error !== undefined && error !== null,
+    // Offline, the query is paused rather than failed (#758)
+    isLoading: isFetching || isProcessing || isPaused,
+    hasViewModel: getViewModel(queryNetworkId) !== undefined,
+  })
+
   useEffect(() => {
-    const viewModel: NetworkView | undefined = getViewModel(queryNetworkId)
-    if (viewModel === undefined) {
-      return
+    if (shownSubNetworkId !== '') {
+      prevQueryNetworkIdRef.current = shownSubNetworkId
     }
-    prevQueryNetworkIdRef.current = queryNetworkId
-  }, [queryNetworkId])
+    // Publish the shown subnetwork so the hierarchy-side share URL can capture
+    // it even when the user hasn't clicked the subnetwork pane (CW-654).
+    setCurrentSubNetworkId(shownSubNetworkId)
+  }, [shownSubNetworkId, setCurrentSubNetworkId])
+
+  useEffect(() => {
+    // Clear the shown subnetwork when the viewer unmounts so it can't leak into
+    // an unrelated network's share URL.
+    return () => {
+      setCurrentSubNetworkId('')
+    }
+  }, [setCurrentSubNetworkId])
 
   const updateNetworkView = (): string => {
     if (data === undefined) {
@@ -522,7 +568,9 @@ export const SubNetworkPanel = ({
     if (interactionNetworkId === undefined || interactionNetworkId === '') {
       setProcessingStage('Applying layout...')
 
-      // Make layout application async
+      // Make layout application async. A throwing or rejecting engine
+      // (an app engine rejects on any failure) must still settle the
+      // promise, or this pipeline would hang with isRunning stuck.
       const applyLayoutAsync = (): Promise<void> => {
         return new Promise((resolve) => {
           const afterLayout = (
@@ -532,15 +580,31 @@ export const SubNetworkPanel = ({
             setIsRunning(false)
             resolve()
           }
+          const onFailure = (error: unknown): void => {
+            logUi.error(
+              `[SubNetworkPanel]: Layout '${defaultLayout.displayName}' failed on ${network.id}:`,
+              error,
+            )
+            setIsRunning(false)
+            resolve()
+          }
 
           if (network !== undefined && engine !== undefined) {
             setIsRunning(true)
-            engine.apply(
-              network.nodes,
-              network.edges,
-              afterLayout,
-              defaultLayout,
-            )
+            try {
+              const result = engine.apply(
+                network.nodes,
+                network.edges,
+                afterLayout,
+                defaultLayout,
+                network.id,
+              )
+              if (result instanceof Promise) {
+                result.catch(onFailure)
+              }
+            } catch (error) {
+              onFailure(error)
+            }
           } else {
             resolve()
           }
@@ -553,6 +617,10 @@ export const SubNetworkPanel = ({
     setProcessingProgress(100)
   }
 
+  // Process fetched network data once per arrival, keyed on `data` only.
+  // registerNetwork/updateNetworkView are recreated every render and the
+  // pipeline triggers renders itself, so adding them would re-run the heavy
+  // registration/layout work in a loop.
   useEffect(() => {
     if (data === undefined) {
       return
@@ -562,6 +630,7 @@ export const SubNetworkPanel = ({
     const processData = async () => {
       try {
         setIsProcessing(true)
+        setRenderFailed(false)
         setProcessingProgress(0)
         setProcessingStage('Initializing...')
 
@@ -573,30 +642,21 @@ export const SubNetworkPanel = ({
 
         // Check optional data
         if (otherAspects !== undefined && otherAspects.length > 0) {
-          const filterConfigAspect = otherAspects.find(
-            (aspect: Aspect) => aspect[FILTER_ASPECT_TAG],
-          )
+          const filterConfigAspect = findFilterAspect(otherAspects)
           if (filterConfigAspect !== undefined) {
-            const filterAspects: FilterAspects =
-              filterConfigAspect[FILTER_ASPECT_TAG]
+            // Untrusted: createFilterFromAspect validates it (#767)
+            const filterAspects: unknown = filterConfigAspect.value
 
             const sourceNetworkId: IdType = network.id
-            const filterConfigs: FilterConfig[] = createFilterFromAspect(
-              sourceNetworkId,
-              filterAspects,
-              nodeTable,
-              edgeTable,
-            )
-
-            // Process filters in chunks to avoid UI blocking
-            const batchSize = 5
-            for (let i = 0; i < filterConfigs.length; i += batchSize) {
-              const batch = filterConfigs.slice(i, i + batchSize)
-              batch.forEach((filterConfig: FilterConfig) => {
-                addFilterConfig(filterConfig)
-              })
-
-              await yieldToUI()
+            const filterConfig: FilterConfig | undefined =
+              createFilterFromAspect(
+                sourceNetworkId,
+                filterAspects,
+                nodeTable,
+                edgeTable,
+              )
+            if (filterConfig !== undefined) {
+              registerFilterConfig(filterConfig)
             }
           }
         }
@@ -631,11 +691,19 @@ export const SubNetworkPanel = ({
         //   return
         // }
 
-        updateNetworkView()
+        if (updateNetworkView() === '') {
+          setRenderFailed(true)
+        }
 
         setProcessingProgress(100)
         setProcessingStage('Complete')
         await yieldToUI()
+      } catch (error) {
+        logUi.error(
+          `[${SubNetworkPanel.name}]: Failed to render the subnetwork`,
+          error,
+        )
+        setRenderFailed(true)
       } finally {
         setIsProcessing(false)
       }
@@ -648,9 +716,18 @@ export const SubNetworkPanel = ({
     return () => {
       setIsProcessing(false)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once per fetched data; other deps would re-run the pipeline
   }, [data])
 
-  if (isFetching || isProcessing) {
+  const view: SubNetworkPanelView = resolveSubNetworkPanelView({
+    isFetching,
+    isProcessing,
+    hasError: error !== undefined && error !== null,
+    renderFailed,
+    shownSubNetworkId,
+  })
+
+  if (view === 'processing' || view === 'loading') {
     return (
       <MessagePanel
         message={
@@ -658,13 +735,13 @@ export const SubNetworkPanel = ({
             ? `Rendering network: (${processingProgress}%)`
             : `Loading network data:`
         }
-        subMessage={isProcessing ? `${processingStage}` : `(${queryNetworkId})`}
+        subMessage={isProcessing ? `${processingStage}` : `(${subNetworkName})`}
         showProgress={isProcessing}
       />
     )
   }
 
-  if (error !== undefined && error !== null) {
+  if (view === 'error') {
     let errorMessage: string
     // Check if it's our custom error type, or if the error has a cause that is our custom error
     let ndexError: NdexSubnetworkFetchError | null = null
@@ -690,47 +767,94 @@ export const SubNetworkPanel = ({
     return <MessagePanel message={errorMessage} showProgress={false} />
   }
 
+  if (view === 'renderFailed') {
+    return (
+      <MessagePanel
+        message={`The subsystem with id ${subsystemNodeId} could not be rendered`}
+        showProgress={false}
+      />
+    )
+  }
+
   if (queryNetwork === undefined) {
     return <MessagePanel message={`Select a subsystem`} />
   }
 
   const filterConfig: FilterConfig | undefined = filterConfigs[queryNetwork.id]
-
   const displayMode: DisplayMode =
     filterConfig?.displayMode ?? DisplayMode.SELECT
+  const isActive: boolean = activeNetworkView === queryNetwork.id
 
   return (
     <Box
       data-testid="subnetwork-panel"
       sx={{
-        boxSizing: 'border-box',
         height: '100%',
         width: '100%',
-        border:
-          activeNetworkView === queryNetwork.id
-            ? '3px solid orange'
-            : '3px solid transparent',
+        display: 'flex',
+        flexDirection: 'column',
+        flexGrow: 1,
+        flexShrink: 0,
+        alignItems: 'flex-start',
+        p: 0,
+        m: 0,
       }}
-      onClick={handleClick}
     >
-      <Typography
+      <Box
         sx={{
-          position: 'absolute',
-          bottom: '0.5em',
-          left: '0.5em',
-          zIndex: 100,
-          backgroundColor: 'transparent',
+          boxSizing: 'border-box',
+          minHeight: 0,
+          flexGrow: 1,
+          width: '100%',
+          position: 'relative',
+          // Focus border (visible when active)
+          border: (theme) =>
+            isActive
+              ? `2px solid ${theme.palette.primary.main}`
+              : '2px solid transparent',
+          backgroundColor: bgColor !== undefined ? bgColor : '#ffffff',
         }}
-        variant={'subtitle1'}
       >
-        Subsystem: {subNetworkName}
-      </Typography>
-      <CyjsRenderer network={queryNetwork} displayMode={displayMode} />
-      <FloatingToolBar
-        rendererId={DefaultRenderer.id}
-        targetNetworkId={queryNetworkId ?? undefined}
-        networkLabel={networkLabel}
-      />
+        <Box
+          sx={{
+            boxSizing: 'border-box',
+            height: '100%',
+            width: '100%',
+            // Gap so the border color does not disappear on darker backgrounds
+            border: (theme) =>
+              isActive
+                ? `1px solid ${theme.palette.common.white}`
+                : '1px solid transparent',
+          }}
+          onClick={handleClick}
+        >
+          <CyjsRenderer network={queryNetwork} displayMode={displayMode} />
+          <FloatingToolBar
+            rendererId={DefaultRenderer.id}
+            targetNetworkId={queryNetworkId ?? undefined}
+            networkLabel={networkLabel}
+          />
+        </Box>
+      </Box>
+      <Box
+        sx={{
+          width: '100%',
+          p: 1,
+          flexGrow: 0,
+          backgroundColor: (theme) => theme.palette.background.default,
+        }}
+      >
+        <Typography
+          variant="subtitle2"
+          sx={{
+            width: '100%',
+            textAlign: 'center',
+            color: (theme) => theme.palette.text.secondary,
+          }}
+        >
+          {subNetworkName}
+        </Typography>
+      </Box>
     </Box>
   )
 }

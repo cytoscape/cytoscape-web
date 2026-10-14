@@ -1,4 +1,3 @@
-import { MantineProvider, NumberInput } from '@mantine/core'
 import {
   Box,
   Checkbox,
@@ -8,9 +7,10 @@ import {
   MenuItem,
   Select,
   Slider,
+  TextField,
   Typography,
 } from '@mui/material'
-//@ts-expect-error
+//@ts-expect-error no type declarations for file-saver
 import { saveAs } from 'file-saver'
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 
@@ -18,15 +18,40 @@ import { useRendererFunctionStore } from '../../../../data/hooks/stores/Renderer
 import { useUiStateStore } from '../../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
 import { IdType } from '../../../../models/IdType'
-import {
-  ExportFormRef,
-  ExportImageFormatProps,
-} from './ExportNetworkToImageMenuItem'
+import { ExportFormRef, ExportImageFormatProps } from './ExportImage'
 
 const MIN_ZOOM = 0
 const MAX_ZOOM = 5
 
 type UnitType = 'pixels' | 'inches'
+
+// Clamping to min/max lives in the change handlers, matching the previous
+// clamp-on-change behavior.
+const NumberField = (props: {
+  label: string
+  value: number
+  min: number
+  max: number
+  step?: number
+  onChange: (value: string | number) => void
+}): JSX.Element => (
+  <TextField
+    type="number"
+    size="small"
+    label={props.label}
+    value={props.value}
+    inputProps={{ min: props.min, max: props.max, step: props.step ?? 1 }}
+    onChange={(e) => {
+      // A cleared field emits '' which Number() reads as 0, collapsing the
+      // size and zoom; keep the previous value until a number is typed.
+      if (e.target.value === '') {
+        return
+      }
+      props.onChange(e.target.value)
+    }}
+    sx={{ width: 110, mr: 1.25 }}
+  />
+)
 
 const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
   (props, ref) => {
@@ -72,6 +97,9 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
       ((widthFunction?.() / dpi) * MAX_ZOOM).toFixed(2),
     )
 
+    // One-shot init of the size fields when the renderer functions become
+    // available. zoom/dpi are the init defaults here; adding them as deps
+    // would re-run this and overwrite the values the change handlers just set.
     useEffect(() => {
       if (widthFunction && heightFunction) {
         setCustomWidth(Math.round(widthFunction() * zoom))
@@ -79,6 +107,7 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
         setWidthInches(parseFloat((widthFunction() / dpi).toFixed(2)))
         setHeightInches(parseFloat((heightFunction() / dpi).toFixed(2)))
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- init keyed on renderer-function availability only
     }, [widthFunction, heightFunction])
 
     useImperativeHandle(ref, () => ({
@@ -110,7 +139,8 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
       )
     }
 
-    const handleWidthChange = (e: number) => {
+    const handleWidthChange = (value: string | number) => {
+      const e = Number(value)
       const newWidth = Math.round(Math.max(0, Math.min(e, maxWidth)))
       const newZoom = newWidth / (widthFunction?.() ?? 1)
       const newHeight = Math.round((heightFunction?.() ?? 0) * newZoom)
@@ -122,7 +152,8 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
       setHeightInches(parseFloat((newHeight / dpi).toFixed(2)))
     }
 
-    const handleHeightChange = (e: number) => {
+    const handleHeightChange = (value: string | number) => {
+      const e = Number(value)
       const newHeight = Math.round(Math.max(0, Math.min(e, maxHeight)))
       const newZoom = newHeight / (heightFunction?.() ?? 1)
       const newWidth = Math.round((widthFunction?.() ?? 0) * newZoom)
@@ -163,7 +194,8 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
       setDpi(newDpi)
     }
 
-    const handleWidthInchesChange = (e: number) => {
+    const handleWidthInchesChange = (value: string | number) => {
+      const e = Number(value)
       const newWidthInches = parseFloat(
         Math.max(0, Math.min(e, maxWidthInches)).toFixed(2),
       )
@@ -178,7 +210,8 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
       setHeightInches(parseFloat((newHeight / dpi).toFixed(2)))
     }
 
-    const handleHeightInchesChange = (e: number) => {
+    const handleHeightInchesChange = (value: string | number) => {
+      const e = Number(value)
       const newHeightInches = parseFloat(
         Math.max(0, Math.min(e, maxHeightInches)).toFixed(2),
       )
@@ -194,162 +227,152 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
     }
 
     return (
-      <MantineProvider>
-        <Box
-          sx={{
-            mt: 1,
-            height: 425,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          <Box sx={{ mb: 0.25 }}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={fullBg}
-                  onChange={(e) => setFullBg(e.target.checked)}
-                />
-              }
-              label="Export full network image"
-            />
-          </Box>
-          <Box sx={{ mb: 1 }}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={transparentBg}
-                  onChange={(e) => setTransparentBg(e.target.checked)}
-                />
-              }
-              label="Transparent background"
-            />
-          </Box>
-          <Box sx={{ mb: 1 }}>
-            <Typography variant="subtitle1" style={{ margin: '0 0 5px 0' }}>
-              Units
-            </Typography>
-            <Select
-              size="small"
-              labelId="label"
-              value={unit}
-              onChange={handleUnitChange}
-            >
-              <MenuItem value={'pixels' as UnitType}>Pixels</MenuItem>
-              <MenuItem value={'inches' as UnitType}>Inches</MenuItem>
-            </Select>
-          </Box>
-          <Box sx={{ mb: 1.5 }}>
-            <Typography variant="subtitle1" style={{ margin: '0 0 7px 0' }}>
-              Size
-            </Typography>
-            {unit === 'pixels' ? (
-              <Box sx={{ display: 'flex' }}>
-                <NumberInput
-                  clampBehavior="blur"
-                  mr={10}
-                  w={100}
-                  min={0}
-                  max={maxWidth}
-                  value={customWidth}
-                  onChange={handleWidthChange}
-                  label="Width (pixels)"
-                />{' '}
-                <NumberInput
-                  clampBehavior="blur"
-                  w={100}
-                  mr={10}
-                  min={0}
-                  max={maxHeight}
-                  value={customHeight}
-                  onChange={handleHeightChange}
-                  label="Height (pixels)"
-                />
-              </Box>
-            ) : (
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <NumberInput
-                  clampBehavior="blur"
-                  w={100}
-                  mr={10}
-                  min={0}
-                  max={maxWidthInches}
-                  value={widthInches}
-                  onChange={handleWidthInchesChange}
-                  label="Width (inches)"
-                />
-                <NumberInput
-                  clampBehavior="blur"
-                  w={100}
-                  mr={10}
-                  min={0}
-                  max={maxHeightInches}
-                  value={heightInches}
-                  onChange={handleHeightInchesChange}
-                  label="Height (inches)"
-                />
-                <FormControl sx={{ ml: 1, mt: 3 }}>
-                  <InputLabel id="dpi-label">DPI</InputLabel>
-                  <Select
-                    defaultValue={72}
-                    labelId="dpi-label"
-                    label="DPI"
-                    sx={{ width: 100 }}
-                    size="small"
-                    onChange={(e) => handleDpiChange(e.target.value as number)}
-                  >
-                    <MenuItem value={72}>72</MenuItem>
-                    <MenuItem value={100}>100</MenuItem>
-                    <MenuItem value={150}>150</MenuItem>
-                    <MenuItem value={300}>300</MenuItem>
-                    <MenuItem value={600}>600</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
-            )}
-          </Box>
-          <Box>
-            <Box>Zoom</Box>
-            <Slider
-              sx={{ ml: 1.5, width: '85%' }}
-              value={zoom}
-              min={MIN_ZOOM}
-              max={MAX_ZOOM}
-              step={0.1}
-              valueLabelDisplay="auto"
-              onChange={handleZoomChange}
-              marks={[
-                {
-                  value: MIN_ZOOM,
-                  label: '0%',
-                },
-                {
-                  value: 1,
-                  label: '100%',
-                },
-                {
-                  value: 2,
-                  label: '200%',
-                },
-                {
-                  value: 3,
-                  label: '300%',
-                },
-                {
-                  value: 4,
-                  label: '400%',
-                },
-                {
-                  value: MAX_ZOOM,
-                  label: '500%',
-                },
-              ]}
-            />
-          </Box>
+      <Box
+        sx={{
+          mt: 1,
+          height: 425,
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <Box sx={{ mb: 0.25 }}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={fullBg}
+                onChange={(e) => setFullBg(e.target.checked)}
+              />
+            }
+            label="Export full network image"
+          />
         </Box>
-      </MantineProvider>
+        <Box sx={{ mb: 1 }}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={transparentBg}
+                onChange={(e) => setTransparentBg(e.target.checked)}
+              />
+            }
+            label="Transparent background"
+          />
+        </Box>
+        <Box sx={{ mb: 1 }}>
+          <Typography variant="subtitle1" style={{ margin: '0 0 5px 0' }}>
+            Units
+          </Typography>
+          <Select
+            size="small"
+            labelId="label"
+            value={unit}
+            onChange={handleUnitChange}
+          >
+            <MenuItem value={'pixels' as UnitType}>Pixels</MenuItem>
+            <MenuItem value={'inches' as UnitType}>Inches</MenuItem>
+          </Select>
+        </Box>
+        <Box sx={{ mb: 1.5 }}>
+          <Typography variant="subtitle1" style={{ margin: '0 0 7px 0' }}>
+            Size
+          </Typography>
+          {unit === 'pixels' ? (
+            <Box sx={{ display: 'flex', pt: 0.5 }}>
+              <NumberField
+                min={0}
+                max={maxWidth}
+                value={customWidth}
+                onChange={handleWidthChange}
+                label="Width (pixels)"
+              />
+              <NumberField
+                min={0}
+                max={maxHeight}
+                value={customHeight}
+                onChange={handleHeightChange}
+                label="Height (pixels)"
+              />
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', alignItems: 'center', pt: 0.5 }}>
+              <NumberField
+                min={0}
+                max={maxWidthInches}
+                step={0.01}
+                value={widthInches}
+                onChange={handleWidthInchesChange}
+                label="Width (inches)"
+              />
+              <NumberField
+                min={0}
+                max={maxHeightInches}
+                step={0.01}
+                value={heightInches}
+                onChange={handleHeightInchesChange}
+                label="Height (inches)"
+              />
+              <FormControl sx={{ ml: 1, mt: 3 }}>
+                <InputLabel id="dpi-label">DPI</InputLabel>
+                <Select
+                  defaultValue={72}
+                  labelId="dpi-label"
+                  label="DPI"
+                  sx={{ width: 100 }}
+                  size="small"
+                  onChange={(e) => handleDpiChange(e.target.value as number)}
+                >
+                  <MenuItem value={72}>72</MenuItem>
+                  <MenuItem value={100}>100</MenuItem>
+                  <MenuItem value={150}>150</MenuItem>
+                  <MenuItem value={300}>300</MenuItem>
+                  <MenuItem value={600}>600</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+          )}
+        </Box>
+        <Box>
+          <Box>Zoom</Box>
+          <Slider
+            sx={{ ml: 1.5, width: '85%' }}
+            value={zoom}
+            min={MIN_ZOOM}
+            max={MAX_ZOOM}
+            step={0.1}
+            valueLabelDisplay="auto"
+            onChange={handleZoomChange}
+            marks={[
+              {
+                value: MIN_ZOOM,
+                label: '0%',
+              },
+              {
+                value: 1,
+                label: '100%',
+              },
+              {
+                value: 2,
+                label: '200%',
+              },
+              {
+                value: 3,
+                label: '300%',
+              },
+              {
+                value: 4,
+                label: '400%',
+              },
+              {
+                value: MAX_ZOOM,
+                label: '500%',
+              },
+            ]}
+          />
+        </Box>
+      </Box>
     )
   },
 )
+
+PngExportForm.displayName = 'PngExportForm'
 
 export default PngExportForm

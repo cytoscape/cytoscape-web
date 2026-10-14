@@ -1,7 +1,6 @@
 import {
   Button,
   CircularProgress,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
@@ -10,11 +9,12 @@ import {
 import { ReactElement, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 
-import { useDeleteCyNetwork } from '../data/hooks/useDeleteCyNetwork'
+import { CyDialog } from '@/components/CyDialog'
 import { useUrlNavigation } from '../data/hooks/navigation/useUrlNavigation'
 import { useCredentialStore } from '../data/hooks/stores/CredentialStore'
 import { useNetworkSummaryStore } from '../data/hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '../data/hooks/stores/WorkspaceStore'
+import { useDeleteCyNetwork } from '../data/hooks/useDeleteCyNetwork'
 import { waitSeconds } from '../utils/waitSeconds'
 
 export const UpdateNetworkDialog = (props: {
@@ -43,12 +43,9 @@ export const UpdateNetworkDialog = (props: {
   const location = useLocation()
 
   return (
-    <Dialog
+    <CyDialog
       data-testid="update-network-dialog"
       sx={{ zIndex: 10000 }}
-      onClose={() => {
-        props.onClose()
-      }}
       open={props.open}
     >
       <DialogTitle>Networks out of sync</DialogTitle>
@@ -66,19 +63,12 @@ export const UpdateNetworkDialog = (props: {
           onClick={() => {
             props.onClose()
           }}
-          color="primary"
         >
           Cancel
         </Button>
         <Button
           data-testid="update-network-dialog-update"
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-          }}
+          variant="contained"
           disabled={!authenticated || loading}
           onClick={async () => {
             setLoading(true)
@@ -100,6 +90,6 @@ export const UpdateNetworkDialog = (props: {
           Update
         </Button>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }

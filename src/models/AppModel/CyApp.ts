@@ -1,5 +1,4 @@
 import { AppStatus } from './AppStatus'
-import { ComponentMetadata } from './ComponentMetadata'
 
 /**
  * Base interface to define the app object
@@ -18,8 +17,20 @@ export interface CyApp {
   // Description of the app
   description?: string
 
-  // Name of components to be exposed via Module Federation
-  components: ComponentMetadata[]
+  /**
+   * Semantic version of the app (e.g. '1.2.0').
+   *
+   * Recommended: import from the app's own package.json so this value
+   * stays in sync with the published npm version automatically:
+   *
+   *   import packageJson from '../package.json'
+   *   const { version } = packageJson        // destructure to avoid webpack warning
+   *   export const MyApp: CyApp = { ..., version }
+   *
+   * Requires `resolveJsonModule: true` in tsconfig.json
+   * (already enabled in all example apps).
+   */
+  version?: string
 
   // Current status of the app. Default is 'active', which is set by the host
   status?: AppStatus

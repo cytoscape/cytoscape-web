@@ -31,7 +31,8 @@ export const deleteRenderer = (
   state: RendererState,
   rendererId: string,
 ): RendererState => {
-  const { [rendererId]: deleted, ...restRenderers } = state.renderers
+  const restRenderers = { ...state.renderers }
+  delete restRenderers[rendererId]
   return {
     ...state,
     renderers: restRenderers,
@@ -70,4 +71,3 @@ export const getViewport = (
 ): ViewPort | undefined => {
   return state.viewports[rendererId]?.[networkId]
 }
-

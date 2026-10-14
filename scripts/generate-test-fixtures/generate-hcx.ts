@@ -1,4 +1,4 @@
-#!/usr/bin/env ts-node
+#!/usr/bin/env tsx
 /**
  * Script to generate HCX (Hierarchical Cell eXchange) test fixtures for Cytoscape Web testing.
  *
@@ -6,11 +6,12 @@
  *   npx tsx scripts/generate-test-fixtures/generate-hcx.ts --type with-filter-configs --output test/fixtures/hcx/with-filter-configs.valid.cx2
  *   npx tsx scripts/generate-test-fixtures/generate-hcx.ts --type with-interaction-uuid --interaction-uuid abc-123 --output test/fixtures/hcx/with-interaction-uuid.valid.cx2
  *   npx tsx scripts/generate-test-fixtures/generate-hcx.ts --type invalid --error missing-metadata --output test/fixtures/hcx/missing-metadata.invalid.cx2
+ *   npx tsx scripts/generate-test-fixtures/generate-hcx.ts --type tree --nodes 15 --output test/fixtures/hcx/valid/tree.valid.cx2
  */
 
 import { writeFileSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
-import { generateValidCx2 } from './generate-cx2'
+import { generateValidCx2, moveStatusLast } from './generate-cx2'
 
 // Default values
 const DEFAULT_NODES = 50
@@ -23,6 +24,7 @@ type HcxType =
   | 'without-interaction-uuid'
   | 'fully-compliant'
   | 'with-warnings'
+  | 'tree'
   | 'invalid'
 
 type ErrorType =
@@ -30,6 +32,7 @@ type ErrorType =
   | 'invalid-schema-version'
   | 'invalid-filter-config'
   | 'not-dag'
+  | 'not-dag-single-interaction'
 
 interface GenerateHcxOptions {
   nodeCount: number
@@ -124,7 +127,9 @@ function generateHcxMembers(nodeIndex: number, totalNodes: number): number[] {
     const memberCount = Math.floor(Math.random() * 5) + 2
     const members: number[] = []
     for (let i = 0; i < memberCount; i++) {
-      const memberId = Math.floor(totalNodes / 2) + (nodeIndex * memberCount + i) % Math.floor(totalNodes / 2)
+      const memberId =
+        Math.floor(totalNodes / 2) +
+        ((nodeIndex * memberCount + i) % Math.floor(totalNodes / 2))
       if (memberId < totalNodes) {
         members.push(memberId)
       }
@@ -138,12 +143,7 @@ function generateHcxMembers(nodeIndex: number, totalNodes: number): number[] {
  * Generate a valid HCX network
  */
 function generateValidHcx(options: GenerateHcxOptions): any[] {
-  const {
-    nodeCount,
-    edgeCount,
-    withFilterWidgets,
-    schemaVersion,
-  } = options
+  const { nodeCount, edgeCount, withFilterWidgets, schemaVersion } = options
 
   // Start with a base CX2 network
   const cx2 = generateValidCx2({
@@ -197,7 +197,58 @@ function generateValidHcx(options: GenerateHcxOptions): any[] {
     cx2.push(generateFilterWidgets())
   }
 
-  return cx2
+  // Keep the status aspect last, otherwise the aspect after it is dropped on read
+  return moveStatusLast(cx2)
+}
+
+/**
+ * Replace the edges of a valid HCX with a single-rooted binary tree whose edges
+ * all share one interaction type: node k's parent is node (k - 1) / 2, and each
+ * edge runs parent -> child. Leaves get a gene each and parents the union of
+ * their children's. Unlike the other valid HCX fixtures (random edges,
+ * several interaction types), this is a hierarchy the Cell View (circle
+ * packing) can actually draw.
+ */
+function toTree(hcx: any[]): any[] {
+  const tree = JSON.parse(JSON.stringify(hcx))
+  const nodes = tree.find((a: any) => a.nodes)?.nodes ?? []
+  const edgesAspect = tree.find((a: any) => a.edges)
+  if (edgesAspect === undefined) {
+    return tree
+  }
+
+  // Member lists as in real HCX data: each leaf subsystem gets a gene of its
+  // own, and each parent holds the union of its children's genes. (The Cell
+  // View needs a list on every subsystem; generateHcxMembers only gives random
+  // ones to the first half of the nodes.) A parent's index is always below its
+  // children's, so walking backwards sees every child before its parent.
+  const childMembers: number[][] = nodes.map(() => [])
+  for (let index = nodes.length - 1; index >= 0; index--) {
+    const members =
+      childMembers[index].length > 0
+        ? [...new Set(childMembers[index])].sort((a, b) => a - b)
+        : [nodes.length + index]
+    nodes[index].v['HCX::members'] = members
+    if (index > 0) {
+      childMembers[Math.floor((index - 1) / 2)].push(...members)
+    }
+  }
+
+  edgesAspect.edges = nodes.slice(1).map((node: any, index: number) => ({
+    id: index,
+    s: nodes[Math.floor(index / 2)].id,
+    t: node.id,
+    v: { interaction: 'contains', weight: 0 },
+  }))
+
+  const edgesMeta = tree
+    .find((a: any) => a.metaData)
+    ?.metaData.find((m: any) => m.name === 'edges')
+  if (edgesMeta !== undefined) {
+    edgesMeta.elementCount = edgesAspect.edges.length
+    edgesMeta.idCounter = Math.max(edgesAspect.edges.length - 1, 0)
+  }
+  return tree
 }
 
 /**
@@ -222,19 +273,26 @@ function generateInvalidHcx(errorType: ErrorType, baseNetwork?: any[]): any {
     case 'missing-metadata':
       // Remove HCX metadata
       const noMetadata = JSON.parse(JSON.stringify(baseNetwork))
-      const networkAttrsIndex = noMetadata.findIndex((a: any) => a.networkAttributes)
+      const networkAttrsIndex = noMetadata.findIndex(
+        (a: any) => a.networkAttributes,
+      )
       if (networkAttrsIndex >= 0) {
         delete noMetadata[networkAttrsIndex].networkAttributes[0].ndexSchema
-        delete noMetadata[networkAttrsIndex].networkAttributes[0]['HCX::modelFileCount']
+        delete noMetadata[networkAttrsIndex].networkAttributes[0][
+          'HCX::modelFileCount'
+        ]
       }
       return noMetadata
 
     case 'invalid-schema-version':
       // Wrong schema version
       const wrongVersion = JSON.parse(JSON.stringify(baseNetwork))
-      const networkAttrsIndex2 = wrongVersion.findIndex((a: any) => a.networkAttributes)
+      const networkAttrsIndex2 = wrongVersion.findIndex(
+        (a: any) => a.networkAttributes,
+      )
       if (networkAttrsIndex2 >= 0) {
-        wrongVersion[networkAttrsIndex2].networkAttributes[0].ndexSchema = 'hierarchy_v2.0'
+        wrongVersion[networkAttrsIndex2].networkAttributes[0].ndexSchema =
+          'hierarchy_v2.0'
       }
       return wrongVersion
 
@@ -269,6 +327,22 @@ function generateInvalidHcx(errorType: ErrorType, baseNetwork?: any[]): any {
         cyclic[edgesIndex].edges[2].t = 0
       }
       return cyclic
+
+    case 'not-dag-single-interaction':
+      // Same cycles as 'not-dag', but every edge shares one interaction type.
+      // The interaction heuristic therefore cannot detect this hierarchy, so it
+      // exercises the graceful failure of the circle packing builder itself
+      // (issue #630).
+      const uniformCyclic = generateInvalidHcx('not-dag', baseNetwork)
+      const uniformEdgesIndex = uniformCyclic.findIndex((a: any) => a.edges)
+      if (uniformEdgesIndex >= 0) {
+        uniformCyclic[uniformEdgesIndex].edges.forEach((edge: any) => {
+          if (edge.v !== undefined) {
+            edge.v.interaction = 'interacts'
+          }
+        })
+      }
+      return uniformCyclic
 
     default:
       return baseNetwork
@@ -384,22 +458,26 @@ function main() {
     const withInteractionUUID =
       args.type === 'with-interaction-uuid' ||
       args.type === 'fully-compliant' ||
-      (args.interactionUUID !== undefined)
+      args.interactionUUID !== undefined
 
     const withFilterWidgets =
-      args.type === 'with-filter-configs' ||
-      args.type === 'fully-compliant'
+      args.type === 'with-filter-configs' || args.type === 'fully-compliant'
 
     hcx = generateValidHcx({
       nodeCount: args.nodeCount || DEFAULT_NODES,
       edgeCount: args.edgeCount || DEFAULT_EDGES,
       withInteractionUUID,
-      interactionUUID: args.interactionUUID || (withInteractionUUID ? 'test-uuid-123' : undefined),
+      interactionUUID:
+        args.interactionUUID ||
+        (withInteractionUUID ? 'test-uuid-123' : undefined),
       interactionHost: args.interactionHost,
       modelFileCount: args.modelFileCount || 1,
       schemaVersion: args.schemaVersion || 'hierarchy_v0.1',
       withFilterWidgets,
     })
+    if (args.type === 'tree') {
+      hcx = toTree(hcx)
+    }
   }
 
   // Ensure output directory exists
@@ -413,7 +491,13 @@ function main() {
   if (args.type !== 'invalid') {
     console.log(`  Type: ${args.type}`)
     console.log(`  Nodes: ${args.nodeCount || DEFAULT_NODES}`)
-    console.log(`  Edges: ${args.edgeCount || DEFAULT_EDGES}`)
+    console.log(
+      `  Edges: ${
+        args.type === 'tree'
+          ? Math.max((args.nodeCount || DEFAULT_NODES) - 1, 0)
+          : args.edgeCount || DEFAULT_EDGES
+      }`,
+    )
   } else {
     console.log(`  Error type: ${args.error}`)
   }
@@ -422,4 +506,3 @@ function main() {
 if (require.main === module) {
   main()
 }
-

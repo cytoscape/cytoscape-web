@@ -1,11 +1,5 @@
-import {
-  Box,
-  Button,
-  Checkbox,
-  DialogActions,
-  FormControlLabel,
-} from '@mui/material'
-//@ts-expect-error
+import { Box, Checkbox, FormControlLabel } from '@mui/material'
+//@ts-expect-error no type declarations for file-saver
 import { saveAs } from 'file-saver'
 import { forwardRef, useImperativeHandle, useState } from 'react'
 
@@ -13,10 +7,7 @@ import { useRendererFunctionStore } from '../../../../data/hooks/stores/Renderer
 import { useUiStateStore } from '../../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
 import { IdType } from '../../../../models/IdType'
-import {
-  ExportFormRef,
-  ExportImageFormatProps,
-} from './ExportNetworkToImageMenuItem'
+import { ExportFormRef, ExportImageFormatProps } from './ExportImage'
 
 const SvgExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
   (props, ref) => {
@@ -69,5 +60,7 @@ const SvgExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
     )
   },
 )
+
+SvgExportForm.displayName = 'SvgExportForm'
 
 export default SvgExportForm

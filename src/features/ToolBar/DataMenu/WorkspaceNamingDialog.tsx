@@ -1,6 +1,5 @@
 import {
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
@@ -9,11 +8,12 @@ import {
 } from '@mui/material'
 import { useState } from 'react'
 
+import { CyDialog } from '@/components/CyDialog'
 import { fetchMyNdexWorkspaces } from '../../../data/external-api/ndex'
-import { logUi } from '../../../debug'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { useSaveWorkspace } from '../../../data/hooks/useSaveWorkspaceToNDEx'
 import { useWorkspaceData } from '../../../data/hooks/useWorkspaceData'
+import { logUi } from '../../../debug'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
 
@@ -164,18 +164,7 @@ export const WorkspaceNamingDialog = ({
 
   return (
     <>
-      <Dialog
-        data-testid="workspace-naming-dialog"
-        onClick={(e) => {
-          e.stopPropagation()
-          e.preventDefault()
-        }}
-        onKeyDown={(e) => {
-          e.stopPropagation()
-        }}
-        open={openDialog}
-        onClose={onClose}
-      >
+      <CyDialog data-testid="workspace-naming-dialog" open={openDialog}>
         <DialogTitle>Save Workspace</DialogTitle>
         <DialogContent sx={{ width: '300px' }}>
           <TextField
@@ -203,30 +192,22 @@ export const WorkspaceNamingDialog = ({
         <DialogActions>
           <Button
             data-testid="workspace-naming-cancel-button"
+            variant="outlined"
             onClick={onClose}
-            color="primary"
           >
             Cancel
           </Button>
           <Button
             data-testid="workspace-naming-save-button"
+            variant="contained"
             disabled={workspaceName.trim().length === 0}
             onClick={onSave}
-            sx={{
-              color: '#FFFFFF',
-              backgroundColor: '#337ab7',
-              '&:hover': {
-                backgroundColor: '#285a9b',
-              },
-              '&:disabled': {
-                backgroundColor: 'transparent',
-              },
-            }}
+            sx={{ px: 4 }}
           >
             Save
           </Button>
         </DialogActions>
-      </Dialog>
+      </CyDialog>
       <ConfirmationDialog
         title="Confirm Workspace Overwrite"
         message="A workspace with the same name already exists in NDEx. Do you want to overwrite it?"

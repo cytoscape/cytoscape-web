@@ -6,11 +6,5 @@
     "esModuleInterop": true,
     "moduleResolution": "node",
     "resolveJsonModule": true
-  },
-  "ts-node": {
-    "esm": false,
-    "compilerOptions": {
-      "module": "CommonJS"
-    }
   }
 }

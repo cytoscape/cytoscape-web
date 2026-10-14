@@ -32,7 +32,7 @@ export function NodeBorderLinePicker(props: {
   onValueChange: (borderLine: NodeBorderLineType) => void
   closePopover: (reason: string) => void
 }): React.ReactElement {
-  const { onValueChange, currentValue } = props
+  const { currentValue } = props
   const sortedBorderLines = Object.values(NodeBorderLineType).sort()
 
   const [localValue, setLocalValue] = React.useState(
@@ -54,7 +54,10 @@ export function NodeBorderLinePicker(props: {
         {sortedBorderLines.map((borderLine: NodeBorderLineType) => (
           <Box
             sx={{
-              color: localValue === borderLine ? 'blue' : 'black',
+              color: (theme) =>
+                localValue === borderLine
+                  ? theme.palette.primary.main
+                  : theme.palette.text.secondary,
               fontWeight: localValue === borderLine ? 'bold' : 'normal',
               p: 1,
               '&:hover': { cursor: 'pointer' },
@@ -80,9 +83,11 @@ export function NodeBorderLinePicker(props: {
           </Box>
         ))}
       </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1 }}
+      >
         <Button
-          color="primary"
+          variant="outlined"
           onClick={() => {
             props.closePopover('cancel')
             setLocalValue(currentValue ?? NodeBorderLineType.Solid)
@@ -91,13 +96,7 @@ export function NodeBorderLinePicker(props: {
           Cancel
         </Button>
         <Button
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-          }}
+          variant="contained"
           onClick={() => {
             props.onValueChange(localValue)
             props.closePopover('confirm')

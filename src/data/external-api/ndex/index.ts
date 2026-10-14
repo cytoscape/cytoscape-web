@@ -31,6 +31,9 @@ export {
   updateNdexWorkspace,
 } from './workspace'
 
+// User operations
+export { fetchNdexUserName } from './user'
+
 // Permission operations
 export { getNdexNetworkPermission, hasNdexEditPermission } from './permissions'
 
@@ -40,3 +43,15 @@ export {
   TimeOutErrorIndicator,
   TimeOutErrorMessage,
 } from './errors'
+
+// File/folder operations
+export type { NdexFileItem, NdexFileSearchResult } from './files'
+export {
+  enrichFileItemsWithSummaries,
+  fetchFolderContents,
+  fetchFolderInfo,
+  getNetworkIdForFileItem,
+  getUnavailableShortcutReason,
+  resolveShortcut,
+  searchNdexFiles,
+} from './files'

@@ -1,3 +1,6 @@
+// @vitest-environment node
+import { describe, expect, it } from 'vitest'
+
 import { NodeLabelPositionType } from '../VisualPropertyValue'
 import {
   computeNodeLabelPosition,
@@ -96,8 +99,20 @@ describe('nodeLabelPositionMap', () => {
         const result = computeNodeLabelPosition(position)
         expect(result.horizontalAlign).toBeDefined()
         expect(result.verticalAlign).toBeDefined()
-        expect(['left', 'center', 'right']).toContain(result.horizontalAlign)
-        expect(['top', 'center', 'bottom']).toContain(result.verticalAlign)
+        expect([
+          'left',
+          'center',
+          'right',
+          'left-inside',
+          'right-inside',
+        ]).toContain(result.horizontalAlign)
+        expect([
+          'top',
+          'center',
+          'bottom',
+          'top-inside',
+          'bottom-inside',
+        ]).toContain(result.verticalAlign)
       })
     })
   })
@@ -191,16 +206,17 @@ describe('nodeLabelPositionMap', () => {
     })
 
     it('should map top-left orientation correctly', () => {
-      const position = orientationToPositionMap[NodeLabelOrientationType.TopLeft]
+      const position =
+        orientationToPositionMap[NodeLabelOrientationType.TopLeft]
       expect(position.HORIZONTAL_ANCHOR).toBe('left')
       expect(position.VERTICAL_ANCHOR).toBe('top')
     })
 
     it('should map bottom-right orientation correctly', () => {
-      const position = orientationToPositionMap[NodeLabelOrientationType.BottomRight]
+      const position =
+        orientationToPositionMap[NodeLabelOrientationType.BottomRight]
       expect(position.HORIZONTAL_ANCHOR).toBe('right')
       expect(position.VERTICAL_ANCHOR).toBe('bottom')
     })
   })
 })
-

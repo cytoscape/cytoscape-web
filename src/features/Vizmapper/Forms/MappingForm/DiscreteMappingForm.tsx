@@ -13,7 +13,6 @@ import {
   TableHead,
   TableRow,
   Tooltip,
-  Typography,
 } from '@mui/material'
 import * as React from 'react'
 
@@ -65,9 +64,11 @@ export function DiscreteMappingForm(props: {
 
   const toggleSelected = (key: ValueType, selected: boolean): void => {
     const nextDiscreteMappingEntries = new Set(selectedDiscreteMappingEntries)
-    selected
-      ? nextDiscreteMappingEntries.delete(key)
-      : nextDiscreteMappingEntries.add(key)
+    if (selected) {
+      nextDiscreteMappingEntries.delete(key)
+    } else {
+      nextDiscreteMappingEntries.add(key)
+    }
     setSelectedDiscreteMappingEntries(nextDiscreteMappingEntries)
   }
 
@@ -306,17 +307,8 @@ export function DiscreteMappingForm(props: {
         <Box>
           <Button
             size="small"
-            sx={{
-              color: '#F50157',
-              backgroundColor: 'transparent',
-              '&:hover': {
-                color: '#FFFFFF',
-                backgroundColor: '#F50157',
-              },
-              '&:disabled': {
-                backgroundColor: 'transparent',
-              },
-            }}
+            variant="outlined"
+            color="error"
             disabled={selectedDiscreteMappingEntries.size === 0}
             onClick={() => {
               postEdit(

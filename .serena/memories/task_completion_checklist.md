@@ -1,36 +1,25 @@
 # Task Completion Checklist
 
-When completing a coding task in this project, follow these steps:
+Commands live in AGENTS.md §5 — the single source of truth. This file is the
+order to run them in, not a second copy of them.
 
-## 1. Lint
-```bash
-npm run lint
-```
-Fix any errors, especially import sorting (`eslint-plugin-simple-import-sort` is at error level).
+When completing a coding task in this project:
 
-## 2. Format
-```bash
-npm run format
-```
-Ensures Prettier formatting is applied (no semicolons, single quotes, trailing commas, 2-space indent).
+1. **Lint + unit tests** — `npm run test:checks:quiet` (runs both in parallel).
+   Always the `:quiet` variants: they print failures and a summary only, so
+   passing tests do not flood your context.
+2. **Format** — `npm run format` (Prettier over `src/`).
+3. **E2E, if the UI changed** — `npm run e2e:spec -- <spec-name>`, scoped to the
+   specs covering the change. Never the whole suite locally: CI owns it, and
+   both the deny list and `scripts/run-playwright.mjs` refuse it.
+4. **Build, if the change could affect bundling** — `npm run build`.
+5. **Docs, if behavior changed** — update the feature's `<Feature>_docs/` and
+   any spec that describes it. After adding, moving or renaming a file, grep
+   for its old path and fix the lists that name it (AGENTS.md §6,
+   `docs/README.md`, `docs/guides/README.md`).
 
-## 3. Run Unit Tests
-```bash
-npm run test:unit
-```
-Jest tests with jsdom environment. Tests are co-located with source files.
-
-## 4. Run E2E Tests (if UI changed)
-```bash
-npm run test:e2e
-```
-Playwright tests against localhost:5500.
-
-## 5. Build Check (if needed)
-```bash
-npm run build
-```
-Ensures production build succeeds (import sort errors will fail the build).
+Regression test first, then the fix: prove the test fails, apply the fix, prove
+it passes.
 
 ## Key Reminders
 - Do NOT use `console.log` — use the structured `debug` logger from `src/debug.ts`
@@ -41,4 +30,4 @@ Ensures production build succeeds (import sort errors will fail the build).
 - `core/` files in `src/app-api/core/` must have **zero React imports**
 - App API core functions must return `ApiResult<T>`, never throw
 - Public API types must be JSON-serializable (`Record` not `Map`, `T[]` not `Set`)
-- CLAUDE.md is the source of truth; AGENTS.md is auto-generated (`npm run sync:agents`)
+- AGENTS.md is the source of truth; CLAUDE.md includes it with `@AGENTS.md`

@@ -68,23 +68,22 @@ export const LoginPanel = (props: LoginPanelProps): ReactElement => {
           {`You are logged in as ${userId}`}
         </Typography>
       </CardContent>
-      <CardActions disableSpacing>
-        <Button
-          data-testid="login-panel-logout-button"
-          variant="outlined"
-          startIcon={<LogoutIcon />}
-          onClick={props.handleLogout}
-        >
-          Logout
-        </Button>
+      <CardActions>
         <Button
           data-testid="login-panel-close-button"
-          sx={{ marginLeft: '0.5em' }}
           variant="outlined"
           startIcon={<CloseIcon />}
           onClick={props.handleClose}
         >
           Close
+        </Button>
+        <Button
+          data-testid="login-panel-logout-button"
+          variant="contained"
+          startIcon={<LogoutIcon />}
+          onClick={props.handleLogout}
+        >
+          Logout
         </Button>
       </CardActions>
     </Card>

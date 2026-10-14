@@ -1,4 +1,5 @@
-import { PublishedWithChanges, WarningAmberOutlined } from '@mui/icons-material'
+import PublishedWithChanges from '@mui/icons-material/PublishedWithChanges'
+import WarningAmberOutlined from '@mui/icons-material/WarningAmberOutlined'
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
 import {
   Box,
@@ -9,14 +10,11 @@ import {
 } from '@mui/material'
 import { ReactElement, useState } from 'react'
 
-import { useMessageStore } from '../../../../data/hooks/stores/MessageStore'
 import { useNetworkSummaryStore } from '../../../../data/hooks/stores/NetworkSummaryStore'
 import { useTableStore } from '../../../../data/hooks/stores/TableStore'
 import { IdType } from '../../../../models/IdType'
-import { MessageSeverity } from '../../../../models/MessageModel'
-import { HcxMetaTag } from '../../model/HcxMetaTag'
-import { validateHcx } from '../../model/impl/hcxValidators'
 import { useHcxValidatorStore } from '../../store/HcxValidatorStore'
+import { validateAndRecordHcx } from '../../utils/validateAndRecordHcx'
 import { HcxValidationWarningsDialog } from './HcxValidationWarningsDialog'
 
 export interface HcxValidationButtonGroupProps {
@@ -35,35 +33,25 @@ export const HcxValidationButtonGroup = (
     (state) => state.validationResults,
   )
   const validationResult = validationResults?.[id]
-  const setValidationResult = useHcxValidatorStore(
-    (state) => state.setValidationResult,
-  )
-  const addMessage = useMessageStore((state) => state.addMessage)
 
   const summary = useNetworkSummaryStore((state) => state.summaries[id])
   const table = useTableStore((state) => state.tables[id])
   const nodeTable = table?.nodeTable
+  const edgeTable = table?.edgeTable
 
   const revalidateHcx = (): void => {
-    const version =
-      summary?.properties?.find(
-        (p) => p.predicateString === HcxMetaTag.ndexSchema,
-      )?.value ?? ''
-    const validationRes = validateHcx(version as string, summary, nodeTable)
-
-    if (!validationRes.isValid) {
-      addMessage({
-        message: `This network is not a valid HCX network.  Some features may not work properly.`,
-        duration: 5000,
-        severity: MessageSeverity.WARNING,
-      })
-    } else {
+    const validationRes = validateAndRecordHcx(
+      id,
+      summary,
+      nodeTable,
+      edgeTable,
+    )
+    if (validationRes.isValid) {
       setShowValidationSuccess(true)
       setTimeout(() => {
         setShowValidationSuccess(false)
       }, 4000)
     }
-    setValidationResult(id, validationRes)
   }
 
   if (validationResult === undefined) {
@@ -80,16 +68,22 @@ export const HcxValidationButtonGroup = (
           </Typography>
         </Box>
       ) : null}
-      {validationResult !== undefined && !validationResult.isValid ? (
+      {!validationResult.isValid || validationResult.warnings.length > 0 ? (
         <ButtonGroup size="small" variant="outlined">
-          <Tooltip title="This HCX network is not valid.  Click to learn how you can fix it.">
+          <Tooltip
+            title={
+              validationResult.isValid
+                ? 'This HCX network has warnings.  Click to see what they affect.'
+                : 'This HCX network is not valid.  Click to learn how you can fix it.'
+            }
+          >
             <IconButton
               data-testid="hcx-validation-warnings-button"
               onClick={() => setShowValidationResults(true)}
             >
               <WarningAmberOutlined
                 sx={{ width: 22, height: 22 }}
-                color="error"
+                color={validationResult.isValid ? 'warning' : 'error'}
               />
             </IconButton>
           </Tooltip>

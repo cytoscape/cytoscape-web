@@ -52,7 +52,7 @@ The application uses a URL structure of `/:workspaceId/networks/:networkId?param
 - **Search Bar**: Visible with placeholder "Search current network"
 - **Login Button**: "Click to login" button visible in top right
 - **Left Panel**: Workspace panel with WORKSPACE and STYLE tabs visible
-- **Center Panel**: Network view area (initially shows "Loading network data..." during initialization, then "No network selected" if no network is loaded)
+- **Center Panel**: Network view area (initially shows "Loading network data..." during initialization, then the empty-workspace call to action — "Welcome to Cytoscape Web" with Open Sample Networks / Import from file / Load from NDEx / Take a tour — if the workspace holds no networks; "Select a network" if it has networks but none is current)
 - **Bottom Panel**: Table browser with Nodes, Edges, and Network tabs
 - **Workspace Info**: Displays "Untitled Workspace" and creation timestamp
 

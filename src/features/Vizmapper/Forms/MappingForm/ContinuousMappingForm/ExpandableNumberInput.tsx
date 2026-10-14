@@ -1,25 +1,57 @@
-import { MantineProvider, NumberInput } from '@mantine/core'
-import { Box, Button,ButtonBase, Popover } from '@mui/material'
+import {
+  Box,
+  Button,
+  ButtonBase,
+  InputAdornment,
+  Popover,
+  TextField,
+} from '@mui/material'
 import React from 'react'
 
 // A button that displays a number input value, the user can click this button to open up a dropdown form that allows the user to input a number and cancel/confirm
+//
+// CW-591: `displayMultiplier`/`suffix`/`displayDecimals` let a caller show the
+// value in a different unit than it is stored in (e.g. opacity is stored as
+// 0-1 but shown/edited as 0-100%). The value/onConfirm/min/max props always use
+// the underlying (stored) unit; only the display and the in-popover editor are
+// scaled.
 export function ExpandableNumberInput(props: {
   value: number
   onConfirm: (value: number) => void
   min?: number
   max?: number
   disabled?: boolean
+  displayMultiplier?: number
+  suffix?: string
+  displayDecimals?: number
 }): React.ReactElement {
   const { value, onConfirm } = props
+  const displayMultiplier = props.displayMultiplier ?? 1
+  const suffix = props.suffix ?? ''
+  const displayDecimals = props.displayDecimals ?? 2
+  const toDisplay = (v: number): number => v * displayMultiplier
+  const fromDisplay = (v: number): number => v / displayMultiplier
   const [localValue, setLocalValue] = React.useState<number>(value as number)
+  // The raw text the user is typing. Bound to the field so partial input
+  // ("-", "1.", "0.05") survives: binding the field to the parsed number
+  // rewrote it on every keystroke and made decimals unenterable.
+  const [draft, setDraft] = React.useState<string>(
+    String(toDisplay(value as number)),
+  )
   const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(null)
 
   React.useEffect(() => {
     setLocalValue(value as number)
-  }, [value])
+    setDraft(String(toDisplay(value as number)))
+    // toDisplay is derived from displayMultiplier, which is covered below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- toDisplay is recreated every render
+  }, [value, displayMultiplier])
+
+  const draftIsNumber = Number.isFinite(Number.parseFloat(draft))
 
   const handleCancel = () => {
     setLocalValue(value as number)
+    setDraft(String(toDisplay(value as number)))
     hidePopover()
   }
 
@@ -63,26 +95,33 @@ export function ExpandableNumberInput(props: {
   }
 
   return (
-    <MantineProvider>
-      <ButtonBase disabled={props.disabled} onClick={(e) => showPopover(e)}>
+    <>
+      <ButtonBase
+        disabled={props.disabled}
+        onClick={(e) => showPopover(e)}
+        sx={{
+          fontSize: '0.875rem',
+          textAlign: 'right',
+        }}
+      >
         <Box
           sx={{
             width: 45,
             height: 25,
             zIndex: 4,
-
             '&:hover': {
               pointer: 'cursor',
             },
             overflow: 'hidden',
-            border: props.disabled ? 'none' : '1px solid #d6d6d6',
+            border: (theme) =>
+              props.disabled ? 'none' : `1px solid ${theme.palette.divider}`,
             borderRadius: '4px',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
           }}
         >
-          {value.toFixed(2)}
+          {`${toDisplay(value).toFixed(displayDecimals)}${suffix}`}
         </Box>
       </ButtonBase>
 
@@ -99,35 +138,65 @@ export function ExpandableNumberInput(props: {
           horizontal: 'center',
         }}
       >
-        <NumberInput
-          error={errorMsg(localValue)}
-          min={props.min}
-          max={props.max}
-          value={localValue as number}
-          // decimalScale={2}
-          onChange={(newValue) => {
-            if (typeof newValue === 'string') {
-              setLocalValue(0)
-            } else {
-              setLocalValue(newValue)
+        <TextField
+          type="number"
+          size="small"
+          error={!draftIsNumber || errorMsg(localValue) !== null}
+          helperText={draftIsNumber ? errorMsg(localValue) : 'Enter a number'}
+          value={draft}
+          inputProps={{
+            min: props.min != null ? toDisplay(props.min) : undefined,
+            max: props.max != null ? toDisplay(props.max) : undefined,
+            'aria-label': 'Numeric value',
+          }}
+          InputProps={
+            suffix !== ''
+              ? {
+                  endAdornment: (
+                    <InputAdornment position="end">{suffix}</InputAdornment>
+                  ),
+                }
+              : undefined
+          }
+          onChange={(e) => {
+            setDraft(e.target.value)
+            // Commit only a parsable draft; an intermediate "-" or "1." leaves
+            // localValue at its last good value instead of snapping to 0.
+            const parsed = Number.parseFloat(e.target.value)
+            if (Number.isFinite(parsed)) {
+              setLocalValue(fromDisplay(parsed))
             }
           }}
         />
         <Box
           sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
           }}
         >
-          <Button color="error" onClick={handleCancel}>
+          <Button
+            variant="text"
+            onClick={handleCancel}
+            sx={{
+              border: (theme) => `1px solid ${theme.palette.divider}`,
+              borderRadius: (theme) => theme.spacing(0, 0, 0, 0.5),
+            }}
+          >
             Cancel
           </Button>
-          <Button disabled={!isValid(localValue)} onClick={handleConfirm}>
+          <Button
+            variant="contained"
+            disabled={!draftIsNumber || !isValid(localValue)}
+            onClick={handleConfirm}
+            sx={{
+              border: (theme) => `1px solid ${theme.palette.divider}`,
+              borderRadius: (theme) => theme.spacing(0, 0, 0.5, 0),
+            }}
+          >
             Confirm
           </Button>
         </Box>
       </Popover>
-    </MantineProvider>
+    </>
   )
 }

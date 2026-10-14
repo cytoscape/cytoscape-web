@@ -1,8 +1,8 @@
+// @vitest-environment node
+import { describe, expect, it } from 'vitest'
+
 import { EdgeArrowShapeType } from '../VisualPropertyValue'
-import {
-  isOpenShape,
-  openShapeToFilledShape,
-} from './edgeArrowShapeImpl'
+import { isOpenShape, openShapeToFilledShape } from './edgeArrowShapeImpl'
 
 // to run these: npx jest src/models/VisualStyleModel/impl/edgeArrowShapeImpl.test.ts
 
@@ -100,4 +100,3 @@ describe('EdgeArrowShapeImpl', () => {
     })
   })
 })
-

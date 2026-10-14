@@ -11,7 +11,9 @@ import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
+import { isLLMConfigured, selectApiKey } from '../model/LLMProvider'
 import { useLLMQueryStore } from '../store'
+import { LLM_QUERY_TAB_INDEX } from '@/models/UiModel/impl/panelTabs'
 
 export const LLMQueryResultPanel = (props: {
   height?: number
@@ -35,6 +37,9 @@ export const LLMQueryResultPanel = (props: {
     (state) => state.setActiveNetworkBrowserPanelIndex,
   )
   const LLMApiKey = useLLMQueryStore((state) => state.LLMApiKey)
+  const LLMCustomApiKey = useLLMQueryStore((state) => state.LLMCustomApiKey)
+  const LLMProvider = useLLMQueryStore((state) => state.LLMProvider)
+  const LLMBaseUrl = useLLMQueryStore((state) => state.LLMBaseUrl)
   const LLMModel = useLLMQueryStore((state) => state.LLMModel)
   const LLMTemplate = useLLMQueryStore((state) => state.LLMTemplate)
   const setLLMResult = useLLMQueryStore((state) => state.setLLMResult)
@@ -43,7 +48,7 @@ export const LLMQueryResultPanel = (props: {
   const runLLMQuery = async (): Promise<void> => {
     setLoading(true)
     setPanelState('left', 'open')
-    setActiveNetworkBrowserPanelIndex(2)
+    setActiveNetworkBrowserPanelIndex(LLM_QUERY_TAB_INDEX)
 
     if (localQueryValue === '') {
       addMessage({
@@ -62,17 +67,16 @@ export const LLMQueryResultPanel = (props: {
         severity: MessageSeverity.INFO,
       })
       const message = LLMTemplate.fn(localQueryValue)
-      const LLMResponse = await analyzeSubsystemGeneSet(
-        message,
-        LLMApiKey,
-        LLMModel,
-        false,
-      )
+      const LLMResponse = await analyzeSubsystemGeneSet(message, {
+        apiKey: providerApiKey,
+        baseUrl: LLMBaseUrl,
+        model: LLMModel,
+      })
 
       setLLMResult(LLMResponse)
     } catch (e) {
       addMessage({
-        message: `Error querying LLM model: ${e.message as string}`,
+        message: `Error querying LLM model: ${e instanceof Error ? e.message : String(e)}`,
         duration: 6000,
         severity: MessageSeverity.ERROR,
       })
@@ -82,14 +86,20 @@ export const LLMQueryResultPanel = (props: {
     setLoading(false)
   }
 
-  const disabled = loading || LLMApiKey === '' || localQueryValue === ''
+  // Keys are provider-scoped: the OpenAI key must never reach another endpoint
+  const providerApiKey = selectApiKey(LLMProvider, {
+    openAiKey: LLMApiKey,
+    customKey: LLMCustomApiKey,
+  })
+  const llmConfigured = isLLMConfigured(LLMProvider, providerApiKey, LLMBaseUrl)
+  const disabled = loading || !llmConfigured || localQueryValue === ''
 
   const regenerateResponseButton = disabled ? (
     <Tooltip
       title={
         loading
           ? 'Loading LLM Response'
-          : 'Enter your Open AI API key in the Analysis -> LLM Query Options menu item to run LLM queries'
+          : 'Configure an LLM provider (OpenAI API key, or a local Ollama endpoint) in the Analysis -> LLM Query Options menu item to run LLM queries'
       }
     >
       <Box>

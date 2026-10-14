@@ -1,4 +1,3 @@
-import { ValueTypeName } from '../../../../TableModel'
 import { LayoutAlgorithm, LayoutAlgorithmType } from '../../../LayoutAlgorithm'
 
 export const concentric: LayoutAlgorithm = {
@@ -13,14 +12,15 @@ export const concentric: LayoutAlgorithm = {
     width: 1000,
     spacingFactor: 2,
   },
-  editables: {
-    spacingFactor: {
+  editables: [
+    {
       name: 'spacingFactor',
+      displayName: 'Spacing Factor',
       description:
         'Applies a multiplicative factor (>0) to expand or compress the overall area that the nodes take up',
-      type: ValueTypeName.Double,
-      value: 2,
+      type: 'text',
+      validationType: 'number',
       defaultValue: 2,
     },
-  },
+  ],
 }

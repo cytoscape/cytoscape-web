@@ -1,3 +1,6 @@
+// @vitest-environment node
+import { describe, expect, it } from 'vitest'
+
 import { ValueTypeName } from '../../../models/TableModel'
 import { ColumnAssignmentType } from '../model/ColumnAssignmentType'
 import { validColumnAssignmentTypes } from '../model/impl/CreateNetworkFromTable'

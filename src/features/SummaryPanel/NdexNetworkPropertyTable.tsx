@@ -1,9 +1,12 @@
+import AddIcon from '@mui/icons-material/Add'
 import Delete from '@mui/icons-material/Delete'
+import EditIcon from '@mui/icons-material/Edit'
 import {
   Box,
   Button,
   IconButton,
   Input,
+  InputAdornment,
   MenuItem,
   Paper,
   Select,
@@ -18,8 +21,16 @@ import {
 import React from 'react'
 
 import { NetworkProperty } from '../../models/NetworkSummaryModel'
-import { ValueType,ValueTypeName } from '../../models/TableModel'
-import { serializedStringIsValid } from '../../models/TableModel/impl/valueTypeImpl'
+import { ValueType, ValueTypeName } from '../../models/TableModel'
+import { ValueTypeNameChip } from '../../components/ValueTypeNameChip'
+import { orderedValueTypeNames } from '../../models/TableModel/impl/valueTypeNameDisplay'
+import {
+  deserializeValue,
+  isListType,
+  serializedStringIsValid,
+  serializeValue,
+} from '../../models/TableModel/impl/valueTypeImpl'
+import { ListValueEditorDialog } from '../TableBrowser/ListValueEditorDialog'
 
 interface NetworkPropertyState extends NetworkProperty {
   valueIsValid: boolean
@@ -34,6 +45,12 @@ const NetworkPropertyTable = (props: {
   const [localNetworkProperties, setLocalNetworkProperties] = React.useState<
     NetworkPropertyState[]
   >(networkProperties.map((p) => ({ ...p, valueIsValid: true })))
+
+  // Index of the row whose list value is being edited in the shared dialog
+  // (CW-563); null when the dialog is closed.
+  const [listEditorIndex, setListEditorIndex] = React.useState<number | null>(
+    null,
+  )
 
   React.useEffect(() => {
     setLocalNetworkProperties(
@@ -157,12 +174,23 @@ const NetworkPropertyTable = (props: {
 
   return (
     <Paper
+      variant="filled"
       data-testid="ndex-network-property-table"
-      sx={{ backgroundColor: '#D9D9D9', p: 1, pr: 2, pl: 2 }}
+      sx={{
+        mt: 2,
+        px: 2,
+        py: 1,
+        backgroundColor: (theme) => theme.palette.background.subtle,
+      }}
     >
-      <Typography gutterBottom>Network Properties</Typography>
+      <Typography gutterBottom>Network Properties:</Typography>
       <TableContainer
-        sx={{ height: 300, overflowY: 'scroll' }}
+        sx={{
+          height: 300,
+          overflowY: 'scroll',
+          border: (theme) => `1px solid ${theme.palette.divider}`,
+          boxShadow: 'none',
+        }}
         component={Paper}
       >
         <Table stickyHeader size="small">
@@ -192,10 +220,14 @@ const NetworkPropertyTable = (props: {
                         )
                       }}
                     >
-                      {Object.values(ValueTypeName).map((vtn) => {
+                      {orderedValueTypeNames.map((vtn) => {
                         return (
                           <MenuItem key={vtn} value={vtn}>
-                            {vtn}
+                            <ValueTypeNameChip
+                              type={vtn}
+                              variant="chip-and-text"
+                              showTooltip={false}
+                            />
                           </MenuItem>
                         )
                       })}
@@ -214,17 +246,42 @@ const NetworkPropertyTable = (props: {
                   </TableCell>
                   <TableCell>
                     <Box>
-                      <Input
-                        data-testid={`ndex-network-property-value-input-${index}`}
-                        type="text"
-                        sx={{ fontSize: 14 }}
-                        error={!row.valueIsValid}
-                        size="small"
-                        onChange={(e) => {
-                          updateNetworkPropertyValue(index, e.target.value)
-                        }}
-                        value={`${row.value as string}`}
-                      />
+                      {isListType(row.dataType) ? (
+                        <Input
+                          data-testid={`ndex-network-property-value-input-${index}`}
+                          type="text"
+                          readOnly
+                          sx={{ fontSize: 14, cursor: 'pointer' }}
+                          error={!row.valueIsValid}
+                          size="small"
+                          placeholder="Click to edit list…"
+                          onClick={() => setListEditorIndex(index)}
+                          value={`${row.value as string}`}
+                          endAdornment={
+                            <InputAdornment position="end">
+                              <IconButton
+                                size="small"
+                                aria-label={`edit list ${row.predicateString}`}
+                                onClick={() => setListEditorIndex(index)}
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </InputAdornment>
+                          }
+                        />
+                      ) : (
+                        <Input
+                          data-testid={`ndex-network-property-value-input-${index}`}
+                          type="text"
+                          sx={{ fontSize: 14 }}
+                          error={!row.valueIsValid}
+                          size="small"
+                          onChange={(e) => {
+                            updateNetworkPropertyValue(index, e.target.value)
+                          }}
+                          value={`${row.value as string}`}
+                        />
+                      )}
                     </Box>
                   </TableCell>
                   <TableCell>
@@ -232,7 +289,9 @@ const NetworkPropertyTable = (props: {
                       data-testid={`ndex-network-property-delete-button-${index}`}
                       onClick={() => deleteNetworkProperty(index)}
                     >
-                      <Delete />
+                      <Delete
+                        sx={{ color: (theme) => theme.palette.text.primary }}
+                      />
                     </IconButton>
                   </TableCell>
                 </TableRow>
@@ -245,10 +304,36 @@ const NetworkPropertyTable = (props: {
         data-testid="ndex-network-property-add-button"
         sx={{ mt: 1, width: 'fit-content' }}
         variant="contained"
+        startIcon={<AddIcon />}
         onClick={() => addNetworkProperty()}
       >
         Add new property
       </Button>
+      {listEditorIndex !== null ? (
+        <ListValueEditorDialog
+          open
+          columnName={
+            localNetworkProperties[listEditorIndex].predicateString || 'value'
+          }
+          listType={localNetworkProperties[listEditorIndex].dataType}
+          value={
+            `${localNetworkProperties[listEditorIndex].value as string}`
+              .length > 0
+              ? deserializeValue(
+                  localNetworkProperties[listEditorIndex].dataType,
+                  `${localNetworkProperties[listEditorIndex].value as string}`,
+                )
+              : []
+          }
+          onCancel={() => setListEditorIndex(null)}
+          onSave={(v) => {
+            // NDEx stores property values as serialized strings, so we
+            // re-serialize the edited list before committing (CW-563).
+            updateNetworkPropertyValue(listEditorIndex, serializeValue(v))
+            setListEditorIndex(null)
+          }}
+        />
+      ) : null}
     </Paper>
   )
 }

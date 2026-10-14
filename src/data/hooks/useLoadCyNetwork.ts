@@ -1,9 +1,16 @@
-import { fetchNdexNetwork } from '../external-api/ndex'
-import { getCyNetworkFromDb, getNetworkSummaryFromDb } from '../db'
 import { logApi, logDb } from '../../debug'
 import { Cx2 } from '../../models/CxModel/Cx2'
 import { getCyNetworkFromCx2 } from '../../models/CxModel/impl'
 import { CyNetwork } from '../../models/CyNetworkModel'
+import {
+  CyNetworkCacheMissError,
+  getCyNetworkFromDb,
+  getNetworkSummaryFromDb,
+} from '../db'
+import { fetchNdexNetwork } from '../external-api/ndex'
+import { takePrefetchedCyNetwork } from '@/data/prefetch/networkPrefetch'
+import { getCyNetworkFromStores } from './getCyNetworkFromStores'
+import { useCredentialStore } from './stores/CredentialStore'
 
 /**
  * Hook that returns a function to load a CyNetwork from cache or NDEx.
@@ -25,10 +32,38 @@ export const useLoadCyNetwork = () => {
     try {
       // First, check the local cache
       try {
+        // Boot may have started this exact read at PUBLISH time; consuming it
+        // here saves re-deserializing a large network. Falls through to a
+        // fresh read (and the NDEx path below) on any miss or failure.
+        const prefetched = takePrefetchedCyNetwork(networkId)
+        if (prefetched !== undefined) {
+          return await prefetched
+        }
         const cyNetwork = await getCyNetworkFromDb(networkId)
         return cyNetwork
-      } catch (cacheError) {
-        // Cache miss - check if this is a local-only network
+      } catch (dbError) {
+        // Only a cache miss recovers here. A validation, deserialization or
+        // Dexie failure means the row exists but is unusable, and substituting
+        // the stores (or re-fetching from NDEx) would hide it.
+        if (!(dbError instanceof CyNetworkCacheMissError)) {
+          throw dbError
+        }
+
+        // Cache miss — but a network imported in this session is fully in the
+        // in-memory stores before its debounced IndexedDB persist lands, so
+        // the first load can race the write (#665). Memory is authoritative
+        // exactly when the DB has nothing; when the DB read succeeds above it
+        // stays authoritative (cross-tab sync leaves non-current networks
+        // stale in the stores on purpose).
+        const inMemory = getCyNetworkFromStores(networkId)
+        if (inMemory !== undefined) {
+          logDb.info(
+            `[${loadCyNetwork.name}]: Cache miss for ${networkId}, using the in-memory store copy`,
+          )
+          return inMemory
+        }
+
+        // Not in memory either - check if this is a local-only network
         const summary = await getNetworkSummaryFromDb(networkId)
 
         if (summary && !summary.isNdex) {
@@ -39,11 +74,15 @@ export const useLoadCyNetwork = () => {
           throw new Error(errorMessage)
         }
 
-        // Network is either on NDEx or we don't know - try fetching from NDEx
+        // Network is either on NDEx or we don't know - try fetching from NDEx.
+        // Token is resolved lazily, only for this fetch path, so cached
+        // networks above never wait for the boot SSO check.
         logDb.info(
           `[${loadCyNetwork.name}]: Cache miss for ${networkId}, fetching from NDEx`,
         )
-        const cxData: Cx2 = await fetchNdexNetwork(networkId, accessToken)
+        const token =
+          accessToken ?? (await useCredentialStore.getState().getToken())
+        const cxData: Cx2 = await fetchNdexNetwork(networkId, token)
         // getCyNetworkFromCx2 validates the CX2 data before processing
         return getCyNetworkFromCx2(networkId, cxData)
       }

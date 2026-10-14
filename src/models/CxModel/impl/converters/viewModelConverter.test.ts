@@ -1,3 +1,6 @@
+// @vitest-environment node
+import { describe, expect, it } from 'vitest'
+
 import { Cx2 } from '../../Cx2'
 import { createViewModelFromCX } from './viewModelConverter'
 
@@ -37,11 +40,7 @@ describe('viewModelConverter', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
         {
-          nodes: [
-            { id: 1 },
-            { id: 2 },
-            { id: 3 },
-          ],
+          nodes: [{ id: 1 }, { id: 2 }, { id: 3 }],
         },
         {
           status: [{ success: true }],
@@ -62,10 +61,7 @@ describe('viewModelConverter', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
         {
-          nodes: [
-            { id: 1 },
-            { id: 2 },
-          ],
+          nodes: [{ id: 1 }, { id: 2 }],
         },
         {
           edges: [
@@ -118,10 +114,7 @@ describe('viewModelConverter', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
         {
-          nodes: [
-            { id: 1 },
-            { id: 2 },
-          ],
+          nodes: [{ id: 1 }, { id: 2 }],
         },
         {
           status: [{ success: true }],
@@ -162,9 +155,7 @@ describe('viewModelConverter', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
         {
-          nodes: [
-            { id: 1, x: 10, y: 20 },
-          ],
+          nodes: [{ id: 1, x: 10, y: 20 }],
         },
         {
           status: [{ success: true }],
@@ -181,9 +172,7 @@ describe('viewModelConverter', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
         {
-          nodes: [
-            { id: 1 },
-          ],
+          nodes: [{ id: 1 }],
         },
         {
           status: [{ success: true }],
@@ -201,15 +190,10 @@ describe('viewModelConverter', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
         {
-          nodes: [
-            { id: 1 },
-            { id: 2 },
-          ],
+          nodes: [{ id: 1 }, { id: 2 }],
         },
         {
-          edges: [
-            { id: 1, s: 1, t: 2 },
-          ],
+          edges: [{ id: 1, s: 1, t: 2 }],
         },
         {
           status: [{ success: true }],
@@ -227,10 +211,7 @@ describe('viewModelConverter', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
         {
-          nodes: [
-            { id: 1 },
-            { id: 2 },
-          ],
+          nodes: [{ id: 1 }, { id: 2 }],
         },
         {
           edges: [
@@ -311,4 +292,3 @@ describe('viewModelConverter', () => {
     })
   })
 })
-

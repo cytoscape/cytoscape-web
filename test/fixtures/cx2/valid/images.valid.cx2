@@ -1,0 +1,795 @@
+[
+    {
+        "CXVersion": "2.0",
+        "hasFragments": false
+    },
+    {
+        "metaData": [
+            {
+                "name": "networkAttributes",
+                "elementCount": 1
+            },
+            {
+                "name": "visualProperties",
+                "elementCount": 1
+            },
+            {
+                "name": "visualEditorProperties",
+                "elementCount": 1
+            },
+            {
+                "name": "nodeBypasses",
+                "elementCount": 1
+            },
+            {
+                "name": "attributeDeclarations",
+                "elementCount": 1
+            },
+            {
+                "name": "cyTableColumn",
+                "elementCount": 38
+            },
+            {
+                "name": "edges",
+                "elementCount": 1
+            },
+            {
+                "name": "cyHiddenAttributes",
+                "elementCount": 1
+            },
+            {
+                "name": "nodes",
+                "elementCount": 2
+            }
+        ]
+    },
+    {
+        "attributeDeclarations": [
+            {
+                "nodes": {
+                    "degree.layout": {
+                        "d": "integer"
+                    },
+                    "gal80Rexp": {
+                        "d": "double"
+                    },
+                    "gal1RGsig": {
+                        "d": "double"
+                    },
+                    "Eccentricity": {
+                        "d": "integer"
+                    },
+                    "gal4RGsig": {
+                        "d": "double"
+                    },
+                    "TopologicalCoefficient": {
+                        "d": "double"
+                    },
+                    "SelfLoops": {
+                        "d": "integer"
+                    },
+                    "NumberOfDirectedEdges": {
+                        "d": "integer"
+                    },
+                    "AverageShortestPathLength": {
+                        "d": "double"
+                    },
+                    "selected": {
+                        "d": "boolean"
+                    },
+                    "gal80Rsig": {
+                        "d": "double"
+                    },
+                    "ClosenessCentrality": {
+                        "d": "double"
+                    },
+                    "Degree": {
+                        "d": "integer"
+                    },
+                    "isExcludedFromPaths": {
+                        "d": "boolean"
+                    },
+                    "PartnerOfMultiEdgedNodePairs": {
+                        "d": "integer"
+                    },
+                    "ClusteringCoefficient": {
+                        "d": "double"
+                    },
+                    "Radiality": {
+                        "d": "double"
+                    },
+                    "Stress": {
+                        "d": "long"
+                    },
+                    "BetweennessCentrality": {
+                        "d": "double"
+                    },
+                    "NumberOfUndirectedEdges": {
+                        "d": "integer"
+                    },
+                    "gal1RGexp": {
+                        "d": "double"
+                    },
+                    "name": {
+                        "a": "n",
+                        "d": "string"
+                    },
+                    "COMMON": {
+                        "d": "string"
+                    },
+                    "gal4RGexp": {
+                        "d": "double"
+                    },
+                    "IsSingleNode": {
+                        "d": "boolean"
+                    },
+                    "NeighborhoodConnectivity": {
+                        "d": "double"
+                    }
+                },
+                "networkAttributes": {
+                    "Dataset Name": {
+                        "d": "string"
+                    },
+                    "organism": {
+                        "d": "string"
+                    },
+                    "Dataset URL": {
+                        "d": "string"
+                    },
+                    "publication": {
+                        "d": "string"
+                    },
+                    "name": {
+                        "d": "string"
+                    }
+                },
+                "edges": {
+                    "EdgeBetweenness": {
+                        "d": "double"
+                    },
+                    "interaction": {
+                        "a": "i",
+                        "d": "string"
+                    },
+                    "name": {
+                        "d": "string"
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "networkAttributes": [
+            {
+                "Dataset Name": "Ideker's Yeast Perturbation Network",
+                "organism": "scerevisiae",
+                "Dataset URL": "https://www.ncbi.nlm.nih.gov/pubmed/?term=11340206",
+                "publication": "Integrated Genomic and Proteomic Analyses of a Systematically Perturbed Metabolic Network\nTrey Ideker, Vesteinn Thorsson, Jeffrey A. Ranish, Rowan Christmas, Jeremy Buhler, Jimmy K. Eng, Roger Bumgarner, David R. Goodlett, Ruedi Aebersold, and Leroy Hood\nScience 4 May 2001: 292 (5518), 929-934. [DOI:10.1126/science.292.5518.929]",
+                "name": "galFiltered.sif"
+            }
+        ]
+    },
+    {
+        "nodes": [
+            {
+                "id": 187,
+                "x": 1056.8899685078782,
+                "y": 4242.180221528742,
+                "v": {
+                    "n": "YGR074W",
+                    "degree.layout": 2,
+                    "gal80Rexp": 0.029,
+                    "gal1RGsig": 0.11939,
+                    "Eccentricity": 1,
+                    "gal4RGsig": 0.08221,
+                    "TopologicalCoefficient": 0.0,
+                    "SelfLoops": 0,
+                    "NumberOfDirectedEdges": 2,
+                    "AverageShortestPathLength": 1.0,
+                    "selected": true,
+                    "gal80Rsig": 0.80755,
+                    "ClosenessCentrality": 1.0,
+                    "Degree": 2,
+                    "isExcludedFromPaths": false,
+                    "PartnerOfMultiEdgedNodePairs": 0,
+                    "ClusteringCoefficient": 0.0,
+                    "Radiality": 1.0,
+                    "Stress": 2,
+                    "BetweennessCentrality": 1.0,
+                    "NumberOfUndirectedEdges": 0,
+                    "gal1RGexp": -0.074,
+                    "COMMON": "SMD1",
+                    "gal4RGexp": -0.133,
+                    "IsSingleNode": false,
+                    "NeighborhoodConnectivity": 1.0
+                }
+            },
+            {
+                "id": 189,
+                "x": 986.6507064712246,
+                "y": 4159.146896333429,
+                "v": {
+                    "n": "YGL202W",
+                    "degree.layout": 1,
+                    "gal80Rexp": -0.536,
+                    "gal1RGsig": 4.2677E-7,
+                    "Eccentricity": 2,
+                    "gal4RGsig": 4.2373E-5,
+                    "TopologicalCoefficient": 0.0,
+                    "SelfLoops": 0,
+                    "NumberOfDirectedEdges": 1,
+                    "AverageShortestPathLength": 1.5,
+                    "gal80Rsig": 3.8938E-13,
+                    "ClosenessCentrality": 0.66666667,
+                    "Degree": 1,
+                    "isExcludedFromPaths": false,
+                    "PartnerOfMultiEdgedNodePairs": 0,
+                    "ClusteringCoefficient": 0.0,
+                    "Radiality": 0.75,
+                    "Stress": 0,
+                    "BetweennessCentrality": 0.0,
+                    "NumberOfUndirectedEdges": 0,
+                    "gal1RGexp": -0.305,
+                    "COMMON": "ARO8",
+                    "gal4RGexp": -0.286,
+                    "IsSingleNode": false,
+                    "NeighborhoodConnectivity": 2.0
+                }
+            }
+        ]
+    },
+    {
+        "edges": [
+            {
+                "id": 841,
+                "s": 189,
+                "t": 187,
+                "v": {
+                    "EdgeBetweenness": 4.0,
+                    "name": "YGL202W (pp) YGR074W",
+                    "i": "pp"
+                }
+            }
+        ]
+    },
+    {
+        "visualProperties": [
+            {
+                "default": {
+                    "edge": {
+                        "EDGE_SOURCE_ARROW_SELECTED_PAINT": "#FFFF00",
+                        "EDGE_SOURCE_ARROW_SIZE": 6.0,
+                        "EDGE_LABEL_OPACITY": 1.0,
+                        "EDGE_LABEL_BACKGROUND_OPACITY": 1.0,
+                        "EDGE_TARGET_ARROW_SELECTED_PAINT": "#FFFF00",
+                        "EDGE_TARGET_ARROW_SHAPE": "none",
+                        "EDGE_LABEL_POSITION": {
+                            "JUSTIFICATION": "center",
+                            "MARGIN_X": 0.0,
+                            "MARGIN_Y": 0.0,
+                            "EDGE_ANCHOR": "C",
+                            "LABEL_ANCHOR": "C"
+                        },
+                        "EDGE_Z_ORDER": 0.0,
+                        "EDGE_LABEL_MAX_WIDTH": 200.0,
+                        "EDGE_LABEL_BACKGROUND_COLOR": "#B6B6B6",
+                        "EDGE_LABEL_ROTATION": 0.0,
+                        "EDGE_VISIBILITY": "element",
+                        "EDGE_LABEL_FONT_SIZE": 10,
+                        "EDGE_LABEL_COLOR": "#000000",
+                        "EDGE_SELECTED_PAINT": "#FF0000",
+                        "EDGE_SELECTED": "false",
+                        "EDGE_STACKING_DENSITY": 0.5,
+                        "EDGE_SOURCE_ARROW_COLOR": "#000000",
+                        "EDGE_TARGET_ARROW_COLOR": "#000000",
+                        "EDGE_STROKE_SELECTED_PAINT": "#FF0000",
+                        "EDGE_WIDTH": 2.0,
+                        "EDGE_SOURCE_ARROW_SHAPE": "none",
+                        "EDGE_LINE_COLOR": "#999999",
+                        "EDGE_LABEL_BACKGROUND_SHAPE": "none",
+                        "EDGE_OPACITY": 0.6666666666666666,
+                        "EDGE_LABEL_FONT_FACE": {
+                            "FONT_FAMILY": "sans-serif",
+                            "FONT_STYLE": "normal",
+                            "FONT_WEIGHT": "normal",
+                            "FONT_NAME": "Dialog"
+                        },
+                        "EDGE_STACKING": "AUTO_BEND",
+                        "EDGE_LABEL_AUTOROTATE": false,
+                        "EDGE_CURVED": true,
+                        "EDGE_LINE_STYLE": "solid",
+                        "EDGE_TARGET_ARROW_SIZE": 6.0
+                    },
+                    "network": {
+                        "NETWORK_BACKGROUND_COLOR": "#FFFFFF"
+                    },
+                    "node": {
+                        "NODE_Y_LOCATION": 0.0,
+                        "NODE_BACKGROUND_COLOR": "#FFFFFF",
+                        "NODE_LABEL_BACKGROUND_COLOR": "#B6B6B6",
+                        "NODE_WIDTH": 50.0,
+                        "NODE_CUSTOMGRAPHICS_SIZE_7": 50.0,
+                        "COMPOUND_NODE_SHAPE": "ROUND_RECTANGLE",
+                        "NODE_CUSTOMGRAPHICS_SIZE_6": 50.0,
+                        "NODE_CUSTOMGRAPHICS_SIZE_5": 50.0,
+                        "NODE_LABEL_POSITION": {
+                            "HORIZONTAL_ALIGN": "center",
+                            "VERTICAL_ALIGN": "center",
+                            "HORIZONTAL_ANCHOR": "center",
+                            "VERTICAL_ANCHOR": "center",
+                            "MARGIN_X": 0.0,
+                            "MARGIN_Y": 0.0,
+                            "JUSTIFICATION": "center"
+                        },
+                        "NODE_Z_LOCATION": 0.0,
+                        "NODE_CUSTOMGRAPHICS_SIZE_4": 50.0,
+                        "NODE_CUSTOMGRAPHICS_SIZE_3": 50.0,
+                        "NODE_CUSTOMGRAPHICS_SIZE_2": 50.0,
+                        "NODE_BORDER_STYLE": "solid",
+                        "NODE_CUSTOMGRAPHICS_1": {
+                            "type": "image",
+                            "name": "org.cytoscape.ding.customgraphics.bitmap.URLImageCustomGraphics",
+                            "properties": {
+                                "id": 1,
+                                "tag": "bitmap image",
+                                "url": "file:/tmp/cytoscape-images/screenshot-1.png"
+                            }
+                        },
+                        "NODE_CUSTOMGRAPHICS_SIZE_1": 50.0,
+                        "NODE_VISIBILITY": "element",
+                        "NODE_BACKGROUND_OPACITY": 1.0,
+                        "NODE_LABEL_COLOR": "#333333",
+                        "NODE_SELECTED": false,
+                        "NODE_BORDER_COLOR": "#CCCCCC",
+                        "NODE_CUSTOMGRAPHICS_POSITION_8": {
+                            "JUSTIFICATION": "center",
+                            "MARGIN_X": 0.0,
+                            "MARGIN_Y": 0.0,
+                            "ENTITY_ANCHOR": "C",
+                            "GRAPHICS_ANCHOR": "C"
+                        },
+                        "NODE_CUSTOMGRAPHICS_POSITION_9": {
+                            "JUSTIFICATION": "center",
+                            "MARGIN_X": 0.0,
+                            "MARGIN_Y": 0.0,
+                            "ENTITY_ANCHOR": "C",
+                            "GRAPHICS_ANCHOR": "C"
+                        },
+                        "NODE_CUSTOMGRAPHICS_POSITION_4": {
+                            "JUSTIFICATION": "center",
+                            "MARGIN_X": 0.0,
+                            "MARGIN_Y": 0.0,
+                            "ENTITY_ANCHOR": "C",
+                            "GRAPHICS_ANCHOR": "C"
+                        },
+                        "NODE_SHAPE": "ellipse",
+                        "NODE_CUSTOMGRAPHICS_POSITION_5": {
+                            "JUSTIFICATION": "center",
+                            "MARGIN_X": 0.0,
+                            "MARGIN_Y": 0.0,
+                            "ENTITY_ANCHOR": "C",
+                            "GRAPHICS_ANCHOR": "C"
+                        },
+                        "NODE_CUSTOMGRAPHICS_POSITION_6": {
+                            "JUSTIFICATION": "center",
+                            "MARGIN_X": 0.0,
+                            "MARGIN_Y": 0.0,
+                            "ENTITY_ANCHOR": "C",
+                            "GRAPHICS_ANCHOR": "C"
+                        },
+                        "NODE_CUSTOMGRAPHICS_POSITION_7": {
+                            "JUSTIFICATION": "center",
+                            "MARGIN_X": 0.0,
+                            "MARGIN_Y": 0.0,
+                            "ENTITY_ANCHOR": "C",
+                            "GRAPHICS_ANCHOR": "C"
+                        },
+                        "NODE_LABEL_FONT_SIZE": 12,
+                        "NODE_X_LOCATION": 0.0,
+                        "NODE_BORDER_OPACITY": 1.0,
+                        "NODE_CUSTOMGRAPHICS_POSITION_1": {
+                            "JUSTIFICATION": "center",
+                            "MARGIN_X": 0.0,
+                            "MARGIN_Y": 0.0,
+                            "ENTITY_ANCHOR": "C",
+                            "GRAPHICS_ANCHOR": "C"
+                        },
+                        "NODE_CUSTOMGRAPHICS_POSITION_2": {
+                            "JUSTIFICATION": "center",
+                            "MARGIN_X": 0.0,
+                            "MARGIN_Y": 0.0,
+                            "ENTITY_ANCHOR": "C",
+                            "GRAPHICS_ANCHOR": "C"
+                        },
+                        "NODE_CUSTOMGRAPHICS_SIZE_9": 50.0,
+                        "NODE_CUSTOMGRAPHICS_POSITION_3": {
+                            "JUSTIFICATION": "center",
+                            "MARGIN_X": 0.0,
+                            "MARGIN_Y": 0.0,
+                            "ENTITY_ANCHOR": "C",
+                            "GRAPHICS_ANCHOR": "C"
+                        },
+                        "NODE_CUSTOMGRAPHICS_SIZE_8": 50.0,
+                        "NODE_LABEL_ROTATION": 0.0,
+                        "NODE_BORDER_WIDTH": 2.0,
+                        "NODE_HEIGHT": 50.0,
+                        "NODE_LABEL_OPACITY": 1.0,
+                        "COMPOUND_NODE_PADDING": "10.0",
+                        "NODE_LABEL_BACKGROUND_SHAPE": "none",
+                        "NODE_LABEL_BACKGROUND_OPACITY": 1.0,
+                        "NODE_LABEL_FONT_FACE": {
+                            "FONT_FAMILY": "sans-serif",
+                            "FONT_STYLE": "normal",
+                            "FONT_WEIGHT": "normal",
+                            "FONT_NAME": "Dialog"
+                        },
+                        "NODE_SELECTED_PAINT": "#FFFF00",
+                        "NODE_LABEL_MAX_WIDTH": 200.0
+                    }
+                },
+                "nodeMapping": {
+                    "NODE_LABEL": {
+                        "type": "PASSTHROUGH",
+                        "definition": {
+                            "attribute": "COMMON",
+                            "type": "string"
+                        }
+                    },
+                    "NODE_HEIGHT": {
+                        "type": "CONTINUOUS",
+                        "definition": {
+                            "map": [
+                                {
+                                    "max": 1.0,
+                                    "maxVPValue": 1.0,
+                                    "includeMin": false,
+                                    "includeMax": false
+                                },
+                                {
+                                    "min": 1.0,
+                                    "max": 18.0,
+                                    "maxVPValue": 150.0,
+                                    "minVPValue": 40.0,
+                                    "includeMin": true,
+                                    "includeMax": true
+                                },
+                                {
+                                    "min": 18.0,
+                                    "minVPValue": 1.0,
+                                    "includeMin": false,
+                                    "includeMax": false
+                                }
+                            ],
+                            "attribute": "degree.layout",
+                            "type": "integer"
+                        }
+                    },
+                    "NODE_BACKGROUND_COLOR": {
+                        "type": "CONTINUOUS",
+                        "definition": {
+                            "map": [
+                                {
+                                    "max": -2.426,
+                                    "maxVPValue": "#0066CC",
+                                    "includeMin": false,
+                                    "includeMax": true
+                                },
+                                {
+                                    "min": -2.426,
+                                    "max": 1.225471493171426E-7,
+                                    "maxVPValue": "#FFFFFF",
+                                    "minVPValue": "#0066CC",
+                                    "includeMin": true,
+                                    "includeMax": true
+                                },
+                                {
+                                    "min": 1.225471493171426E-7,
+                                    "max": 2.058,
+                                    "maxVPValue": "#FFFF00",
+                                    "minVPValue": "#FFFFFF",
+                                    "includeMin": true,
+                                    "includeMax": true
+                                },
+                                {
+                                    "min": 2.058,
+                                    "minVPValue": "#FFFF00",
+                                    "includeMin": true,
+                                    "includeMax": false
+                                }
+                            ],
+                            "attribute": "gal1RGexp",
+                            "type": "double"
+                        }
+                    },
+                    "NODE_LABEL_FONT_SIZE": {
+                        "type": "CONTINUOUS",
+                        "definition": {
+                            "map": [
+                                {
+                                    "max": 1.0,
+                                    "maxVPValue": 1,
+                                    "includeMin": false,
+                                    "includeMax": false
+                                },
+                                {
+                                    "min": 1.0,
+                                    "max": 18.0,
+                                    "maxVPValue": 40,
+                                    "minVPValue": 10,
+                                    "includeMin": true,
+                                    "includeMax": true
+                                },
+                                {
+                                    "min": 18.0,
+                                    "minVPValue": 1,
+                                    "includeMin": false,
+                                    "includeMax": false
+                                }
+                            ],
+                            "attribute": "Degree",
+                            "type": "integer"
+                        }
+                    },
+                    "NODE_WIDTH": {
+                        "type": "CONTINUOUS",
+                        "definition": {
+                            "map": [
+                                {
+                                    "max": 1.0,
+                                    "maxVPValue": 1.0,
+                                    "includeMin": false,
+                                    "includeMax": false
+                                },
+                                {
+                                    "min": 1.0,
+                                    "max": 18.0,
+                                    "maxVPValue": 150.0,
+                                    "minVPValue": 40.0,
+                                    "includeMin": true,
+                                    "includeMax": true
+                                },
+                                {
+                                    "min": 18.0,
+                                    "minVPValue": 1.0,
+                                    "includeMin": false,
+                                    "includeMax": false
+                                }
+                            ],
+                            "attribute": "degree.layout",
+                            "type": "integer"
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "nodeBypasses": [
+            {
+                "id": 187,
+                "v": {
+                    "NODE_CUSTOMGRAPHICS_1": {
+                        "type": "image",
+                        "name": "org.cytoscape.ding.customgraphics.bitmap.URLImageCustomGraphics",
+                        "properties": {
+                            "id": 2,
+                            "tag": "bitmap image",
+                            "url": "file:/tmp/cytoscape-images/screenshot-2.png"
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "visualEditorProperties": [
+            {
+                "properties": {
+                    "nodeSizeLocked": true,
+                    "arrowColorMatchesEdge": false,
+                    "NETWORK_CENTER_Y_LOCATION": 4201.8037,
+                    "nodeCustomGraphicsSizeSync": true,
+                    "NETWORK_CENTER_X_LOCATION": 1129.8259,
+                    "NETWORK_SCALE_FACTOR": 1.7002866
+                }
+            }
+        ]
+    },
+    {
+        "cyTableColumn": [
+            {
+                "applies_to": "node_table",
+                "n": "shared name"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "name"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "double",
+                "n": "AverageShortestPathLength"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "double",
+                "n": "BetweennessCentrality"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "double",
+                "n": "ClosenessCentrality"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "double",
+                "n": "ClusteringCoefficient"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "integer",
+                "n": "Degree"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "integer",
+                "n": "Eccentricity"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "boolean",
+                "n": "IsSingleNode"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "double",
+                "n": "NeighborhoodConnectivity"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "integer",
+                "n": "NumberOfDirectedEdges"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "integer",
+                "n": "NumberOfUndirectedEdges"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "integer",
+                "n": "PartnerOfMultiEdgedNodePairs"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "double",
+                "n": "Radiality"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "integer",
+                "n": "SelfLoops"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "long",
+                "n": "Stress"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "double",
+                "n": "TopologicalCoefficient"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "integer",
+                "n": "degree.layout"
+            },
+            {
+                "applies_to": "node_table",
+                "n": "COMMON"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "double",
+                "n": "gal1RGexp"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "double",
+                "n": "gal4RGexp"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "double",
+                "n": "gal80Rexp"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "double",
+                "n": "gal1RGsig"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "double",
+                "n": "gal4RGsig"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "double",
+                "n": "gal80Rsig"
+            },
+            {
+                "applies_to": "node_table",
+                "d": "boolean",
+                "n": "isExcludedFromPaths"
+            },
+            {
+                "applies_to": "edge_table",
+                "n": "shared name"
+            },
+            {
+                "applies_to": "edge_table",
+                "n": "shared interaction"
+            },
+            {
+                "applies_to": "edge_table",
+                "n": "name"
+            },
+            {
+                "applies_to": "edge_table",
+                "n": "interaction"
+            },
+            {
+                "applies_to": "edge_table",
+                "d": "double",
+                "n": "EdgeBetweenness"
+            },
+            {
+                "applies_to": "network_table",
+                "n": "shared name"
+            },
+            {
+                "applies_to": "network_table",
+                "n": "name"
+            },
+            {
+                "applies_to": "network_table",
+                "d": "list_of_string",
+                "n": "__Annotations"
+            },
+            {
+                "applies_to": "network_table",
+                "n": "publication"
+            },
+            {
+                "applies_to": "network_table",
+                "n": "Dataset Name"
+            },
+            {
+                "applies_to": "network_table",
+                "n": "Dataset URL"
+            },
+            {
+                "applies_to": "network_table",
+                "n": "organism"
+            }
+        ]
+    },
+    {
+        "cyHiddenAttributes": [
+            {
+                "v": "Prefuse Force Directed Layout",
+                "n": "layoutAlgorithm"
+            }
+        ]
+    },
+    {
+        "status": [
+            {
+                "success": true
+            }
+        ]
+    }
+]

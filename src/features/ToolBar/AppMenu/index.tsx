@@ -1,237 +1,162 @@
-import { Button, Divider, useTheme } from '@mui/material'
-import { MenuItem } from 'primereact/menuitem'
-import { OverlayPanel } from 'primereact/overlaypanel'
-import { TieredMenu } from 'primereact/tieredmenu'
-import { useEffect, useRef, useState } from 'react'
+import AppRegistrationIcon from '@mui/icons-material/AppRegistration'
+import { ToolbarMenuItem as MenuItem } from '@/features/ToolBar/menuItemModel'
+import { useCallback, useMemo, useState } from 'react'
 
-import { logApp } from '../../../debug'
+import { buildPerAppApis } from '../../../app-api/core/perAppApis'
+import type { AppContextApis } from '../../../app-api/types/AppContext'
+import { useAppResourceStore } from '../../../data/hooks/stores/AppResourceStore'
 import { useAppStore } from '../../../data/hooks/stores/AppStore'
-import { useServiceTaskRunner } from '../../../data/hooks/useServiceTaskRunner'
-import { ComponentType, CyApp } from '../../../models/AppModel'
+import { logApp } from '../../../debug'
+import { CyApp } from '../../../models/AppModel'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
-import { ComponentMetadata } from '../../../models/AppModel/ComponentMetadata'
-import { ServiceApp } from '../../../models/AppModel/ServiceApp'
-import { ServiceStatus } from '../../../models/AppModel/ServiceStatus'
+import type { RegisteredAppResource } from '../../../models/AppModel/RegisteredAppResource'
+import { RootMenu } from '../../../models/AppModel/RootMenu'
 import { AppSettingsDialog } from '../../AppManager/AppSettingsDialog'
-import ExternalComponent from '../../AppManager/ExternalComponent'
-import { TaskStatusDialog } from '../../AppManager/TaskStatusDialog'
-import { ConfirmationDialog } from '../../ConfirmationDialog'
-import { DropdownMenuProps } from '../DropdownMenuProps'
-import { createMenuItems } from './MenuFactory'
+import { DropdownMenu, DropdownMenuItem } from '../DropdownMenu'
+import { useMenuBarMenu } from '../MenuBar'
+import { MenuItemIcon } from './MenuItemIcon'
+import { useServiceAppMenu } from './useServiceAppMenu'
 
-export const AppMenu = (props: DropdownMenuProps) => {
-  const theme = useTheme()
-
-  const run = useServiceTaskRunner()
-
-  const [isInitialClick, setIsInitialClick] = useState<boolean>(false)
+export const AppMenu = () => {
+  const { open, setOpen } = useMenuBarMenu('apps-menu')
 
   // Actual CyApp objects
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
-  const [appStateUpdated, setAppStateUpdated] = useState<boolean>(false)
-
-  const { label } = props
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const open = Boolean(anchorEl)
 
   // For the app settings dialog
   const [openDialog, setOpenDialog] = useState<boolean>(false)
 
-  // For the task status dialog
-  const [openTaskDialog, setOpenTaskDialog] = useState<boolean>(false)
+  const handleClose = useCallback((): void => {
+    setOpen(false)
+  }, [setOpen])
 
-  const [componentList, setComponentList] = useState<[string, string][]>([])
-
-  // For the notification dialog
-  const [notificationDialog, setNotificationDialog] = useState<boolean>(false)
-  const [notificationMessage, setNotificationMessage] = useState<string>('')
-
-  // Clear the current task status
-  const clearCurrentTask = useAppStore((state) => state.clearCurrentTask)
-
-  /**
-   * Menu model for the nested menu
-   */
-  const [menuModel, setMenuModel] = useState<MenuItem[]>([])
-
-  const menuRef = useRef(null)
-
-  const serviceApps: Record<string, ServiceApp> = useAppStore(
-    (state) => state.serviceApps,
+  // Service apps whose cyWebMenuItem.root resolves to the Apps menu (this also
+  // catches apps with a missing or unsupported root, which fall back here).
+  const { menuItems: serviceMenuItems, dialogs } = useServiceAppMenu(
+    RootMenu.Apps,
+    handleClose,
   )
 
   const handleOpenDialog = (isDialogOpen: boolean): void => {
-    setAnchorEl(null)
-    const menuRefCurrent = menuRef.current as any
-    menuRefCurrent.hide()
+    setOpen(false)
     setOpenDialog(isDialogOpen)
   }
 
-  const handleRun = async (url: string): Promise<void> => {
-    setAnchorEl(null)
-    const menuRefCurrent = menuRef.current as any
-    menuRefCurrent.hide()
+  // Read runtime menu resources from AppResourceStore
+  const runtimeResources = useAppResourceStore((state) => state.resources)
 
-    // Now run the task
-    setOpenTaskDialog(true)
-    try {
-      const result = await run(url)
-      if (result.status !== ServiceStatus.Complete) {
-        setNotificationDialog(true)
-        setNotificationMessage(result.message)
-      }
-    } catch (e) {
-      setNotificationDialog(true)
-      setNotificationMessage(e.message)
-      logApp.error(
-        `[${AppMenu.name}]:[${handleRun.name}]: Failed to run the task: ${url}`,
-        e,
-      )
-    } finally {
-      clearCurrentTask()
-    }
+  const createAppMenu = useCallback((): MenuItem[] => {
+    const runtimeMenuItems: MenuItem[] = runtimeResources
+      .filter((r: RegisteredAppResource) => {
+        if (r.slot !== 'apps-menu') return false
+        if (apps[r.appId]?.status !== AppStatus.Active) return false
+        return true
+      })
+      .map((r: RegisteredAppResource) => {
+        // 'apps-menu' entries are plain data (label/tooltip/icon/onClick):
+        // the host renders the row itself, so no app component — and no
+        // AppIdProvider, error boundary or Suspense — ever sits inside the
+        // shared dropdown. An app that needs real UI opens it from onClick
+        // through apis.dialog / apis.resource.openModal, in its own layer.
+        const resourceId = `${r.appId}::apps-menu::${r.id}`
+        const perAppApis: AppContextApis = buildPerAppApis(r.appId)
 
-    setOpenTaskDialog(false)
-  }
-
-  const handleClose = (): void => {
-    setAnchorEl(null)
-    const menuRefCurrent = menuRef.current as any
-    menuRefCurrent.hide()
-  }
-
-  useEffect(() => {
-    // Filter and use only active apps
-    const appIds: string[] = Object.keys(apps)
-
-    const activeIds = appIds.filter(
-      (id) => apps[id].status === AppStatus.Active,
-    )
-    if (activeIds.length === 0) {
-      setComponentList([])
-      return
-    }
-
-    const componentList: [string, string][] = []
-    // Extract component list from the apps
-    activeIds.forEach((appId: string) => {
-      const app: CyApp = apps[appId]
-      const { components } = app
-      if (components !== undefined) {
-        components.forEach((component: ComponentMetadata) => {
-          const componentId: string = component.id
-          const componentType: string = component.type
-          if (
-            componentType === ComponentType.Menu &&
-            app.status === AppStatus.Active
-          ) {
-            // Add menu only
-            componentList.push([appId, componentId])
+        // `requires` (network/selection) and app-active state come from
+        // getResourceVisibility — the same rule 'right-panel' uses.
+        // `isEnabled` is an extra imperative snapshot. Both are taken at
+        // menu-build time; see the `open` dependency below.
+        const visibility = perAppApis.resource.getResourceVisibility(
+          r.id,
+          'apps-menu',
+        )
+        const visible = visibility.success ? visibility.data.visible : false
+        let customEnabled = true
+        if (typeof r.isEnabled === 'function') {
+          try {
+            customEnabled = r.isEnabled(perAppApis) === true
+          } catch (e) {
+            logApp.error(`[AppMenu]: isEnabled() threw for ${resourceId}`, e)
+            customEnabled = false
           }
-        })
-      }
-    })
+        }
+        const disabled = !visible || !customEnabled
 
-    setComponentList(componentList)
-  }, [apps])
+        const handleClick = (): void => {
+          // Close the dropdown first — every built-in item does. Safe now
+          // that onClick only kicks off work living in a separate render
+          // tree, so closing the menu can never unmount it mid-run.
+          handleClose()
+          try {
+            const result = r.onClick?.(perAppApis)
+            if (result instanceof Promise) {
+              result.catch((e: unknown) => {
+                logApp.error(`[AppMenu]: onClick failed for ${resourceId}`, e)
+              })
+            }
+          } catch (e) {
+            logApp.error(`[AppMenu]: onClick threw for ${resourceId}`, e)
+          }
+        }
 
-  const getBaseMenu = (): MenuItem[] => {
-    return [
+        return {
+          template: (
+            <DropdownMenuItem
+              label={r.title ?? r.id}
+              tooltip={r.tooltip}
+              icon={<MenuItemIcon icon={r.icon} />}
+              disabled={disabled}
+              onClick={handleClick}
+              dataTestId={`apps-menu-item-${r.appId}-${r.id}`}
+            />
+          ),
+        } as MenuItem
+      })
+
+    return runtimeMenuItems
+    // `open` is a deliberate extra dependency: getResourceVisibility() and
+    // isEnabled() are imperative snapshots, so rebuilding on every open
+    // re-evaluates enablement each time the dropdown is shown (not
+    // reactively while it is open — the same moment built-in menus decide).
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- open re-snapshots enablement
+  }, [runtimeResources, apps, handleClose, open])
+
+  /**
+   * Menu model for the nested menu: app menu items, then service-app
+   * items routed to the Apps menu, a divider, then the base "Manage Apps" item.
+   */
+  const menuModel: MenuItem[] = useMemo(() => {
+    const appMenuItems: MenuItem[] = createAppMenu()
+    const baseMenu: MenuItem[] = [
       {
         label: 'Manage Apps...',
+        icon: <AppRegistrationIcon />,
         style: { height: '2.5em' },
         command: () => handleOpenDialog(true),
       },
     ]
-  }
-
-  useEffect(() => {
-    const appMenuItems: MenuItem[] = createAppMenu()
-    const menuModel: MenuItem[] = createMenuItems(serviceApps, handleRun)
     const divider: MenuItem[] =
-      menuModel.length > 0 || appMenuItems.length > 0
-        ? [{ template: <Divider /> }]
+      serviceMenuItems.length > 0 || appMenuItems.length > 0
+        ? [{ separator: true }]
         : []
-    setMenuModel([...appMenuItems, ...menuModel, ...divider, ...getBaseMenu()])
-  }, [serviceApps, apps])
-
-  useEffect(() => {
-    const appMenuItems: MenuItem[] = createAppMenu()
-    const menuModel: MenuItem[] = createMenuItems(serviceApps, handleRun)
-    setMenuModel([...appMenuItems, ...menuModel, ...getBaseMenu()])
-    setAppStateUpdated(false)
-  }, [appStateUpdated])
-
-  useEffect(() => {
-    // Create base menu items
-    setMenuModel(getBaseMenu())
-    const menuRefCurrent = menuRef.current as any
-    menuRefCurrent.hide()
-  }, [])
-
-  const createAppMenu = (): MenuItem[] => {
-    const appMenuItems: MenuItem[] = componentList.map(
-      ([appId, componentId], index) => {
-        const MenuComponent = ExternalComponent(appId, './' + componentId)
-        const menuItem: MenuItem = {
-          template: <MenuComponent key={index} handleClose={handleClose} />,
-        }
-        return menuItem
-      },
-    )
-
-    return appMenuItems
-  }
-
-  const handleClick = (e: React.MouseEvent<HTMLElement>) => {
-    if (menuRef.current === null) {
-      return
-    }
-    if (!isInitialClick) {
-      setIsInitialClick(true)
-      const appMenuItems: MenuItem[] = createAppMenu()
-      const menuModel: MenuItem[] = createMenuItems(serviceApps, handleRun)
-      setMenuModel([...appMenuItems, ...menuModel, ...getBaseMenu()])
-    }
-
-    const menuRefCurrent = menuRef.current as any
-    menuRefCurrent.toggle(e)
-  }
+    return [...appMenuItems, ...serviceMenuItems, ...divider, ...baseMenu]
+    // handleOpenDialog only touches stable state setters
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createAppMenu, serviceMenuItems])
 
   return (
     <>
-      <Button
-        data-testid="toolbar-app-menu-button"
-        sx={{
-          color: theme.palette.common.white,
-          textTransform: 'none',
-        }}
-        id={label}
-        aria-controls={open ? 'basic-menu' : undefined}
-        aria-haspopup="true"
-        aria-expanded={open ? 'true' : undefined}
-        onClick={(e) => {
-          handleClick(e)
-        }}
-      >
-        {label}
-      </Button>
-      <OverlayPanel ref={menuRef} unstyled>
-        <TieredMenu style={{ width: 350 }} model={menuModel} />
-      </OverlayPanel>
+      <DropdownMenu
+        id="apps-menu"
+        label="Apps"
+        menuItems={menuModel}
+        open={open}
+        onOpenChange={setOpen}
+      />
       <AppSettingsDialog
         openDialog={openDialog}
         setOpenDialog={setOpenDialog}
-        setAppStateUpdated={setAppStateUpdated}
       />
-      <TaskStatusDialog open={openTaskDialog} setOpen={setOpenTaskDialog} />
-      <ConfirmationDialog
-        open={notificationDialog}
-        setOpen={setNotificationDialog}
-        title="Oops! Something went wrong..."
-        onConfirm={() => {}}
-        message={`Error message from service: ${notificationMessage}`}
-      />
+      {dialogs}
     </>
   )
 }

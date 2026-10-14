@@ -1,0 +1,155 @@
+import { z } from 'zod'
+
+import { logApp } from '../../../debug'
+import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
+import { AppType } from '../../../models/AppModel/AppType'
+
+const JS_IDENTIFIER_PATTERN = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/
+
+/**
+ * Treat a blank string as an absent value before `schema` sees it.
+ *
+ * The App Store serves `""` for optional fields the developer left blank, and
+ * `""` is *present*, so `.optional()` and `.default()` never fire and the
+ * inner `.min(1)` or `.url()` fails — taking the whole entry with it
+ * (`parseManifest` skips an entry that fails validation). Blank is what "no
+ * value" looks like on the wire, so it is normalized to absent rather than
+ * failing an app's only manifest entry over a cosmetic field.
+ *
+ * Normalizing on the way in keeps `.min(1)` and `.url()` meaning what they say
+ * for values that really are present: `icon: 'not-a-url'` is still rejected.
+ */
+const blankAsAbsent = <T extends z.ZodTypeAny>(schema: T) =>
+  z.preprocess(
+    (value) =>
+      typeof value === 'string' && value.trim() === '' ? undefined : value,
+    schema,
+  )
+
+const AppManifestEntrySchema = z
+  .object({
+    id: z.string().regex(JS_IDENTIFIER_PATTERN).optional(),
+    name: blankAsAbsent(z.string().min(1).optional()),
+    // Optional hint from the App Store. Absent today, so payload classification
+    // falls back to structure — see classifyInstallPayload.
+    type: z.enum([AppType.Service, AppType.Client]).optional(),
+    // Not normalized: `url` is required and names the code to load, so a blank
+    // one is a broken entry, not a blank optional field.
+    url: z.string().url(),
+    author: blankAsAbsent(z.string().min(1).optional().default('unknown')),
+    description: z.string().optional(),
+    version: z.string().optional(),
+    tags: z.array(z.string()).optional(),
+    icon: blankAsAbsent(z.string().url().optional()),
+    license: z.string().optional(),
+    repository: blankAsAbsent(z.string().url().optional()),
+    compatibleHostVersions: z.string().optional(),
+    dependencies: z.array(z.string()).optional(),
+  })
+  .refine((entry) => entry.id !== undefined || entry.name !== undefined, {
+    message: 'Either id or name must be present',
+  })
+
+export const AppManifestSchema = z.array(AppManifestEntrySchema)
+
+/**
+ * Parse and validate a raw manifest payload into normalized AppCatalogEntry[].
+ *
+ * - Validates each entry independently; invalid entries are skipped with a warning
+ * - If `id` is absent, `name` is used as `id` (must match JS identifier pattern)
+ * - Deduplicates by `id` (first occurrence wins)
+ * - Warns on self-referencing or unknown dependencies (no runtime enforcement)
+ */
+export function parseManifest(data: unknown): AppCatalogEntry[] {
+  if (!Array.isArray(data)) {
+    logApp.warn(
+      '[parseManifest]: Manifest is not an array, returning empty catalog',
+    )
+    return []
+  }
+
+  const entries: AppCatalogEntry[] = []
+  const seenIds = new Set<string>()
+
+  for (let i = 0; i < data.length; i++) {
+    const result = AppManifestEntrySchema.safeParse(data[i])
+    if (!result.success) {
+      logApp.warn(
+        `[parseManifest]: Skipping invalid entry at index ${i}:`,
+        result.error.issues,
+      )
+      continue
+    }
+
+    const parsed = result.data
+
+    // Resolve id: prefer explicit id, fall back to name
+    let id = parsed.id
+    if (id === undefined) {
+      if (
+        parsed.name !== undefined &&
+        JS_IDENTIFIER_PATTERN.test(parsed.name)
+      ) {
+        id = parsed.name
+      } else {
+        logApp.warn(
+          `[parseManifest]: Skipping entry at index ${i}: name "${parsed.name}" is not a valid identifier and no id provided`,
+        )
+        continue
+      }
+    }
+
+    // Deduplicate
+    if (seenIds.has(id)) {
+      logApp.warn(
+        `[parseManifest]: Duplicate id "${id}" at index ${i}, keeping first occurrence`,
+      )
+      continue
+    }
+    seenIds.add(id)
+
+    const entry: AppCatalogEntry = {
+      id,
+      url: parsed.url,
+      author: parsed.author,
+      ...(parsed.type !== undefined && { type: parsed.type }),
+      ...(parsed.name !== undefined && { name: parsed.name }),
+      ...(parsed.description !== undefined && {
+        description: parsed.description,
+      }),
+      ...(parsed.version !== undefined && { version: parsed.version }),
+      ...(parsed.tags !== undefined && { tags: parsed.tags }),
+      ...(parsed.icon !== undefined && { icon: parsed.icon }),
+      ...(parsed.license !== undefined && { license: parsed.license }),
+      ...(parsed.repository !== undefined && { repository: parsed.repository }),
+      ...(parsed.compatibleHostVersions !== undefined && {
+        compatibleHostVersions: parsed.compatibleHostVersions,
+      }),
+      ...(parsed.dependencies !== undefined && {
+        dependencies: parsed.dependencies,
+      }),
+    }
+
+    entries.push(entry)
+  }
+
+  // Warn on dependency issues (no runtime enforcement)
+  const allIds = new Set(entries.map((e) => e.id))
+  for (const entry of entries) {
+    if (entry.dependencies) {
+      for (const dep of entry.dependencies) {
+        if (dep === entry.id) {
+          logApp.warn(
+            `[parseManifest]: App "${entry.id}" has self-referencing dependency`,
+          )
+        } else if (!allIds.has(dep)) {
+          logApp.warn(
+            `[parseManifest]: App "${entry.id}" depends on unknown app "${dep}"`,
+          )
+        }
+      }
+    }
+  }
+
+  return entries
+}

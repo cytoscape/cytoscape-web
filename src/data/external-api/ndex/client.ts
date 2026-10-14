@@ -1,11 +1,4 @@
-/**
- * NDEx Client Configuration
- *
- * Provides low-level client initialization and configuration for NDEx API access.
- */
-// TODO: Make client TS compatible
-// @ts-expect-error-next-line
-import { NDEx } from '@js4cytoscape/ndex-client'
+import { NDExClient } from '@js4cytoscape/ndex-client'
 
 import { getNDExBaseUrl } from './config'
 
@@ -18,12 +11,27 @@ import { getNDExBaseUrl } from './config'
  * @param url - Optional base URL (defaults to module configuration if not provided)
  * @returns Configured NDEx client instance
  */
-export const getNdexClient = (accessToken?: string, url?: string): NDEx => {
-  const baseUrl = url ?? getNDExBaseUrl()
-  const client = new NDEx(baseUrl)
+export const getNdexClient = (
+  accessToken?: string,
+  url?: string,
+): NDExClient => {
+  let baseUrl = url ?? getNDExBaseUrl()
+  if (
+    baseUrl &&
+    !baseUrl.startsWith('http://') &&
+    !baseUrl.startsWith('https://')
+  ) {
+    baseUrl = `https://${baseUrl}`
+  }
+  const client = new NDExClient({ baseURL: baseUrl })
 
   if (accessToken) {
-    client.setAuthToken(accessToken)
+    client.updateConfig({
+      auth: {
+        type: 'oauth',
+        idToken: accessToken,
+      },
+    })
   }
 
   return client

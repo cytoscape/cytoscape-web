@@ -1,3 +1,9 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { logApp } from '../../debug'
+import { AppStatus } from '../../models/AppModel/AppStatus'
+import { CyApp } from '../../models/AppModel/CyApp'
+import { ServiceApp } from '../../models/AppModel/ServiceApp'
 import {
   deleteDb,
   getAllAppsFromDb,
@@ -5,16 +11,26 @@ import {
   getWorkspaceFromDb,
   initializeDb,
   putAppToDb,
-  putServiceAppToDb,
 } from '../db'
-import { AppStatus } from '../../models/AppModel/AppStatus'
-import { CyApp } from '../../models/AppModel/CyApp'
-import { ServiceApp } from '../../models/AppModel/ServiceApp'
-import { useLoadWorkspace, RemoteWorkspace } from './useLoadWorkspace'
-import { serviceFetcher } from './stores/AppStore'
+vi.mock('../db', async (importOriginal) => {
+  const actual = (await importOriginal()) as typeof import('../db')
+  return {
+    ...actual,
+    putAppToDb: vi.fn(actual.putAppToDb),
+  }
+})
+
+// The cross-tab reset handshake sleeps PEER_CLOSE_GRACE_MS (300ms) waiting for
+// peer tabs that do not exist under jsdom; that alone made this the slowest
+// unit test file. The handshake has its own coverage in lifecycle.test.ts.
+vi.mock('../db/lifecycle', () => ({
+  announceDatabaseReset: vi.fn(async () => () => {}),
+}))
+
+import { RemoteWorkspace, useLoadWorkspace } from './useLoadWorkspace'
 
 // Mock window.location.reload
-const mockReload = jest.fn()
+const mockReload = vi.fn()
 Object.defineProperty(window, 'location', {
   value: {
     reload: mockReload,
@@ -23,8 +39,8 @@ Object.defineProperty(window, 'location', {
 })
 
 // Mock serviceFetcher
-const mockServiceFetcher = jest.fn()
-jest.mock('./stores/AppStore', () => ({
+const mockServiceFetcher = vi.fn()
+vi.mock('./stores/AppStore', () => ({
   serviceFetcher: (...args: any[]) => mockServiceFetcher(...args),
 }))
 
@@ -41,7 +57,6 @@ const createCyApp = (
     id,
     name: `App ${id}`,
     description: 'Test application',
-    components: [],
     status,
   }
 }
@@ -53,7 +68,7 @@ const createServiceApp = (url: string): ServiceApp => {
     version: '1.0.0',
     author: 'Test Author',
     citation: 'Test Citation',
-    cyWebAction: [],
+    cyWebActions: [],
     cyWebMenuItem: {
       root: 'Tools' as any,
       path: [
@@ -85,6 +100,37 @@ const createRemoteWorkspace = (
     },
   }
 }
+
+const createInstalledApp = (
+  id: string,
+  status: AppStatus,
+  url = `https://apps.cytoscape.org/web/${id}/1.0.0/remoteEntry.js`,
+): any => ({
+  entry: { id, url, author: 'Test', name: `App ${id}`, version: '1.0.0' },
+  status,
+  source: 'appstore',
+  installedAt: '2026-06-01T00:00:00.000Z',
+})
+
+const createRemoteWorkspaceWithInstalled = (
+  workspaceId: string,
+  installedApps: any[],
+  activeApps: string[] = [],
+): RemoteWorkspace => ({
+  workspaceId,
+  name: `Workspace ${workspaceId}`,
+  networkIDs: ['network-1'],
+  modificationTime: new Date(),
+  creationTime: new Date(),
+  options: {
+    currentNetwork: 'network-1',
+    activeApps,
+    serviceApps: [],
+    installedApps,
+  },
+})
+
+const ALLOWED = ['https://apps.cytoscape.org']
 
 describe('useLoadWorkspace', () => {
   beforeEach(async () => {
@@ -241,10 +287,7 @@ describe('useLoadWorkspace', () => {
 
   it('should continue with workspace write even if app updates fail', async () => {
     // Mock putAppToDb to fail
-    const originalPutAppToDb = require('../db').putAppToDb
-    jest
-      .spyOn(require('../db'), 'putAppToDb')
-      .mockRejectedValueOnce(new Error('DB error'))
+    vi.mocked(putAppToDb).mockRejectedValueOnce(new Error('DB error'))
 
     const loadWorkspace = useLoadWorkspace()
     const workspace = createRemoteWorkspace('workspace-1', ['app-1'])
@@ -262,7 +305,7 @@ describe('useLoadWorkspace', () => {
     const savedWorkspace = await getWorkspaceFromDb('workspace-1')
     expect(savedWorkspace).toBeDefined()
 
-    jest.restoreAllMocks()
+    vi.restoreAllMocks()
   })
 
   it('should complete successfully without errors', async () => {
@@ -295,7 +338,7 @@ describe('useLoadWorkspace', () => {
   })
 
   it('should use custom service fetcher when provided', async () => {
-    const customFetcher = jest
+    const customFetcher = vi
       .fn()
       .mockResolvedValue(createServiceApp('https://custom.com'))
     const loadWorkspace = useLoadWorkspace(customFetcher)
@@ -309,5 +352,159 @@ describe('useLoadWorkspace', () => {
 
     expect(customFetcher).toHaveBeenCalledWith('https://custom.com')
     expect(mockServiceFetcher).not.toHaveBeenCalled()
+  })
+
+  describe('installedApps (snapshot restore)', () => {
+    it('imports an allow-listed active app keeping Active status, as snapshot', async () => {
+      const loadWorkspace = useLoadWorkspace()
+      const workspace = createRemoteWorkspaceWithInstalled('ws-i', [
+        createInstalledApp('hello', AppStatus.Active),
+      ])
+
+      await loadWorkspace(workspace, {}, {}, ALLOWED)
+
+      const saved = await getWorkspaceFromDb('ws-i')
+      expect(saved.installedApps).toHaveLength(1)
+      expect(saved.installedApps?.[0].entry.id).toBe('hello')
+      expect(saved.installedApps?.[0].status).toBe(AppStatus.Active)
+      expect(saved.installedApps?.[0].source).toBe('snapshot')
+    })
+
+    it('imports a non-allow-listed app as inactive', async () => {
+      const loadWorkspace = useLoadWorkspace()
+      const workspace = createRemoteWorkspaceWithInstalled('ws-i', [
+        createInstalledApp(
+          'evil',
+          AppStatus.Active,
+          'https://evil.example.com/remoteEntry.js',
+        ),
+      ])
+
+      await loadWorkspace(workspace, {}, {}, ALLOWED)
+
+      const saved = await getWorkspaceFromDb('ws-i')
+      expect(saved.installedApps).toHaveLength(1)
+      expect(saved.installedApps?.[0].status).toBe(AppStatus.Inactive)
+    })
+
+    it('skips an invalid installed app entry', async () => {
+      const loadWorkspace = useLoadWorkspace()
+      const bad = {
+        entry: { id: '123-invalid', url: 'not-a-url', author: 'x' },
+        status: AppStatus.Active,
+        source: 'appstore',
+        installedAt: '2026-06-01T00:00:00.000Z',
+      }
+      const workspace = createRemoteWorkspaceWithInstalled('ws-i', [
+        bad,
+        createInstalledApp('ok', AppStatus.Inactive),
+      ])
+
+      await loadWorkspace(workspace, {}, {}, ALLOWED)
+
+      const saved = await getWorkspaceFromDb('ws-i')
+      expect(saved.installedApps).toHaveLength(1)
+      expect(saved.installedApps?.[0].entry.id).toBe('ok')
+    })
+
+    it('skips the legacy activeApps path when installedApps is present', async () => {
+      // loadWorkspace clears the DB first, so the legacy record is supplied via
+      // currentApps. With installedApps present, the legacy path is skipped, so
+      // nothing is written to the apps table.
+      const loadWorkspace = useLoadWorkspace()
+      const workspace = createRemoteWorkspaceWithInstalled(
+        'ws-i',
+        [createInstalledApp('hello', AppStatus.Active)],
+        ['legacy'], // activeApps — ignored because installedApps is present
+      )
+
+      await loadWorkspace(
+        workspace,
+        { legacy: createCyApp('legacy', AppStatus.Inactive) },
+        {},
+        ALLOWED,
+      )
+
+      const dbApps = await getAllAppsFromDb()
+      expect(dbApps.find((a) => a.id === 'legacy')).toBeUndefined()
+    })
+
+    it('keeps the legacy activeApps behavior when installedApps is absent', async () => {
+      const loadWorkspace = useLoadWorkspace()
+      const workspace = createRemoteWorkspace('ws-legacy', ['legacy'])
+
+      await loadWorkspace(
+        workspace,
+        { legacy: createCyApp('legacy', AppStatus.Inactive) },
+        {},
+        ALLOWED,
+      )
+
+      const dbApps = await getAllAppsFromDb()
+      const legacy = dbApps.find((a) => a.id === 'legacy')
+      expect(legacy?.status).toBe(AppStatus.Active) // activated via activeApps
+    })
+  })
+  describe('installedApps from localhost (opted-in deployment)', () => {
+    const DEV1 = 'https://dev1.ndexbio.org'
+    const LOCAL_APP = 'http://localhost:6000/remoteEntry.js'
+
+    // The module-level location stub carries only `reload`, so hostname and
+    // origin are undefined by default — which is already "not localhost, no
+    // opt-in", the production shape.
+    const serveFrom = (origin?: string): void => {
+      const loc = window.location as unknown as Record<string, unknown>
+      loc.origin = origin
+      loc.hostname = origin === undefined ? undefined : new URL(origin).hostname
+    }
+
+    afterEach(() => serveFrom(undefined))
+
+    it('keeps a localhost app Active when this deployment opted in', async () => {
+      serveFrom(DEV1)
+      const loadWorkspace = useLoadWorkspace()
+      const workspace = createRemoteWorkspaceWithInstalled('ws-local', [
+        createInstalledApp('devapp', AppStatus.Active, LOCAL_APP),
+      ])
+
+      await loadWorkspace(workspace, {}, {}, ALLOWED, DEV1)
+
+      const saved = await getWorkspaceFromDb('ws-local')
+      expect(saved.installedApps?.[0].status).toBe(AppStatus.Active)
+    })
+
+    // Workspaces travel between hosts through NDEx, so this is not a corner
+    // case: a developer's saved workspace opened anywhere else must degrade,
+    // and must say why.
+    it('imports it inactive on a deployment that did not opt in, naming the reason', async () => {
+      serveFrom('https://web.cytoscape.org')
+      const warn = vi.spyOn(logApp, 'warn').mockImplementation(() => undefined)
+      const loadWorkspace = useLoadWorkspace()
+      const workspace = createRemoteWorkspaceWithInstalled('ws-local', [
+        createInstalledApp('devapp', AppStatus.Active, LOCAL_APP),
+      ])
+
+      await loadWorkspace(workspace, {}, {}, ALLOWED)
+
+      const saved = await getWorkspaceFromDb('ws-local')
+      expect(saved.installedApps?.[0].status).toBe(AppStatus.Inactive)
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('origin is not allow-listed'),
+      )
+      warn.mockRestore()
+    })
+
+    it('does nothing when the committed dev1 value reaches another deployment', async () => {
+      serveFrom('https://web.cytoscape.org')
+      const loadWorkspace = useLoadWorkspace()
+      const workspace = createRemoteWorkspaceWithInstalled('ws-local', [
+        createInstalledApp('devapp', AppStatus.Active, LOCAL_APP),
+      ])
+
+      await loadWorkspace(workspace, {}, {}, ALLOWED, DEV1)
+
+      const saved = await getWorkspaceFromDb('ws-local')
+      expect(saved.installedApps?.[0].status).toBe(AppStatus.Inactive)
+    })
   })
 })

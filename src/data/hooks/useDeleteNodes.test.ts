@@ -1,49 +1,52 @@
 import { act, renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { IdType } from '../../models/IdType'
 import NetworkFn, { Network } from '../../models/NetworkModel'
-import { Table, Column } from '../../models/TableModel'
+import { createNetworkSummary } from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
+import { Column, Table } from '../../models/TableModel'
 import TableFn from '../../models/TableModel'
+import { ValueTypeName } from '../../models/TableModel/ValueTypeName'
 import { NetworkView } from '../../models/ViewModel'
 import ViewModelFn from '../../models/ViewModel'
 import { VisualStyle } from '../../models/VisualStyleModel'
 import { getDefaultVisualStyle } from '../../models/VisualStyleModel/impl/defaultVisualStyle'
-import { ValueTypeName } from '../../models/TableModel/ValueTypeName'
-import { createNetworkSummary } from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { useNetworkStore } from './stores/NetworkStore'
+import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import { useTableStore } from './stores/TableStore'
 import { useViewModelStore } from './stores/ViewModelStore'
 import { useVisualStyleStore } from './stores/VisualStyleStore'
-import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import { useDeleteNodes } from './useDeleteNodes'
 
 // Mock the database operations
-jest.mock('../db', () => ({
-  ...jest.requireActual('../db'),
-  putNetworkToDb: jest.fn().mockResolvedValue(undefined),
-  deleteNetworkFromDb: jest.fn().mockResolvedValue(undefined),
-  clearNetworksFromDb: jest.fn().mockResolvedValue(undefined),
-  putTableToDb: jest.fn().mockResolvedValue(undefined),
-  deleteTableFromDb: jest.fn().mockResolvedValue(undefined),
-  clearTablesFromDb: jest.fn().mockResolvedValue(undefined),
-  putViewModelToDb: jest.fn().mockResolvedValue(undefined),
-  putNetworkViewToDb: jest.fn().mockResolvedValue(undefined),
-  putNetworkViewsToDb: jest.fn().mockResolvedValue(undefined),
-  deleteViewModelFromDb: jest.fn().mockResolvedValue(undefined),
-  deleteNetworkViewsFromDb: jest.fn().mockResolvedValue(undefined),
-  clearViewModelsFromDb: jest.fn().mockResolvedValue(undefined),
-  clearNetworkViewsFromDb: jest.fn().mockResolvedValue(undefined),
-  putVisualStyleToDb: jest.fn().mockResolvedValue(undefined),
-  deleteVisualStyleFromDb: jest.fn().mockResolvedValue(undefined),
-  clearVisualStylesFromDb: jest.fn().mockResolvedValue(undefined),
-  putNetworkSummaryToDb: jest.fn().mockResolvedValue(undefined),
-  deleteNetworkSummaryFromDb: jest.fn().mockResolvedValue(undefined),
-  clearNetworkSummariesFromDb: jest.fn().mockResolvedValue(undefined),
-}))
+vi.mock('../db', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../db')>()
+  return {
+    ...actual,
+    putNetworkToDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworksFromDb: vi.fn().mockResolvedValue(undefined),
+    putTableToDb: vi.fn().mockResolvedValue(undefined),
+    deleteTableFromDb: vi.fn().mockResolvedValue(undefined),
+    clearTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    putViewModelToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewsToDb: vi.fn().mockResolvedValue(undefined),
+    deleteViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearViewModelsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    putTablesToDb: vi.fn().mockResolvedValue(undefined),
+    getNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    getTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    getViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+  }
+})
 
 // Mock workspace store
-jest.mock('./stores/WorkspaceStore', () => ({
+vi.mock('./stores/WorkspaceStore', () => ({
   useWorkspaceStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       workspace: {
         currentNetworkId: 'test-network-1',
       },
@@ -52,9 +55,9 @@ jest.mock('./stores/WorkspaceStore', () => ({
 }))
 
 // Mock undo stack
-jest.mock('./useUndoStack', () => ({
+vi.mock('./useUndoStack', () => ({
   useUndoStack: () => ({
-    postEdit: jest.fn(),
+    postEdit: vi.fn(),
   }),
 }))
 
@@ -108,9 +111,7 @@ describe('useDeleteNodes', () => {
     beforeEach(() => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: tableResult } = renderHook(() => useTableStore())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
       const { result: summaryResult } = renderHook(() =>
         useNetworkSummaryStore(),
       )
@@ -224,18 +225,20 @@ describe('useDeleteNodes', () => {
     beforeEach(() => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: tableResult } = renderHook(() => useTableStore())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
       const { result: summaryResult } = renderHook(() =>
         useNetworkSummaryStore(),
       )
 
-      const network = createTestNetwork(networkId, ['0', '1', '2', '3'], [
-        { id: 'e0', s: '0', t: '1' },
-        { id: 'e1', s: '1', t: '2' },
-        { id: 'e2', s: '2', t: '3' },
-      ])
+      const network = createTestNetwork(
+        networkId,
+        ['0', '1', '2', '3'],
+        [
+          { id: 'e0', s: '0', t: '1' },
+          { id: 'e1', s: '1', t: '2' },
+          { id: 'e2', s: '2', t: '3' },
+        ],
+      )
       const nodeTable = createTestTable(networkId)
       const edgeTable = createTestTable(networkId)
       const viewModel = createTestViewModel(networkId, network)
@@ -313,13 +316,13 @@ describe('useDeleteNodes', () => {
     beforeEach(() => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: tableResult } = renderHook(() => useTableStore())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
 
-      const network = createTestNetwork(networkId, ['0', '1', '2'], [
-        { id: 'e0', s: '0', t: '1' },
-      ])
+      const network = createTestNetwork(
+        networkId,
+        ['0', '1', '2'],
+        [{ id: 'e0', s: '0', t: '1' }],
+      )
       const nodeTable = createTestTable(networkId)
       const edgeTable = createTestTable(networkId)
       const viewModel = createTestViewModel(networkId, network)
@@ -347,18 +350,11 @@ describe('useDeleteNodes', () => {
       const { result: hookResult } = renderHook(() => useDeleteNodes())
       const { result: tableResult } = renderHook(() => useTableStore())
 
-      // Check initial state
-      const tableRecordBefore = tableResult.current.tables[networkId]
-      const rowsBefore = Array.from(
-        tableRecordBefore?.nodeTable?.rows.keys() || [],
-      )
-
       act(() => {
         hookResult.current.deleteNodes(networkId, ['0'])
       })
 
       const tableRecord = tableResult.current.tables[networkId]
-      const rowsAfter = Array.from(tableRecord?.nodeTable?.rows.keys() || [])
 
       expect(tableRecord?.nodeTable?.rows.has('0')).toBe(false)
       expect(tableRecord?.nodeTable?.rows.has('1')).toBe(true)
@@ -381,13 +377,13 @@ describe('useDeleteNodes', () => {
     beforeEach(() => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: tableResult } = renderHook(() => useTableStore())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
 
-      const network = createTestNetwork(networkId, ['0', '1', '2'], [
-        { id: 'e0', s: '0', t: '1' },
-      ])
+      const network = createTestNetwork(
+        networkId,
+        ['0', '1', '2'],
+        [{ id: 'e0', s: '0', t: '1' }],
+      )
       const nodeTable = createTestTable(networkId)
       const edgeTable = createTestTable(networkId)
       const viewModel = createTestViewModel(networkId, network)
@@ -401,9 +397,7 @@ describe('useDeleteNodes', () => {
 
     it('should delete node views', () => {
       const { result: hookResult } = renderHook(() => useDeleteNodes())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
 
       act(() => {
         hookResult.current.deleteNodes(networkId, ['0'])
@@ -417,9 +411,7 @@ describe('useDeleteNodes', () => {
 
     it('should delete edge views for connected edges', () => {
       const { result: hookResult } = renderHook(() => useDeleteNodes())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
 
       act(() => {
         hookResult.current.deleteNodes(networkId, ['0'])
@@ -434,16 +426,16 @@ describe('useDeleteNodes', () => {
     beforeEach(() => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: tableResult } = renderHook(() => useTableStore())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
       const { result: visualStyleResult } = renderHook(() =>
         useVisualStyleStore(),
       )
 
-      const network = createTestNetwork(networkId, ['0', '1', '2'], [
-        { id: 'e0', s: '0', t: '1' },
-      ])
+      const network = createTestNetwork(
+        networkId,
+        ['0', '1', '2'],
+        [{ id: 'e0', s: '0', t: '1' }],
+      )
       const nodeTable = createTestTable(networkId)
       const edgeTable = createTestTable(networkId)
       const viewModel = createTestViewModel(networkId, network)
@@ -462,12 +454,7 @@ describe('useDeleteNodes', () => {
           ['0', '1'],
           '#FF0000',
         )
-        visualStyleResult.current.setBypass(
-          networkId,
-          'nodeWidth',
-          ['0'],
-          100,
-        )
+        visualStyleResult.current.setBypass(networkId, 'nodeWidth', ['0'], 100)
         visualStyleResult.current.setBypass(
           networkId,
           'edgeLineColor',
@@ -517,9 +504,7 @@ describe('useDeleteNodes', () => {
     it('should handle complete deletion workflow', () => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: tableResult } = renderHook(() => useTableStore())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
       const { result: visualStyleResult } = renderHook(() =>
         useVisualStyleStore(),
       )
@@ -602,12 +587,12 @@ describe('useDeleteNodes', () => {
       // Check visual styles
       const updatedVisualStyle =
         visualStyleResult.current.visualStyles[networkId]
-      expect(
-        updatedVisualStyle?.nodeBackgroundColor?.bypassMap.has('1'),
-      ).toBe(false)
-      expect(
-        updatedVisualStyle?.nodeBackgroundColor?.bypassMap.has('2'),
-      ).toBe(true)
+      expect(updatedVisualStyle?.nodeBackgroundColor?.bypassMap.has('1')).toBe(
+        false,
+      )
+      expect(updatedVisualStyle?.nodeBackgroundColor?.bypassMap.has('2')).toBe(
+        true,
+      )
 
       // Check summary
       const summary = summaryResult.current.summaries[networkId]
@@ -618,14 +603,14 @@ describe('useDeleteNodes', () => {
     it('should handle deleting all nodes', () => {
       const { result: networkResult } = renderHook(() => useNetworkStore())
       const { result: tableResult } = renderHook(() => useTableStore())
-      const { result: viewModelResult } = renderHook(() =>
-        useViewModelStore(),
-      )
+      const { result: viewModelResult } = renderHook(() => useViewModelStore())
       const { result: hookResult } = renderHook(() => useDeleteNodes())
 
-      const network = createTestNetwork(networkId, ['0', '1'], [
-        { id: 'e0', s: '0', t: '1' },
-      ])
+      const network = createTestNetwork(
+        networkId,
+        ['0', '1'],
+        [{ id: 'e0', s: '0', t: '1' }],
+      )
       const nodeTable = createTestTable(networkId)
       const edgeTable = createTestTable(networkId)
       const viewModel = createTestViewModel(networkId, network)
@@ -651,4 +636,3 @@ describe('useDeleteNodes', () => {
     })
   })
 })
-

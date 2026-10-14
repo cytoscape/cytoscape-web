@@ -1,8 +1,119 @@
+import { describe, expect, it } from 'vitest'
+
 import { Cx2 } from '../../Cx2'
+import { MappingFunctionType } from '../../../VisualStyleModel/VisualMappingFunction'
 import {
   createVisualStyleFromCx,
   createVisualStyleOptionsFromCx,
 } from './visualStyleConverter'
+
+// REVIEW.md R2-19/R2-20: malformed mapping/bypass aspects used to crash the
+// converter, and structurally valid 2-entry continuous mappings were
+// silently discarded.
+describe('mapping robustness (regression: R2-19/R2-20)', () => {
+  it('imports a 2-entry continuous mapping instead of silently dropping it (R2-20)', () => {
+    const cx2: Cx2 = [
+      { CXVersion: '2.0' },
+      {
+        visualProperties: [
+          {
+            default: { node: {}, edge: {}, network: {} },
+            nodeMapping: {
+              NODE_WIDTH: {
+                type: 'CONTINUOUS',
+                definition: {
+                  attribute: 'score',
+                  type: 'double',
+                  map: [
+                    { max: 0, maxVPValue: 10, includeMax: true },
+                    { min: 100, minVPValue: 50, includeMin: true },
+                  ],
+                },
+              },
+            },
+            edgeMapping: {},
+          },
+        ],
+      },
+      { status: [{ success: true }] },
+    ] as Cx2
+
+    const visualStyle = createVisualStyleFromCx(cx2)
+    const mapping: any = visualStyle.nodeWidth.mapping
+    expect(mapping).toBeDefined()
+    expect(mapping.type).toBe(MappingFunctionType.Continuous)
+    expect(mapping.min.value).toBe(0)
+    expect(mapping.min.vpValue).toBe(10) // 2-entry maps fallback to out-of-bounds for the missing in-bounds
+    expect(mapping.max.value).toBe(100)
+    expect(mapping.max.vpValue).toBe(50) // 2-entry maps fallback to out-of-bounds for the missing in-bounds
+    expect(mapping.controlPoints).toEqual([])
+    // gt/lt values are the already-converted boundary values, not
+    // re-converted ones (the old code double-converted them)
+    expect(mapping.ltMinVpValue).toBe(10)
+    expect(mapping.gtMaxVpValue).toBe(50)
+  })
+
+  it('skips a PASSTHROUGH mapping without a definition instead of throwing (R2-19)', () => {
+    const cx2: Cx2 = [
+      { CXVersion: '2.0' },
+      {
+        visualProperties: [
+          {
+            default: { node: {}, edge: {}, network: {} },
+            nodeMapping: { NODE_WIDTH: { type: 'PASSTHROUGH' } },
+            edgeMapping: {},
+          },
+        ],
+      },
+      { status: [{ success: true }] },
+    ] as Cx2
+
+    let visualStyle: any
+    expect(() => {
+      visualStyle = createVisualStyleFromCx(cx2)
+    }).not.toThrow()
+    expect(visualStyle.nodeWidth.mapping).toBeUndefined()
+  })
+
+  it('skips a DISCRETE mapping without a definition instead of throwing (R2-19)', () => {
+    const cx2: Cx2 = [
+      { CXVersion: '2.0' },
+      {
+        visualProperties: [
+          {
+            default: { node: {}, edge: {}, network: {} },
+            nodeMapping: { NODE_BACKGROUND_COLOR: { type: 'DISCRETE' } },
+            edgeMapping: {},
+          },
+        ],
+      },
+      { status: [{ success: true }] },
+    ] as Cx2
+
+    expect(() => createVisualStyleFromCx(cx2)).not.toThrow()
+  })
+
+  it('skips bypass entries whose value payload is not an object (R2-19)', () => {
+    const cx2: Cx2 = [
+      { CXVersion: '2.0' },
+      { nodes: [{ id: 1 }] },
+      {
+        nodeBypasses: [
+          { id: 1, v: null },
+          { id: 1, v: { NODE_WIDTH: 42 } },
+        ],
+      },
+      { status: [{ success: true }] },
+    ] as any as Cx2
+
+    let visualStyle: any
+    expect(() => {
+      visualStyle = createVisualStyleFromCx(cx2)
+    }).not.toThrow()
+    // The well-formed entry still applies
+    expect(visualStyle.nodeWidth.bypassMap.get('1')).toBe(42)
+  })
+})
 
 // to run these: npx jest src/models/CxModel/impl/converters/visualStyleConverter.test.ts
 
@@ -32,6 +143,19 @@ describe('visualStyleConverter', () => {
       expect(visualStyle.nodeShape).toBeDefined()
       expect(visualStyle.nodeBackgroundColor).toBeDefined()
       expect(visualStyle.edgeWidth).toBeDefined()
+    })
+
+    // CW-651: a network without a visualProperties aspect must still get the
+    // default node-label passthrough mapping (on the "name" attribute) so a
+    // label renders; the mapping must not be dropped or left undefined.
+    it('keeps the default node label passthrough when visualProperties is absent', () => {
+      const cx2 = createMinimalValidCx()
+
+      const visualStyle = createVisualStyleFromCx(cx2)
+
+      expect(visualStyle.nodeLabel.mapping).toBeDefined()
+      expect(visualStyle.nodeLabel.mapping?.type).toBe('passthrough')
+      expect(visualStyle.nodeLabel.mapping?.attribute).toBe('name')
     })
 
     it('should create a visual style with default node properties', () => {
@@ -97,10 +221,7 @@ describe('visualStyleConverter', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
         {
-          nodes: [
-            { id: 1 },
-            { id: 2 },
-          ],
+          nodes: [{ id: 1 }, { id: 2 }],
         },
         {
           nodeBypasses: [
@@ -136,15 +257,10 @@ describe('visualStyleConverter', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
         {
-          nodes: [
-            { id: 1 },
-            { id: 2 },
-          ],
+          nodes: [{ id: 1 }, { id: 2 }],
         },
         {
-          edges: [
-            { id: 1, s: 1, t: 2 },
-          ],
+          edges: [{ id: 1, s: 1, t: 2 }],
         },
         {
           edgeBypasses: [
@@ -200,15 +316,10 @@ describe('visualStyleConverter', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
         {
-          nodes: [
-            { id: 1 },
-            { id: 2 },
-          ],
+          nodes: [{ id: 1 }, { id: 2 }],
         },
         {
-          edges: [
-            { id: 1, s: 1, t: 2 },
-          ],
+          edges: [{ id: 1, s: 1, t: 2 }],
         },
         {
           status: [{ success: true }],
@@ -455,9 +566,15 @@ describe('visualStyleConverter', () => {
 
       expect(visualStyleOptions).toBeDefined()
       expect(visualStyleOptions.visualEditorProperties).toBeDefined()
-      expect(visualStyleOptions.visualEditorProperties.nodeSizeLocked).toBe(true)
-      expect(visualStyleOptions.visualEditorProperties.arrowColorMatchesEdge).toBe(false)
-      expect(visualStyleOptions.visualEditorProperties.tableDisplayConfiguration).toBeDefined()
+      expect(visualStyleOptions.visualEditorProperties.nodeSizeLocked).toBe(
+        true,
+      )
+      expect(
+        visualStyleOptions.visualEditorProperties.arrowColorMatchesEdge,
+      ).toBe(false)
+      expect(
+        visualStyleOptions.visualEditorProperties.tableDisplayConfiguration,
+      ).toBeDefined()
     })
 
     it('should return default visual style options when missing', () => {
@@ -483,8 +600,12 @@ describe('visualStyleConverter', () => {
 
       expect(visualStyleOptions).toBeDefined()
       expect(visualStyleOptions.visualEditorProperties).toBeDefined()
-      expect(visualStyleOptions.visualEditorProperties.nodeSizeLocked).toBe(false)
-      expect(visualStyleOptions.visualEditorProperties.arrowColorMatchesEdge).toBe(false)
+      expect(visualStyleOptions.visualEditorProperties.nodeSizeLocked).toBe(
+        false,
+      )
+      expect(
+        visualStyleOptions.visualEditorProperties.arrowColorMatchesEdge,
+      ).toBe(false)
     })
 
     it('should handle missing visual editor properties', () => {
@@ -519,4 +640,3 @@ describe('visualStyleConverter', () => {
     })
   })
 })
-

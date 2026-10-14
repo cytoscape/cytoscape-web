@@ -1,4 +1,5 @@
 import { Workspace } from '../../../models'
+import { InstalledApp } from '../../../models/AppModel/InstalledApp'
 import { getNdexClient } from './client'
 
 /**
@@ -13,7 +14,7 @@ export const fetchMyNdexWorkspaces = async (
   ndexUrl?: string,
 ): Promise<any[]> => {
   const ndexClient = getNdexClient(accessToken, ndexUrl)
-  const myWorkspaces = await ndexClient.getUserCyWebWorkspaces()
+  const myWorkspaces = await ndexClient.workspace.getUserCyWebWorkspaces()
   return myWorkspaces as Workspace[]
 }
 
@@ -35,7 +36,8 @@ export const fetchMyNdexAccountNetworks = async (
   const offsetValue = offset ?? 0
   const limitValue = limit ?? 1000
   const ndexClient = getNdexClient(accessToken, ndexUrl)
-  const networks = await ndexClient.getAccountPageNetworks(
+  const networks = await ndexClient.user.getAccountPageNetworks(
+    (await ndexClient.user.authenticate()).externalId,
     offsetValue,
     limitValue,
   )
@@ -62,7 +64,7 @@ export const searchNdexNetworks = async (
   const offsetValue = offset ?? 0
   const limitValue = limit ?? 1000
   const ndexClient = getNdexClient(accessToken, ndexUrl)
-  const searchResults = await ndexClient.searchNetworks(
+  const searchResults = await ndexClient.networks.v2.searchNetworks(
     searchValue,
     offsetValue,
     limitValue,
@@ -84,7 +86,7 @@ export const deleteNdexWorkspace = async (
   ndexUrl?: string,
 ): Promise<void> => {
   const ndexClient = getNdexClient(accessToken, ndexUrl)
-  await ndexClient.deleteCyWebWorkspace(workspaceId)
+  await ndexClient.workspace.deleteCyWebWorkspace(workspaceId)
 }
 
 /**
@@ -102,6 +104,10 @@ export const createNdexWorkspace = async (
       currentNetwork: string
       activeApps: string[]
       serviceApps: string[]
+      // Full workspace-installed app records (URL + status + provenance), so
+      // installed apps round-trip with the workspace (§11.1). `activeApps`
+      // remains for backward compatibility with older hosts.
+      installedApps?: InstalledApp[]
     }
     networkIDs: string[]
   },
@@ -109,8 +115,16 @@ export const createNdexWorkspace = async (
   ndexUrl?: string,
 ): Promise<{ uuid: string }> => {
   const ndexClient = getNdexClient(accessToken, ndexUrl)
-  const response = await ndexClient.createCyWebWorkspace(workspaceData)
-  return response
+  // The v3 endpoint is typed Promise<string> but actually resolves to
+  // { uuid, modificationTime }. Extract the id string (tolerate a bare string
+  // too) so callers never receive an object as the workspace id.
+  const response: unknown =
+    await ndexClient.workspace.createCyWebWorkspace(workspaceData)
+  const uuid =
+    typeof response === 'string'
+      ? response
+      : ((response as { uuid?: string } | null)?.uuid ?? '')
+  return { uuid }
 }
 
 /**
@@ -130,6 +144,10 @@ export const updateNdexWorkspace = async (
       currentNetwork: string
       activeApps: string[]
       serviceApps: string[]
+      // Full workspace-installed app records (URL + status + provenance), so
+      // installed apps round-trip with the workspace (§11.1). `activeApps`
+      // remains for backward compatibility with older hosts.
+      installedApps?: InstalledApp[]
     }
     networkIDs: string[]
   },
@@ -137,5 +155,5 @@ export const updateNdexWorkspace = async (
   ndexUrl?: string,
 ): Promise<void> => {
   const ndexClient = getNdexClient(accessToken, ndexUrl)
-  await ndexClient.updateCyWebWorkspace(workspaceId, workspaceData)
+  await ndexClient.workspace.updateCyWebWorkspace(workspaceId, workspaceData)
 }

@@ -1,15 +1,20 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import React from 'react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { Network } from '../../models/NetworkModel'
 import { Renderer } from '../../models/RendererModel/Renderer'
 import { NetworkTab } from './NetworkTab'
 
 // Mock FloatingToolBar to allow testing click events
-const mockFloatingToolBarButtonClick = jest.fn()
-jest.mock('../FloatingToolBar/FloatingToolBar', () => ({
-  FloatingToolBar: ({ rendererId }: { rendererId: string }) => (
-    <div data-testid="floating-toolbar">
+const mockFloatingToolBarButtonClick = vi.fn()
+const mockFloatingToolBarProps = vi.fn()
+vi.mock('../FloatingToolBar/FloatingToolBar', () => ({
+  FloatingToolBar: (props: unknown) => (
+    <div
+      data-testid="floating-toolbar"
+      ref={() => mockFloatingToolBarProps(props)}
+    >
       <button
         data-testid="floating-toolbar-button"
         onClick={mockFloatingToolBarButtonClick}
@@ -28,8 +33,8 @@ describe('NetworkTab click behavior', () => {
     edges: [],
   }
 
-  const rendererClick = jest.fn()
-  const handleClick = jest.fn()
+  const rendererClick = vi.fn()
+  const handleClick = vi.fn()
 
   const testRenderer: Renderer = {
     id: 'test-renderer',
@@ -53,7 +58,7 @@ describe('NetworkTab click behavior', () => {
     )
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     mockFloatingToolBarButtonClick.mockClear()
   })
 
@@ -83,6 +88,16 @@ describe('NetworkTab click behavior', () => {
 
     expect(handleClick).toHaveBeenCalledTimes(2)
     expect(rendererClick).toHaveBeenCalledTimes(1)
+  })
+
+  // #762: the toolbar's fit button must act on this tab's network, not on
+  // whichever view happens to be active.
+  it('tells the FloatingToolBar which network its view shows', () => {
+    renderTab(false)
+
+    expect(mockFloatingToolBarProps).toHaveBeenCalledWith(
+      expect.objectContaining({ viewNetworkId: 'test-network' }),
+    )
   })
 
   describe('FloatingToolBar click behavior', () => {

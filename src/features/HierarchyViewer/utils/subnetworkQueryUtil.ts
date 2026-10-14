@@ -18,6 +18,18 @@ import { NetworkView } from '../../../models/ViewModel'
 const MAX_RETRY_COUNT = 1
 
 /**
+ * ID a hierarchy's subnetwork is stored under in the network, table and view
+ * model stores.
+ *
+ * @param hierarchyId - ID of the hierarchy network
+ * @param subsystemId - ID of the subsystem node in the hierarchy
+ */
+export const getSubNetworkId = (
+  hierarchyId: IdType,
+  subsystemId: IdType,
+): IdType => `${hierarchyId}_${subsystemId}`
+
+/**
  * Custom error class that includes information about which fetch method was used.
  */
 export class NdexSubnetworkFetchError extends Error {
@@ -175,7 +187,7 @@ export const fetchNdexSubnetworkByQuery = async (
   }
 
   // Use Hierarchy ID and selected node ID as the new network ID
-  const interactionNetworkId: string = `${hierarchyId}_${subsystemId}`
+  const interactionNetworkId: string = getSubNetworkId(hierarchyId, subsystemId)
 
   try {
     // always refresh the data from the server

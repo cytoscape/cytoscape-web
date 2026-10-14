@@ -1,6 +1,6 @@
 import * as ViewModelFn from './impl/viewModelImpl'
-export { EdgeView } from './EdgeView'
-export { NetworkView } from './NetworkView'
-export { NodeView } from './NodeView'
+export type { EdgeView } from './EdgeView'
+export type { NetworkView } from './NetworkView'
+export type { NodeView } from './NodeView'
 
 export { ViewModelFn as default }

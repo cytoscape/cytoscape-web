@@ -1,6 +1,7 @@
 import { FormControl, MenuItem, Select, SelectChangeEvent } from '@mui/material'
 import React from 'react'
 
+import { ValueTypeNameChip } from '../../../components/ValueTypeNameChip'
 import { ValueTypeName } from '../../../models/TableModel'
 import { TableView } from '../models/DataInterfaceForMerge'
 import { MatchingTableRow } from '../models/MatchingTable'
@@ -20,19 +21,26 @@ export const TypeDropDownTemplate = React.memo(
   ({ type, rowData, rowIndex, netLst }: typeDropDownTemplateProps) => {
     const typeLst: Set<ValueTypeName | 'None'> = new Set(
       netLst
-        .filter((pair) => rowData.typeRecord.hasOwnProperty(pair[1]))
+        .filter((pair) =>
+          Object.prototype.hasOwnProperty.call(rowData.typeRecord, pair[1]),
+        )
         .map((pair) => rowData.typeRecord[pair[1]]),
     )
     const typeOptions = getAllConvertiableTypes(typeLst).map((type) => ({
-      label: type,
+      type,
       value: type,
     }))
+    // Call every store hook unconditionally (Rules of Hooks), then pick the
+    // one that matches the current table view.
+    const setNodeRow = useNodeMatchingTableStore((state) => state.setRow)
+    const setEdgeRow = useEdgeMatchingTableStore((state) => state.setRow)
+    const setNetRow = useNetMatchingTableStore((state) => state.setRow)
     const setMatchingTable =
       type === TableView.node
-        ? useNodeMatchingTableStore((state) => state.setRow)
+        ? setNodeRow
         : type === TableView.edge
-          ? useEdgeMatchingTableStore((state) => state.setRow)
-          : useNetMatchingTableStore((state) => state.setRow)
+          ? setEdgeRow
+          : setNetRow
     const onDropDownChange = (
       e: SelectChangeEvent<any>,
       rowData: MatchingTableRow,
@@ -49,13 +57,18 @@ export const TypeDropDownTemplate = React.memo(
         <Select
           data-testid={`merge-type-dropdown-${rowData.id}`}
           labelId={`select-label-${rowData.id}-type`}
+          size="small"
           value={rowData.type}
           onChange={(e) => onDropDownChange(e, rowData)}
           style={{ minWidth: 100, maxWidth: 200 }}
         >
           {typeOptions.map((option) => (
             <MenuItem key={option.value} value={option.value}>
-              {option.label}
+              <ValueTypeNameChip
+                type={option.type}
+                variant="chip-and-text"
+                showTooltip={false}
+              />
             </MenuItem>
           ))}
         </Select>
@@ -63,3 +76,5 @@ export const TypeDropDownTemplate = React.memo(
     )
   },
 )
+
+TypeDropDownTemplate.displayName = 'TypeDropDownTemplate'

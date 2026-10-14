@@ -1,0 +1,531 @@
+# Changelog
+
+All notable changes to `@cytoscape-web/api-types` are documented here.
+
+## 1.0.0-beta.5 (2026-10-05)
+
+> **Host compatibility.** This release documents the App API as implemented by
+> the Cytoscape Web build tagged `api-types-v1.0.0-beta.5` on the `development`
+> branch. **No released version of Cytoscape Web implements it yet** — the Panel
+> API, the `'layout-algorithm'` slot and the `network:loaded` event, like
+> everything added in beta.4, exist on `development` only, so an app can compile
+> against methods a deployed host does not have.
+>
+> Where it runs: [dev1.ndexbio.org/cytoscape](https://dev1.ndexbio.org/cytoscape)
+> once `development` has been deployed there, which is done by hand and can lag.
+> Production (web.cytoscape.org) stays on the 1.0.x line until Cytoscape Web
+> 1.1.0. To check a given deployment, open **Help → About**: it shows the
+> build's commit as a seven-character prefix (plus a build date). A hash says
+> nothing about order, so check ancestry in a clone of
+> [cytoscape-web](https://github.com/cytoscape/cytoscape-web): the deployment
+> has this API when the release tag is an ancestor of its commit.
+>
+> ```bash
+> git fetch --tags origin development
+> git merge-base --is-ancestor api-types-v1.0.0-beta.5 <prefix> && echo yes
+> ```
+
+### Added
+
+- **`network:loaded` event** (`{ networkId }`) — fired once a network's node and
+  edge tables and its view have all landed in the host's stores, i.e. once
+  `tableApi` / `elementApi` / `viewportApi` reads for it succeed. Workspace
+  networks are loaded lazily the first time they become current after a page
+  reload, so `network:switched` can arrive before the data exists and a read
+  made on the switch fails with `APP1`; nothing told the app to look again.
+  Re-read on `network:loaded`. A brand-new network gets it once alongside
+  `network:created`; a network another tab added gets it too. Not fired on
+  startup for networks already present when the event bus initialised, and at
+  most once per network until it is deleted. The first landing of a network's
+  tables still does not fire `data:changed`.
+
+- **`'layout-algorithm'` resource slot — `ResourceApi.registerLayout(options)`
+  and `unregisterLayout(id)`** (#734) — an app registers a layout algorithm
+  and the host runs it through its own layout engine, the way a Cytoscape
+  Desktop app's `CyLayoutAlgorithm` is run by the desktop layout manager. The
+  algorithm appears in the Layout menu (in an app block after the built-in
+  algorithms, sorted by label — there is no menu-gravity option), in
+  **Layout → Settings...** with every declared parameter editable, it can be
+  set as the default layout, and other apps or agents can run it with
+  `layout.applyLayout(networkId, { algorithmName })` using the qualified name
+  `<appId>::<id>` that `layout.getAvailableLayouts()` now reports. New types
+  `RegisterLayoutOptions`, `LayoutRunContext`, `LayoutPositions`,
+  `LayoutParameter`, `LayoutParameterUiType`; the `LayoutAlgorithmType` const
+  is exported; `LayoutAlgorithmInfo` gains `appId?`. `run(context)` only
+  computes positions (`{ nodeId: [x, y] }`, sync or async) from the
+  context's `nodes`, `edges`, current `positions`, `selectedNodeIds`,
+  current `parameters` and the app's `apis`; the host owns the running
+  flag, the undo entry and the viewport fit, and a throw or rejection aborts
+  the run without moving anything. Disabling the app removes its
+  algorithms; a default layout that pointed at one falls back to the host's
+  built-in default. `registerAll()` accepts
+  `{ slot: 'layout-algorithm', ... }` entries and `getSupportedSlots()` lists
+  the slot. Per-node sizes in the run context and a `setPreferredLayout`
+  API are left for later.
+
+- **One parameter spec for app layouts and service apps** (#734 follow-up) —
+  `RegisterLayoutOptions.parameters` is an **ordered array** of the same
+  JSON spec service apps declare (`AppParameter`:
+  `displayName`, `description`, `type`, `valueList`, `defaultValue`,
+  `validationType`, `columnTypeFilter`, `validationHelp`, `validationRegex`,
+  `minValue`, `maxValue`), plus a new `groups: string[]` that nests
+  parameters into fieldsets the way Cytoscape Desktop's
+  `@Tunable(groups = ...)` does. Fields render in array order; there is no
+  gravity field. The six UI types available to a layout are `text`,
+  `dropDown`, `radio`, `checkBox`, `nodeColumn` and `edgeColumn`
+  (`LayoutParameterUiType`); `ndexUUID` and `accessToken` stay service-app
+  only. A parameter's key in `context.parameters` is its `displayName`, or
+  its group path joined with `/` when two parameters share a label; values
+  are typed by the declaration (`checkBox` → boolean, `text` with
+  `validationType` `number` → number, `digits` → integer, otherwise string).
+  The host validates values as declared (regex, number / whole number,
+  `minValue` / `maxValue`, `valueList`) before storing them. A
+  `nodeColumn` / `edgeColumn` parameter's `columnTypeFilter` may be one
+  filter or a list of filters of which any may match
+  (`['string', 'long', 'integer', 'boolean']` for "every column except
+  doubles and lists"); the picker offers "(none)" and lists columns
+  alphabetically. Exported:
+  `AppParameter`, `ParameterValue`, `LayoutParameterUiType`, and the
+  `ParameterUiType`, `ValidationType`, `ColumnTypeFilter` consts. Spec:
+  `docs/specifications/APP_PARAMETERS_SPECIFICATION.md`. Not breaking for
+  any published version: an earlier shape — a record keyed by name, the
+  value types `'string' | 'integer' | 'long' | 'double' | 'boolean'`, and
+  `range` (`LayoutParameterType`, `LayoutParameterValue`) — existed only on
+  `development` between beta.4 and this release (#734, #736) and was never
+  published. An app written against it fails `registerLayout` with `APP9`
+  and a message naming the array spec.
+
+- **`PanelApi` — `panel.open(panel, tabId?)`** (#740) — opens one of the
+  workspace's collapsible panes (`'left' | 'right' | 'bottom'`) and selects a
+  tab inside it, so an app can bring its `'right-panel'` tab into view when an
+  action finishes instead of leaving the result behind a closed side panel.
+  `tabId` is the id the tab was registered with, or a built-in id
+  (`LeftPanelTabId`, `RightPanelTabId`, `BottomPanelTabId`); omit it to only
+  open the pane. Only the named pane is searched. Tab ids are not unique
+  across apps: among duplicates the calling app's own tab wins, otherwise the
+  first in tab order. Fails with `APP7` — leaving the pane as it was — when
+  the pane shows no such tab, and `APP9` for an unknown pane or an empty
+  `tabId`. Available as `AppContext.apis.panel` (bound to the app),
+  `usePanelApi()` from the new `cyweb/PanelApi` module, and
+  `window.CyWebApi.panel`. New types `PanelApi`, `PanelId`,
+  `OpenPanelResult`. Non-breaking; on an older host `apis.panel` is
+  `undefined`, so call it as `apis.panel?.open(...)`.
+
+### Removed — BREAKING
+
+- **BREAKING — `CyApp.components` is removed** (#786), with the
+  `ComponentMetadata` type and the `ComponentType` const that described it.
+  The field was the original, manifest-style way to contribute UI — a list of
+  `{ id, type: 'menu' | 'panel', component? }` entries — and has been
+  `@deprecated` since `resources` and runtime registration arrived. Its menu
+  half stopped being usable when the host took over menu rows: a row unmounts
+  with its menu, so a component mounted there cannot show UI of its own
+  (#784). Its panel half is removed with it, so there is one way to
+  contribute a panel. The host no longer renders anything from the field. An
+  app that still exports it with string `type` values loads and mounts as
+  before, its `resources` and `mount()` unaffected, and the host logs a
+  warning naming the app (shown by default only in development builds); the
+  entries themselves are ignored. An app that references the `ComponentType`
+  const at runtime (`type: ComponentType.Panel`) does not load at all:
+  `cyweb/ApiTypes` no longer exports it, so evaluating the app's
+  `./AppConfig` throws. Migrate each entry to a declaration in `resources`
+  (or a registration in `mount()`). Both are declared on
+  `CyAppWithLifecycle`, the app type to annotate with — this package does not
+  export `CyApp`, so an app that typed itself with a local `CyApp`
+  declaration switches to it:
+
+  | Removed entry                                  | Replacement                                                                                                                 |
+  | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+  | `{ id, type: ComponentType.Panel, component }` | `{ slot: 'right-panel', id, title, component }`                                                                             |
+  | `{ id, type: ComponentType.Menu, component }`  | `{ slot: 'apps-menu', id, label, onClick(apis) }`, with any UI opened from `onClick` through `apis.dialog.open({ render })` |
+
+  A panel that was loaded by name from the app's own Module Federation
+  `exposes` (an entry without `component`) needs no `exposes` entry any more:
+  only `./AppConfig` is loaded. Workspaces saved by an older host keep
+  working: the field is dropped when an app enters the AppStore, though an
+  app record in IndexedDB may keep it, unused.
+
+### Fixed
+
+- **`network.deleteNetwork` deletes a workspace network that has never been
+  shown** (#794). Until a workspace network becomes current it is only a
+  summary, so `deleteNetwork` failed with `APP1` for it — every sample but the
+  first after **Open Sample Networks**, and every network but the current one
+  after a reload — although the workspace listed it. `deleteCurrentNetwork`
+  failed the same way while the current network was still loading. A network
+  now exists for `deleteNetwork` when it is in the workspace or was created
+  with `addToWorkspace: false`; `APP1` means neither.
+- **Deleting the network the address bar names moves the URL** (#792).
+  `deleteNetwork`, `deleteCurrentNetwork` and `deleteAllNetworks` left the
+  deleted network's id in the URL, so the network that became current was
+  never loaded, and re-adding the deleted one showed "Loading network data..."
+  indefinitely. The host now replaces the history entry with the repaired
+  current network, or with `/<workspace>/networks` when none is left.
+
+## 1.0.0-beta.4 (2026-09-11)
+
+> **Host compatibility.** This release documents the App API as implemented by
+> the Cytoscape Web build tagged `api-types-v1.0.0-beta.4` on the `development`
+> branch. **No released version of Cytoscape Web implements it yet** — the
+> Dialog API, `applyVisualStyle` / `getVisualStyle`, `getStyles` / `switchStyle`,
+> and the `'modal-launcher'` and `'search-bar'` slots exist on `development`
+> only, so an app can compile against methods a deployed host does not have.
+>
+> Where it runs: [dev1.ndexbio.org/cytoscape](https://dev1.ndexbio.org/cytoscape)
+> once `development` has been deployed there, which is done by hand and can lag.
+> Production (web.cytoscape.org) stays on the 1.0.x line until Cytoscape Web
+> 1.1.0. To check a given deployment, open **Help → About**: it shows the
+> build's commit as a seven-character prefix (plus a build date). Compare that
+> prefix against `git rev-parse --short=7 'api-types-v1.0.0-beta.4^{commit}'`.
+
+### Added
+
+- **`@types/react` is now declared as a peer dependency** (`^18 || ^19`). The
+  published declarations have always referenced React types — `dist/index.d.ts`
+  alone has eight such references, and `mf-declarations.d.ts` types
+  `AppIdProvider` as `import('react').Provider` — but the package declared no
+  dependency at all. A consumer installing only `@cytoscape-web/api-types` with
+  `skipLibCheck: false` got `TS2307: Cannot find module 'react'` plus six
+  `TS2503: Cannot find namespace 'React'`. Declaring it means npm supplies the
+  types automatically, so nothing is required of the consumer; the failure was
+  only ever visible to those who had not already installed React types, which
+  is exactly the vanilla-JS audience this package is meant to serve.
+- **`VisualStyleApi.applyVisualStyle(networkId, visualStyle, options?)` and
+  `getVisualStyle(networkId)`** (#702) — give a network a whole visual style
+  instead of replaying every default, mapping and bypass by hand. Pair the two
+  to copy a style from one network to another. New type
+  `ApplyVisualStyleOptions` (`{ name?: string }`), new error code `APP14`
+  `STYLE_SET_FULL`, and `MAX_STYLES_PER_NETWORK` (50) is now exported.
+  **Copy, not a shared reference:** unlike Desktop's
+  `VisualMappingManager.setVisualStyle`, which attaches one style object to a
+  view, this deep-copies the style into the network's named-style set and makes
+  it active, so later edits to either side are independent. Bypasses are
+  dropped (they name the source network's elements). `getVisualStyle` likewise
+  returns a detached deep copy. `applyVisualStyle` requires a **complete**
+  style — every `VisualPropertyName` present — and reports `APP9` with what is
+  wrong otherwise; a partial style is rejected rather than merged over the
+  defaults, since applying one would silently drop the properties it omits.
+- **`VisualStyleApi.getStyles(networkId)` and `switchStyle(networkId, styleId)`**
+  (#702) — a network owns a set of named styles; these list it and move between
+  them. New type `NamedStyleInfo` (`{ id, name, active }`) and new error code
+  `APP15` `STYLE_NOT_FOUND`. Style ids are unique within one network's set and
+  mean nothing outside it, so an id from another network reports `APP15` —
+  copy across networks with `getVisualStyle` + `applyVisualStyle`. Switching to
+  the already-active style succeeds and does nothing, so re-asserting a style
+  does not dirty a clean network.
+- **`style:switched` event** — `{ networkId, styleId, previousStyleId }`, fired
+  when a network's active named style changes (the Vizmapper's style picker,
+  `applyVisualStyle`, an undone switch, or deleting the active style). A switch
+  replaces the whole style, so it also fires one `style:changed` per differing
+  property, up to ~60; `style:switched` arrives first and tells one switch
+  apart from N property edits.
+- **Dialog API** — `AppContextApis.dialog` (`DialogApi`, `OpenDialogOptions`,
+  `DialogRenderProps`).
+  `apis.dialog.open({ title, render, id?, maxWidth?, fullWidth? })` shows a
+  modal whose frame (title bar, Close "X", dismissal policy, error and Suspense
+  boundaries) the host owns and whose body the app renders; `render` receives
+  `close`. `close(dialogId?)` closes one dialog, or
+  the app's most recent one. Per-app: dialogs are closed automatically when
+  the app is disabled. The escape hatch for `'apps-menu'` items that need
+  custom UI. Not on `window.CyWebApi`.
+- **SVG icons are tinted by the host; raster icons are shown unchanged.** The
+  `icon` of a `'search-bar'` provider and of an `'apps-menu'` entry follows one
+  rule: an SVG (`data:image/svg+xml`, or a path ending in `.svg`) is painted as
+  a CSS mask in the surrounding text color — only its shape matters, it follows
+  the light/dark theme and the disabled state, multi-color SVG artwork renders
+  as a monochrome silhouette, and a cross-origin http(s) SVG needs CORS
+  headers. A raster image (PNG, JPEG, ...) keeps its colors; ship one to keep a
+  logo's colors. An inlined SVG `data:` URI is the easy choice for a glyph.
+- **`ResourceApi.getResourceVisibility(id, slot?)`** takes an optional slot,
+  since ids are unique per slot rather than per app.
+- **Escape closes app dialogs.** Both `'modal-launcher'` modals and Dialog API
+  dialogs now close on Escape (the backdrop stays inert), through the same
+  path as `requestClose` / `close` and the host's Close "X".
+- **`'modal-launcher'` resource slot** (#690). Apps register modal dialog
+  content the host renders inside its own React tree — host theme, error
+  isolation, Suspense for lazy chunks, and the host's dialog shell with its
+  button-only dismissal policy and structural Close "X". New types
+  `RegisterModalOptions` and `ModalHostProps`; `ResourceSlot` and
+  `ResourceDeclaration`/`RegisterResourceEntry` gained the slot; and
+  `ResourceApi` gained `registerModal`, `unregisterModal`, and the
+  imperative `openModal(id)` / `closeModal(id)` — callable from app logic
+  with no mounted component (a search provider's `onSubmit`, a menu
+  action). Open modals survive the launching component's unmount and are
+  closed automatically on app deactivation; `unregisterModal` and
+  `unregisterAll` close what they remove.
+- **`'search-bar'` resource slot** (#688 — landed after the entries below
+  were written). `RegisterNetworkSearchProviderOptions`,
+  `NetworkSearchQuery`, `NetworkSearchOptionsHostProps`; `ResourceApi`
+  gained `registerNetworkSearchProvider` / `unregisterNetworkSearchProvider`.
+- **Readiness promise.** `CyWebApi.whenReady()` resolves with the API once
+  startup completes (immediately if already ready); `CyWebApi.isReady()`
+  returns the current boolean. Wraps the one-shot `cywebapi:ready` event.
+- **Scoped current-network API.** `CyWebApi.forNetwork(networkId?)` returns
+  the network-scoped domains (`element`, `table`, `selection`, `viewport`,
+  `visualStyle`, `export`) with `networkId` pre-bound, so it need not be
+  passed on every call. `layout` is included but carries only its
+  network-scoped method, `applyLayout`; read the available algorithms from
+  the top-level `layout.getAvailableLayouts()`. Omit the argument to target
+  the current network, resolved at call time. New type `ScopedCyWebApi`.
+- **Visual Style read API.** `VisualStyleApi` was previously write-only; it
+  now exposes `getVisualProperties`, `getDefault`, `getBypass`,
+  `getBypasses`, and `getMapping` (all returning `ApiResult`).
+- **`VisualStyleApi.setDefaults(networkId, defaults)`** applies many
+  visual-property defaults in one all-or-nothing validated call.
+- **`VisualStyleApi.setBypasses(networkId, elementIds, bypasses)`** applies
+  many visual-property bypasses to a set of elements in one all-or-nothing
+  validated call.
+- **Batch element creation.** `ElementApi.createNodes(networkId, specs)` and
+  `createEdges(networkId, specs)` create many elements in one operation that
+  records a single undo entry. New types `NodeSpec`, `EdgeSpec`,
+  `BatchCreateOptions`.
+- **`ElementApi.getNodes(networkId, nodeIds?)`** — batch node read; unknown
+  ids are reported in `missing` instead of failing the call.
+- **`SelectionApi.clearSelection(networkId)`** convenience.
+- **`TableApi` id round-tripping.** `getTable` and `exportTableToTsv` include
+  the element id by default (new `includeId` option); an exported node TSV
+  now round-trips through `importTableFromTsv` with no manual id handling.
+  `importTableFromTsv` gained a `skippedCells` result field.
+- **`AppCodes.COLUMN_NOT_FOUND` (`APP10`).**
+
+### Changed — BREAKING
+
+- **BREAKING — `'apps-menu'` entries are plain data, not components.**
+  `RegisterMenuItemOptions` lost `component`, `closeOnAction`, `errorFallback`
+  and `title`; it now takes `label` (required), `tooltip`, `icon` (an image
+  URI — http(s), `data:image`, or a root-relative host asset path, exactly as
+  for a `'search-bar'` provider; never a component — an SVG is painted by the
+  host in the row's text color, a raster image shown as-is), `onClick(apis)` and
+  `isEnabled(apis)`, alongside the unchanged `order`/`group`/`requires`. The
+  host renders every entry itself as a standard menu row, so no app can change
+  the shared dropdown's size, font or colors. `MenuItemHostProps` is gone with
+  the component it described. Registering with a `component` now fails with
+  `APP9` and a migration message. Move an old component's action into
+  `onClick`; move its form or other UI into `apis.dialog.open({ render })` (or
+  a `'modal-launcher'` registration) called from `onClick`. `'right-panel'`
+  registrations are unchanged.
+
+- `SelectionApi.additiveSelect` / `additiveDeselect` / `toggleSelected` now
+  take `(networkId, nodeIds, edgeIds)` — separate arrays — instead of a
+  single merged `ids` array. `additiveUnselect` is renamed
+  `additiveDeselect`.
+- `VisualStyleApi.removeMapping` is renamed `deleteMapping`.
+- `VisualStyleApi.createContinuousMapping(networkId, vpName, options)`
+  replaces the nine-argument positional form
+  (`CreateContinuousMappingOptions`).
+- `TableApi.setColumnName` is renamed `renameColumn`.
+- `ExportApi.exportToCx2` now returns the canonical `Cx2` model type instead
+  of a loose `any[]` alias.
+- `ElementApi.generateNextNodeId` / `generateNextEdgeId` now return
+  `ApiResult<{ nodeId }>` / `ApiResult<{ edgeId }>` instead of a bare string.
+- `ElementApi.getConnectedEdges` results now include each edge's `id`.
+- `NetworkApi.createNetworkFromEdgeList` / `createNetworkFromNodeList` now
+  default `addToWorkspace` to `true` (matching `createNetworkFromCx2`).
+- `ResourceApi.getSupportedSlots` / `getRegisteredResources` /
+  `getResourceVisibility` now return `ApiResult` instead of raw values.
+- `WorkspaceApi.getNetworkList` is renamed `getNetworks` and returns
+  `{ networks }`; `LayoutApi.getAvailableLayouts` returns `{ layouts }` —
+  collection getters now uniformly wrap their result in a named object.
+- `ViewportApi.getNodePositions` takes an optional `nodeIds` (all nodes when
+  omitted) and returns `{ positions, missing }`.
+- `ElementApi.getEdges` carries attributes, accepts an optional `edgeIds`
+  filter, and returns `{ edges, missing }`.
+- `ElementApi.deleteNodes` / `deleteEdges` results gained a `missing` field
+  listing requested ids that did not exist.
+
+### Fixed
+
+- Context menu removal is now scoped to the owning app — one app can no
+  longer remove another app's item by guessing its id.
+- `useCyWebEvent` no longer re-registers its window listener when a fresh
+  inline handler is passed each render (handler held in a ref).
+- Create-time `options.bypass` on `createNode` / `createEdge` is now
+  validated (property existence, node/edge scope, value type) before the
+  element is created.
+- `tableApi.deleteColumn` / `renameColumn` / `getValue` now report
+  `COLUMN_NOT_FOUND` for a missing column instead of silently succeeding.
+- `createColumn` validates its default value against the declared type.
+- `importTableFromTsv` no longer coerces unparseable numeric/boolean cells
+  to `0` / `false` — they are skipped and reported.
+- The "always returns `ApiResult`, never throws" contract now holds across
+  the whole surface.
+
+## 1.0.0-beta.3 (2026-07-16)
+
+### Added
+
+- `ElementApi.getEdges(networkId)` — read all edge IDs and endpoints in one
+  call without an additional `getEdge()` round-trip per edge
+- `NetworkApi.createNetworkFromNodeList(...)` — create an induced or explicit
+  subnetwork from a node subset while preserving IDs, attributes, columns, and
+  node positions
+- `TableApi.getColumns(networkId, tableType)` — read table schema without
+  materializing table rows
+- `network:changed` event with added/removed node and edge IDs
+
+### Changed — BREAKING
+
+- **`ApiErrorCode` (flat enum) removed.** Replaced by domain-grouped code
+  catalogs — `ElementCodes`, `TableCodes`, `StyleCodes`, `AppCodes` — each
+  a `Record<string, { code, severity, message }>` mirroring a
+  diagnostic-style error model. `ApiError` gains a `severity` field whose
+  value is `error` or `warning`; `ApiError.cx2Code` (an interim field from a prior
+  beta) is removed now that the primary `code` carries the precise
+  identity directly.
+- Codes that enforce a CX2 validation requirement now use the CX2 code
+  string itself as `error.code` (e.g. `FK1`, `BV1`, `MI3`) instead of a
+  coarse category. Codes with no CX2 equivalent (workspace/registry/
+  runtime concepts) use a new `APP1`–`APP9` namespace.
+- `fail()` signature changed: `fail(codeDef, ...templateArgs)` replaces
+  `fail(code, message, cx2Code?)`. External apps constructing `ApiError`
+  values directly (uncommon) must update to the new shape.
+- Boundary validation now rejects invalid element attributes, table schemas and
+  values, visual style values, bypass targets/scopes, and mapping
+  sources/bounds that earlier prereleases could accept.
+- `NetworkApi.deleteNetwork()` now uses the shared network-deletion
+  orchestrator. `DeleteNetworkOptions.navigate` remains in the type for source
+  compatibility but no longer changes behavior: deleting the current network
+  always repairs `currentNetworkId`, while deleting a non-current network does
+  not switch networks.
+
+**Old → new code mapping** (old `ApiErrorCode` member → new catalog entry):
+
+| Old                                                       | New                                                                                                                                                                                                                                         |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NetworkNotFound` (`NETWORK_NOT_FOUND`)                   | `AppCodes.NETWORK_NOT_FOUND` (`APP1`)                                                                                                                                                                                                       |
+| `NodeNotFound` (`NODE_NOT_FOUND`)                         | `ElementCodes.NODE_NOT_FOUND` (`GL1`)                                                                                                                                                                                                       |
+| `EdgeNotFound` (`EDGE_NOT_FOUND`)                         | `ElementCodes.EDGE_NOT_FOUND` (`GL2`)                                                                                                                                                                                                       |
+| `ElementNotFound` (`ELEMENT_NOT_FOUND`)                   | removed — bypass-target checks now return `StyleCodes.BYPASS_TARGET_NOT_FOUND` (`BV1`) directly                                                                                                                                             |
+| `InvalidInput` (`INVALID_INPUT`)                          | `AppCodes.INVALID_INPUT` (`APP9`) for the residual generic case; many call sites now return a precise code instead (`FK1`, `FK2`, `A6`, `A8`, `A1`, `AC6`, `BV1`, `BV2`, `BV5`, `MC1`, `MI1`, `MI2`, `MI3`, `V7`, `VP1`–`VP10`, `N3`, `E6`) |
+| `InvalidCx2` (`INVALID_CX2`)                              | `AppCodes.INVALID_CX2` (`APP8`)                                                                                                                                                                                                             |
+| `OperationFailed` (`OPERATION_FAILED`)                    | `AppCodes.OPERATION_FAILED` (`APP3`)                                                                                                                                                                                                        |
+| `LayoutEngineNotFound` (`LAYOUT_ENGINE_NOT_FOUND`)        | `AppCodes.LAYOUT_ENGINE_NOT_FOUND` (`APP4`)                                                                                                                                                                                                 |
+| `FunctionNotAvailable` (`FUNCTION_NOT_AVAILABLE`)         | `AppCodes.FUNCTION_NOT_AVAILABLE` (`APP5`)                                                                                                                                                                                                  |
+| `NoCurrentNetwork` (`NO_CURRENT_NETWORK`)                 | `AppCodes.NO_CURRENT_NETWORK` (`APP2`)                                                                                                                                                                                                      |
+| `ContextMenuItemNotFound` (`CONTEXT_MENU_ITEM_NOT_FOUND`) | `AppCodes.CONTEXT_MENU_ITEM_NOT_FOUND` (`APP6`)                                                                                                                                                                                             |
+| `ResourceNotFound` (`RESOURCE_NOT_FOUND`)                 | `AppCodes.RESOURCE_NOT_FOUND` (`APP7`)                                                                                                                                                                                                      |
+
+See [ErrorCodes.md](https://github.com/cytoscape/cytoscape-web/blob/development/src/app-api/api_docs/ErrorCodes.md)
+for the full catalog, one entry per code.
+
+### Changed
+
+- `ElementApi.createNode()` and `createEdge()` now return the complete created
+  element data in addition to its ID. `deleteNodes()` and `deleteEdges()` now
+  return the complete deleted element data in addition to deletion counts.
+- `TableApi.importTableFromTsv()` now returns `skippedRows`, listing TSV key
+  values that did not match an element in the target network.
+- `data:changed` event details now include required `addedColumns` and
+  `removedColumns` arrays. A rename is reported as one removed and one added
+  column.
+- `VisualStyleApi.createDiscreteMapping()` accepts an optional mapping-entry
+  record. `createContinuousMapping()` accepts optional `controlPoints`,
+  `ltMinVpValue`, and `gtMaxVpValue` arguments.
+
+### Fixed
+
+- TSV imports merge cells into existing rows instead of replacing unrelated
+  attributes, use batched `setValues()` updates, and report unmatched keys
+- Table column creation, deletion, and rename stay synchronized with Table
+  Browser display configuration; mapping sources follow renames and mappings
+  referencing deleted columns are removed
+- Network deletion consistently clears related network, table, view, style,
+  summary, undo, filter, opaque-aspect, validation, and per-network UI state
+- Layout engine dynamic-import failures, synchronous throws, and callback
+  failures resolve as `ApiFailure` and reset the layout-running state
+- Discrete mapping creation commits mapping entries synchronously
+
+## 1.0.0-beta.2 (2026-03-18)
+
+### Added — Step 3.7 (TSV Table I/O)
+
+- `getTable(networkId, tableType, options?)` — bulk read with column metadata
+- `exportTableToTsv(networkId, tableType, options?)` — serialize table to TSV string
+- `importTableFromTsv(networkId, tableType, tsvText, options?)` — parse TSV and write to table
+- New types: `ColumnInfo`, `GetTableOptions`, `ExportTableToTsvOptions`, `ImportTableFromTsvOptions`
+
+## 1.0.0-beta.1 (2026-03-17)
+
+### Changed
+
+- Republished the beta milestone with version and documentation alignment; no
+  additional public API change from `1.0.0-beta.0`
+
+## 1.0.0-beta.0 (2026-03-17)
+
+### Added — Phase 3.6 (Graph Traversal API)
+
+- 10 read-only graph query methods on `ElementApi`:
+  `getNodeIds`, `getEdgeIds`, `getConnectedEdges`, `getConnectedNodes`,
+  `getOutgoers`, `getIncomers`, `getSuccessors`, `getPredecessors`,
+  `getRoots`, `getLeaves`
+
+### Changed
+
+- Version bumped from `0.1.0-alpha.4` to `1.0.0-beta.0` (pre-beta milestone)
+
+## 0.1.0-alpha.4 (2026-03-15)
+
+### Added — Phase 2 (App Resource Registration)
+
+- `ResourceSlot`, `ResourceApi`, `ResourceDeclaration`, `RegisterPanelOptions`,
+  `RegisterMenuItemOptions`, `RegisteredResourceInfo`, `ResourceVisibilityResult`
+- `AppContextApis` interface — per-app API shape extending `CyWebApiType` with
+  required `resource` and `contextMenu` fields
+- `PanelHostProps`, `MenuItemHostProps` — host-injected prop types for plugin
+  components rendered in right-panel and apps-menu slots
+- `RegisterResourceEntry` for batch `registerAll()` calls
+- `RESOURCE_NOT_FOUND` error code added to `ApiErrorCode`
+- `cyweb/AppIdContext` module declaration in `mf-declarations.d.ts`
+- `cyweb/ContextMenuApi` module declaration **removed** (hook deleted in Phase 2)
+
+### Changed
+
+- `CyWebApiType` now explicitly does NOT include `resource` (window-safe type)
+- `AppContext.apis` typed as `AppContextApis` (mount-safe, includes `resource` +
+  per-app `contextMenu`)
+- `CyAppWithLifecycle` gains optional `resources?: ResourceDeclaration[]` for
+  declarative registration
+
+## 0.1.0-alpha.3 (2026-03-12)
+
+### Added — Phase 1g–1h
+
+- `ContextMenuApi`, `ContextMenuItemConfig`, `ContextMenuHandlerContext`,
+  `ContextMenuTarget` types for context menu registration
+- `cyweb/ContextMenuApi` module declaration (later removed in alpha.4)
+
+### Changed
+
+- Updated `AppContext` with `CyAppWithLifecycle` type
+
+## 0.1.0-alpha.2 (2026-03-12)
+
+### Added — Phase 1f (Event Bus)
+
+- `CyWebEvents` interface with typed detail shapes for all 8 events
+- `CyWebEventMap` for `window.addEventListener` overloads
+- Ambient `WindowEventMap` augmentation for typed event listeners
+- `cywebapi:ready` event type
+
+## 0.1.0-alpha.1 (2026-03-10)
+
+### Added — Phase 1a–1e (Domain APIs)
+
+- 9 domain API interfaces: `ElementApi`, `NetworkApi`, `SelectionApi`,
+  `ViewportApi`, `TableApi`, `VisualStyleApi`, `LayoutApi`, `ExportApi`,
+  and `WorkspaceApi`, plus `CyWebApiType` (composite)
+- `ApiResult<T>`, `ApiSuccess<T>`, `ApiFailure`, `ApiError`, `ApiErrorCode`,
+  `ok()`, `fail()` utility types and functions
+- `AppContext`, `CyAppWithLifecycle` types
+- Model re-exports: `IdType`, `Network`, `Node`, `Edge`, `Table`,
+  `VisualStyle`, `NetworkView`, `NetworkSummary`, `Cx2`, etc.
+- `cyweb/*` module declarations for all Module Federation remotes
+- `Window.CyWebApi` ambient augmentation
+
+## 0.1.0-alpha.0 (2026-02-26)
+
+### Added
+
+- Initial package scaffolding with tsup build
+- Phase 0 foundation types (`ApiResult<T>`, `AppContext`, element types)

@@ -6,13 +6,23 @@ import { ColorType } from './ColorType'
 export type ColorPalette = ColorType[]
 
 /**
+ * How a palette varies across its range. The pickers group by this, so it is
+ * the one taxonomy for palettes.
+ */
+export type PaletteCategory =
+  | 'sequential'
+  | 'diverging'
+  | 'viridis'
+  | 'categorical'
+
+/**
  * Palette metadata for identification and display
  */
 export interface PaletteMetadata {
   id: string
   name: string
   description?: string
-  category: 'sequential' | 'diverging' | 'viridis' | 'categorical'
+  category: PaletteCategory
   colorBlindSafe?: boolean
 }
 

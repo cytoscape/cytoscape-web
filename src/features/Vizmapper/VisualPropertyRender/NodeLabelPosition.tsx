@@ -1,5 +1,11 @@
-import { MantineProvider, NumberInput } from '@mantine/core'
-import { Box, Button, MenuItem, Select, Typography } from '@mui/material'
+import {
+  Box,
+  Button,
+  MenuItem,
+  Select,
+  TextField,
+  Typography,
+} from '@mui/material'
 import React from 'react'
 
 import { DEFAULT_NODE_LABEL_POSITION } from '../../../models/VisualStyleModel/impl/defaultVisualStyle'
@@ -13,12 +19,30 @@ import {
   NodeLabelPositionValueType,
 } from '../../../models/VisualStyleModel/VisualPropertyValue'
 
+/**
+ * The offset a draft describes, or undefined when the draft is not a complete
+ * number. Number(), not parseInt(): parseInt truncated "1.5" to 1 and "1e3" to
+ * 1, silently storing an offset the user never typed.
+ */
+export function parseOffset(draft: string): number | undefined {
+  if (draft.trim() === '') {
+    return undefined
+  }
+  const parsed = Number(draft)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+/** Whether a draft is a complete number, so Confirm may write it. */
+export function isValidOffset(draft: string): boolean {
+  return parseOffset(draft) !== undefined
+}
+
 export function NodeLabelPositionPicker(props: {
   currentValue: NodeLabelPositionType | null
   onValueChange: (labelPosition: NodeLabelPositionType) => void
   closePopover: (reason: string) => void
 }): React.ReactElement {
-  const { onValueChange, currentValue } = props
+  const { currentValue } = props
 
   const [labelOrientation, setlabelOrientation] =
     React.useState<NodeLabelOrientationType>(
@@ -31,8 +55,21 @@ export function NodeLabelPositionPicker(props: {
     currentValue ?? DEFAULT_NODE_LABEL_POSITION,
   )
 
+  // Raw text for the two offset fields. Bound to the inputs so partial input
+  // ("-", "") survives: binding them to the parsed number rewrote the field on
+  // every keystroke, so a negative offset could not be typed.
+  const [marginXDraft, setMarginXDraft] = React.useState(
+    String((currentValue ?? DEFAULT_NODE_LABEL_POSITION).MARGIN_X),
+  )
+  const [marginYDraft, setMarginYDraft] = React.useState(
+    String((currentValue ?? DEFAULT_NODE_LABEL_POSITION).MARGIN_Y),
+  )
+
   React.useEffect(() => {
-    setLocalValue(currentValue ?? DEFAULT_NODE_LABEL_POSITION)
+    const next = currentValue ?? DEFAULT_NODE_LABEL_POSITION
+    setLocalValue(next)
+    setMarginXDraft(String(next.MARGIN_X))
+    setMarginYDraft(String(next.MARGIN_Y))
   }, [currentValue])
 
   const handleOrientationChange = (orientation: NodeLabelOrientationType) => {
@@ -87,40 +124,55 @@ export function NodeLabelPositionPicker(props: {
         </Select>{' '}
       </Box>
 
-      <MantineProvider>
-        <Box sx={{ p: 1 }}>
-          <Box sx={{ mb: 1 }}>X offset</Box>
-          <NumberInput
-            allowDecimal={false}
-            value={localValue.MARGIN_X}
-            onChange={(e: number) => {
-              setLocalValue({
-                ...localValue,
-                MARGIN_X: e,
-              })
-            }}
-          />
-        </Box>
+      <Box sx={{ p: 1 }}>
+        <Box sx={{ mb: 1 }}>X offset</Box>
+        <TextField
+          type="number"
+          size="small"
+          inputProps={{ step: 1, 'aria-label': 'Label X offset' }}
+          value={marginXDraft}
+          error={!isValidOffset(marginXDraft)}
+          onChange={(e) => {
+            setMarginXDraft(e.target.value)
+            // Write MARGIN_X only for a parsable draft; "-" or "" leaves the
+            // last good offset in place instead of snapping to 0.
+            const parsed = parseOffset(e.target.value)
+            if (parsed !== undefined) {
+              setLocalValue({ ...localValue, MARGIN_X: parsed })
+            }
+          }}
+        />
+      </Box>
 
-        <Box sx={{ p: 1 }}>
-          <Box sx={{ mb: 1 }}>Y offset</Box>
+      <Box sx={{ p: 1 }}>
+        <Box sx={{ mb: 1 }}>Y offset</Box>
+        <TextField
+          type="number"
+          size="small"
+          inputProps={{ step: 1, 'aria-label': 'Label Y offset' }}
+          value={marginYDraft}
+          error={!isValidOffset(marginYDraft)}
+          onChange={(e) => {
+            setMarginYDraft(e.target.value)
+            const parsed = parseOffset(e.target.value)
+            if (parsed !== undefined) {
+              setLocalValue({ ...localValue, MARGIN_Y: parsed })
+            }
+          }}
+        />
+      </Box>
 
-          <NumberInput
-            allowDecimal={false}
-            value={localValue.MARGIN_Y}
-            onChange={(e: number) => {
-              setLocalValue({
-                ...localValue,
-                MARGIN_Y: e,
-              })
-            }}
-          />
-        </Box>
-      </MantineProvider>
-
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          gap: 1,
+          p: 1,
+          mt: 2,
+        }}
+      >
         <Button
-          color="primary"
+          variant="outlined"
           onClick={() => {
             props.closePopover('cancel')
             setLocalValue(currentValue ?? DEFAULT_NODE_LABEL_POSITION)
@@ -129,13 +181,10 @@ export function NodeLabelPositionPicker(props: {
           Cancel
         </Button>
         <Button
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-          }}
+          variant="contained"
+          disabled={
+            !isValidOffset(marginXDraft) || !isValidOffset(marginYDraft)
+          }
           onClick={() => {
             props.onValueChange(localValue)
             props.closePopover('confirm')
@@ -148,8 +197,6 @@ export function NodeLabelPositionPicker(props: {
   )
 }
 
-export function NodeLabelPositionRender(props: {
-  value: NodeLabelPositionType
-}): React.ReactElement {
+export function NodeLabelPositionRender(): React.ReactElement {
   return <Typography variant="body1" sx={{ fontSize: 8 }}></Typography>
 }

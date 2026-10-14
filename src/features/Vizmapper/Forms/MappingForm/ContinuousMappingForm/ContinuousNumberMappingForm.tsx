@@ -1,8 +1,8 @@
-import AddCircleIcon from '@mui/icons-material/AddCircle'
+import AddIcon from '@mui/icons-material/Add'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import ArrowLeftIcon from '@mui/icons-material/ArrowLeft'
 import ArrowRightIcon from '@mui/icons-material/ArrowRight'
-import Close from '@mui/icons-material/DisabledByDefault'
+import ClearIcon from '@mui/icons-material/Clear'
 import EditIcon from '@mui/icons-material/Edit'
 import {
   Box,
@@ -10,10 +10,10 @@ import {
   IconButton,
   Paper,
   Popover,
-  TextField,
   Tooltip,
   Typography,
 } from '@mui/material'
+import { useTheme } from '@mui/material/styles'
 import { scaleLinear as visXScaleLinear } from '@visx/scale'
 import { extent } from 'd3-array'
 import debounce from 'lodash/debounce'
@@ -21,14 +21,19 @@ import * as React from 'react'
 import Draggable from 'react-draggable'
 
 import { useVisualStyleStore } from '../../../../../data/hooks/stores/VisualStyleStore'
+import { useUndoStack } from '../../../../../data/hooks/useUndoStack'
 import { IdType } from '../../../../../models/IdType'
+import { UndoCommandType } from '../../../../../models/StoreModel/UndoStoreModel'
 import {
   VisualProperty,
   VisualPropertyValueType,
 } from '../../../../../models/VisualStyleModel'
 import { ContinuousMappingFunction } from '../../../../../models/VisualStyleModel/VisualMappingFunction'
 import { ContinuousFunctionControlPoint } from '../../../../../models/VisualStyleModel/VisualMappingFunction/ContinuousMappingFunction'
-import { VisualPropertyValueForm } from '../../VisualPropertyValueForm'
+import {
+  isOpacityVisualProperty,
+  VisualPropertyValueForm,
+} from '../../VisualPropertyValueForm'
 import { ExpandableNumberInput } from './ExpandableNumberInput'
 import { addHandle, editHandle, Handle, removeHandle } from './handleUtil'
 import { LineChart } from './LineChart'
@@ -37,12 +42,15 @@ export function ContinuousNumberMappingForm(props: {
   currentNetworkId: IdType
   visualProperty: VisualProperty<VisualPropertyValueType>
 }): React.ReactElement {
+  const theme = useTheme()
   const m: ContinuousMappingFunction | null = props.visualProperty
     ?.mapping as ContinuousMappingFunction
 
-  if (m == null) {
-    return <Box></Box>
-  }
+  // CW-591: show/edit opacity mapping values as 0-100% (they are stored as 0-1),
+  // matching the main opacity slider in the style editor.
+  const vpValueDisplayProps = isOpacityVisualProperty(props.visualProperty.name)
+    ? { displayMultiplier: 100, suffix: '%', displayDecimals: 0 }
+    : {}
 
   const [addHandleFormValue, setAddHandleFormValue] = React.useState(0)
   const [addHandleFormVpValue, setAddHandleFormVpValue] = React.useState(0)
@@ -73,7 +81,14 @@ export function ContinuousNumberMappingForm(props: {
     setCreateHandleAnchorEl(null)
   }
 
-  const { min, max, controlPoints } = m
+  // Fall back to a harmless empty mapping so the hooks below can run
+  // unconditionally; the component still bails out before rendering when
+  // the real mapping is missing (see the early return above the JSX below).
+  const { min, max, controlPoints } = m ?? {
+    min: { value: 0, vpValue: 0 },
+    max: { value: 0, vpValue: 0 },
+    controlPoints: [] as ContinuousFunctionControlPoint[],
+  }
 
   const [minState, setMinState] = React.useState(min)
   const [maxState, setMaxState] = React.useState(max)
@@ -81,6 +96,7 @@ export function ContinuousNumberMappingForm(props: {
   const setContinuousMappingValues = useVisualStyleStore(
     (state) => state.setContinuousMappingValues,
   )
+  const { postEdit } = useUndoStack()
 
   const LINE_CHART_WIDTH = 600
   const LINE_CHART_HEIGHT = 275
@@ -147,6 +163,14 @@ export function ContinuousNumberMappingForm(props: {
   const xMapper = (d: [number, number]): number => xScale(xGetter(d)) ?? 0
   const yMapper = (d: [number, number]): number => yScale(yGetter(d)) ?? 0
 
+  // The debounced commit below must keep a stable identity (recreating it
+  // would drop pending trailing calls), so it reads the current mapping and
+  // props through this ref instead of its creation-time closure — otherwise
+  // every commit spreads the mount-time mapping and records the mount-time
+  // value as the undo "before" state, corrupting the undo stack.
+  const latest = React.useRef({ m, props, postEdit })
+  latest.current = { m, props, postEdit }
+
   const updateContinuousMapping = React.useMemo(
     () =>
       debounce(
@@ -157,12 +181,12 @@ export function ContinuousNumberMappingForm(props: {
           ltMinVpValue: VisualPropertyValueType,
           gtMaxVpValue: VisualPropertyValueType,
         ) => {
-          setContinuousMappingValues(
-            props.currentNetworkId,
-            props.visualProperty.name,
+          const { m, props, postEdit } = latest.current
+          const nextMapping: ContinuousMappingFunction = {
+            ...m,
             min,
             max,
-            handles.map((h) => {
+            controlPoints: handles.map((h) => {
               return {
                 value: h.value,
                 vpValue: h.vpValue,
@@ -170,12 +194,33 @@ export function ContinuousNumberMappingForm(props: {
             }),
             ltMinVpValue,
             gtMaxVpValue,
+          }
+
+          postEdit(
+            UndoCommandType.SET_CONTINUOUS_MAPPING,
+            `Update ${props.visualProperty.displayName} continuous mapping`,
+            [
+              props.currentNetworkId,
+              props.visualProperty.name,
+              props.visualProperty.mapping,
+            ],
+            [props.currentNetworkId, props.visualProperty.name, nextMapping],
+          )
+
+          setContinuousMappingValues(
+            props.currentNetworkId,
+            props.visualProperty.name,
+            min,
+            max,
+            nextMapping.controlPoints,
+            ltMinVpValue,
+            gtMaxVpValue,
           )
         },
         200,
         { trailing: true },
       ),
-    [],
+    [setContinuousMappingValues],
   )
 
   React.useEffect(() => {
@@ -200,6 +245,11 @@ export function ContinuousNumberMappingForm(props: {
           }
         }),
     )
+    // Key-driven resync: rebuild local min/max/handles from the store only
+    // when the mapped attribute changes. minState/maxState are `??` fallbacks
+    // read fresh at trigger time; adding them would reset the user's
+    // in-progress input from the (200ms-lagging, debounced) store value.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resync keyed on mapping attribute only
   }, [props.visualProperty.mapping?.attribute])
 
   const createHandle = (value: number, vpValue: number): void => {
@@ -258,9 +308,12 @@ export function ContinuousNumberMappingForm(props: {
         value: max,
       })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on handle edits; the [minState]/[maxState] effects own the inverse clamping
   }, [handles])
 
   // anytime someone changes the min value, make sure all handle values are greater than the min
+  // note: `handles` must stay out of the deps — setHandles creates new identities
+  // every run, so adding it would re-trigger this effect forever
   React.useEffect(() => {
     const newHandles = [...handles]
       .map((h) => {
@@ -285,9 +338,12 @@ export function ContinuousNumberMappingForm(props: {
     setAddHandleFormValue(
       ((minState.value as number) + (maxState.value as number)) / 2,
     )
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- min-edit trigger only; adding handles would loop
   }, [minState])
 
   // anytime someone changes the max value, make sure all handle values are less than the max
+  // note: `handles` must stay out of the deps — setHandles creates new identities
+  // every run, so adding it would re-trigger this effect forever
   React.useEffect(() => {
     const newHandles = [...handles]
       .map((h) => {
@@ -311,21 +367,32 @@ export function ContinuousNumberMappingForm(props: {
     setAddHandleFormValue(
       ((minState.value as number) + (maxState.value as number)) / 2,
     )
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- max-edit trigger only; adding handles would loop
   }, [maxState])
 
+  if (m == null) {
+    return <Box></Box>
+  }
+
   return (
-    <Paper sx={{ backgroundColor: '#D9D9D9', pb: 2 }}>
+    <Paper
+      variant="filled"
+      sx={{
+        pt: 1,
+        pb: 2,
+      }}
+    >
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           pt: 10,
-          pb: 2,
+          pb: 1,
         }}
       >
         <Paper
-          elevation={4}
+          variant="outlined"
           sx={{
             display: 'flex',
             position: 'relative',
@@ -351,6 +418,8 @@ export function ContinuousNumberMappingForm(props: {
                   bottom: LINE_CHART_MARGIN_BOTTOM,
                   left: LINE_CHART_MARGIN_LEFT,
                 }}
+                labelColor={theme.palette.text.secondary}
+                strokeColor={theme.palette.text.secondary}
                 data={data as Array<[number, number]>}
                 domain={valueDomain}
                 range={vpValueDomain}
@@ -381,10 +450,10 @@ export function ContinuousNumberMappingForm(props: {
                       bottom: LINE_CHART_HEIGHT - LINE_CHART_MARGIN_BOTTOM,
                     }}
                     handle=".handle"
-                    onStart={(e) => {
+                    onStart={() => {
                       setlastDraggedHandleId(h.id)
                     }}
-                    onStop={(e) => {
+                    onStop={() => {
                       setlastDraggedHandleId(h.id)
                     }}
                     onDrag={(e, data) => {
@@ -442,7 +511,6 @@ export function ContinuousNumberMappingForm(props: {
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
-                          border: '0.5px solid #03082d',
                         }}
                       >
                         <Box
@@ -452,7 +520,8 @@ export function ContinuousNumberMappingForm(props: {
                             width: 2,
                             top: HANDLE_VERTICAL_OFFSET,
                             height: pixelPositionY,
-                            backgroundColor: '#03082d',
+                            backgroundColor: (theme) =>
+                              theme.palette.text.disabled,
                             '&:hover': {
                               cursor: isEndHandle ? 'ns-resize' : 'move',
                             },
@@ -463,25 +532,49 @@ export function ContinuousNumberMappingForm(props: {
                           <IconButton
                             sx={{
                               position: 'absolute',
-                              top: -20,
-                              right: -20,
+                              top: -10,
+                              right: -10,
+                              width: 20,
+                              height: 20,
+                              backgroundColor: (theme) =>
+                                theme.palette.text.secondary,
+                              color: (theme) =>
+                                theme.palette.background.default,
+                              '&:hover': {
+                                cursor: 'pointer',
+                                backgroundColor: (theme) =>
+                                  theme.palette.text.primary,
+                                color: (theme) =>
+                                  theme.palette.background.paper,
+                              },
                             }}
                             onClick={() => deleteHandle(h.id)}
                           >
-                            <Close sx={{ color: '#03082d' }} />
+                            <ClearIcon sx={{ fontSize: 16 }} />
                           </IconButton>
                         ) : !isEndHandle ? (
                           <IconButton
                             sx={{
                               position: 'absolute',
-                              top: -20,
-                              right: -20,
+                              top: -10,
+                              right: -10,
+                              width: 20,
+                              height: 20,
+                              backgroundColor: (theme) =>
+                                theme.palette.text.secondary,
+                              color: (theme) =>
+                                theme.palette.background.default,
+                              '&:hover': {
+                                backgroundColor: (theme) =>
+                                  theme.palette.text.primary,
+                                color: (theme) =>
+                                  theme.palette.background.paper,
+                              },
                             }}
                             onClick={() => deleteHandle(h.id)}
                           >
-                            <Close
+                            <ClearIcon
                               sx={{
-                                color: 'rgba(0, 0, 0, 0.3)',
                                 pointerEvents: 'none',
                               }}
                             />
@@ -508,6 +601,7 @@ export function ContinuousNumberMappingForm(props: {
                               onConfirm={(newVal) => {
                                 setHandle(h.id, h.value as number, newVal)
                               }}
+                              {...vpValueDisplayProps}
                             ></ExpandableNumberInput>
                           </Box>
                           <Box
@@ -562,6 +656,7 @@ export function ContinuousNumberMappingForm(props: {
                         sx={{
                           position: 'relative',
                           top: -114,
+                          color: (theme) => theme.palette.text.primary,
                           '&:hover': {
                             cursor: isEndHandle ? 'ns-resize' : 'move',
                           },
@@ -572,7 +667,6 @@ export function ContinuousNumberMappingForm(props: {
                             fontSize: '60px',
                             opacity: 1,
                             zIndex: 3,
-                            color: '#03082d',
                           }}
                         />
                       </IconButton>
@@ -587,6 +681,7 @@ export function ContinuousNumberMappingForm(props: {
             title={`${m.attribute} values less than the minmum (${minState.value}) will be mapped to this height value (${m.ltMinVpValue}).`}
           >
             <Paper
+              variant="outlined"
               sx={{
                 width: 50,
                 height: 50,
@@ -599,7 +694,12 @@ export function ContinuousNumberMappingForm(props: {
               }}
             >
               <ArrowLeftIcon
-                sx={{ fontSize: 40, position: 'absolute', left: -25 }}
+                sx={{
+                  fontSize: 40,
+                  position: 'absolute',
+                  left: -27,
+                  color: (theme) => theme.palette.text.disabled,
+                }}
               />
               <VisualPropertyValueForm
                 currentValue={m.ltMinVpValue}
@@ -623,6 +723,7 @@ export function ContinuousNumberMappingForm(props: {
             title={`${m.attribute} values greater than the maximum (${maxState.value}) will be mapped to this height value (${m.gtMaxVpValue}).`}
           >
             <Paper
+              variant="outlined"
               sx={{
                 width: 50,
                 height: 50,
@@ -635,7 +736,12 @@ export function ContinuousNumberMappingForm(props: {
               }}
             >
               <ArrowRightIcon
-                sx={{ fontSize: 40, position: 'absolute', left: 35 }}
+                sx={{
+                  fontSize: 40,
+                  position: 'absolute',
+                  left: 35,
+                  color: (theme) => theme.palette.text.disabled,
+                }}
               />
               <VisualPropertyValueForm
                 currentValue={m.gtMaxVpValue}
@@ -656,23 +762,20 @@ export function ContinuousNumberMappingForm(props: {
         </Paper>
       </Box>
       <Paper
+        variant="outlined"
         sx={{
           display: 'flex',
           p: 1,
-          m: 1,
           ml: 3,
           mr: 3,
           justifyContent: 'space-evenly',
-          backgroundColor: '#fcfffc',
-          color: '#595858',
         }}
       >
         <Button
           onClick={showCreateHandleMenu}
           variant="outlined"
-          sx={{ color: '#63a5e8' }}
           size="small"
-          startIcon={<AddCircleIcon />}
+          startIcon={<AddIcon />}
         >
           New Handle
         </Button>
@@ -694,10 +797,16 @@ export function ContinuousNumberMappingForm(props: {
               p: 1,
               display: 'flex',
               flexDirection: 'column',
-              width: 180,
+              width: 200,
             }}
           >
-            <Box sx={{ p: 1, display: 'flex', flexDirection: 'column' }}>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 0.5,
+              }}
+            >
               <Box
                 sx={{
                   display: 'flex',
@@ -707,13 +816,13 @@ export function ContinuousNumberMappingForm(props: {
               >
                 <Box
                   sx={{
-                    maxWidth: 80,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
+                    fontSize: '0.875rem',
                   }}
                 >
-                  {m.attribute}
+                  {m.attribute}:
                 </Box>
                 <ExpandableNumberInput
                   min={minState.value as number}
@@ -722,7 +831,7 @@ export function ContinuousNumberMappingForm(props: {
                   onConfirm={(newVal) => {
                     setAddHandleFormValue(newVal)
                   }}
-                ></ExpandableNumberInput>
+                />
               </Box>
 
               <Box
@@ -734,20 +843,21 @@ export function ContinuousNumberMappingForm(props: {
               >
                 <Box
                   sx={{
-                    maxWidth: 80,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
+                    fontSize: '0.875rem',
                   }}
                 >
-                  {props.visualProperty.displayName}
+                  {props.visualProperty.displayName}:
                 </Box>
                 <ExpandableNumberInput
                   value={addHandleFormVpValue}
                   onConfirm={(newVal) => {
                     setAddHandleFormVpValue(newVal)
                   }}
-                ></ExpandableNumberInput>
+                  {...vpValueDisplayProps}
+                />
               </Box>
             </Box>
             {!(
@@ -773,6 +883,7 @@ export function ContinuousNumberMappingForm(props: {
                 hideCreateHandleMenu()
               }}
               size="small"
+              sx={{ mt: 1 }}
             >
               Add Handle
             </Button>
@@ -780,7 +891,6 @@ export function ContinuousNumberMappingForm(props: {
         </Popover>
         <Button
           onClick={showMinMaxMenu}
-          sx={{ color: '#63a5e8' }}
           variant="outlined"
           size="small"
           startIcon={<EditIcon />}
@@ -805,15 +915,22 @@ export function ContinuousNumberMappingForm(props: {
               <Typography
                 variant="body1"
                 sx={{
-                  maxWidth: 180,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
+                  fontSize: '0.875rem',
+                  mb: 1,
                 }}
               >
                 {m.attribute}
               </Typography>
-              <Box sx={{ p: 1 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 0.5,
+                }}
+              >
                 <Box
                   sx={{
                     display: 'flex',
@@ -821,7 +938,9 @@ export function ContinuousNumberMappingForm(props: {
                     alignItems: 'center',
                   }}
                 >
-                  <Typography variant="body2">Minimum Value</Typography>
+                  <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                    Minimum Value:
+                  </Typography>
 
                   <ExpandableNumberInput
                     value={minState.value as number}
@@ -832,7 +951,7 @@ export function ContinuousNumberMappingForm(props: {
                         value: newVal,
                       })
                     }}
-                  ></ExpandableNumberInput>
+                  />
                 </Box>
                 <Box
                   sx={{
@@ -841,7 +960,9 @@ export function ContinuousNumberMappingForm(props: {
                     alignItems: 'center',
                   }}
                 >
-                  <Typography variant="body2">Maximum Value</Typography>
+                  <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
+                    Maximum Value:
+                  </Typography>
 
                   <ExpandableNumberInput
                     value={maxState.value as number}

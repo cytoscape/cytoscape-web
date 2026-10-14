@@ -1,25 +1,32 @@
 import { Box } from '@mui/material'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Allotment } from 'allotment'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
+import { useFilterStore } from '../../../data/hooks/stores/FilterStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useRendererStore } from '../../../data/hooks/stores/RendererStore'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { logUi } from '../../../debug'
 import { IdType } from '../../../models/IdType'
 import { Network } from '../../../models/NetworkModel'
 import { Renderer } from '../../../models/RendererModel/Renderer'
-import { ValueType } from '../../../models/TableModel'
+import { Table, ValueType } from '../../../models/TableModel'
 import { NetworkView } from '../../../models/ViewModel'
 import { VisualStyle } from '../../../models/VisualStyleModel'
 import { MessagePanel } from '../../Messages'
 import { HcxMetaData } from '../model/HcxMetaData'
 import { SubsystemTag } from '../model/HcxMetaTag'
+import {
+  hasUniformEdgeInteraction,
+  MIXED_INTERACTION_WARNING,
+} from '../model/impl/circlePackingSupport'
 import { useSubNetworkStore } from '../store/SubNetworkStore'
 import { getHcxMetadata } from '../utils/hierarchyUtil'
+import { getSubNetworkId } from '../utils/subnetworkQueryUtil'
 import { CirclePackingPanel } from './CirclePackingLayout/CirclePackingPanel'
 import { DuplicateNodeSeparator } from './CirclePackingLayout/DataBuilderUtil'
 import FilterPanel from './FilterPanel/FilterPanel'
@@ -34,6 +41,25 @@ export interface Query {
 const queryClient = new QueryClient()
 
 export const CP_RENDERER_ID: string = 'circlePacking'
+
+// Module-scope so the renderer object keeps a stable identity across renders
+const CirclePackingRenderer: Renderer = {
+  id: CP_RENDERER_ID,
+  name: 'Cell View',
+  description: 'Circle Packing Renderer',
+  getComponent: (
+    networkData: Network,
+    initialSize = { w: 0, h: 0 },
+    visible = true,
+  ) => (
+    <CirclePackingPanel
+      rendererId={CP_RENDERER_ID}
+      network={networkData}
+      initialSize={initialSize}
+      visible={visible}
+    />
+  ),
+}
 
 export const MainPanel = (): JSX.Element => {
   const [subNetworkName, setSubNetworkName] = useState<string>('')
@@ -59,14 +85,21 @@ export const MainPanel = (): JSX.Element => {
     state.getViewModel(currentNetworkId),
   )
 
-  // Selected nodes in the hierarchy
-  const selectedNodes: IdType[] = networkViewModel?.selectedNodes ?? []
+  // Selected nodes in the hierarchy. Memoized so the effect below re-runs
+  // only when the view model actually changes (Immer's structural sharing
+  // keeps .selectedNodes identity stable across unrelated updates), not on
+  // every render via a fresh `?? []` array.
+  const selectedNodes: IdType[] = useMemo(
+    () => networkViewModel?.selectedNodes ?? [],
+    [networkViewModel],
+  )
 
   // At this point, summary can be any network prop object
   const networkSummary: any = useNetworkSummaryStore(
     (state) => state.summaries[currentNetworkId],
   )
   const addRenderer = useRendererStore((state) => state.add)
+  const deleteRenderer = useRendererStore((state) => state.delete)
   const renderers = useRendererStore((state) => state.renderers)
 
   const setRootNetworkId = useSubNetworkStore((state) => state.setRootNetworkId)
@@ -74,47 +107,67 @@ export const MainPanel = (): JSX.Element => {
     (state) => state.setRootNetworkHost,
   )
 
-  const CirclePackingRenderer: Renderer = {
-    id: CP_RENDERER_ID,
-    name: 'Cell View',
-    description: 'Circle Packing Renderer',
-    getComponent: (
-      networkData: Network,
-      initialSize: { w: number; h: number },
-      visible: boolean,
-    ) => (
-      <CirclePackingPanel
-        rendererId={CP_RENDERER_ID}
-        network={networkData}
-        initialSize={initialSize}
-        visible={visible}
-      />
-    ),
-  }
+  // ID the shown subnetwork is stored under (`<hierarchyId>_<subsystemNodeId>`).
+  // Empty until SubNetworkPanel has loaded it.
+  const currentSubNetworkId: IdType = useSubNetworkStore(
+    (state) => state.currentSubNetworkId,
+  )
 
-  const checkDataType = (): void => {
+  // Whether the shown subnetwork has a filter (only those whose CX carries a
+  // `filterWidgets` aspect do). Decides whether the bottom pane splits into
+  // properties and filter.
+  const subNetworkHasFilter: boolean = useFilterStore(
+    (state) => state.filterConfigs[currentSubNetworkId] !== undefined,
+  )
+
+  const checkDataType = useCallback((): void => {
     const metadata: HcxMetaData | undefined = getHcxMetadata(networkSummary)
 
-    if (metadata !== undefined) {
-      setIsHierarchy(true)
-      setMetadata(metadata)
+    if (metadata === undefined) {
+      setIsHierarchy(false)
+      setMetadata(undefined)
+      return
+    }
+
+    setIsHierarchy(true)
+    setMetadata(metadata)
+
+    const edgeTable: Table | undefined = tableRecord?.edgeTable
+    if (edgeTable === undefined) {
+      // Tables have not been loaded yet: decide nothing. This effect re-runs
+      // when the table record arrives.
+      return
+    }
+
+    if (hasUniformEdgeInteraction(edgeTable)) {
       // Add the CP renderer if it does not exist
       if (renderers.circlePacking === undefined) {
         addRenderer(CirclePackingRenderer)
       }
     } else {
-      setIsHierarchy(false)
-      setMetadata(undefined)
+      // This hierarchy also contains non parent-child edges, which the circle
+      // packing layout cannot interpret. Drop the Cell View tab instead of
+      // rendering a wrong or empty diagram (issue #630).
+      logUi.info(
+        `[${MainPanel.name}]: ${MIXED_INTERACTION_WARNING}`,
+        currentNetworkId,
+      )
+      if (renderers.circlePacking !== undefined) {
+        deleteRenderer(renderers.circlePacking.id)
+      }
     }
-  }
+  }, [
+    networkSummary,
+    tableRecord,
+    renderers,
+    addRenderer,
+    deleteRenderer,
+    currentNetworkId,
+  ])
 
   useEffect(() => {
     checkDataType()
-  }, [networkSummary])
-
-  useEffect(() => {
-    checkDataType()
-  }, [currentNetworkId])
+  }, [networkSummary, currentNetworkId, checkDataType])
 
   useEffect(() => {
     // Pick the first selected node if multiple nodes are selected
@@ -138,9 +191,9 @@ export const MainPanel = (): JSX.Element => {
       SubsystemTag.interactionNetworkUuid
     ] as string
 
-    const visualStyle: VisualStyle = visualStyles[currentNetworkId]
+    const visualStyle: VisualStyle | undefined = visualStyles[currentNetworkId]
     const nodeLabelMappingAttr: string | undefined =
-      visualStyle.nodeLabel.mapping?.attribute
+      visualStyle?.nodeLabel?.mapping?.attribute
 
     let nameVal = row['name']
     if (nodeLabelMappingAttr !== undefined) {
@@ -156,7 +209,7 @@ export const MainPanel = (): JSX.Element => {
       setQuery(newQuery)
     }
     setInteractionNetworkId(interactionUuid)
-  }, [selectedNodes])
+  }, [selectedNodes, tableRecord, visualStyles, currentNetworkId])
 
   useEffect(() => {
     if (
@@ -166,7 +219,7 @@ export const MainPanel = (): JSX.Element => {
       setRootNetworkId(metadata.interactionNetworkUUID)
       setRootNetworkHost(metadata.interactionNetworkHost ?? '')
     }
-  }, [metadata])
+  }, [metadata, setRootNetworkId, setRootNetworkHost])
 
   if (!isHierarchy) {
     return <MessagePanel message="This network is not a hierarchy" />
@@ -208,6 +261,19 @@ export const MainPanel = (): JSX.Element => {
     )
   }
 
+  // The store still names the previous subnetwork while the selected one loads
+  // or after its fetch fails. Show no properties until they match.
+  const propertyNetworkId: IdType =
+    currentSubNetworkId === getSubNetworkId(currentNetworkId, targetNode)
+      ? currentSubNetworkId
+      : ''
+
+  // Split only when there is a filter; without one, the property panel and its
+  // messages take the full width. The filter stays regardless of selection:
+  // its checkboxes hide elements, and hiding it would strand them.
+  const showFilterPanel: boolean =
+    propertyNetworkId !== '' && subNetworkHasFilter
+
   const rootNetworkId: IdType = metadata?.interactionNetworkUUID ?? ''
   const interactionNetworkHost: string = metadata?.interactionNetworkHost ?? ''
 
@@ -236,14 +302,48 @@ export const MainPanel = (): JSX.Element => {
             />
           </Allotment.Pane>
           <Allotment.Pane>
-            <Allotment>
-              <Allotment.Pane preferredSize={'15%'} key={0}>
-                <PropertyPanel networkId={targetNode} />
-              </Allotment.Pane>
-              <Allotment.Pane key={1}>
-                <FilterPanel />
-              </Allotment.Pane>
-            </Allotment>
+            <Box
+              sx={{
+                width: '100%',
+                height: '100%',
+                boxSizing: 'border-box',
+                display: 'flex',
+                flexDirection: 'column',
+                borderTop: (theme) => `2px solid ${theme.palette.divider}`,
+                backgroundColor: (theme) => theme.palette.background.paper,
+              }}
+            >
+              {showFilterPanel ? (
+                <Allotment>
+                  <Allotment.Pane preferredSize={'40%'} key={0}>
+                    <Box
+                      sx={{
+                        width: '100%',
+                        height: '100%',
+                        borderRight: (theme) =>
+                          `1px solid ${theme.palette.divider}`,
+                      }}
+                    >
+                      <PropertyPanel networkId={propertyNetworkId} />
+                    </Box>
+                  </Allotment.Pane>
+                  <Allotment.Pane key={1}>
+                    <Box
+                      sx={{
+                        width: '100%',
+                        height: '100%',
+                        borderLeft: (theme) =>
+                          `1px solid ${theme.palette.divider}`,
+                      }}
+                    >
+                      <FilterPanel networkId={propertyNetworkId} />
+                    </Box>
+                  </Allotment.Pane>
+                </Allotment>
+              ) : (
+                <PropertyPanel networkId={propertyNetworkId} />
+              )}
+            </Box>
           </Allotment.Pane>
         </Allotment>
       </Box>

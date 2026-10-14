@@ -1,5 +1,5 @@
 import difference from 'lodash/difference'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import {
   deleteNetworkFromDb,
@@ -8,22 +8,17 @@ import {
   deleteVisualStyleFromDb,
   getAllNetworkKeys,
 } from '../../../data/db'
-import { logDb } from '../../../debug'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useRendererStore } from '../../../data/hooks/stores/RendererStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { logDb } from '../../../debug'
 import { IdType } from '../../../models/IdType'
-import {
-  NetworkProperty,
-  NetworkSummary,
-} from '../../../models/NetworkSummaryModel'
+import { NetworkSummary } from '../../../models/NetworkSummaryModel'
 import { DEFAULT_RENDERER_ID } from '../../../models/RendererModel/impl/defaultRenderer'
-import { ValueType } from '../../../models/TableModel'
 import { Panel } from '../../../models/UiModel/Panel'
 import { PanelState } from '../../../models/UiModel/PanelState'
-import { HcxMetaData } from '../model/HcxMetaData'
-import { getHcxProps } from '../utils/hierarchyUtil'
+import { isHCX } from '../utils/hierarchyUtil'
 
 /**
  *  Switch the panel state based on the network meta data
@@ -48,7 +43,7 @@ export const useHierarchyViewerManager = (): void => {
     return () => {
       setCustomNetworkTabName(DEFAULT_RENDERER_ID, '')
     }
-  }, [])
+  }, [setCustomNetworkTabName])
 
   const setActiveNetworkView = useUiStateStore(
     (state) => state.setActiveNetworkView,
@@ -60,6 +55,9 @@ export const useHierarchyViewerManager = (): void => {
   const deleteRenderer = useRendererStore((state) => state.delete)
   const renderers = useRendererStore((state) => state.renderers)
 
+  // Detects removed hierarchy networks by diffing networkIds against the
+  // lastIds snapshot. lastIds is only ever written here, so it is intentionally
+  // not a dependency — networkIds is the sole trigger.
   useEffect(() => {
     const deleteChildren = async (parentId: IdType): Promise<void> => {
       const keys = await getAllNetworkKeys()
@@ -100,6 +98,7 @@ export const useHierarchyViewerManager = (): void => {
         error,
       )
     })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on networkIds; lastIds is the previous-value snapshot
   }, [networkIds])
 
   const uiState = useUiStateStore((state) => state.ui)
@@ -123,36 +122,39 @@ export const useHierarchyViewerManager = (): void => {
       return
     }
 
-    const networkProps: NetworkProperty[] = summary.properties
-    const networkPropObj: Record<string, ValueType> = networkProps.reduce<{
-      [key: string]: ValueType
-    }>((acc, prop) => {
-      acc[prop.predicateString] = prop.value
-      return acc
-    }, {})
-    if (Object.keys(networkPropObj).length === 0) {
-      enablePopup(false)
-      return
-    }
-    const metadata: HcxMetaData | undefined = getHcxProps(networkPropObj)
-    if (metadata !== undefined) {
+    // Use the shared HCX detection, which treats a network with no properties
+    // (or no HCX metadata) as a non-hierarchy. Previously an empty-properties
+    // early return skipped the teardown below, so opening a regular network
+    // from NDEx after a hierarchy left the Cell View renderer — and its
+    // Tree View / Cell View tabs — in place (CW-466).
+    if (isHCX(summary)) {
       // Enable popup = this is a HCX
       enablePopup(true)
     } else {
       enablePopup(false)
-      // Delete the CP renderer if it exists
-      if (renderers.circlePacking !== undefined) {
-        deleteRenderer(renderers.circlePacking.id)
+      // Delete the Cell View (circle packing) renderer if it exists, so the
+      // hierarchy tabs disappear for regular networks.
+      const cellViewRenderer = renderers.circlePacking
+      if (cellViewRenderer !== undefined) {
+        deleteRenderer(cellViewRenderer.id)
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on summary change; renderers are fresh at trigger time
   }, [summary])
 
+  // The right panel follows `enablePopup` only when it changes: switching to
+  // a hierarchy opens the panel, switching away from one closes it. The value
+  // it mounts with is not a change. Acting on it closed the panel on every
+  // boot with a regular network (`enablePopup` starts false), undoing
+  // `?right=open` and a restored open panel some time after boot had opened
+  // it — a race e2e specs that need the panel kept losing.
+  const lastEnablePopupRef = useRef(uiState.enablePopup)
   useEffect(() => {
     const showPanel: boolean = uiState.enablePopup
-    if (showPanel) {
-      setPanelState(Panel.RIGHT, PanelState.OPEN)
-    } else {
-      setPanelState(Panel.RIGHT, PanelState.CLOSED)
+    if (showPanel === lastEnablePopupRef.current) {
+      return
     }
-  }, [uiState.enablePopup])
+    lastEnablePopupRef.current = showPanel
+    setPanelState(Panel.RIGHT, showPanel ? PanelState.OPEN : PanelState.CLOSED)
+  }, [uiState.enablePopup, setPanelState])
 }

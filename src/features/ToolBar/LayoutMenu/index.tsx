@@ -1,11 +1,13 @@
-import { Box, Divider, MenuItem, Tooltip } from '@mui/material'
-import Button from '@mui/material/Button'
-import { PrimeReactProvider } from 'primereact/api'
-import { OverlayPanel } from 'primereact/overlaypanel'
-import { TieredMenu } from 'primereact/tieredmenu'
-import { useEffect, useRef, useState } from 'react'
+import BuildIcon from '@mui/icons-material/Build'
+import PlayArrowIcon from '@mui/icons-material/PlayArrow'
+import SettingsIcon from '@mui/icons-material/Settings'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import { logUi } from '../../../debug'
+import {
+  getAppLayoutMeta,
+  isAppLayoutEnabled,
+} from '../../../app-api/core/appLayoutEngine'
+import { buildPerAppApis } from '../../../app-api/core/perAppApis'
 import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
@@ -14,21 +16,52 @@ import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { useUndoStack } from '../../../data/hooks/useUndoStack'
+import { logUi } from '../../../debug'
 import { LayoutAlgorithm } from '../../../models'
 import { IdType } from '../../../models/IdType'
 import { LayoutEngine } from '../../../models/LayoutModel/LayoutEngine'
 import { Network } from '../../../models/NetworkModel'
 import { DEFAULT_RENDERER_ID } from '../../../models/RendererModel/impl/defaultRenderer'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
+import { RootMenu } from '../../../models/AppModel/RootMenu'
+import { useLayoutToolsPanelStore } from '../../LayoutTools/store/layoutToolsPanelStore'
 import { isHCX } from '../../HierarchyViewer/utils/hierarchyUtil'
+import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
+import { DropdownMenu, DropdownMenuItem } from '../DropdownMenu'
+import { useMenuBarMenu } from '../MenuBar'
+import { ToolbarMenuItem } from '../menuItemModel'
+import { applyDefaultLayout } from './applyDefaultLayout'
 import { LayoutOptionDialog } from './LayoutOptionDialog'
+import { runEngineLayout } from '../../../models/LayoutModel/impl/runEngineLayout'
 
-interface DropdownMenuProps {
+/**
+ * One algorithm while the menu is being assembled and sorted. Deliberately
+ * separate from ToolbarMenuItem: these fields — the grouping type, the engine
+ * callback — exist only inside this module and are translated into
+ * ToolbarMenuItem templates at the end.
+ */
+interface LayoutAlgorithmEntry {
+  key: string
   label: string
-  children?: React.ReactNode
+  description: string
+  /** Algorithm type, used to group and order the list. */
+  type: string
+  disabled: boolean
+  onClick: () => void
+  isDivider?: false
 }
 
-export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
+/** A boundary between two algorithm groups in the sorted list. */
+interface LayoutGroupDivider {
+  key: string
+  type: string
+  isDivider: true
+}
+
+type LayoutMenuEntry = LayoutAlgorithmEntry | LayoutGroupDivider
+
+export const LayoutMenu = (): JSX.Element => {
+  const { open, setOpen } = useMenuBarMenu('layout-menu')
   const [openDialog, setOpenDialog] = useState<boolean>(false)
 
   // Counter to trigger fit function after layout is applied
@@ -48,6 +81,8 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
+  const hasNoNetworks =
+    useWorkspaceStore((state) => state.workspace.networkIds).length === 0
 
   const activeNetworkViewTabIndex =
     useUiStateStore((state) => state.ui?.networkViewUi?.activeTabIndex) ?? 0
@@ -59,6 +94,10 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
   const layoutEngines: LayoutEngine[] = useLayoutStore(
     (state) => state.layoutEngines,
   )
+  const preferredLayout: LayoutAlgorithm = useLayoutStore(
+    (state) => state.preferredLayout,
+  )
+  const toggleLayoutTools = useLayoutToolsPanelStore((state) => state.toggle)
 
   const getViewModel = useViewModelStore((state) => state.getViewModel)
   const networkView = getViewModel(targetNetworkId)
@@ -99,22 +138,22 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
       cellViewIsSelected) || // the cell view tab is selected
     targetNetworkId === '' // no network is selected
 
-  const { label } = props
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const open = Boolean(anchorEl)
-
-  const menuRef = useRef(null)
-
   const handleClose = (): void => {
-    setAnchorEl(null)
-    const menuRefCurrent = menuRef.current as any
-    menuRefCurrent.hide()
+    setOpen(false)
   }
 
+  const closeMenu = useCallback((): void => {
+    setOpen(false)
+  }, [setOpen])
+
+  // Service apps whose cyWebMenuItem.root resolves to the Layout menu.
+  const { menuItems: serviceMenuItems, dialogs } = useServiceAppMenu(
+    RootMenu.Layout,
+    closeMenu,
+  )
+
   const handleOpenDialog = (open: boolean): void => {
-    setAnchorEl(null)
-    const menuRefCurrent = menuRef.current as any
-    menuRefCurrent.hide()
+    setOpen(false)
     setOpenDialog(open)
   }
 
@@ -144,10 +183,68 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
     setLayoutCounter((prev) => prev + 1)
   }
 
-  const getMenuItems = (): any => {
-    const layoutMenuItems: any[] = []
+  const elementCount: number =
+    (target.nodes?.length ?? 0) + (target.edges?.length ?? 0)
+
+  /**
+   * Algorithms registered by apps ('layout-algorithm' resources), one row
+   * each, sorted by label (app id as the tiebreak) — no `order`/gravity
+   * option by design (#734). Memoized because the rows call each app's
+   * `isEnabled` snapshot, which should run when the menu opens, not on every
+   * render of the toolbar; the click handlers are attached in getMenuItems.
+   */
+  const appAlgorithmRows = useMemo(() => {
+    const rows: Array<{
+      key: string
+      testId: string
+      label: string
+      description: string
+      engine: LayoutEngine
+      algorithm: LayoutAlgorithm
+      disabled: boolean
+      appId: string
+    }> = []
+    layoutEngines.forEach((engine: LayoutEngine) => {
+      const appId = engine.appId
+      if (appId === undefined) {
+        return
+      }
+      // One per-app API object per app, and only while the menu is shown.
+      const apis = open ? buildPerAppApis(appId) : undefined
+      Object.values(engine.algorithms).forEach((algorithm: LayoutAlgorithm) => {
+        const overThreshold =
+          algorithm.threshold !== undefined &&
+          elementCount > algorithm.threshold
+        const enabled =
+          apis === undefined || isAppLayoutEnabled(algorithm.name, apis)
+        const localId = getAppLayoutMeta(algorithm.name)?.id ?? algorithm.name
+        rows.push({
+          key: `${engine.name}-${algorithm.name}`,
+          testId: `layout-menu-item-${appId}-${localId}`,
+          label: algorithm.displayName,
+          description: algorithm.description,
+          engine,
+          algorithm,
+          disabled: overThreshold || !enabled,
+          appId,
+        })
+      })
+    })
+    rows.sort(
+      (a, b) =>
+        a.label.localeCompare(b.label) || a.appId.localeCompare(b.appId),
+    )
+    return rows
+  }, [layoutEngines, open, elementCount])
+
+  const getMenuItems = (): ToolbarMenuItem[] => {
+    const layoutMenuItems: LayoutAlgorithmEntry[] = []
 
     layoutEngines.forEach((layoutEngine: LayoutEngine) => {
+      // App engines render in their own block below the core algorithms.
+      if (layoutEngine.appId !== undefined) {
+        return
+      }
       const engineName: string = layoutEngine.name
       const names: string[] = Object.keys(layoutEngine.algorithms)
 
@@ -161,8 +258,7 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
           disabled:
             algorithm.threshold === undefined
               ? false
-              : target.nodes?.length + target.edges?.length >
-                algorithm.threshold,
+              : elementCount > algorithm.threshold,
           onClick: () => {
             if (target === undefined) {
               return
@@ -170,9 +266,14 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
             const engine: LayoutEngine = layoutEngines.find(
               (engine) => engine.name === engineName,
             ) as LayoutEngine
-            const { nodes, edges } = target
-            setIsRunning(true)
-            engine.apply(nodes, edges, afterLayout, engine.algorithms[name])
+            runEngineLayout({
+              engine,
+              algorithm: engine.algorithms[name],
+              network: target,
+              networkId: targetNetworkId,
+              afterLayout,
+              setIsRunning,
+            })
           },
         }
 
@@ -180,8 +281,56 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
       })
     })
 
+    // The block of third-party entries: app algorithms first, then service
+    // apps routed to the Layout root. Rendered between the core algorithms
+    // and Layout Tools, with a divider on each side; absent when empty.
+    const disabledTooltip =
+      targetNetworkId === ''
+        ? 'Layouts are disabled since the network view is empty'
+        : 'Layouts cannot be applied to the current network view'
+    const appMenuItems: ToolbarMenuItem[] = appAlgorithmRows.map((row) =>
+      allDisabled
+        ? {
+            template: (
+              <DropdownMenuItem
+                key={row.key}
+                dataTestId={row.testId}
+                label={row.label}
+                tooltip={disabledTooltip}
+                disabled={true}
+              />
+            ),
+          }
+        : {
+            template: (
+              <DropdownMenuItem
+                key={row.key}
+                dataTestId={row.testId}
+                label={row.label}
+                tooltip={row.description}
+                disabled={row.disabled}
+                onClick={() => {
+                  handleClose()
+                  runEngineLayout({
+                    engine: row.engine,
+                    algorithm: row.algorithm,
+                    network: target,
+                    networkId: targetNetworkId,
+                    afterLayout,
+                    setIsRunning,
+                  })
+                }}
+              />
+            ),
+          },
+    )
+    const thirdPartyItems: ToolbarMenuItem[] = [
+      ...appMenuItems,
+      ...serviceMenuItems,
+    ]
+
     // Group by type and then sort each group alphabetically
-    const typeGroups: Record<string, any[]> = {}
+    const typeGroups: Record<string, LayoutAlgorithmEntry[]> = {}
 
     // Group items by their type
     layoutMenuItems.forEach((item) => {
@@ -201,7 +350,7 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
     const sortedTypes = Object.keys(typeGroups).sort()
 
     // Create a new array with dividers between groups
-    const sortedMenuItemsWithDividers: any[] = []
+    const sortedMenuItemsWithDividers: LayoutMenuEntry[] = []
     sortedTypes.forEach((type, index) => {
       // Add group items
       sortedMenuItemsWithDividers.push(...typeGroups[type])
@@ -218,132 +367,140 @@ export const LayoutMenu = (props: DropdownMenuProps): JSX.Element => {
 
     // Use the new array with dividers in the return value
     return [
+      {
+        template: (
+          <DropdownMenuItem
+            label="Apply Default Layout"
+            icon={<PlayArrowIcon />}
+            tooltip={
+              allDisabled
+                ? targetNetworkId === ''
+                  ? 'Layouts are disabled since the network view is empty'
+                  : 'Layouts cannot be applied to the current network view'
+                : `Apply default layout - ${preferredLayout.displayName}`
+            }
+            disabled={allDisabled}
+            onClick={() => {
+              handleClose()
+              applyDefaultLayout({
+                layoutEngines,
+                preferredLayout,
+                network: target,
+                networkId: targetNetworkId,
+                afterLayout,
+                setIsRunning,
+              })
+            }}
+          />
+        ),
+      },
+      {
+        separator: true,
+      },
       ...(allDisabled
-        ? [
-            {
-              label: '',
+        ? sortedMenuItemsWithDividers.map((menuItem) => {
+            // Render divider
+            if (menuItem.isDivider) {
+              return {
+                separator: true,
+              }
+            }
+            return {
               template: (
-                <Tooltip
-                  arrow
-                  placement="right"
-                  title={
+                <DropdownMenuItem
+                  key={menuItem.key}
+                  dataTestId={`layout-menu-item-${menuItem.key}`}
+                  label={menuItem.label}
+                  tooltip={
                     targetNetworkId === ''
                       ? 'Layouts are disabled since the network view is empty'
                       : 'Layouts cannot be applied to the current network view'
                   }
-                >
-                  <Box>
-                    {sortedMenuItemsWithDividers.map((menuItem: any) => {
-                      // Render divider
-                      if (menuItem.isDivider) {
-                        return <Divider key={menuItem.key} />
-                      }
-                      return (
-                        <MenuItem key={menuItem.key} disabled={true}>
-                          {menuItem.label}
-                        </MenuItem>
-                      )
-                    })}
-                  </Box>
-                </Tooltip>
+                  disabled={true}
+                />
               ),
-            },
-          ]
-        : sortedMenuItemsWithDividers.map((menuItem: any) => {
+            }
+          })
+        : sortedMenuItemsWithDividers.map((menuItem) => {
             // Render divider
             if (menuItem.isDivider) {
               return {
-                label: '',
-                template: <Divider key={menuItem.key} />,
+                separator: true,
               }
             }
-
             // Render normal menu item
             return {
-              label: menuItem.label,
               template: (
-                <Tooltip
-                  arrow
-                  placement="right"
-                  title={menuItem.description}
+                <DropdownMenuItem
                   key={menuItem.key}
-                >
-                  <MenuItem
-                    key={menuItem.key}
-                    disabled={menuItem.disabled}
-                    onClick={() => {
-                      handleClose()
-                      menuItem.onClick()
-                    }}
-                    style={{
-                      whiteSpace: 'normal',
-                      wordBreak: 'break-word',
-                      lineHeight: '1.2',
-                      padding: '8px 16px',
-                    }}
-                  >
-                    {menuItem.label}
-                  </MenuItem>
-                </Tooltip>
+                  dataTestId={`layout-menu-item-${menuItem.key}`}
+                  label={menuItem.label}
+                  tooltip={menuItem.description}
+                  disabled={menuItem.disabled}
+                  onClick={() => {
+                    handleClose()
+                    menuItem.onClick()
+                  }}
+                />
               ),
             }
           })),
       {
-        label: '',
-        template: <Divider />,
+        separator: true,
+      },
+      ...(thirdPartyItems.length > 0
+        ? [...thirdPartyItems, { separator: true }]
+        : []),
+      {
+        template: (
+          <DropdownMenuItem
+            dataTestId="layout-menu-layout-tools"
+            label="Layout Tools"
+            icon={<BuildIcon />}
+            tooltip="Show the layout tools panel in the lower-left corner"
+            onClick={() => {
+              handleClose()
+              toggleLayoutTools()
+            }}
+          />
+        ),
       },
       {
-        label: 'Settings...',
         template: (
-          <MenuItem
+          <DropdownMenuItem
+            dataTestId="layout-menu-settings"
+            label="Settings..."
+            icon={<SettingsIcon />}
             onClick={() => {
               handleClose()
               handleOpenDialog(true)
             }}
-          >
-            Settings...
-          </MenuItem>
+          />
         ),
       },
     ]
   }
 
   return (
-    <PrimeReactProvider>
-      <Button
-        data-testid="toolbar-layout-menu-button"
-        sx={{
-          color: 'white',
-          textTransform: 'none',
-        }}
-        id={label}
-        aria-controls={open ? 'basic-menu' : undefined}
-        aria-haspopup="true"
-        aria-expanded={open ? 'true' : undefined}
-        onClick={(e) => {
-          if (menuRef.current === null) {
-            return
-          }
-          const menuRefCurrent = menuRef.current as any
-          menuRefCurrent.toggle(e)
-        }}
-      >
-        {label}
-      </Button>
-      <OverlayPanel
-        ref={menuRef}
-        unstyled
-        style={{ minWidth: '25em', maxWidth: '25em' }}
-      >
-        <TieredMenu model={getMenuItems()} style={{ width: '100%' }} />
-      </OverlayPanel>
+    <>
+      <DropdownMenu
+        id="layout-menu"
+        label="Layout"
+        menuItems={getMenuItems()}
+        open={open}
+        disabled={hasNoNetworks}
+        disabledTooltip="Load or create a network first"
+        onOpenChange={setOpen}
+      />
       <LayoutOptionDialog
         afterLayout={afterLayout}
         network={target}
+        networkId={targetNetworkId}
         open={openDialog}
         setOpen={setOpenDialog}
         allDisabled={allDisabled}
       />
-    </PrimeReactProvider>
+      {dialogs}
+    </>
   )
 }

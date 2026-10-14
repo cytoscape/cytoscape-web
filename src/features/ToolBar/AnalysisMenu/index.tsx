@@ -1,60 +1,77 @@
-import Button from '@mui/material/Button'
-import Menu from '@mui/material/Menu'
-import { PrimeReactProvider } from 'primereact/api'
-import { OverlayPanel } from 'primereact/overlaypanel'
-import { TieredMenu } from 'primereact/tieredmenu'
-import { useRef, useState } from 'react'
+import { ToolbarMenuItem as MenuItem } from '@/features/ToolBar/menuItemModel'
+import { useCallback, useState } from 'react'
 
-import {
-  LLMQueryOptionsMenuItem,
-  RunLLMQueryMenuItem,
-} from '../../LLMQuery/components'
-import { DropdownMenuProps } from '../DropdownMenuProps'
+import { RootMenu } from '@/models/AppModel/RootMenu'
+import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
+// Direct file imports: the components barrel would pull LLMQueryResultPanel
+// (and its query stack) into this eager menu chunk.
+import { LLMQueryOptionsDialog } from '@/features/LLMQuery/components/LLMQueryOptionsDialog'
+import { LLMQueryOptionsMenuItem } from '@/features/LLMQuery/components/LLMQueryOptionsMenuItem'
+import { RunLLMQueryMenuItem } from '@/features/LLMQuery/components/RunLLMQueryMenuItem'
+import { appendServiceMenuItems } from '../AppMenu/appendServiceMenuItems'
+import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
+import { DropdownMenu } from '../DropdownMenu'
+import { useMenuBarMenu } from '../MenuBar'
 
-export const AnalysisMenu: React.FC<DropdownMenuProps> = (
-  props: DropdownMenuProps,
-) => {
-  const { label } = props
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const open = Boolean(anchorEl)
+export const AnalysisMenu = () => {
+  const { open, setOpen } = useMenuBarMenu('analysis-menu')
+  const [openDialog, setOpenDialog] = useState(false)
+
+  const hasNoNetworks =
+    useWorkspaceStore((state) => state.workspace.networkIds).length === 0
 
   const handleClose = (): void => {
-    ;(op.current as any)?.hide()
-    setAnchorEl(null)
+    setOpen(false)
   }
 
-  const op = useRef(null)
+  const closeMenu = useCallback((): void => {
+    setOpen(false)
+  }, [setOpen])
 
-  const menuItems = [
+  // Service apps whose cyWebMenuItem.root resolves to the Analysis menu.
+  const { menuItems: serviceMenuItems, dialogs } = useServiceAppMenu(
+    RootMenu.Analysis,
+    closeMenu,
+  )
+
+  const handleOpenDialog = (): void => {
+    handleClose()
+    setOpenDialog(true)
+  }
+
+  const handleCloseDialog = (): void => {
+    setOpenDialog(false)
+  }
+
+  const builtInItems: MenuItem[] = [
     {
-      label: 'Run LLM Query',
-      template: <RunLLMQueryMenuItem handleClose={handleClose} />,
+      template: <RunLLMQueryMenuItem onClick={handleClose} />,
     },
     {
-      label: 'LLM Query Options',
-      template: <LLMQueryOptionsMenuItem handleClose={handleClose} />,
+      separator: true,
+    },
+    {
+      template: <LLMQueryOptionsMenuItem onClick={handleOpenDialog} />,
     },
   ]
+  const menuItems = appendServiceMenuItems(builtInItems, serviceMenuItems)
 
   return (
-    <PrimeReactProvider>
-      <Button
-        data-testid="toolbar-analysis-menu-button"
-        sx={{
-          color: 'white',
-          textTransform: 'none',
-        }}
-        id={label}
-        aria-controls={open ? 'basic-menu' : undefined}
-        aria-haspopup="true"
-        aria-expanded={open ? 'true' : undefined}
-        onClick={(e) => (op.current as any)?.toggle(e)}
-      >
-        {label}
-      </Button>
-      <OverlayPanel ref={op} unstyled>
-        <TieredMenu model={menuItems} />
-      </OverlayPanel>
-    </PrimeReactProvider>
+    <>
+      <DropdownMenu
+        id="analysis-menu"
+        label="Analysis"
+        menuItems={menuItems}
+        open={open}
+        disabled={hasNoNetworks}
+        disabledTooltip="Load or create a network first"
+        onOpenChange={setOpen}
+      />
+      <LLMQueryOptionsDialog
+        open={openDialog}
+        handleClose={handleCloseDialog}
+      />
+      {dialogs}
+    </>
   )
 }

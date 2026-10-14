@@ -1,9 +1,10 @@
 import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogContentText from '@mui/material/DialogContentText'
 import DialogTitle from '@mui/material/DialogTitle'
+
+import { CyDialog } from '@/components/CyDialog'
 
 interface ConfirmationDialogProps {
   open: boolean
@@ -31,12 +32,18 @@ export const ConfirmationDialog = (
     confirmDisabled,
   } = props
 
-  const handleCancel = (e: React.MouseEvent<HTMLButtonElement>): void => {
-    e.stopPropagation()
+  // The Cancel button is the only way out: nothing dismisses on backdrop click
+  // or Escape (docs/specifications/DIALOG_DISMISS_POLICY.md).
+  const cancel = (): void => {
     setOpen(false)
     if (onCancel) {
       onCancel()
     }
+  }
+
+  const handleCancel = (e: React.MouseEvent<HTMLButtonElement>): void => {
+    e.stopPropagation()
+    cancel()
   }
   const handleConfirm = (e: React.MouseEvent<HTMLButtonElement>): void => {
     e.stopPropagation()
@@ -45,7 +52,7 @@ export const ConfirmationDialog = (
   }
 
   return (
-    <Dialog
+    <CyDialog
       data-testid="confirmation-dialog"
       open={open}
       aria-labelledby="confirmation-dialog-title"
@@ -53,38 +60,34 @@ export const ConfirmationDialog = (
     >
       <DialogTitle id="confirmation-dialog-title">{title}</DialogTitle>
       <DialogContent>
-        <DialogContentText id="confirmation-dialog-description">
+        <DialogContentText
+          id="confirmation-dialog-description"
+          // Callers build multi-line messages (one parse error per line);
+          // without this the newlines collapse into one run-on paragraph.
+          sx={{ whiteSpace: 'pre-line' }}
+        >
           {message}
         </DialogContentText>
       </DialogContent>
       <DialogActions>
         <Button
           data-testid="confirmation-dialog-cancel"
+          variant="outlined"
           onClick={handleCancel}
-          color="primary"
         >
           Cancel
         </Button>
         <Button
           data-testid="confirmation-dialog-confirm"
+          variant="contained"
+          color={isAlert ? 'error' : 'primary'}
           onClick={handleConfirm}
           disabled={confirmDisabled ?? false}
           autoFocus
-          sx={{
-            color: isAlert ? '#F50157' : '#FFFFFF',
-            backgroundColor: isAlert ? 'transparent' : '#337ab7',
-            '&:hover': {
-              color: '#FFFFFF',
-              backgroundColor: isAlert ? '#fc266f' : '#285a9b',
-            },
-            '&:disabled': {
-              backgroundColor: 'transparent',
-            },
-          }}
         >
           {buttonTitle === undefined || buttonTitle === '' ? 'OK' : buttonTitle}
         </Button>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }

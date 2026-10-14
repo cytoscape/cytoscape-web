@@ -1,7 +1,8 @@
 import { IdType } from '../IdType'
 import { DiscreteRange } from '../PropertyModel/DiscreteRange'
 import { NumberRange } from '../PropertyModel/NumberRange'
-import { AttributeName, Table, ValueType } from '../TableModel'
+import { AttributeName, Table } from '../TableModel'
+import { DiscreteFilterValue } from './DiscreteFilterValue'
 
 /**
  * Interface to define the fuctions for applying filters.
@@ -9,7 +10,7 @@ import { AttributeName, Table, ValueType } from '../TableModel'
  */
 export interface Filter {
   applyDiscreteFilter: (
-    range: DiscreteRange<ValueType>,
+    range: DiscreteRange<DiscreteFilterValue>,
     table: Table,
     attributeName: AttributeName,
   ) => IdType[]

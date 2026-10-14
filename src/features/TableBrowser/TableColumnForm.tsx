@@ -1,14 +1,17 @@
+import DeleteIcon from '@mui/icons-material/Delete'
+import EditIcon from '@mui/icons-material/Edit'
 import {
   Alert,
   Box,
   Button,
   FormControl,
+  IconButton,
+  InputAdornment,
   InputLabel,
   MenuItem,
   Select,
   TextField,
 } from '@mui/material'
-import Dialog from '@mui/material/Dialog'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -17,11 +20,20 @@ import Radio from '@mui/material/Radio'
 import Tooltip from '@mui/material/Tooltip'
 import * as React from 'react'
 
+import { CyDialog } from '@/components/CyDialog'
 import { ValueTypeName } from '../../models/TableModel'
+import { ValueTypeNameChip } from '../../components/ValueTypeNameChip'
+import { orderedValueTypeNames } from '../../models/TableModel/impl/valueTypeNameDisplay'
+import {
+  deserializeValue,
+  isListType,
+  serializeValue,
+} from '../../models/TableModel/impl/valueTypeImpl'
 import {
   VisualProperty,
   VisualPropertyValueType,
 } from '../../models/VisualStyleModel'
+import { ListValueEditorDialog } from './ListValueEditorDialog'
 import { TableColumn } from './TableBrowser'
 
 interface TableFormProps {
@@ -70,16 +82,15 @@ export function EditTableColumnForm(props: TableFormProps): React.ReactElement {
       setMappingSyncSetting(
         columnHasDependentProperties ? 'rename' : undefined,
       ),
-    [props.dependentVisualProperties],
+    [props.dependentVisualProperties, columnHasDependentProperties],
   )
 
   return (
-    <Dialog
+    <CyDialog
       data-testid="edit-table-column-dialog"
       maxWidth="sm"
       fullWidth={true}
       open={props.open}
-      onClose={props.onClose}
     >
       <DialogTitle>Rename Column</DialogTitle>
       <DialogContent>
@@ -137,29 +148,20 @@ export function EditTableColumnForm(props: TableFormProps): React.ReactElement {
       <DialogActions>
         <Button
           data-testid="edit-table-column-cancel-button"
-          color="primary"
+          variant="outlined"
           onClick={props.onClose}
         >
           Cancel
         </Button>
         <Button
           data-testid="edit-table-column-confirm-button"
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-            '&:disabled': {
-              backgroundColor: 'transparent',
-            },
-          }}
+          variant="contained"
           onClick={() => props.onSubmit(value, mappingSyncSetting)}
         >
           Confirm
         </Button>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }
 
@@ -178,19 +180,20 @@ export function DeleteTableColumnForm(
       setMappingSyncSetting(
         columnHasDependentProperties ? 'delete' : undefined,
       ),
-    [props.dependentVisualProperties],
+    [props.dependentVisualProperties, columnHasDependentProperties],
   )
   return (
-    <Dialog
+    <CyDialog
       data-testid="delete-table-column-dialog"
       maxWidth="sm"
       fullWidth={true}
       open={props.open}
-      onClose={props.onClose}
     >
       <DialogTitle>Delete Column</DialogTitle>
       <DialogContent>
-        <Box>Are you sure you want to delete column {props.column.id}?</Box>
+        <Box>
+          Are you sure you want to delete column &quot;{props.column.id}&quot;?
+        </Box>
         {columnHasDependentProperties ? (
           <Alert severity="warning">{`Warning, the following visual properties have mappings that are dependent on column ${
             props.column.id
@@ -231,30 +234,22 @@ export function DeleteTableColumnForm(
       <DialogActions>
         <Button
           data-testid="delete-table-column-cancel-button"
-          color="primary"
+          variant="outlined"
           onClick={props.onClose}
         >
           Cancel
         </Button>
         <Button
           data-testid="delete-table-column-confirm-button"
-          sx={{
-            color: '#F50157',
-            backgroundColor: 'transparent',
-            '&:hover': {
-              color: '#FFFFFF',
-              backgroundColor: '#fc266f',
-            },
-            '&:disabled': {
-              backgroundColor: 'transparent',
-            },
-          }}
+          variant="contained"
+          color="error"
+          startIcon={<DeleteIcon />}
           onClick={() => props.onSubmit(mappingSyncSetting)}
         >
-          Confirm
+          Delete
         </Button>
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }
 
@@ -266,33 +261,38 @@ export function CreateTableColumnForm(
     ValueTypeName.String,
   )
   const [defaultValue, setDefaultValue] = React.useState('')
+  // Opens the shared list editor for a list-typed default value (CW-563).
+  const [listEditorOpen, setListEditorOpen] = React.useState(false)
+
+  React.useEffect(() => {
+    if (props.open) {
+      setColumnName('')
+      setDefaultValue('')
+      setValueTypeName(ValueTypeName.String)
+    }
+  }, [props.open])
+
   const disabled = columnName === ''
 
   const submitButton = disabled ? (
     <Tooltip title="Column name must not be empty">
       <Box>
-        <Button disabled={true}>Confirm</Button>
+        <Button
+          data-testid="create-table-column-confirm-button"
+          variant="contained"
+          disabled
+        >
+          Confirm
+        </Button>
       </Box>
     </Tooltip>
   ) : (
     <Button
       data-testid="create-table-column-confirm-button"
-      sx={{
-        color: '#FFFFFF',
-        backgroundColor: '#337ab7',
-        '&:hover': {
-          backgroundColor: '#285a9b',
-        },
-        '&:disabled': {
-          backgroundColor: 'transparent',
-        },
-      }}
+      variant="contained"
       disabled={columnName === ''}
       onClick={() => {
         props.onSubmit(columnName, valueTypeName, defaultValue)
-        setColumnName('')
-        setDefaultValue('')
-        setValueTypeName(ValueTypeName.String)
       }}
     >
       Confirm
@@ -300,12 +300,11 @@ export function CreateTableColumnForm(
   )
 
   return (
-    <Dialog
+    <CyDialog
       data-testid="create-table-column-dialog"
       maxWidth="sm"
       fullWidth={true}
       open={props.open}
-      onClose={props.onClose}
     >
       <DialogTitle>Create New Column</DialogTitle>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column' }}>
@@ -326,22 +325,70 @@ export function CreateTableColumnForm(
             value={valueTypeName}
             onChange={(e) => setValueTypeName(e.target.value as ValueTypeName)}
           >
-            {Object.values(ValueTypeName).map((v) => {
+            {orderedValueTypeNames.map((v) => {
               return (
                 <MenuItem key={v} value={v}>
-                  {v}
+                  <ValueTypeNameChip
+                    type={v}
+                    variant="chip-and-text"
+                    showTooltip={false}
+                  />
                 </MenuItem>
               )
             })}
           </Select>
         </FormControl>
-        <TextField
-          data-testid="create-table-column-default-value-input"
-          size="small"
-          sx={{ mt: 1, mb: 1 }}
-          onChange={(e) => setDefaultValue(e.target.value)}
-          value={defaultValue}
-          label={'Default value'}
+        {isListType(valueTypeName) ? (
+          <TextField
+            data-testid="create-table-column-default-value-input"
+            size="small"
+            sx={{ mt: 1, mb: 1 }}
+            value={defaultValue}
+            label={'Default value'}
+            placeholder="Click to edit list…"
+            onClick={() => setListEditorOpen(true)}
+            InputProps={{
+              readOnly: true,
+              sx: { cursor: 'pointer' },
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    aria-label="edit list default value"
+                    onClick={() => setListEditorOpen(true)}
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+        ) : (
+          <TextField
+            data-testid="create-table-column-default-value-input"
+            size="small"
+            sx={{ mt: 1, mb: 1 }}
+            onChange={(e) => setDefaultValue(e.target.value)}
+            value={defaultValue}
+            label={'Default value'}
+          />
+        )}
+        <ListValueEditorDialog
+          open={listEditorOpen}
+          columnName={columnName || 'Default value'}
+          listType={valueTypeName}
+          value={
+            defaultValue.length > 0
+              ? deserializeValue(valueTypeName, defaultValue)
+              : []
+          }
+          onCancel={() => setListEditorOpen(false)}
+          onSave={(v) => {
+            // The column-creation contract carries the default as a string, so
+            // we serialize the edited list before storing it (CW-563).
+            setDefaultValue(serializeValue(v))
+            setListEditorOpen(false)
+          }}
         />
         {props.error != null ? (
           <Alert severity="error">{`${props.error}`}</Alert>
@@ -351,7 +398,7 @@ export function CreateTableColumnForm(
       <DialogActions>
         <Button
           data-testid="create-table-column-cancel-button"
-          color="primary"
+          variant="outlined"
           onClick={() => {
             setColumnName('')
             setDefaultValue('')
@@ -363,6 +410,6 @@ export function CreateTableColumnForm(
         </Button>
         {submitButton}
       </DialogActions>
-    </Dialog>
+    </CyDialog>
   )
 }

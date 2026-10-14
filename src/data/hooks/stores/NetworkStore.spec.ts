@@ -1,25 +1,41 @@
 import { act, renderHook } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { IdType } from '../../../models/IdType'
 import NetworkFn, { Edge, Network } from '../../../models/NetworkModel'
-import {
-  NetworkUpdatedEvent,
-  UpdateEventType,
-} from '../../../models/StoreModel/NetworkStoreModel'
+import { UpdateEventType } from '../../../models/StoreModel/NetworkStoreModel'
+import { flushPendingWrites } from './persistenceScheduler'
 import { useNetworkStore } from './NetworkStore'
 
 // Mock the database operations to avoid IndexedDB issues in tests
-jest.mock('../../db', () => ({
-  ...jest.requireActual('../../db'),
-  putNetworkToDb: jest.fn().mockResolvedValue(undefined),
-  deleteNetworkFromDb: jest.fn().mockResolvedValue(undefined),
-  clearNetworksFromDb: jest.fn().mockResolvedValue(undefined),
-}))
+vi.mock('../../db', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../db')>()
+  return {
+    ...actual,
+    putNetworkToDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworksFromDb: vi.fn().mockResolvedValue(undefined),
+    putTableToDb: vi.fn().mockResolvedValue(undefined),
+    deleteTableFromDb: vi.fn().mockResolvedValue(undefined),
+    clearTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    putViewModelToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewsToDb: vi.fn().mockResolvedValue(undefined),
+    deleteViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearViewModelsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    putTablesToDb: vi.fn().mockResolvedValue(undefined),
+    getNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    getTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    getViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+  }
+})
 
 // Mock the workspace store to provide a current network ID
-jest.mock('./WorkspaceStore', () => ({
+vi.mock('./WorkspaceStore', () => ({
   useWorkspaceStore: {
-    getState: jest.fn(() => ({
+    getState: vi.fn(() => ({
       workspace: {
         currentNetworkId: 'test-network-1',
       },
@@ -160,9 +176,8 @@ describe('useNetworkStore', () => {
         result.current.add(network)
       })
 
-      let deletedEdges: Edge[] = []
       act(() => {
-        deletedEdges = result.current.deleteNodes(networkId, ['n1'])
+        result.current.deleteNodes(networkId, ['n1'])
       })
 
       const updatedNetwork = result.current.networks.get(networkId)
@@ -350,5 +365,78 @@ describe('useNetworkStore', () => {
       expect(result.current.networks.get(networkId)).toBeUndefined()
     })
   })
-})
 
+  // REVIEW.md R2-2 (NetworkStore residual): the persist wrapper used to key
+  // the DB write off workspace.currentNetworkId (mocked here as
+  // 'test-network-1') instead of the network the action actually mutated.
+  // Because cy-backed networks mutate in place, identity diffing cannot
+  // detect changes — persistence must be per-action.
+  describe('IndexedDB persistence keying (regression: R2-2)', () => {
+    it('persists the mutated network even when it is not the current network', async () => {
+      const { putNetworkToDb } = await import('../../db')
+      const { result } = renderHook(() => useNetworkStore())
+
+      act(() => {
+        result.current.add(createTestNetwork('other-network'))
+      })
+      vi.mocked(putNetworkToDb).mockClear()
+
+      act(() => {
+        result.current.addNode('other-network', 'n3')
+      })
+      flushPendingWrites()
+
+      const persistedIds = vi
+        .mocked(putNetworkToDb)
+        .mock.calls.map((call) => call[0].id)
+      expect(persistedIds).toContain('other-network')
+      // The persisted network must include the mutation
+      const persisted = vi
+        .mocked(putNetworkToDb)
+        .mock.calls.find((call) => call[0].id === 'other-network')?.[0]
+      expect(persisted?.nodes.find((n: any) => n.id === 'n3')).toBeDefined()
+    })
+
+    it('does not rewrite unrelated networks when another network is mutated', async () => {
+      const { putNetworkToDb } = await import('../../db')
+      const { result } = renderHook(() => useNetworkStore())
+
+      act(() => {
+        result.current.add(createTestNetwork('test-network-1'))
+        result.current.add(createTestNetwork('other-network'))
+      })
+      vi.mocked(putNetworkToDb).mockClear()
+
+      act(() => {
+        result.current.addEdge('other-network', 'e2', 'n1', 'n2')
+      })
+      flushPendingWrites()
+
+      const persistedIds = vi
+        .mocked(putNetworkToDb)
+        .mock.calls.map((call) => call[0].id)
+      expect(persistedIds).toContain('other-network')
+      expect(persistedIds).not.toContain('test-network-1')
+    })
+
+    it('persists node deletions keyed to the mutated network', async () => {
+      const { putNetworkToDb } = await import('../../db')
+      const { result } = renderHook(() => useNetworkStore())
+
+      act(() => {
+        result.current.add(createTestNetwork('other-network'))
+      })
+      vi.mocked(putNetworkToDb).mockClear()
+
+      act(() => {
+        result.current.deleteNodes('other-network', ['n2'])
+      })
+      flushPendingWrites()
+
+      const persistedIds = vi
+        .mocked(putNetworkToDb)
+        .mock.calls.map((call) => call[0].id)
+      expect(persistedIds).toContain('other-network')
+    })
+  })
+})

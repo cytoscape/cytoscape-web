@@ -1,11 +1,10 @@
-import { ValueTypeName } from '../../../../TableModel'
 import { LayoutAlgorithm, LayoutAlgorithmType } from '../../../LayoutAlgorithm'
 
 export const gForce: LayoutAlgorithm = {
   name: 'gForce',
   engineName: 'G6',
-  displayName: 'gForce Layout (GPU-based force-directed)',
-  description: 'Force-directed layout with GPU acceleration',
+  displayName: 'gForce Layout (force-directed)',
+  description: 'Force-directed layout',
   type: LayoutAlgorithmType.force,
   parameters: {
     type: 'gForce',
@@ -20,41 +19,40 @@ export const gForce: LayoutAlgorithm = {
     workerEnabled: true, // Whether to activate web-worker
     gpuEnabled: true,
   },
-  editables: {
-    preventOverlap: {
+  // defaultValue equals the value in `parameters` (what the engine runs);
+  // earlier editables advertised 1 / 1000 for linkDistance / nodeStrength
+  // while the engine ran 200 / 650.
+  editables: [
+    {
       name: 'preventOverlap',
+      displayName: 'Prevent Overlap',
       description: 'Avoid overlapping nodes',
-      type: ValueTypeName.Boolean,
-      value: true,
+      type: 'checkBox',
       defaultValue: true,
     },
-    gpuEnabled: {
-      name: 'gpuEnabled',
-      description: 'Whether to activate GPU acceleration',
-      type: ValueTypeName.Boolean,
-      value: true,
-      defaultValue: true,
-    },
-    maxIteration: {
+    {
       name: 'maxIteration',
+      displayName: 'Max Iterations',
       description: 'Maximum number of iterations',
-      type: ValueTypeName.Integer,
-      value: 400,
+      type: 'text',
+      validationType: 'digits',
       defaultValue: 400,
     },
-    linkDistance: {
+    {
       name: 'linkDistance',
+      displayName: 'Link Distance',
       description: 'The edge length',
-      type: ValueTypeName.Integer,
-      value: 1,
-      defaultValue: 1,
+      type: 'text',
+      validationType: 'digits',
+      defaultValue: 200,
     },
-    nodeStrength: {
+    {
       name: 'nodeStrength',
+      displayName: 'Node Strength',
       description: 'The strength of node force.',
-      type: ValueTypeName.Integer,
-      value: 1000,
-      defaultValue: 1000,
+      type: 'text',
+      validationType: 'digits',
+      defaultValue: 650,
     },
-  },
+  ],
 }

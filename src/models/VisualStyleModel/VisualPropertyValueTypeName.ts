@@ -6,7 +6,7 @@ export const VisualPropertyValueTypeName = {
   EdgeLine: 'edgeLine',
   EdgeArrowShape: 'edgeArrowShape',
   Font: 'font',
-  HorizontalAlign: 'HorizontalAlign',
+  HorizontalAlign: 'horizontalAlign',
   VerticalAlign: 'verticalAlign',
   NodeBorderLine: 'nodeBorderLine',
   Visibility: 'visibility',
@@ -15,7 +15,8 @@ export const VisualPropertyValueTypeName = {
   Boolean: 'boolean',
   CustomGraphic: 'customGraphic',
   CustomGraphicPosition: 'customGraphicPosition',
-}
+  NodeLabelPosition: 'nodeLabelPosition',
+} as const
 
 export type VisualPropertyValueTypeName =
   (typeof VisualPropertyValueTypeName)[keyof typeof VisualPropertyValueTypeName]

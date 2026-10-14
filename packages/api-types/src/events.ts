@@ -1,0 +1,113 @@
+// packages/api-types/src/events.ts
+
+import type { IdType } from '../../../src/app-api/types'
+
+/**
+ * Map of all typed events dispatched by Cytoscape Web.
+ * Keys are the CustomEvent type strings; values are the event detail shapes.
+ *
+ * Vanilla JS consumers use `window.addEventListener` with these keys.
+ * React consumers use the `useCyWebEvent` hook from `cyweb/EventBus`.
+ *
+ * When `@cytoscape-web/api-types` is added to tsconfig `types`, all
+ * `window.addEventListener` overloads carry the correct detail type.
+ */
+export interface CyWebEvents {
+  /**
+   * Fired once when the Cytoscape Web App API is fully initialized
+   * and `window.CyWebApi` is ready to use. Subscribe to this event
+   * before accessing `window.CyWebApi`.
+   */
+  'cywebapi:ready': Record<string, never>
+
+  /** Fired when a new network is added to the workspace. */
+  'network:created': { networkId: IdType }
+
+  /** Fired when a network is removed from the workspace. */
+  'network:deleted': { networkId: IdType }
+
+  /**
+   * Fired when nodes or edges are added to or removed from an existing
+   * network (not for network creation or deletion).
+   */
+  'network:changed': {
+    networkId: IdType
+    addedNodeIds: IdType[]
+    removedNodeIds: IdType[]
+    addedEdgeIds: IdType[]
+    removedEdgeIds: IdType[]
+  }
+
+  /**
+   * Fired when the active (current) network changes.
+   * `previousId` is an empty string if no network was active before.
+   */
+  'network:switched': { networkId: IdType; previousId: IdType }
+
+  /**
+   * Fired once a network's data is readable through the API: its node and
+   * edge tables and its view have all landed in the host's stores.
+   * Workspace networks are loaded lazily the first time they become current
+   * after a page reload, so `network:switched` can arrive before the tables
+   * exist and a `tableApi` / `elementApi` read made in that window fails
+   * with `APP1`. Read again on this event. For a brand-new network it
+   * arrives once alongside `network:created`. The first landing does not
+   * fire `data:changed`.
+   */
+  'network:loaded': { networkId: IdType }
+
+  /** Fired when the selection state of the current network's view changes. */
+  'selection:changed': {
+    networkId: IdType
+    selectedNodes: IdType[]
+    selectedEdges: IdType[]
+  }
+
+  /** Fired immediately before a layout algorithm begins executing. */
+  'layout:started': { networkId: IdType; algorithm: string }
+
+  /** Fired when a layout algorithm has finished and node positions are updated. */
+  'layout:completed': { networkId: IdType; algorithm: string }
+
+  /**
+   * Fired when a visual style property changes on any network.
+   * `property` is the `VisualPropertyName` string (e.g., `'NODE_BACKGROUND_COLOR'`).
+   */
+  'style:changed': { networkId: IdType; property: string }
+
+  /**
+   * Fired when a network's ACTIVE named style changes — the Vizmapper's
+   * style picker, `visualStyleApi.applyVisualStyle`, an undone switch, or
+   * deleting the active style. One event per switch, ahead of the
+   * `style:changed` burst the replacement causes.
+   */
+  'style:switched': {
+    networkId: IdType
+    styleId: IdType
+    previousStyleId: IdType
+  }
+
+  /**
+   * Fired when table data is written to a network's node or edge table.
+   * `rowIds` is the set of node/edge IDs whose data changed in this write.
+   * `addedColumns`/`removedColumns` carry schema changes (a rename appears
+   * as one of each); check them first to distinguish column operations
+   * from plain row edits, since column operations may also report rowIds.
+   */
+  'data:changed': {
+    networkId: IdType
+    tableType: 'node' | 'edge'
+    rowIds: IdType[]
+    addedColumns: string[]
+    removedColumns: string[]
+  }
+}
+
+/**
+ * Mapped type used to augment `WindowEventMap`.
+ * Maps each `CyWebEvents` key to a `CustomEvent` with the correct detail type
+ * so that `window.addEventListener` overloads carry full type information.
+ */
+export type CyWebEventMap = {
+  [K in keyof CyWebEvents]: CustomEvent<CyWebEvents[K]>
+}

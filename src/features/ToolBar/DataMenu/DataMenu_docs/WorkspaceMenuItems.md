@@ -67,12 +67,12 @@ Menu item that saves the current workspace to NDEx with a new name.
 
 - Only enabled when user is authenticated AND workspace has at least one network
 - Shows tooltip explaining requirements when disabled
-- Opens `WorkspaceNamingDialog` when clicked
+- When clicked, closes the menu and has `DataMenu` open `WorkspaceNamingDialog`
 - Creates a new workspace on NDEx (doesn't overwrite existing)
 
 **Integration:**
 
-- Uses `WorkspaceNamingDialog` for workspace naming
+- The row renders no dialog (#784): `DataMenu` owns `WorkspaceNamingDialog` and mounts it only while it is open
 - Integrates with `useSaveWorkspaceToNDEx` hook (via dialog)
 
 ### SaveWorkspaceToNDExOverwriteMenuItem
@@ -83,8 +83,8 @@ Menu item that overwrites the current remote workspace on NDEx.
 
 - Only enabled when user is authenticated AND workspace has at least one network AND current workspace is a remote workspace
 - Shows tooltip explaining requirements when disabled
-- If workspace is remote, directly saves to NDEx (overwrites existing)
-- If workspace is local, opens `WorkspaceNamingDialog` to create a new workspace first
+- If workspace is remote, closes the menu and saves to NDEx in the background (overwrites existing)
+- If workspace is local, calls `onSaveAs`: `DataMenu` closes the menu and opens `WorkspaceNamingDialog` to create a new workspace first
 - Shows error messages for failed operations
 
 **Key Features:**
@@ -97,7 +97,7 @@ Menu item that overwrites the current remote workspace on NDEx.
 
 - Uses `useSaveWorkspaceToNDEx` hook for saving
 - Uses `useWorkspaceData` hook for current workspace state
-- Integrates with `WorkspaceNamingDialog` for local workspaces
+- Hands local workspaces to `DataMenu`'s `WorkspaceNamingDialog` through `onSaveAs`
 
 ### WorkspaceNamingDialog
 

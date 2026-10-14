@@ -4,6 +4,7 @@ import { MouseEvent, ReactElement } from 'react'
 import { Network } from '../../models/NetworkModel'
 import { Renderer } from '../../models/RendererModel/Renderer'
 import { FloatingToolBar } from '../FloatingToolBar'
+import { FloatingLayoutToolsPanel } from '../LayoutTools/FloatingLayoutToolsPanel'
 
 interface NetworkTabProps {
   network: Network
@@ -40,11 +41,12 @@ export const NetworkTab = ({
         boxSizing: 'border-box',
         height: '100%',
         width: '100%',
-        backgroundColor: bgColor !== undefined ? bgColor : '#FFFFFF',
-        border: isActive ? '3px solid orange' : '3px solid transparent',
-        // Adjust the hidden bottom border to be 4px
-        borderBottom: isActive ? '4px solid orange' : '4px solid transparent',
-
+        backgroundColor: bgColor !== undefined ? bgColor : '#ffffff',
+        // Focus border (visible when active)
+        border: (theme) =>
+          isActive
+            ? `2px solid ${theme.palette.primary.main}`
+            : '2px solid transparent',
         // Mount all components in the background but display only the selected one
         display: selected ? 'block' : 'none',
       }}
@@ -53,6 +55,11 @@ export const NetworkTab = ({
         sx={{
           height: '100%',
           width: '100%',
+          // Gap so the border color does not disappear on darker backgrounds
+          border: (theme) =>
+            isActive
+              ? `1px solid ${theme.palette.common.white}`
+              : '1px solid transparent',
         }}
         // First click on an inactive renderer should only activate this tab and
         // must not trigger renderer-level click handlers (e.g. CP background reset).
@@ -61,14 +68,15 @@ export const NetworkTab = ({
           const isMenu = target.closest('[role="menu"]') !== null
           const isMenuItem = target.closest('[role="menuitem"]') !== null
           const isDialog = target.closest('[role="dialog"]') !== null
-          const isDialogButton = target.closest('[role="dialog"] button') !== null || 
-                                 target.closest('.MuiDialog-root button') !== null
-          
+          const isDialogButton =
+            target.closest('[role="dialog"] button') !== null ||
+            target.closest('.MuiDialog-root button') !== null
+
           // Never intercept menu, menu item, or dialog clicks
           if (isMenu || isMenuItem || isDialog || isDialogButton) {
             return
           }
-          
+
           if (!isActive) {
             event.stopPropagation()
             handleClick?.()
@@ -81,14 +89,15 @@ export const NetworkTab = ({
           const isMenu = target.closest('[role="menu"]') !== null
           const isMenuItem = target.closest('[role="menuitem"]') !== null
           const isDialog = target.closest('[role="dialog"]') !== null
-          const isDialogButton = target.closest('[role="dialog"] button') !== null || 
-                                 target.closest('.MuiDialog-root button') !== null
-          
+          const isDialogButton =
+            target.closest('[role="dialog"] button') !== null ||
+            target.closest('.MuiDialog-root button') !== null
+
           // Never intercept menu, menu item, or dialog clicks
           if (isMenu || isMenuItem || isDialog || isDialogButton) {
             return
           }
-          
+
           if (!isActive) {
             event.stopPropagation()
             return
@@ -98,7 +107,8 @@ export const NetworkTab = ({
       >
         {rendererComponent}
       </Box>
-      <FloatingToolBar rendererId={renderer.id} />
+      <FloatingToolBar rendererId={renderer.id} viewNetworkId={network.id} />
+      <FloatingLayoutToolsPanel />
     </Box>
   )
 }

@@ -13,7 +13,11 @@ export function calculateChartDimensions(
   containerHeight: number
 } {
   const chartSize =
-    size || Math.min(width || CHART_CONSTANTS.SIZES.DEFAULT, height || CHART_CONSTANTS.SIZES.DEFAULT)
+    size ||
+    Math.min(
+      width || CHART_CONSTANTS.SIZES.DEFAULT,
+      height || CHART_CONSTANTS.SIZES.DEFAULT,
+    )
   const containerWidth = width || chartSize
   const containerHeight = height || chartSize
   return { chartSize, containerWidth, containerHeight }
@@ -31,7 +35,8 @@ export function calculateRadii(
   viewBoxSize: number
 } {
   const outerRadius = chartSize / 2 - CHART_CONSTANTS.PADDING
-  const innerRadius = holeSize !== undefined ? outerRadius * holeSize : undefined
+  const innerRadius =
+    holeSize !== undefined ? outerRadius * holeSize : undefined
   const viewBoxSize = 2 * outerRadius
   return { outerRadius, innerRadius, viewBoxSize }
 }
@@ -49,4 +54,3 @@ export function degreesToRadians(degrees: number): number {
 export function calculateSliceAngle(dataColumnCount: number): number {
   return 360 / dataColumnCount
 }
-

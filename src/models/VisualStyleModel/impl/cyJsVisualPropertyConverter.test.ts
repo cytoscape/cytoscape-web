@@ -1,5 +1,8 @@
-import { VALID_PIE_CHART_SLICE_INDEX_RANGE } from './customGraphicsImpl'
+// @vitest-environment node
+import { describe, expect, it } from 'vitest'
+
 import { VisualPropertyName } from '../VisualPropertyName'
+import { VALID_PIE_CHART_SLICE_INDEX_RANGE } from './customGraphicsImpl'
 import { CyjsVisualPropertyName } from './CyjsProperties/cyjsVisualPropertyName'
 import {
   getCyjsVpName,

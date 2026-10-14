@@ -1,8 +1,13 @@
-import { create, StateCreator, StoreApi } from 'zustand'
+/**
+ * @deprecated The Module Federation exposure of this store (cyweb/TableStore) is deprecated for external apps.
+ * This store is still actively used internally by the host application — it is NOT being removed.
+ * External apps should use the App API (e.g., `cyweb/NetworkApi`) instead of importing this store directly.
+ * This cyweb/TableStore Module Federation export will be removed after 2 release cycles.
+ */
+import { create, StateCreator } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 
-import { clearTablesFromDb, deleteTablesFromDb, putTablesToDb } from '../../db'
 import { logStore } from '../../../debug'
 import { IdType } from '../../../models/IdType'
 import {
@@ -19,34 +24,17 @@ import {
 } from '../../../models/TableModel'
 import * as TableImpl from '../../../models/TableModel/impl/inMemoryTable'
 import { VisualPropertyGroup } from '../../../models/VisualStyleModel/VisualPropertyGroup'
-import { useWorkspaceStore } from './WorkspaceStore'
+import { clearTablesFromDb, deleteTablesFromDb, putTablesToDb } from '../../db'
+import { isHydrating } from './hydrationContext'
+import { persistNetworkSlices } from './persistNetworkSlices'
 
-const persist =
-  (config: StateCreator<TableStore>) =>
-  (
-    set: StoreApi<TableStore>['setState'],
-    get: StoreApi<TableStore>['getState'],
-    api: StoreApi<TableStore>,
-  ) =>
-    config(
-      async (args) => {
-        logStore.info('[TableStore]: Persisting table store')
-        const currentNetworkId =
-          useWorkspaceStore.getState().workspace.currentNetworkId
-        set(args)
-        const updated = get().tables[currentNetworkId]
-        const deleted = updated === undefined
-        if (!deleted) {
-          await putTablesToDb(
-            currentNetworkId,
-            updated.nodeTable,
-            updated.edgeTable,
-          ).then(() => {})
-        }
-      },
-      get,
-      api,
-    )
+const persist = (config: StateCreator<TableStore>) =>
+  persistNetworkSlices<TableStore, TableRecord>(config, {
+    label: 'TableStore',
+    selectSlices: (state) => state.tables,
+    putSlice: (networkId, record) =>
+      putTablesToDb(networkId, record.nodeTable, record.edgeTable),
+  })
 
 export const useTableStore = create(
   subscribeWithSelector(
@@ -62,7 +50,6 @@ export const useTableStore = create(
               )
             }
             state.tables[networkId] = { nodeTable, edgeTable }
-            void putTablesToDb(networkId, nodeTable, edgeTable)
 
             return state
           })
@@ -364,29 +351,42 @@ export const useTableStore = create(
             }, {})
             state.tables = filtered
 
-            void deleteTablesFromDb(networkId).then(() => {
-              logStore.info(
-                `[${useTableStore.name}]: Deleted network table from db: ${networkId}`,
-              )
-            })
+            // Skip during cross-tab hydration: the peer tab already deleted
+            // this row, so re-deleting it only mints another change record.
+            if (!isHydrating()) {
+              void deleteTablesFromDb(networkId)
+                .then(() => {
+                  logStore.info(
+                    `[${useTableStore.name}]: Deleted network table from db: ${networkId}`,
+                  )
+                })
+                .catch((e) => {
+                  logStore.error(
+                    `[${useTableStore.name}]: Failed to delete network table from db: ${networkId}`,
+                    e,
+                  )
+                })
+            }
             return state
           })
         },
         deleteAll() {
           set((state) => {
             state.tables = {}
-            clearTablesFromDb()
-              .then(() => {
-                logStore.info(
-                  `[${useTableStore.name}]: Deleted all network tables from db`,
-                )
-              })
-              .catch((err) => {
-                logStore.error(
-                  `[${useTableStore.name}]: Error clearing  all attribute tables from db: ${err}`,
-                  err,
-                )
-              })
+            if (!isHydrating()) {
+              clearTablesFromDb()
+                .then(() => {
+                  logStore.info(
+                    `[${useTableStore.name}]: Deleted all network tables from db`,
+                  )
+                })
+                .catch((err) => {
+                  logStore.error(
+                    `[${useTableStore.name}]: Error clearing  all attribute tables from db: ${err}`,
+                    err,
+                  )
+                })
+            }
 
             return state
           })

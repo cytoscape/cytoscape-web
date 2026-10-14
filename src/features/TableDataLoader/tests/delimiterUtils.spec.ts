@@ -1,3 +1,6 @@
+// @vitest-environment node
+import { describe, expect, it } from 'vitest'
+
 import {
   convertFileDelimiterToEffective,
   convertFileDelimiterToStorageValue,
@@ -80,4 +83,3 @@ describe('DelimiterUtils', () => {
     })
   })
 })
-

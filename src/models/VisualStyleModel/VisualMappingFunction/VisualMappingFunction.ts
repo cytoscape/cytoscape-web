@@ -8,5 +8,5 @@ export interface VisualMappingFunction {
   attribute: AttributeName
   visualPropertyType: VisualPropertyValueTypeName
   defaultValue: VisualPropertyValueType
-  attributeType?: ValueTypeName 
+  attributeType?: ValueTypeName
 }

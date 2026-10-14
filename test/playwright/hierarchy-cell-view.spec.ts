@@ -1,0 +1,460 @@
+import path from 'path'
+
+import {
+  expect,
+  getWorkspaceNetworkCount,
+  gotoAndWaitReady,
+  test,
+} from './fixtures'
+import type { Page } from '@playwright/test'
+
+// Issue #630: a HCX hierarchy can contain edges that are not parent-child
+// relationships. The circle packing builder cannot interpret those, so:
+//  - a hierarchy with several edge interaction types gets no Cell View tab
+//  - any other hierarchy the builder cannot resolve shows a message instead of
+//    the blank panel it used to leave behind
+const MIXED_INTERACTION_HCX = path.resolve(
+  __dirname,
+  '../fixtures/hcx/valid/with-interaction-uuid.valid.cx2',
+)
+
+const UNIFORM_INTERACTION_CYCLIC_HCX = path.resolve(
+  __dirname,
+  '../fixtures/hcx/invalid/not-dag-single-interaction.invalid.cx2',
+)
+
+const importNetworkFile = async (
+  page: Page,
+  fixture: string,
+  networkName: string,
+): Promise<void> => {
+  await gotoAndWaitReady(page)
+  expect(await getWorkspaceNetworkCount(page)).toBe(0)
+  await importAnotherNetworkFile(page, fixture, networkName, 1)
+}
+
+/** Import `fixture` into the current workspace, which then holds `count`. */
+const importAnotherNetworkFile = async (
+  page: Page,
+  fixture: string,
+  networkName: string,
+  count: number,
+): Promise<void> => {
+  await page.locator('[data-testid="toolbar-data-menu-menu-button"]').click()
+  await page.getByRole('menuitem', { name: 'Import' }).click()
+  const fromFileItem = page.getByRole('menuitem', {
+    name: 'Network from File...',
+  })
+  await expect(fromFileItem).toBeVisible()
+  await fromFileItem.click()
+  await expect(
+    page.locator('[data-testid="file-upload-dropzone"]'),
+  ).toBeVisible()
+
+  await page
+    .locator('[data-testid="file-upload-dropzone"] input[type="file"]')
+    .setInputFiles(fixture)
+
+  await expect
+    .poll(() => getWorkspaceNetworkCount(page), { timeout: 15000 })
+    .toBe(count)
+  await expect(page.getByText(networkName).first()).toBeVisible({
+    timeout: 15000,
+  })
+}
+
+test.describe('Cell View availability for hierarchies (#630)', () => {
+  test('a hierarchy with mixed edge interaction types gets no Cell View tab', async ({
+    page,
+  }) => {
+    await importNetworkFile(
+      page,
+      MIXED_INTERACTION_HCX,
+      'Test Network 50 nodes',
+    )
+
+    // The network is recognised as a hierarchy: the Sub Network Viewer is open
+    // and waiting for a subsystem selection.
+    await expect(page.getByText('Please select a subsystem')).toBeVisible({
+      timeout: 15000,
+    })
+    await expect(page.getByText('Failed to load network data')).toHaveCount(0)
+
+    // ...yet the Cell View renderer is never registered, so there is no tab for
+    // it and no blank circle packing panel.
+    await expect(page.getByRole('tab', { name: 'Cell View' })).toHaveCount(0)
+    await expect(
+      page.locator('[data-testid="circle-packing-svg"]'),
+    ).toHaveCount(0)
+  })
+
+  test('a hierarchy that cannot be resolved to a tree explains itself instead of rendering blank', async ({
+    page,
+  }) => {
+    const pageErrors: string[] = []
+    page.on('pageerror', (error) => pageErrors.push(error.message))
+
+    await importNetworkFile(
+      page,
+      UNIFORM_INTERACTION_CYCLIC_HCX,
+      'Test Network 20 nodes',
+    )
+
+    // Every edge shares one interaction type, so the heuristic keeps Cell View.
+    const cellViewTab = page.getByRole('tab', { name: 'Cell View' })
+    await expect(cellViewTab).toBeVisible({ timeout: 15000 })
+    await cellViewTab.click()
+
+    // The network is cyclic, so no single root exists: the panel says so rather
+    // than leaving an empty SVG behind.
+    await expect(
+      page.locator('[data-testid="circle-packing-unavailable"]'),
+    ).toBeVisible({ timeout: 15000 })
+    await expect(
+      page.locator('[data-testid="circle-packing-svg"]'),
+    ).toHaveCount(0)
+
+    expect(pageErrors).toEqual([])
+  })
+})
+
+const REGULAR_CX2 = path.resolve(
+  __dirname,
+  '../fixtures/cx2/valid/small-network.valid.cx2',
+)
+
+// A single-rooted tree with one interaction type: a hierarchy the Cell View
+// can draw (the other valid HCX fixtures mix interaction types).
+const TREE_HCX = path.resolve(__dirname, '../fixtures/hcx/valid/tree.valid.cx2')
+
+/**
+ * Drag the table panel's divider — the horizontal allotment sash right under
+ * the network pane — up by `by` pixels, growing the table.
+ */
+const dragTableDividerUp = async (page: Page, by: number): Promise<void> => {
+  const tabsBox = (await page
+    .locator('[data-testid="network-tabs"]')
+    .boundingBox())!
+  const sashY = tabsBox.y + tabsBox.height + 2
+  const sashX = tabsBox.x + tabsBox.width / 2
+  await page.mouse.move(sashX, sashY)
+  await page.mouse.down()
+  await page.mouse.move(sashX, sashY - by, { steps: 10 })
+  await page.mouse.up()
+}
+
+test.describe('Hierarchy network view tabs', () => {
+  // Regression: the box holding the Tree View / Cell View renderers is a flex
+  // item, and its default `min-height: auto` kept it from shrinking below the
+  // renderer's pixel-sized canvas. Growing the table panel shrank the pane but
+  // not the view, whose lower part then disappeared under the table.
+  test('the view shrinks with the pane when the table panel grows', async ({
+    page,
+  }) => {
+    await importNetworkFile(
+      page,
+      UNIFORM_INTERACTION_CYCLIC_HCX,
+      'Test Network 20 nodes',
+    )
+
+    const tabs = page.locator('[data-testid="network-tabs"]')
+    const renderer = tabs.locator('[data-testid="cyjs-renderer"]')
+    await expect(renderer).toBeVisible({ timeout: 15000 })
+
+    const bottomOf = async (
+      locator: ReturnType<Page['locator']>,
+    ): Promise<number> => {
+      const box = await locator.boundingBox()
+      expect(box).not.toBeNull()
+      return box!.y + box!.height
+    }
+    const heightOf = async (
+      locator: ReturnType<Page['locator']>,
+    ): Promise<number> => (await locator.boundingBox())!.height
+
+    const rendererHeightBefore = await heightOf(renderer)
+
+    const tabsBox = (await tabs.boundingBox())!
+    const shrinkBy = 150
+    await dragTableDividerUp(page, shrinkBy)
+
+    // The pane itself shrank...
+    await expect
+      .poll(() => heightOf(tabs))
+      .toBeLessThan(tabsBox.height - shrinkBy / 2)
+
+    // ...and the view followed it rather than overflowing under the table.
+    await expect
+      .poll(async () => (await bottomOf(renderer)) - (await bottomOf(tabs)))
+      .toBeLessThanOrEqual(1)
+    expect(await heightOf(renderer)).toBeLessThan(
+      rendererHeightBefore - shrinkBy / 2,
+    )
+  })
+
+  // #751: the Cell View keeps the point at its center fixed when a panel
+  // resizes it, like the Tree View does since #749. It used to stay anchored at
+  // the top-left, so growing the table panel cropped the bottom of the view.
+  test('the Cell View keeps its center when the table panel grows', async ({
+    page,
+  }) => {
+    await importNetworkFile(page, TREE_HCX, 'Test Network 15 nodes')
+
+    const cellViewTab = page.getByRole('tab', { name: 'Cell View' })
+    await expect(cellViewTab).toBeVisible({ timeout: 15000 })
+    await cellViewTab.click()
+    const svg = page.locator('[data-testid="circle-packing-svg"]')
+    await expect(svg).toBeVisible({ timeout: 15000 })
+
+    /** The layout point at the center of the SVG, and the zoom level. */
+    const readCenter = () =>
+      svg.evaluate((element) => {
+        const { width, height } = element.getBoundingClientRect()
+        const t = (
+          element as unknown as { __zoom?: { k: number; x: number; y: number } }
+        ).__zoom ?? { k: 1, x: 0, y: 0 }
+        return {
+          height,
+          k: t.k,
+          x: (width / 2 - t.x) / t.k,
+          y: (height / 2 - t.y) / t.k,
+        }
+      })
+
+    // Zoom in first, so the check also covers a scale other than 1.
+    const svgBox = (await svg.boundingBox())!
+    await page.mouse.move(
+      svgBox.x + svgBox.width / 3,
+      svgBox.y + svgBox.height / 3,
+    )
+    await page.mouse.wheel(0, -300)
+    await expect.poll(async () => (await readCenter()).k).toBeGreaterThan(1)
+    const before = await readCenter()
+
+    await dragTableDividerUp(page, 150)
+
+    // Check the size, zoom and center together, retrying: the SVG can report
+    // its new size before that frame's ResizeObserver callback has shifted the
+    // view, so a single read right after the size changes can see a
+    // half-applied state.
+    await expect(async () => {
+      const after = await readCenter()
+      expect(after.height).toBeLessThan(before.height - 75)
+      expect(after.k).toBeCloseTo(before.k, 5)
+      expect(after.x).toBeCloseTo(before.x, 1)
+      expect(after.y).toBeCloseTo(before.y, 1)
+    }).toPass({ timeout: 5000 })
+  })
+
+  // Regression: leaving a hierarchy for a regular network and coming back with
+  // the Cell View tab selected drew the circles off-center, partly outside the
+  // view. NetworkTabs measures the renderer box once on mount — on the way
+  // back, before the right panel has reopened — and the layout was rebuilt at
+  // that size after the view had been fitted. Changing the pane width between
+  // the visits makes the measured size differ, as it does with a slow load.
+  test('the Cell View is fitted after switching away and back', async ({
+    page,
+  }) => {
+    await importNetworkFile(page, TREE_HCX, 'Test Network 15 nodes')
+    await importAnotherNetworkFile(
+      page,
+      REGULAR_CX2,
+      'Test Network 20 nodes',
+      2,
+    )
+
+    const workspaceItem = (name: string) =>
+      page
+        .locator('[data-testid="workspace-editor-left-panel-open"]')
+        .getByText(name)
+        .first()
+    const cellViewTab = page.getByRole('tab', { name: 'Cell View' })
+    const svg = page.locator('[data-testid="circle-packing-svg"]')
+
+    /**
+     * Where the drawing sits in the SVG, in px: how far its center is from the
+     * SVG's center, and how far it sticks out past any edge (0 when it fits).
+     * The stale layout was both shifted and drawn larger than the view.
+     */
+    const placement = () =>
+      svg.evaluate((element) => {
+        const box = element.getBoundingClientRect()
+        const drawing = element
+          .querySelector('g.circle-packing-wrapper')
+          ?.getBoundingClientRect()
+        if (drawing === undefined || drawing.width === 0) return null
+        return {
+          offCenter: Math.round(
+            Math.max(
+              Math.abs(drawing.x + drawing.width / 2 - (box.x + box.width / 2)),
+              Math.abs(
+                drawing.y + drawing.height / 2 - (box.y + box.height / 2),
+              ),
+            ),
+          ),
+          overflow: Math.round(
+            Math.max(
+              0,
+              box.left - drawing.left,
+              drawing.right - box.right,
+              box.top - drawing.top,
+              drawing.bottom - box.bottom,
+            ),
+          ),
+        }
+      })
+
+    /** Poll until the drawing has stopped moving, then return its placement. */
+    const settledPlacement = async (): Promise<{
+      offCenter: number
+      overflow: number
+    }> => {
+      let previous = ''
+      await expect
+        .poll(
+          async () => {
+            const current = JSON.stringify(await placement())
+            const stable = current !== 'null' && current === previous
+            previous = current
+            return stable
+          },
+          { intervals: [500], timeout: 20_000 },
+        )
+        .toBe(true)
+      return JSON.parse(previous)
+    }
+
+    await workspaceItem('Test Network 15 nodes').click()
+    await expect(cellViewTab).toBeVisible({ timeout: 15000 })
+    await cellViewTab.click()
+    await expect(svg).toBeVisible({ timeout: 15000 })
+    await settledPlacement()
+
+    // On the regular network, narrow the left panel: the center pane gets
+    // wider, so the size measured on the way back differs from the first one.
+    await workspaceItem('Test Network 20 nodes').click()
+    await expect(cellViewTab).toHaveCount(0, { timeout: 15000 })
+    const pane = (await page
+      .locator('[data-testid="workspace-editor-center-pane"]')
+      .boundingBox())!
+    const sashX = pane.x - 3
+    const sashY = pane.y + pane.height / 2
+    await page.mouse.move(sashX, sashY)
+    await page.mouse.down()
+    await page.mouse.move(sashX - 150, sashY, { steps: 10 })
+    await page.mouse.up()
+    await expect
+      .poll(
+        async () =>
+          (await page
+            .locator('[data-testid="workspace-editor-center-pane"]')
+            .boundingBox())!.width,
+      )
+      .toBeGreaterThan(pane.width + 100)
+
+    await workspaceItem('Test Network 15 nodes').click()
+    await expect(svg).toBeVisible({ timeout: 15000 })
+
+    // The layout is rebuilt asynchronously after the switch; check the view
+    // once the drawing has settled.
+    await page.waitForTimeout(1500)
+    const { offCenter, overflow } = await settledPlacement()
+    // Soft, so a failure reports both symptoms.
+    expect
+      .soft(offCenter, 'drawing center off the view center')
+      .toBeLessThanOrEqual(2)
+    expect
+      .soft(overflow, 'drawing sticking out of the view')
+      .toBeLessThanOrEqual(2)
+  })
+
+  // Regression: fit the Tree View, show the Cell View, switch to a regular
+  // network and back, then show the Tree View again: it came back shifted.
+  // Coming back with the Cell View tab selected, the Tree View's viewport was
+  // restored into a hidden (0 x 0) canvas, so the pan could not be adjusted,
+  // and nothing recorded which size it belonged to for the first show.
+  test('the Tree View comes back as it was after switching away with the Cell View shown', async ({
+    page,
+  }) => {
+    await importNetworkFile(page, TREE_HCX, 'Test Network 15 nodes')
+    await importAnotherNetworkFile(
+      page,
+      REGULAR_CX2,
+      'Test Network 20 nodes',
+      2,
+    )
+
+    const workspaceItem = (name: string) =>
+      page
+        .locator('[data-testid="workspace-editor-left-panel-open"]')
+        .getByText(name)
+        .first()
+    const treeViewTab = page.getByRole('tab', { name: 'Tree View' })
+    const cellViewTab = page.getByRole('tab', { name: 'Cell View' })
+    const treeView = page.locator(
+      '[data-testid="network-tabs"] [data-testid="cyjs-renderer"]',
+    )
+
+    /**
+     * The Tree View's camera: the model point at the canvas center, and the
+     * zoom. Reached through the container, which Cytoscape.js registers
+     * itself on (window.debug.cy can be the side panel's instance).
+     */
+    const treeCamera = () =>
+      treeView.evaluate((element) => {
+        const cy = (element as any)._cyreg?.cy
+        if (cy === undefined || element.clientWidth === 0) return null
+        const pan = cy.pan()
+        const zoom = cy.zoom()
+        return {
+          x: Math.round(((element.clientWidth / 2 - pan.x) / zoom) * 10) / 10,
+          y: Math.round(((element.clientHeight / 2 - pan.y) / zoom) * 10) / 10,
+          zoom: Math.round(zoom * 1e4) / 1e4,
+        }
+      })
+
+    /** Poll until the camera has stopped moving, then return it. */
+    const settledCamera = async () => {
+      let previous = ''
+      await expect
+        .poll(
+          async () => {
+            const current = JSON.stringify(await treeCamera())
+            const stable = current !== 'null' && current === previous
+            previous = current
+            return stable
+          },
+          { intervals: [500], timeout: 20_000 },
+        )
+        .toBe(true)
+      return JSON.parse(previous)
+    }
+
+    await workspaceItem('Test Network 15 nodes').click()
+    await expect(treeViewTab).toBeVisible({ timeout: 15000 })
+    await treeViewTab.click()
+    await expect(treeView).toBeVisible({ timeout: 15000 })
+    await treeView.evaluate((element) => {
+      // No return value: cy.fit() returns the instance, which Playwright
+      // would try to serialize (it hangs WebKit).
+      ;(element as any)._cyreg.cy.fit()
+    })
+    const before = await settledCamera()
+
+    await cellViewTab.click()
+    await expect(
+      page.locator('[data-testid="circle-packing-svg"]'),
+    ).toBeVisible({ timeout: 15000 })
+
+    await workspaceItem('Test Network 20 nodes').click()
+    await expect(cellViewTab).toHaveCount(0, { timeout: 15000 })
+    await workspaceItem('Test Network 15 nodes').click()
+    await expect(cellViewTab).toBeVisible({ timeout: 15000 })
+    // Let the hierarchy settle with the Tree View still hidden.
+    await page.waitForTimeout(1500)
+
+    await treeViewTab.click()
+    await expect(treeView).toBeVisible({ timeout: 15000 })
+    expect(await settledCamera()).toEqual(before)
+  })
+})

@@ -1,47 +1,36 @@
 import {
-  Alert,
   Box,
   Button,
   Checkbox,
   Divider,
-  Group,
-  List,
-  NumberInput,
-  Popover,
-  Radio,
-  SegmentedControl,
+  FormControlLabel,
+  MenuItem,
   Select,
-  Space,
-  Switch,
-  Text,
-  TextInput,
+  Stack,
+  ToggleButton,
+  ToggleButtonGroup,
   Tooltip,
-} from '@mantine/core'
-import { modals } from '@mantine/modals'
-import { notifications } from '@mantine/notifications'
-import {
-  IconAlertCircle,
-  IconInfoCircle,
-  IconSettings,
-} from '@tabler/icons-react'
+  Typography,
+} from '@mui/material'
 import Papa from 'papaparse'
-import { Column } from 'primereact/column'
-import { DataTable, DataTableValue } from 'primereact/datatable'
 import { useEffect, useState } from 'react'
 
 import { useTableStore } from '../../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
-import { Column as CyWebColumn, ValueTypeName } from '../../../../models/TableModel'
-import { BaseMenuProps } from '../../../ToolBar/BaseMenuProps'
+import {
+  Column as CyWebColumn,
+  ValueTypeName,
+} from '../../../../models/TableModel'
+import { BaseMenuItemProps } from '../../../ToolBar/BaseMenuItemProps'
 import { ColumnAppendState } from '../../model/ColumnAppendState'
 import { ColumnAppendType } from '../../model/ColumnAppendType'
 import { DelimiterType } from '../../model/DelimiterType'
+import { valueTypeNameLabel as valueTypeName2Label } from '../../../../models/TableModel/impl/valueTypeNameDisplay'
 import {
   convertFileDelimiterToEffective,
   convertFileDelimiterToStorageValue,
 } from '../../model/impl/DelimiterUtils'
-import { valueTypeName2Label } from '../../model/impl/CreateNetworkFromTable'
 import {
   findValidRowsToJoin,
   joinRowsToTable,
@@ -57,11 +46,19 @@ import {
   generateInferredColumnAppend,
   validateColumnValues,
 } from '../../model/impl/ParseValues'
+import { dropLeadingLines } from '../../model/impl/SkipLines'
 import { useJoinTableToNetworkStore } from '../../store/joinTableToNetworkStore'
+import {
+  AdvancedParseSettings,
+  ColumnHeaderEditor,
+  InfoAlert,
+  ParsedRow,
+  PreviewDataTable,
+} from '../previewTableParts'
 import { ValueTypeForm, ValueTypeNameRender } from '../ValueTypeNameForm'
 import { ColumnAppendForm, ColumnAppendTypeRender } from './ColumnAppendForm'
 
-export function TableColumnAppendForm(props: BaseMenuProps) {
+export function TableColumnAppendForm(props: BaseMenuItemProps) {
   const [loading, setLoading] = useState(false)
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
@@ -123,16 +120,14 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
     customFileDelimiter,
   )
 
-  const [rows, setRows] = useState<DataTableValue[]>(() => {
+  const [rows, setRows] = useState<ParsedRow[]>(() => {
     const result = Papa.parse(rawText, {
       header: useFirstRowAsColumns,
       skipEmptyLines: true,
       delimiter: effectiveFileDelimiter,
     })
-    let headers: string[] = []
-    headers = result.meta.fields as string[]
     // Transform decimal delimiter if needed
-    return (result.data as DataTableValue[]).map((row) => {
+    return (result.data as ParsedRow[]).map((row) => {
       if (effectiveDecimalDelimiter && effectiveDecimalDelimiter !== '.') {
         const newRow: Record<string, any> = {}
         for (const key in row) {
@@ -151,18 +146,10 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
     })
   })
   const [columns, setColumns] = useState<ColumnAppendState[]>(() => {
-    const result = Papa.parse(rawText, {
-      header: useFirstRowAsColumns,
-      skipEmptyLines: true,
-    })
-    let headers: string[] = []
-    headers = result.meta.fields as string[]
-    const nextColumns = generateInferredColumnAppend(rows as DataTableValue[])
+    const nextColumns = generateInferredColumnAppend(rows as ParsedRow[])
 
     return nextColumns
   })
-
-  // const setTables = useJoinTableToNetworkStore((state) => state.setTables)
 
   const onColumnAppendTypeChange = (index: number, value: ColumnAppendType) => {
     const nextValidVtns = validValueTypesCapt(value)
@@ -195,16 +182,17 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
     if (networkKeyColumn != null) {
       const nextTable = joinRowsToTable(
         table,
-        rows as DataTableValue[],
+        rows as ParsedRow[],
         columns,
         networkKeyColumn,
+        caseSensitiveKeyValues,
       )
       setTable(currentNetworkId, tableToAppend, nextTable)
     }
     setNetworkModified(currentNetworkId, true)
     setLoading(false)
     reset()
-    props.handleClose()
+    props.onClick()
   }
 
   const handleSelectNoneClick = () => {
@@ -221,7 +209,7 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
 
   const handleCancel = () => {
     reset()
-    props.handleClose()
+    props.onClick()
   }
 
   const handleColumnClick = (column: ColumnAppendState) => {
@@ -234,28 +222,50 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
 
   const selectedTable = tableToAppend === 'node' ? nodeTable : edgeTable
 
+  // Re-derive the default key column only when the node/edge target toggles.
+  // Including nodeTable/edgeTable would overwrite the user's manually selected
+  // key column whenever the tables mutate.
   useEffect(() => {
     const table = tableToAppend === 'node' ? nodeTable : edgeTable
 
     const nextKeyColumn = validNetworkKeyColumns(table.columns)[0] ?? null
     setNetworkKeyColumn(nextKeyColumn)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on node/edge toggle; tables would reset user's key choice
   }, [tableToAppend])
 
+  // Re-parse only when parse options change, merging the user's existing column
+  // choices. `columns` must stay out of the deps: the effect calls setColumns
+  // with fresh identities, so adding it would loop.
   useEffect(() => {
     if (rawText === '') {
       return
     }
-    const result = Papa.parse(rawText, {
+    // With a header row the skipped lines leave the text before the parse:
+    // Papa.parse reads its first line as the column names, so a metadata line
+    // would otherwise land in result.meta.fields.
+    const parseInput = useFirstRowAsColumns
+      ? dropLeadingLines(rawText, skipNLines)
+      : rawText
+    const result = Papa.parse(parseInput, {
       header: useFirstRowAsColumns,
       skipEmptyLines: true,
       delimiter: effectiveFileDelimiter,
     })
-    const rows = result.data.slice(skipNLines + (useFirstRowAsColumns ? 0 : 1))
+    // A blank-lines-only file parses to zero rows; the headerless branch
+    // below would then call Object.keys(result.data[0]) on undefined.
+    if (result.data.length === 0) {
+      setRows([])
+      setColumns([])
+      return
+    }
+    const rows = useFirstRowAsColumns
+      ? result.data
+      : result.data.slice(skipNLines)
 
     let headers: string[]
     if (useFirstRowAsColumns) {
       headers = result.meta.fields as string[]
-      const transformedRows = (rows as DataTableValue[]).map((row) => {
+      const transformedRows = (rows as ParsedRow[]).map((row) => {
         if (effectiveDecimalDelimiter && effectiveDecimalDelimiter !== '.') {
           const newRow: Record<string, any> = {}
           for (const key in row) {
@@ -310,15 +320,13 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
       })
 
       setColumns(nextColumns)
-      const nextRows = (rows as string[][]).map(
-        (r: string[]): DataTableValue => {
-          const rowData: Record<string, string> = {}
-          headers.forEach((h: string, j: number) => {
-            rowData[h] = r[j]
-          })
-          return rowData as DataTableValue
-        },
-      )
+      const nextRows = (rows as string[][]).map((r: string[]): ParsedRow => {
+        const rowData: Record<string, string> = {}
+        headers.forEach((h: string, j: number) => {
+          rowData[h] = r[j]
+        })
+        return rowData as ParsedRow
+      })
 
       setRows(
         nextRows.map((row) => {
@@ -348,6 +356,7 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
 
       setColumns(validatedColumns)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-parse on option change only; adding columns would loop
   }, [
     rawText,
     skipNLines,
@@ -386,51 +395,71 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
     rows,
     keyCol,
     networkKeyColumn,
+    caseSensitiveKeyValues,
   )
 
   return (
-    <Box style={{ zIndex: 2001 }}>
-      <Group>
-        <Text w={200}>Import data as</Text>
-        <SegmentedControl
-          value={tableToAppend}
-          onChange={(e) => setTableToAppend(e as 'node' | 'edge')}
-          data={[
-            { label: 'Node table columns', value: 'node' },
-            { label: 'Edge table columns', value: 'edge' },
-          ]}
-        />
-      </Group>
-      <Group>
-        <Text w={200}>Key Column for Network</Text>
-        <Select
-          comboboxProps={{ zIndex: 2002, withinPortal: false }}
-          allowDeselect={false}
-          data={validNetworkKeyColumns(selectedTable?.columns).map(
-            (c) => c.name,
-          )}
-          value={networkKeyColumn?.name ?? null}
-          onChange={(value) =>
-            setNetworkKeyColumn(
-              selectedTable?.columns.find((c) => c.name === value) ?? undefined,
-            )
-          }
-        ></Select>
-      </Group>
-      <Group>
-        <Text w={200}>Case sensitive key values</Text>
-        <Checkbox
-          checked={caseSensitiveKeyValues}
-          onChange={(event) =>
-            setCaseSensitiveKeyValues(event.currentTarget.checked)
-          }
-        />
-      </Group>
-      <Group justify="flex-end">
+    <Box>
+      <Stack spacing={1.5} sx={{ mb: 2 }}>
+        <Stack direction="row" alignItems="center">
+          <Typography sx={{ width: 200 }}>Import data as</Typography>
+          <ToggleButtonGroup
+            exclusive
+            size="small"
+            value={tableToAppend}
+            onChange={(_, value) => {
+              if (value !== null) {
+                setTableToAppend(value as 'node' | 'edge')
+              }
+            }}
+          >
+            <ToggleButton value="node">Node table columns</ToggleButton>
+            <ToggleButton value="edge">Edge table columns</ToggleButton>
+          </ToggleButtonGroup>
+        </Stack>
+        <Stack direction="row" alignItems="center">
+          <Typography sx={{ width: 200 }}>Key Column for Network</Typography>
+          <Select
+            size="small"
+            sx={{ minWidth: 200 }}
+            inputProps={{ 'aria-label': 'Key column for network' }}
+            value={networkKeyColumn?.name ?? ''}
+            onChange={(event) =>
+              setNetworkKeyColumn(
+                selectedTable?.columns.find(
+                  (c) => c.name === event.target.value,
+                ) ?? undefined,
+              )
+            }
+          >
+            {validNetworkKeyColumns(selectedTable?.columns).map((c) => (
+              <MenuItem key={c.name} value={c.name}>
+                {c.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </Stack>
+        <Stack direction="row" alignItems="center">
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={caseSensitiveKeyValues}
+                onChange={(event) =>
+                  setCaseSensitiveKeyValues(event.target.checked)
+                }
+              />
+            }
+            label="Case sensitive key values"
+            labelPlacement="start"
+            sx={{ ml: 0, '& .MuiFormControlLabel-label': { width: 200 } }}
+          />
+        </Stack>
+      </Stack>
+      <Stack direction="row" justifyContent="flex-end" spacing={1}>
         <Button
           data-testid="table-column-append-select-all-button"
-          size="compact-xs"
-          variant="default"
+          size="small"
+          variant="outlined"
           disabled={columns.every(
             (c) => c.meaning !== ColumnAppendType.NotImported,
           )}
@@ -441,8 +470,8 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
 
         <Button
           data-testid="table-column-append-select-none-button"
-          size="compact-xs"
-          variant="default"
+          size="small"
+          variant="outlined"
           disabled={columns.every(
             (c) => c.meaning === ColumnAppendType.NotImported,
           )}
@@ -450,300 +479,154 @@ export function TableColumnAppendForm(props: BaseMenuProps) {
         >
           Select None
         </Button>
-      </Group>
-      <Space h="lg" />
+      </Stack>
+      <Box sx={{ height: 20 }} />
 
-      <DataTable
-        value={rows as DataTableValue[]}
-        stripedRows
-        showGridlines
-        size="small"
-        tableStyle={{ minWidth: '50rem' }}
-        scrollable
-        scrollHeight="350px"
-        virtualScrollerOptions={{ itemSize: 10 }}
-      >
-        {columns.map((h, i) => {
+      <PreviewDataTable
+        rows={rows}
+        columnNames={columns.map((c) => c.name)}
+        height={350}
+        renderHeader={(i) => {
+          const h = columns[i]
           return (
-            <Column
-              key={h.name}
-              field={h.name}
-              body={(value, opts) => {
-                const { rowIndex } = opts
-                const c = columns[i]
-                const valueIsInvalid = c.invalidValues?.includes(rowIndex) ?? false
-                const willBeJoined = rowsToJoin.includes(rowIndex)
-                return (
-                  <Text
-                    size="xs"
-                    fw={willBeJoined ? 900 : 500}
-                    c={
-                      valueIsInvalid
-                        ? 'red'
-                        : willBeJoined
-                          ? '#4f4949'
-                          : '#a39c9c'
-                    }
-                  >
-                    {value[h.name]}
-                  </Text>
-                )
-              }}
-              header={
-                <Popover
-                  zIndex={999999}
-                  position="bottom"
-                  withArrow
-                  arrowSize={20}
-                  shadow="md"
-                >
-                  <Popover.Target>
-                    <Box style={{ minWidth: 200 }}>
-                      <Group>
-                        <Text size="sm" c="gray" fw={500}>
-                          {h.name}
-                        </Text>
-                        {h.invalidValues.length > 0 ? (
-                          <Tooltip
-                            label={`Column '${h.name}' has ${
-                              h.invalidValues.length
-                            } values that cannot be parsed as type ${
-                              valueTypeName2Label[h.dataType]
-                            }`}
-                          >
-                            <IconAlertCircle size={20} color="red" />
-                          </Tooltip>
-                        ) : null}
-                      </Group>
-                      <Space h="sm" />
-                      <Box onClick={() => handleColumnClick(h)}>
-                        <Button.Group ml={1} orientation="vertical">
-                          <ValueTypeNameRender value={h.dataType} />
-                          <ColumnAppendTypeRender value={h.meaning} />
-                        </Button.Group>
-                      </Box>
-                    </Box>
-                  </Popover.Target>
-                  <Popover.Dropdown bg="var(--mantine-color-body)">
-                    <Box>
-                      <Box>
-                        <Text size={'xs'}>Meaning</Text>
-                        <Space h="xs" />
-                        <ColumnAppendForm
-                          value={h.meaning}
-                          onChange={(value) =>
-                            onColumnAppendTypeChange(i, value)
-                          }
-                          validValues={validColumnTypes}
-                        />
-                      </Box>
-                      <Divider my="md" />
-                      <Box>
-                        <Text size={'xs'}>Data Type</Text>
-                        <Space h="xs" />
-                        <ValueTypeForm
-                          value={h.dataType}
-                          delimiter={h.delimiter}
-                          onChange={(value, delimiter) =>
-                            onValueTypeChange(i, value, delimiter)
-                          }
-                          validValues={validValueTypeNames}
-                        />
-                      </Box>
-                    </Box>
-                  </Popover.Dropdown>
-                </Popover>
+            <ColumnHeaderEditor
+              name={h.name}
+              invalidValueCount={h.invalidValues.length}
+              invalidValueMessage={`Column '${h.name}' has ${h.invalidValues.length} values that cannot be parsed as type ${valueTypeName2Label(h.dataType)}`}
+              summary={
+                <>
+                  <ValueTypeNameRender value={h.dataType} />
+                  <ColumnAppendTypeRender value={h.meaning} />
+                </>
               }
-            ></Column>
+              onOpen={() => handleColumnClick(h)}
+            >
+              <Box>
+                <Typography variant="caption">Meaning</Typography>
+                <Box sx={{ mt: 1 }}>
+                  <ColumnAppendForm
+                    value={h.meaning}
+                    onChange={(value) => onColumnAppendTypeChange(i, value)}
+                    validValues={validColumnTypes}
+                  />
+                </Box>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant="caption">Data Type</Typography>
+                <Box sx={{ mt: 1 }}>
+                  <ValueTypeForm
+                    value={h.dataType}
+                    delimiter={h.delimiter}
+                    onChange={(value, delimiter) =>
+                      onValueTypeChange(i, value, delimiter)
+                    }
+                    validValues={validValueTypeNames}
+                  />
+                </Box>
+              </Box>
+            </ColumnHeaderEditor>
           )
-        })}
-      </DataTable>
-      <Space h="lg" />
+        }}
+        renderCell={(i, row, rowIndex) => {
+          const c = columns[i]
+          const valueIsInvalid = c.invalidValues?.includes(rowIndex) ?? false
+          const willBeJoined = rowsToJoin.includes(rowIndex)
+          return (
+            <Typography
+              variant="caption"
+              sx={{
+                fontWeight: willBeJoined ? 900 : 500,
+                color: valueIsInvalid
+                  ? 'error.main'
+                  : willBeJoined
+                    ? 'text.primary'
+                    : 'text.disabled',
+              }}
+            >
+              {row[c.name]}
+            </Typography>
+          )
+        }}
+      />
+      <Box sx={{ height: 20 }} />
       {keyCol === undefined ? (
-        <Alert mb="lg" variant="light" color="blue" icon={<IconInfoCircle />}>
+        <InfoAlert>
           One column must be assigned as the key column to join the data onto
           the table
-        </Alert>
+        </InfoAlert>
       ) : null}
       {columnsToImport.some((c) => c.invalidValues.length > 0) ? (
-        <Alert mb="lg" variant="light" color="blue" icon={<IconInfoCircle />}>
+        <InfoAlert>
           {`The following columns have values that cannot be parsed as their assigned data type: ${columns
             .filter((c) => c.invalidValues.length > 0)
             .map((c) => `'${c.name}'`)
             .join(', ')}`}
-        </Alert>
+        </InfoAlert>
       ) : null}
       {!networkHasKeyColumns ? (
-        <Alert mb="lg" variant="light" color="blue" icon={<IconInfoCircle />}>
+        <InfoAlert>
           {`The network doesn't have any columns that can be used as a key column to join the data onto the table.  Please select a column to use as the key column`}
-        </Alert>
+        </InfoAlert>
       ) : null}
 
       {rowsToJoin.length > 0 ? (
-        <Alert mb="lg" variant="light" color="blue" icon={<IconInfoCircle />}>
+        <InfoAlert>
           {`${rowsToJoin.length} / ${rows.length} rows will be joined to the table`}
-        </Alert>
+        </InfoAlert>
       ) : null}
 
       {loading ? (
-        <Alert mb="lg" variant="light" color="blue" icon={<IconInfoCircle />}>
-          Creating network. Large networks may take up to a few minutes...
-        </Alert>
+        <InfoAlert>
+          Joining table data. Large tables may take up to a few minutes...
+        </InfoAlert>
       ) : null}
 
-      <Group justify="space-between">
-        <Popover
-          zIndex={2001}
-          withinPortal={false}
-          width={300}
-          position="right"
-          withArrow
-          shadow="lg"
-        >
-          <Popover.Target>
-            <Button variant="default" leftSection={<IconSettings />}>
-              Advanced Settings
-            </Button>
-          </Popover.Target>
-          <Popover.Dropdown>
-            <Box mb="md">
-              <Text fw={500} size="sm" mb={4}>
-                File Delimiter
-              </Text>
-              <Radio.Group
-                value={fileDelimiter}
-                onChange={(value) => {
-                  setFileDelimiter(value)
-                  if (value !== 'custom') {
-                    setCustomFileDelimiter('')
-                  }
-                }}
-                size="sm"
-              >
-                <Group gap="xs">
-                  <Radio value="auto" label="Auto-detect" />
-                  <Radio value="," label="Comma (,)" />
-                  <Radio value=";" label="Semicolon (;)" />
-                  <Radio value="|" label="Pipe (|)" />
-                  <Radio value="tab" label="Tab" />
-                  <Radio value="space" label="Space" />
-                  <Radio value="custom" label="Custom" />
-                </Group>
-              </Radio.Group>
-              {fileDelimiter === 'custom' && (
-                <TextInput
-                  label="Custom File Delimiter"
-                  value={customFileDelimiter}
-                  onChange={(event) => {
-                    const val = event.currentTarget.value
-                    if (val.length <= 1) setCustomFileDelimiter(val)
-                  }}
-                  placeholder="Enter a single character"
-                  size="sm"
-                  mt="xs"
-                  error={
-                    fileDelimiter === 'custom' &&
-                    customFileDelimiter.length !== 1
-                      ? 'Please enter a single character.'
-                      : undefined
-                  }
-                />
-              )}
-            </Box>
-            <Divider my="sm" />
-            <Box mb="md">
-              <Text fw={500} size="sm" mb={4}>
-                Decimal Delimiter
-              </Text>
-              <Radio.Group
-                value={decimalDelimiter}
-                onChange={setDecimalDelimiter}
-                size="sm"
-              >
-                <Group gap="xs">
-                  <Radio value="." label="Dot (e.g. 1.23)" />
-                  <Radio value="," label="Comma (e.g. 1,23)" />
-                  <Radio value="custom" label="Custom" />
-                </Group>
-              </Radio.Group>
-              {decimalDelimiter === 'custom' && (
-                <TextInput
-                  label="Custom Decimal Delimiter"
-                  value={customDecimalDelimiter}
-                  onChange={(event) => {
-                    const val = event.currentTarget.value
-                    if (val.length <= 1) setCustomDecimalDelimiter(val)
-                  }}
-                  placeholder="Enter a single character"
-                  size="sm"
-                  mt="xs"
-                  error={
-                    decimalDelimiter === 'custom' &&
-                    customDecimalDelimiter.length !== 1
-                      ? 'Please enter a single character.'
-                      : undefined
-                  }
-                />
-              )}
-            </Box>
-            <Divider my="sm" />
-            <Box mb="md">
-              <Text fw={500} size="sm" mb={4}>
-                Table Structure
-              </Text>
-              <Switch
-                label="Use first row as column names"
-                checked={useFirstRowAsColumns}
-                onChange={(event) =>
-                  setUseFirstRowAsColumns(event.currentTarget.checked)
-                }
-                mb="xs"
-              />
-              <NumberInput
-                min={0}
-                size="sm"
-                label="Skip first N lines"
-                value={skipNLines}
-                onChange={(value) => setSkipNLines(Number(value))}
-                mt="xs"
-              />
-            </Box>
-          </Popover.Dropdown>
-        </Popover>
-        <Group justify="space-between" gap="lg">
+      <Stack direction="row" justifyContent="space-between">
+        <AdvancedParseSettings
+          testId="table-column-append-advanced-settings-button"
+          state={{
+            fileDelimiter,
+            setFileDelimiter,
+            customFileDelimiter,
+            setCustomFileDelimiter,
+            decimalDelimiter,
+            setDecimalDelimiter,
+            customDecimalDelimiter,
+            setCustomDecimalDelimiter,
+            useFirstRowAsColumns,
+            setUseFirstRowAsColumns,
+            skipNLines,
+            setSkipNLines,
+          }}
+        />
+        <Stack direction="row" spacing={2}>
           <Button
             data-testid="table-column-append-cancel-button"
             disabled={loading}
-            variant="default"
-            color="primary"
+            variant="outlined"
             onClick={() => handleCancel()}
           >
             Cancel
           </Button>
           <Tooltip
-            disabled={!submitDisabled}
-            label="All row values must be valid for it's corrensponding data type.  One column must be assigned as a source or target node"
+            title={
+              submitDisabled
+                ? 'All row values must be valid for their corresponding data type. One column must be assigned as the key column.'
+                : ''
+            }
           >
-            <Button
-              data-testid="table-column-append-confirm-button"
-              styles={(theme) => ({
-                root: {
-                  color: '#FFFFFF',
-                  backgroundColor: '#337ab7',
-                  '&:hover': {
-                    backgroundColor: '#285a9b',
-                  },
-                },
-              })}
-              loading={loading}
-              disabled={submitDisabled}
-              onClick={() => handleConfirm()}
-            >
-              Confirm
-            </Button>
+            <span>
+              <Button
+                data-testid="table-column-append-confirm-button"
+                variant="contained"
+                disabled={submitDisabled || loading}
+                onClick={() => handleConfirm()}
+              >
+                Confirm
+              </Button>
+            </span>
           </Tooltip>
-        </Group>
-      </Group>
+        </Stack>
+      </Stack>
     </Box>
   )
 }

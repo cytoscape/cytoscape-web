@@ -2,15 +2,17 @@ import { IdType } from '../../IdType'
 import { DiscreteRange } from '../../PropertyModel/DiscreteRange'
 import { NumberRange } from '../../PropertyModel/NumberRange'
 import { AttributeName, Table, ValueType } from '../../TableModel'
+import { DiscreteFilterValue } from '../DiscreteFilterValue'
 import { Filter } from '../Filter'
+import { toDiscreteFilterValue } from './discreteFilterValue'
 
 const SimpleFilter: Filter = {
   applyDiscreteFilter: (
-    range: DiscreteRange<ValueType>,
+    range: DiscreteRange<DiscreteFilterValue>,
     table: Table,
     attributeName: AttributeName,
   ): IdType[] => {
-    const rangeSet = new Set<ValueType>(range.values)
+    const rangeSet = new Set<DiscreteFilterValue>(range.values)
 
     if (rangeSet.size === 0) return []
 
@@ -20,9 +22,12 @@ const SimpleFilter: Filter = {
 
     ids.forEach((id: string) => {
       const row = rows.get(id)
-      const value = row?.[attributeName]
+      // A missing value (null, no attribute, blank) matches the null option
+      const value: DiscreteFilterValue = toDiscreteFilterValue(
+        row?.[attributeName],
+      )
 
-      if (value !== undefined && rangeSet.has(value)) {
+      if (rangeSet.has(value)) {
         result.push(id)
       }
     })

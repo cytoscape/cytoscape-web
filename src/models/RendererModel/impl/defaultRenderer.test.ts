@@ -1,3 +1,6 @@
+// @vitest-environment node
+import { describe, expect, it } from 'vitest'
+
 import { DEFAULT_RENDERER_ID } from './defaultRenderer'
 
 // to run these: npx jest src/models/RendererModel/impl/defaultRenderer.test.ts
@@ -13,4 +16,3 @@ describe('defaultRenderer', () => {
     })
   })
 })
-

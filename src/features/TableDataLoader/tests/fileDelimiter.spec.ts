@@ -1,4 +1,6 @@
+// @vitest-environment node
 import Papa from 'papaparse'
+import { describe, expect, it } from 'vitest'
 
 describe('File Delimiter Parsing', () => {
   it('parses comma-delimited file correctly', () => {
@@ -104,4 +106,3 @@ describe('File Delimiter Parsing', () => {
     expect(result.data[0]).toHaveProperty('col1,col2,col3')
   })
 })
-

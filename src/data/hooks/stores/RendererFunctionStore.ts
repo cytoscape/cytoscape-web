@@ -3,17 +3,21 @@ import { immer } from 'zustand/middleware/immer'
 
 import { IdType } from '../../../models/IdType'
 import * as RendererFunctionImpl from '../../../models/RendererFunctionModel/impl/rendererFunctionImpl'
+import { RendererFunction } from '../../../models/RendererFunctionModel/impl/rendererFunctionImpl'
 
 interface RendererFunctionStore {
-  rendererFunctions: Map<string, Map<string, Function>>
-  rendererFunctionsByNetworkId: Map<IdType, Map<string, Map<string, Function>>>
+  rendererFunctions: Map<string, Map<string, RendererFunction>>
+  rendererFunctionsByNetworkId: Map<
+    IdType,
+    Map<string, Map<string, RendererFunction>>
+  >
 }
 
 interface RendererFunctionActions {
   setFunction: (
     rendererName: string,
     functionName: string,
-    rendererFunction: Function,
+    rendererFunction: RendererFunction,
     networkId?: IdType,
   ) => void
 
@@ -21,21 +25,21 @@ interface RendererFunctionActions {
     rendererName: string,
     functionName: string,
     networkId?: IdType,
-  ) => Function | undefined
+  ) => RendererFunction | undefined
 }
 
 export const useRendererFunctionStore = create(
   immer<RendererFunctionStore & RendererFunctionActions>((set, get) => ({
-    rendererFunctions: new Map<string, Map<string, Function>>(),
+    rendererFunctions: new Map<string, Map<string, RendererFunction>>(),
     rendererFunctionsByNetworkId: new Map<
       IdType,
-      Map<string, Map<string, Function>>
+      Map<string, Map<string, RendererFunction>>
     >(),
 
     setFunction: (
       rendererName: string,
       functionName: string,
-      rendererFunction: Function,
+      rendererFunction: RendererFunction,
       networkId?: IdType,
     ) => {
       set((state) => {

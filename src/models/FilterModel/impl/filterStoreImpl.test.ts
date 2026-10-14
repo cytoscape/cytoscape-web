@@ -1,3 +1,6 @@
+// @vitest-environment node
+import { describe, expect, it, vi } from 'vitest'
+
 import { IdType } from '../../IdType'
 import { GraphObjectType } from '../../NetworkModel'
 import { DiscreteRange } from '../../PropertyModel/DiscreteRange'
@@ -9,9 +12,13 @@ import { SearchState } from '../SearchState'
 import {
   addFilterConfig,
   deleteFilterConfig,
+  deleteNetworkFilterConfigs,
   FilterState,
   getIndex,
+  isFilterOwnedBy,
+  partitionFilterConfigsByOwner,
   setConverter,
+  setFilterEnabled,
   setIndex,
   setIndexedColumns,
   setOptions,
@@ -79,12 +86,10 @@ describe('FilterStoreImpl', () => {
       const state = createDefaultState()
       const networkId: IdType = 'network-1'
 
-      const result = setIndexedColumns(
-        state,
-        networkId,
-        GraphObjectType.NODE,
-        ['col1', 'col2'],
-      )
+      const result = setIndexedColumns(state, networkId, GraphObjectType.NODE, [
+        'col1',
+        'col2',
+      ])
 
       expect(result.search.indexedColumns[networkId]?.node).toEqual([
         'col1',
@@ -114,7 +119,12 @@ describe('FilterStoreImpl', () => {
       const networkId: IdType = 'network-1'
       const index = { key1: ['value1'] }
 
-      const stateWithIndex = setIndex(state, networkId, GraphObjectType.NODE, index)
+      const stateWithIndex = setIndex(
+        state,
+        networkId,
+        GraphObjectType.NODE,
+        index,
+      )
 
       const retrievedIndex = getIndex(
         stateWithIndex,
@@ -139,7 +149,7 @@ describe('FilterStoreImpl', () => {
   describe('setConverter', () => {
     it('should set converter function', () => {
       const state = createDefaultState()
-      const converter = jest.fn((result: any) => result)
+      const converter = vi.fn((result: any) => result)
 
       const result = setConverter(state, converter)
 
@@ -261,6 +271,9 @@ describe('FilterStoreImpl', () => {
       state = updateRange(state, 'filter-1', { min: 10, max: 90 })
       state = deleteFilterConfig(state, 'filter-1')
 
+      // The chained operations produce a new state object
+      expect(state).not.toBe(original)
+
       // Verify original is unchanged
       expect(original.search).toBe(originalSearch)
       expect(original.filterConfigs).toBe(originalFilterConfigs)
@@ -268,5 +281,92 @@ describe('FilterStoreImpl', () => {
       expect(original.filterConfigs).toEqual({})
     })
   })
-})
 
+  describe('setFilterEnabled', () => {
+    it('sets the enabled flag and keeps the rest of the config', () => {
+      const state = createDefaultState()
+      const filter = createTestFilterConfig('filter-1')
+
+      let result = addFilterConfig(state, filter)
+      result = setFilterEnabled(result, 'filter-1', false)
+
+      expect(result.filterConfigs['filter-1']).toEqual({
+        ...filter,
+        enabled: false,
+      })
+
+      result = setFilterEnabled(result, 'filter-1', true)
+      expect(result.filterConfigs['filter-1'].enabled).toBe(true)
+    })
+
+    it('returns the state unchanged for a non-existent filter', () => {
+      const state = createDefaultState()
+
+      const result = setFilterEnabled(state, 'missing', false)
+
+      expect(result).toBe(state)
+    })
+  })
+
+  // #774: filter configs are keyed by subnetwork id (`<networkId>_<nodeId>`)
+  describe('isFilterOwnedBy', () => {
+    it('matches the network itself and its subnetworks only', () => {
+      expect(isFilterOwnedBy('net1', 'net1')).toBe(true)
+      expect(isFilterOwnedBy('net1_42', 'net1')).toBe(true)
+      expect(isFilterOwnedBy('net10_42', 'net1')).toBe(false)
+      expect(isFilterOwnedBy('net1', 'net1_42')).toBe(false)
+      expect(isFilterOwnedBy('checkboxFilter', 'net1')).toBe(false)
+    })
+  })
+
+  describe('deleteNetworkFilterConfigs', () => {
+    it('removes the configs of the network and its subnetworks', () => {
+      let state = createDefaultState()
+      ;['net1', 'net1_1', 'net1_2', 'net10_1', 'net2_1'].forEach((name) => {
+        state = addFilterConfig(state, createTestFilterConfig(name))
+      })
+
+      const result = deleteNetworkFilterConfigs(state, 'net1')
+
+      expect(Object.keys(result.filterConfigs).sort()).toEqual([
+        'net10_1',
+        'net2_1',
+      ])
+      expect(Object.keys(state.filterConfigs)).toHaveLength(5)
+    })
+
+    it('returns the state unchanged when the network has no configs', () => {
+      const state = addFilterConfig(
+        createDefaultState(),
+        createTestFilterConfig('net2_1'),
+      )
+
+      expect(deleteNetworkFilterConfigs(state, 'net1')).toBe(state)
+    })
+  })
+
+  describe('partitionFilterConfigsByOwner', () => {
+    it('splits configs into those owned by a workspace network and orphans', () => {
+      const configs = ['net1_1', 'net2_7', 'gone_3', 'checkboxFilter'].map(
+        createTestFilterConfig,
+      )
+
+      const { owned, orphaned } = partitionFilterConfigsByOwner(configs, [
+        'net1',
+        'net2',
+      ])
+
+      expect(owned.map((c) => c.name)).toEqual(['net1_1', 'net2_7'])
+      expect(orphaned.map((c) => c.name)).toEqual(['gone_3', 'checkboxFilter'])
+    })
+
+    it('treats every config as orphaned in an empty workspace', () => {
+      const configs = [createTestFilterConfig('net1_1')]
+
+      const { owned, orphaned } = partitionFilterConfigsByOwner(configs, [])
+
+      expect(owned).toEqual([])
+      expect(orphaned).toEqual(configs)
+    })
+  })
+})

@@ -1,4 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { CyApp } from '../../../models/AppModel/CyApp'
@@ -8,21 +9,38 @@ import { ServiceStatus } from '../../../models/AppModel/ServiceStatus'
 import { useAppStore } from './AppStore'
 
 // Mock the database operations
-jest.mock('../../db', () => ({
-  ...jest.requireActual('../../db'),
-  getAppFromDb: jest.fn().mockResolvedValue(undefined),
-  putAppToDb: jest.fn().mockResolvedValue(undefined),
-  getAllServiceAppsFromDb: jest.fn().mockResolvedValue([]),
-  putServiceAppToDb: jest.fn().mockResolvedValue(undefined),
-  deleteServiceAppFromDb: jest.fn().mockResolvedValue(undefined),
-}))
+vi.mock('../../db', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../db')>()
+  return {
+    ...actual,
+    putNetworkToDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworksFromDb: vi.fn().mockResolvedValue(undefined),
+    putTableToDb: vi.fn().mockResolvedValue(undefined),
+    deleteTableFromDb: vi.fn().mockResolvedValue(undefined),
+    clearTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    putViewModelToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewToDb: vi.fn().mockResolvedValue(undefined),
+    putNetworkViewsToDb: vi.fn().mockResolvedValue(undefined),
+    deleteViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+    deleteNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearViewModelsFromDb: vi.fn().mockResolvedValue(undefined),
+    clearNetworkViewsFromDb: vi.fn().mockResolvedValue(undefined),
+    putTablesToDb: vi.fn().mockResolvedValue(undefined),
+    getNetworkFromDb: vi.fn().mockResolvedValue(undefined),
+    getTablesFromDb: vi.fn().mockResolvedValue(undefined),
+    getViewModelFromDb: vi.fn().mockResolvedValue(undefined),
+    getAppFromDb: vi.fn(),
+    putAppToDb: vi.fn().mockResolvedValue(undefined),
+  }
+})
 
 // Mock fetch for serviceFetcher
-global.fetch = jest.fn()
+global.fetch = vi.fn()
 
 describe('useAppStore', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   const createTestApp = (id: string): CyApp => {
@@ -40,7 +58,7 @@ describe('useAppStore', () => {
       parameters: [],
       description: '',
       version: '',
-      cyWebAction: [],
+      cyWebActions: [],
       cyWebMenuItem: {} as any,
       author: '',
       citation: '',
@@ -48,17 +66,12 @@ describe('useAppStore', () => {
   }
 
   describe('restore', () => {
-    it('should restore apps from database', async () => {
+    it('should seed apps from the provided records', async () => {
       const { result } = renderHook(() => useAppStore())
-      const { getAppFromDb } = require('../../db')
       const app1 = createTestApp('app-1')
       const app2 = createTestApp('app-2')
-
-      getAppFromDb.mockResolvedValueOnce(app1)
-      getAppFromDb.mockResolvedValueOnce(app2)
-
       await act(async () => {
-        await result.current.restore(['app-1', 'app-2'])
+        await result.current.restore([app1, app2])
       })
 
       await waitFor(() => {
@@ -121,7 +134,7 @@ describe('useAppStore', () => {
       const url = 'https://example.com/service'
       const serviceApp = createTestServiceApp(url)
 
-      ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+      ;(global.fetch as import('vitest').Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           name: serviceApp.name,
@@ -143,7 +156,7 @@ describe('useAppStore', () => {
       const url = 'https://example.com/service'
       const serviceApp = createTestServiceApp(url)
 
-      ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+      ;(global.fetch as import('vitest').Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           name: serviceApp.name,
@@ -168,7 +181,7 @@ describe('useAppStore', () => {
       const url = 'https://example.com/service'
       const serviceApp = createTestServiceApp(url)
 
-      ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+      ;(global.fetch as import('vitest').Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           name: serviceApp.name,
@@ -265,20 +278,20 @@ describe('useAppStore', () => {
         ],
         description: '',
         version: '',
-        cyWebAction: [],
+        cyWebActions: [],
         cyWebMenuItem: {} as any,
         author: '',
         citation: '',
       } as ServiceApp
 
-      ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+      ;(global.fetch as import('vitest').Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           name: serviceApp.name,
           parameters: serviceApp.parameters,
           description: serviceApp.description,
           version: serviceApp.version,
-          cyWebAction: serviceApp.cyWebAction,
+          cyWebActions: serviceApp.cyWebActions,
           cyWebMenuItem: serviceApp.cyWebMenuItem,
           author: serviceApp.author,
           citation: serviceApp.citation,
@@ -294,7 +307,10 @@ describe('useAppStore', () => {
       })
 
       const addedServiceApp = result.current.serviceApps[url]
-      if (addedServiceApp?.parameters && addedServiceApp.parameters.length > 0) {
+      if (
+        addedServiceApp?.parameters &&
+        addedServiceApp.parameters.length > 0
+      ) {
         act(() => {
           result.current.updateServiceParameter(url, 'param1', 'new-value')
         })
@@ -320,7 +336,7 @@ describe('useAppStore', () => {
         parameters: [],
         description: '',
         version: '',
-        cyWebAction: [],
+        cyWebActions: [],
         cyWebMenuItem: {} as any,
         author: '',
         citation: '',
@@ -344,14 +360,14 @@ describe('useAppStore', () => {
       } as ServiceApp
 
       // Mock fetch to return the metadata
-      ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+      ;(global.fetch as import('vitest').Mock).mockResolvedValueOnce({
         ok: true,
         json: async () => ({
           name: serviceApp.name,
           parameters: serviceApp.parameters,
           description: serviceApp.description,
           version: serviceApp.version,
-          cyWebAction: serviceApp.cyWebAction,
+          cyWebActions: serviceApp.cyWebActions,
           cyWebMenuItem: serviceApp.cyWebMenuItem,
           author: serviceApp.author,
           citation: serviceApp.citation,
@@ -388,5 +404,80 @@ describe('useAppStore', () => {
       }
     })
   })
-})
+  // #719: a failed app must always carry a reason, and the reason must not
+  // outlive the failure.
+  describe('load failures', () => {
+    const failure = {
+      code: 'id-mismatch',
+      url: 'https://apps.cytoscape.org/web/chrisapp/0.2.0/remoteEntry.js',
+      expected: 'chrisapp',
+      received: 'chrisApp',
+    } as const
 
+    beforeEach(() => {
+      act(() => {
+        useAppStore.setState({ loadStates: {}, loadErrors: {} })
+      })
+    })
+
+    it('setLoadFailed writes both the state and the reason', () => {
+      const { result } = renderHook(() => useAppStore())
+
+      act(() => {
+        result.current.setLoadFailed('chrisapp', failure)
+      })
+
+      expect(result.current.loadStates['chrisapp']).toBe('failed')
+      expect(result.current.loadErrors['chrisapp']).toEqual(failure)
+    })
+
+    it('setLoadState clears the reason on the next transition', () => {
+      const { result } = renderHook(() => useAppStore())
+
+      act(() => {
+        result.current.setLoadFailed('chrisapp', failure)
+      })
+      act(() => {
+        result.current.setLoadState('chrisapp', 'loading')
+      })
+
+      expect(result.current.loadStates['chrisapp']).toBe('loading')
+      expect(result.current.loadErrors['chrisapp']).toBeUndefined()
+    })
+
+    it('keeps failures for other apps when one transitions', () => {
+      const { result } = renderHook(() => useAppStore())
+
+      act(() => {
+        result.current.setLoadFailed('chrisapp', failure)
+        result.current.setLoadFailed('other', {
+          code: 'no-app-config',
+          url: 'https://example.org/other/remoteEntry.js',
+        })
+      })
+      act(() => {
+        result.current.setLoadState('chrisapp', 'loaded')
+      })
+
+      expect(result.current.loadErrors['chrisapp']).toBeUndefined()
+      expect(result.current.loadErrors['other']?.code).toBe('no-app-config')
+    })
+
+    it('remove prunes the reason along with the load state', async () => {
+      const { result } = renderHook(() => useAppStore())
+
+      await act(async () => {
+        await result.current.add(createTestApp('chrisapp'))
+      })
+      act(() => {
+        result.current.setLoadFailed('chrisapp', failure)
+      })
+      act(() => {
+        result.current.remove('chrisapp')
+      })
+
+      expect(result.current.loadStates['chrisapp']).toBeUndefined()
+      expect(result.current.loadErrors['chrisapp']).toBeUndefined()
+    })
+  })
+})

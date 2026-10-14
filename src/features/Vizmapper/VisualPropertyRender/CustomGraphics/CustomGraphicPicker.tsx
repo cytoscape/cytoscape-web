@@ -1,10 +1,10 @@
 import * as React from 'react'
+
 import { IdType } from '../../../../models/IdType'
 import { CustomGraphicsType } from '../../../../models/VisualStyleModel'
-
 import { CustomGraphicDialog } from './CustomGraphicDialog'
 
-/** Inline adapter for VisualPropertyValueForm with feature flag */
+/** Inline adapter that opens the custom graphics dialog from VisualPropertyValueForm */
 export function CustomGraphicPicker(props: {
   currentValue: CustomGraphicsType | null
   onValueChange: (v: CustomGraphicsType) => void
@@ -28,4 +28,3 @@ export function CustomGraphicPicker(props: {
     />
   )
 }
-

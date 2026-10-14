@@ -1,5 +1,7 @@
+// @vitest-environment node
+import { describe, expect, it } from 'vitest'
+
 import { Cx2 } from '../Cx2'
-import { CoreAspectTag } from '../Cx2/CoreAspectTag'
 import {
   getAttributeDeclarations,
   getEdgeAttributes,
@@ -36,11 +38,7 @@ describe('extractor', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
         {
-          nodes: [
-            { id: 1 },
-            { id: 2 },
-            { id: 3 },
-          ],
+          nodes: [{ id: 1 }, { id: 2 }, { id: 3 }],
         },
         {
           status: [{ success: true }],
@@ -206,7 +204,9 @@ describe('extractor', () => {
       expect(attributeDeclarations.attributeDeclarations).toHaveLength(1)
       expect(attributeDeclarations.attributeDeclarations[0].nodes).toEqual({})
       expect(attributeDeclarations.attributeDeclarations[0].edges).toEqual({})
-      expect(attributeDeclarations.attributeDeclarations[0].networkAttributes).toEqual({})
+      expect(
+        attributeDeclarations.attributeDeclarations[0].networkAttributes,
+      ).toEqual({})
     })
   })
 
@@ -253,10 +253,7 @@ describe('extractor', () => {
       const cx2: Cx2 = [
         { CXVersion: '2.0' },
         {
-          nodes: [
-            { id: 1 },
-            { id: 2 },
-          ],
+          nodes: [{ id: 1 }, { id: 2 }],
         },
         {
           status: [{ success: true }],
@@ -339,6 +336,24 @@ describe('extractor', () => {
       const cx2 = createMinimalValidCx()
       const edgeAttributes = getEdgeAttributes(cx2)
       expect(edgeAttributes.size).toBe(0)
+    })
+
+    // Regression: CW-650. Empty v:{} was incorrectly skipped, causing nodes/edges
+    // to lose their default attribute values. They should be included in the map.
+    it('should include edges whose v is an empty object', () => {
+      const cx2: Cx2 = [
+        { CXVersion: '2.0' },
+        {
+          edges: [{ id: 0, s: 0, t: 1, v: {} }],
+        },
+        {
+          status: [{ success: true }],
+        },
+      ]
+
+      const edgeAttributes = getEdgeAttributes(cx2)
+      expect(edgeAttributes.size).toBe(1)
+      expect(edgeAttributes.get('0')).toEqual({})
     })
   })
 
@@ -521,9 +536,16 @@ describe('extractor', () => {
       ]
 
       const visualEditorProperties = getVisualEditorProperties(cx2)
-      expect(visualEditorProperties.visualEditorProperties.nodeSizeLocked).toBe(true)
-      expect(visualEditorProperties.visualEditorProperties.arrowColorMatchesEdge).toBe(false)
-      expect(visualEditorProperties.visualEditorProperties.tableDisplayConfiguration.nodeTable.columnConfiguration).toHaveLength(2)
+      expect(visualEditorProperties.visualEditorProperties.nodeSizeLocked).toBe(
+        true,
+      )
+      expect(
+        visualEditorProperties.visualEditorProperties.arrowColorMatchesEdge,
+      ).toBe(false)
+      expect(
+        visualEditorProperties.visualEditorProperties.tableDisplayConfiguration
+          .nodeTable.columnConfiguration,
+      ).toHaveLength(2)
     })
 
     it('should return default visual editor properties when aspect is missing', () => {
@@ -548,10 +570,20 @@ describe('extractor', () => {
       ]
 
       const visualEditorProperties = getVisualEditorProperties(cx2)
-      expect(visualEditorProperties.visualEditorProperties.nodeSizeLocked).toBe(false)
-      expect(visualEditorProperties.visualEditorProperties.arrowColorMatchesEdge).toBe(false)
-      expect(visualEditorProperties.visualEditorProperties.tableDisplayConfiguration.nodeTable.columnConfiguration).toHaveLength(1)
-      expect(visualEditorProperties.visualEditorProperties.tableDisplayConfiguration.edgeTable.columnConfiguration).toHaveLength(1)
+      expect(visualEditorProperties.visualEditorProperties.nodeSizeLocked).toBe(
+        false,
+      )
+      expect(
+        visualEditorProperties.visualEditorProperties.arrowColorMatchesEdge,
+      ).toBe(false)
+      expect(
+        visualEditorProperties.visualEditorProperties.tableDisplayConfiguration
+          .nodeTable.columnConfiguration,
+      ).toHaveLength(1)
+      expect(
+        visualEditorProperties.visualEditorProperties.tableDisplayConfiguration
+          .edgeTable.columnConfiguration,
+      ).toHaveLength(1)
     })
 
     it('should ensure all attributes from declarations are in column configuration', () => {
@@ -601,19 +633,25 @@ describe('extractor', () => {
       ]
 
       const visualEditorProperties = getVisualEditorProperties(cx2)
-      const nodeConfig = visualEditorProperties.visualEditorProperties.tableDisplayConfiguration.nodeTable.columnConfiguration
-      const edgeConfig = visualEditorProperties.visualEditorProperties.tableDisplayConfiguration.edgeTable.columnConfiguration
+      const nodeConfig =
+        visualEditorProperties.visualEditorProperties.tableDisplayConfiguration
+          .nodeTable.columnConfiguration
+      const edgeConfig =
+        visualEditorProperties.visualEditorProperties.tableDisplayConfiguration
+          .edgeTable.columnConfiguration
 
       // Should have all 3 node attributes
       expect(nodeConfig.length).toBeGreaterThanOrEqual(3)
-      expect(nodeConfig.find(c => c.attributeName === 'name')).toBeDefined()
-      expect(nodeConfig.find(c => c.attributeName === 'score')).toBeDefined()
-      expect(nodeConfig.find(c => c.attributeName === 'type')).toBeDefined()
+      expect(nodeConfig.find((c) => c.attributeName === 'name')).toBeDefined()
+      expect(nodeConfig.find((c) => c.attributeName === 'score')).toBeDefined()
+      expect(nodeConfig.find((c) => c.attributeName === 'type')).toBeDefined()
 
       // Should have all 2 edge attributes
       expect(edgeConfig.length).toBeGreaterThanOrEqual(2)
-      expect(edgeConfig.find(c => c.attributeName === 'weight')).toBeDefined()
-      expect(edgeConfig.find(c => c.attributeName === 'interaction')).toBeDefined()
+      expect(edgeConfig.find((c) => c.attributeName === 'weight')).toBeDefined()
+      expect(
+        edgeConfig.find((c) => c.attributeName === 'interaction'),
+      ).toBeDefined()
     })
   })
 
@@ -625,14 +663,10 @@ describe('extractor', () => {
           nodes: [{ id: 1 }],
         },
         {
-          customAspect1: [
-            { data: 'value1' },
-          ],
+          customAspect1: [{ data: 'value1' }],
         },
         {
-          customAspect2: [
-            { data: 'value2' },
-          ],
+          customAspect2: [{ data: 'value2' }],
         },
         {
           status: [{ success: true }],
@@ -705,4 +739,3 @@ describe('extractor', () => {
     })
   })
 })
-

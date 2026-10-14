@@ -1,0 +1,12 @@
+{
+  "name": "api-types-consumer-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Compiles the published @cytoscape-web/api-types tarball the way a real consumer would. Deliberately declares NO React types: the package's own peerDependencies must be what supplies them, so a missing declaration shows up here as TS2307 instead of being masked. Never compiled in place — see scripts/verify-api-types-consumer.mjs.",
+  "scripts": {
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "5.5.4"
+  }
+}

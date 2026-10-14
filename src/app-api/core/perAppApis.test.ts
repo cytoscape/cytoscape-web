@@ -1,0 +1,86 @@
+import { describe, expect, it } from 'vitest'
+
+import { CyWebApi } from './index'
+import { buildPerAppApis } from './perAppApis'
+
+describe('buildPerAppApis', () => {
+  it('carries every domain from the anonymous CyWebApi surface', () => {
+    // The failure this guards: a new domain added to CyWebApi but not reachable
+    // from an app, which used to be possible because three call sites each
+    // assembled this object by hand.
+    const apis = buildPerAppApis('app-a')
+
+    for (const key of Object.keys(CyWebApi)) {
+      expect(apis, `missing domain: ${key}`).toHaveProperty(key)
+    }
+  })
+
+  it('adds resource, which window.CyWebApi deliberately lacks', () => {
+    const apis = buildPerAppApis('app-a')
+
+    expect(apis.resource).toBeDefined()
+    expect(CyWebApi).not.toHaveProperty('resource')
+  })
+
+  it('adds appData, which window.CyWebApi deliberately lacks', () => {
+    // Anonymous window.CyWebApi has no app identity to scope entries to.
+    const apis = buildPerAppApis('app-a')
+
+    expect(apis.appData).toBeDefined()
+    expect(CyWebApi).not.toHaveProperty('appData')
+  })
+
+  it('adds dialog, which window.CyWebApi deliberately lacks', () => {
+    // A dialog is owned by (and closed with) the app that opened it, so the
+    // anonymous surface has nothing to bind it to.
+    const apis = buildPerAppApis('app-a')
+
+    expect(apis.dialog).toBeDefined()
+    expect(CyWebApi).not.toHaveProperty('dialog')
+  })
+
+  it('overrides panel with a per-app instance', () => {
+    // Bound to the app so `open` can prefer its own tab among duplicate ids.
+    const apis = buildPerAppApis('app-a')
+
+    expect(apis.panel).toBeDefined()
+    expect(apis.panel).not.toBe(CyWebApi.panel)
+  })
+
+  it('overrides contextMenu with a per-app instance', () => {
+    const apis = buildPerAppApis('app-a')
+
+    expect(apis.contextMenu).toBeDefined()
+    expect(apis.contextMenu).not.toBe(CyWebApi.contextMenu)
+  })
+
+  it('returns independent instances for different apps', () => {
+    const a = buildPerAppApis('app-a')
+    const b = buildPerAppApis('app-b')
+
+    expect(a.resource).not.toBe(b.resource)
+    expect(a.contextMenu).not.toBe(b.contextMenu)
+    expect(a.nodeGraphics).not.toBe(b.nodeGraphics)
+    expect(a.appData).not.toBe(b.appData)
+    expect(a.dialog).not.toBe(b.dialog)
+    expect(a.panel).not.toBe(b.panel)
+  })
+
+  it('registers context menu items under the calling app', () => {
+    const apis = buildPerAppApis('app-a')
+
+    const result = apis.contextMenu.addContextMenuItem({
+      label: 'Do a thing',
+      handler: () => {},
+    })
+    expect(result.success).toBe(true)
+
+    // A different app must not be able to remove it.
+    const other = buildPerAppApis('app-b')
+    const itemId = result.success ? result.data.itemId : ''
+    expect(other.contextMenu.removeContextMenuItem(itemId).success).toBe(false)
+
+    // The owner can.
+    expect(apis.contextMenu.removeContextMenuItem(itemId).success).toBe(true)
+  })
+})

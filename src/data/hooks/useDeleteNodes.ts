@@ -24,21 +24,18 @@
  * ```
  */
 
-import { IdType } from '../../models/IdType'
-import { ValueType } from '../../models/TableModel'
-import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
-import { TableType } from '../../models/StoreModel/TableStoreModel'
-import { Edge, EdgeView, NodeView } from '../../models'
-import { VisualPropertyName } from '../../models/VisualStyleModel/VisualPropertyName'
 import {
   deleteNodesCore,
   type NodeOperationStoreActions,
 } from '../../models/CyNetworkModel'
+import { IdType } from '../../models/IdType'
+import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
+import { VisualPropertyName } from '../../models/VisualStyleModel/VisualPropertyName'
 import { useNetworkStore } from './stores/NetworkStore'
+import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import { useTableStore } from './stores/TableStore'
 import { useViewModelStore } from './stores/ViewModelStore'
 import { useVisualStyleStore } from './stores/VisualStyleStore'
-import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import { useUndoStack } from './useUndoStack'
 
 export interface DeleteNodesOptions {
@@ -170,10 +167,7 @@ export const useDeleteNodes = () => {
 
       // Capture visual style bypasses before deletion
       // We need to capture for both nodes and edges (edges will be deleted too)
-      const deletedBypasses = new Map<
-        VisualPropertyName,
-        Map<IdType, any>
-      >()
+      const deletedBypasses = new Map<VisualPropertyName, Map<IdType, any>>()
       const visualStyle = visualStyles[networkId]
       if (visualStyle) {
         // Get all IDs that will be deleted (nodes + their connected edges)
@@ -198,7 +192,10 @@ export const useDeleteNodes = () => {
               }
             })
             if (bypassesForProperty.size > 0) {
-              deletedBypasses.set(vpName as VisualPropertyName, bypassesForProperty)
+              deletedBypasses.set(
+                vpName as VisualPropertyName,
+                bypassesForProperty,
+              )
             }
           }
         })
@@ -206,7 +203,12 @@ export const useDeleteNodes = () => {
 
       // Call the pure function to delete nodes (only existing ones)
       // Pass the network we validated to avoid stale snapshot issues
-      const result = deleteNodesCore(networkId, existingNodeIds, network, storeActions)
+      const result = deleteNodesCore(
+        networkId,
+        existingNodeIds,
+        network,
+        storeActions,
+      )
 
       // Clean up visual style bypasses for deleted nodes and edges
       if (visualStyle) {
@@ -223,7 +225,11 @@ export const useDeleteNodes = () => {
               visualProperty.bypassMap.has(id),
             )
             if (hasBypassesToDelete) {
-              deleteBypass(networkId, vpName as VisualPropertyName, allDeletedIds)
+              deleteBypass(
+                networkId,
+                vpName as VisualPropertyName,
+                allDeletedIds,
+              )
             }
           }
         })
@@ -247,6 +253,7 @@ export const useDeleteNodes = () => {
           ],
           // Redo: delete the nodes again
           [networkId, result.deletedNodeIds],
+          networkId,
         )
       }
 

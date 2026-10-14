@@ -1,4 +1,5 @@
 // useUrlNavigation.ts
+import { useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { NavigationConfig } from './NavigationConfig'
@@ -23,13 +24,18 @@ export const useUrlNavigation = (): NavigationFunctions => {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  return {
-    navigateToNetwork: (config: NavigationConfig) =>
-      navigateToNetwork(config, navigate),
+  // Memoized so the returned functions (and object) keep a stable identity
+  // across renders and can safely be used as hook dependencies by consumers
+  return useMemo(
+    () => ({
+      navigateToNetwork: (config: NavigationConfig) =>
+        navigateToNetwork(config, navigate),
 
-    updateSearchParams: (
-      updates: Record<string, string | null>,
-      replace: boolean = true,
-    ) => updateSearchParams(searchParams, updates, setSearchParams, replace),
-  }
+      updateSearchParams: (
+        updates: Record<string, string | null>,
+        replace: boolean = true,
+      ) => updateSearchParams(searchParams, updates, setSearchParams, replace),
+    }),
+    [navigate, searchParams, setSearchParams],
+  )
 }

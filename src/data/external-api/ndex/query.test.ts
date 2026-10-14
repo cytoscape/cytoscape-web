@@ -1,10 +1,13 @@
+// @vitest-environment node
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { Cx2 } from '../../../models/CxModel/Cx2'
 import { getNdexClient } from './client'
-import { fetchGeneNamesFromIds,fetchNdexInterconnectQuery } from './query'
+import { fetchGeneNamesFromIds, fetchNdexInterconnectQuery } from './query'
 
 // Mock the NDEx client module
-jest.mock('./client', () => ({
-  getNdexClient: jest.fn(),
+vi.mock('./client', () => ({
+  getNdexClient: vi.fn(),
 }))
 
 // Helper function shared across tests
@@ -14,23 +17,24 @@ const createMockCx2Network = (): Cx2 => {
 }
 
 describe('fetchNdexInterconnectQuery', () => {
-  const mockGetNdexClient = getNdexClient as jest.MockedFunction<
+  const mockGetNdexClient = getNdexClient as import('vitest').MockedFunction<
     typeof getNdexClient
   >
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should execute an interconnect query with parameters', async () => {
     const mockNdexUuid = 'test-network-uuid-123'
-    const mockParameters = 'nodeId1,nodeId2'
+    const mockParameters = '1,2'
     const mockAccessToken = 'test-access-token'
     const mockCx2Network = createMockCx2Network()
 
     const mockClient = {
-      interConnectQuery: jest.fn().mockResolvedValue(mockCx2Network),
-      setAuthToken: jest.fn(),
+      networks: {
+        interConnectQuery: vi.fn().mockResolvedValue(mockCx2Network),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -42,24 +46,25 @@ describe('fetchNdexInterconnectQuery', () => {
     )
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(mockAccessToken, undefined)
-    expect(mockClient.interConnectQuery).toHaveBeenCalledWith(
+    expect(mockClient.networks.interConnectQuery).toHaveBeenCalledWith(
       mockNdexUuid,
-      null, // searchTerms
-      false, // saveResult
-      mockParameters,
-      true, // outputCX2
+      '',
+      false,
+      { nodeIds: [1, 2] },
+      true,
     )
     expect(result).toEqual(mockCx2Network)
   })
 
   it('should execute an interconnect query without an access token', async () => {
     const mockNdexUuid = 'test-network-uuid-456'
-    const mockParameters = 'queryParams'
+    const mockParameters = '3'
     const mockCx2Network = createMockCx2Network()
 
     const mockClient = {
-      interConnectQuery: jest.fn().mockResolvedValue(mockCx2Network),
-      setAuthToken: jest.fn(),
+      networks: {
+        interConnectQuery: vi.fn().mockResolvedValue(mockCx2Network),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -70,11 +75,11 @@ describe('fetchNdexInterconnectQuery', () => {
     )
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(undefined, undefined)
-    expect(mockClient.interConnectQuery).toHaveBeenCalledWith(
+    expect(mockClient.networks.interConnectQuery).toHaveBeenCalledWith(
       mockNdexUuid,
-      null,
+      '',
       false,
-      mockParameters,
+      { nodeIds: [3] },
       true,
     )
     expect(result).toEqual(mockCx2Network)
@@ -82,35 +87,37 @@ describe('fetchNdexInterconnectQuery', () => {
 
   it('should use correct query parameters', async () => {
     const mockNdexUuid = 'test-network-uuid-789'
-    const mockParameters = 'nodeId1,nodeId2,nodeId3'
+    const mockParameters = '1,2,3'
     const mockCx2Network = createMockCx2Network()
 
     const mockClient = {
-      interConnectQuery: jest.fn().mockResolvedValue(mockCx2Network),
-      setAuthToken: jest.fn(),
+      networks: {
+        interConnectQuery: vi.fn().mockResolvedValue(mockCx2Network),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
 
     await fetchNdexInterconnectQuery(mockNdexUuid, mockParameters)
 
-    expect(mockClient.interConnectQuery).toHaveBeenCalledWith(
+    expect(mockClient.networks.interConnectQuery).toHaveBeenCalledWith(
       mockNdexUuid,
-      null,
+      '',
       false,
-      mockParameters,
+      { nodeIds: [1, 2, 3] },
       true,
     )
   })
 
   it('should propagate errors from the NDEx client', async () => {
     const mockNdexUuid = 'test-network-uuid-error'
-    const mockParameters = 'invalidParams'
+    const mockParameters = '1'
     const mockError = new Error('Query failed')
 
     const mockClient = {
-      interConnectQuery: jest.fn().mockRejectedValue(mockError),
-      setAuthToken: jest.fn(),
+      networks: {
+        interConnectQuery: vi.fn().mockRejectedValue(mockError),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -120,34 +127,35 @@ describe('fetchNdexInterconnectQuery', () => {
     ).rejects.toThrow('Query failed')
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(undefined, undefined)
-    expect(mockClient.interConnectQuery).toHaveBeenCalled()
+    expect(mockClient.networks.interConnectQuery).toHaveBeenCalled()
   })
 })
 
 describe('fetchGeneNamesFromIds', () => {
-  const mockGetNdexClient = getNdexClient as jest.MockedFunction<
+  const mockGetNdexClient = getNdexClient as import('vitest').MockedFunction<
     typeof getNdexClient
   >
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should fetch gene names from member IDs', async () => {
     const mockNetworkUUID = 'test-network-uuid-123'
-    const mockIds = ['id1', 'id2', 'id3']
+    const mockIds = ['1', '2', '3']
     const mockAccessToken = 'test-access-token'
     const mockGeneNameMap = {
-      id1: { name: 'Gene1' },
-      id2: { name: 'Gene2' },
-      id3: { name: 'Gene3' },
+      1: { name: 'Gene1' },
+      2: { name: 'Gene2' },
+      3: { name: 'Gene3' },
     }
 
     const mockClient = {
-      getAttributesOfSelectedNodes: jest
-        .fn()
-        .mockResolvedValue(mockGeneNameMap),
-      setAuthToken: jest.fn(),
+      networks: {
+        getAttributesOfSelectedNodes: vi
+          .fn()
+          .mockResolvedValue(mockGeneNameMap),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -159,30 +167,29 @@ describe('fetchGeneNamesFromIds', () => {
     )
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(mockAccessToken, undefined)
-    expect(mockClient.getAttributesOfSelectedNodes).toHaveBeenCalledWith(
-      mockNetworkUUID,
-      {
-        ids: mockIds,
-        attributeNames: ['name'],
-      },
-      mockAccessToken,
-    )
+    expect(
+      mockClient.networks.getAttributesOfSelectedNodes,
+    ).toHaveBeenCalledWith(mockNetworkUUID, {
+      ids: [1, 2, 3],
+      attributeNames: ['name'],
+    })
     expect(result).toEqual(['Gene1', 'Gene2', 'Gene3'])
   })
 
   it('should fetch gene names without an access token', async () => {
     const mockNetworkUUID = 'test-network-uuid-456'
-    const mockIds = ['id1', 'id2']
+    const mockIds = ['1', '2']
     const mockGeneNameMap = {
-      id1: { name: 'Gene1' },
-      id2: { name: 'Gene2' },
+      1: { name: 'Gene1' },
+      2: { name: 'Gene2' },
     }
 
     const mockClient = {
-      getAttributesOfSelectedNodes: jest
-        .fn()
-        .mockResolvedValue(mockGeneNameMap),
-      setAuthToken: jest.fn(),
+      networks: {
+        getAttributesOfSelectedNodes: vi
+          .fn()
+          .mockResolvedValue(mockGeneNameMap),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -190,14 +197,12 @@ describe('fetchGeneNamesFromIds', () => {
     const result = await fetchGeneNamesFromIds(mockNetworkUUID, mockIds)
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(undefined, undefined)
-    expect(mockClient.getAttributesOfSelectedNodes).toHaveBeenCalledWith(
-      mockNetworkUUID,
-      {
-        ids: mockIds,
-        attributeNames: ['name'],
-      },
-      undefined,
-    )
+    expect(
+      mockClient.networks.getAttributesOfSelectedNodes,
+    ).toHaveBeenCalledWith(mockNetworkUUID, {
+      ids: [1, 2],
+      attributeNames: ['name'],
+    })
     expect(result).toEqual(['Gene1', 'Gene2'])
   })
 
@@ -207,39 +212,39 @@ describe('fetchGeneNamesFromIds', () => {
     const mockGeneNameMap = {}
 
     const mockClient = {
-      getAttributesOfSelectedNodes: jest
-        .fn()
-        .mockResolvedValue(mockGeneNameMap),
-      setAuthToken: jest.fn(),
+      networks: {
+        getAttributesOfSelectedNodes: vi
+          .fn()
+          .mockResolvedValue(mockGeneNameMap),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
 
     const result = await fetchGeneNamesFromIds(mockNetworkUUID, mockIds)
 
-    expect(mockClient.getAttributesOfSelectedNodes).toHaveBeenCalledWith(
-      mockNetworkUUID,
-      {
-        ids: [],
-        attributeNames: ['name'],
-      },
-      undefined,
-    )
+    expect(
+      mockClient.networks.getAttributesOfSelectedNodes,
+    ).toHaveBeenCalledWith(mockNetworkUUID, {
+      ids: [],
+      attributeNames: ['name'],
+    })
     expect(result).toEqual([])
   })
 
   it('should handle single ID', async () => {
     const mockNetworkUUID = 'test-network-uuid-single'
-    const mockIds = ['id1']
+    const mockIds = ['1']
     const mockGeneNameMap = {
-      id1: { name: 'SingleGene' },
+      1: { name: 'SingleGene' },
     }
 
     const mockClient = {
-      getAttributesOfSelectedNodes: jest
-        .fn()
-        .mockResolvedValue(mockGeneNameMap),
-      setAuthToken: jest.fn(),
+      networks: {
+        getAttributesOfSelectedNodes: vi
+          .fn()
+          .mockResolvedValue(mockGeneNameMap),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -252,17 +257,18 @@ describe('fetchGeneNamesFromIds', () => {
 
   it('should map object values to gene names correctly', async () => {
     const mockNetworkUUID = 'test-network-uuid-map'
-    const mockIds = ['id1', 'id2']
+    const mockIds = ['1', '2']
     const mockGeneNameMap = {
-      id1: { name: 'GeneA', otherProperty: 'value' },
-      id2: { name: 'GeneB' },
+      1: { name: 'GeneA', otherProperty: 'value' },
+      2: { name: 'GeneB' },
     }
 
     const mockClient = {
-      getAttributesOfSelectedNodes: jest
-        .fn()
-        .mockResolvedValue(mockGeneNameMap),
-      setAuthToken: jest.fn(),
+      networks: {
+        getAttributesOfSelectedNodes: vi
+          .fn()
+          .mockResolvedValue(mockGeneNameMap),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -275,12 +281,13 @@ describe('fetchGeneNamesFromIds', () => {
 
   it('should propagate errors from the NDEx client', async () => {
     const mockNetworkUUID = 'test-network-uuid-error'
-    const mockIds = ['id1', 'id2']
+    const mockIds = ['1', '2']
     const mockError = new Error('Failed to fetch attributes')
 
     const mockClient = {
-      getAttributesOfSelectedNodes: jest.fn().mockRejectedValue(mockError),
-      setAuthToken: jest.fn(),
+      networks: {
+        getAttributesOfSelectedNodes: vi.fn().mockRejectedValue(mockError),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -290,19 +297,20 @@ describe('fetchGeneNamesFromIds', () => {
     ).rejects.toThrow('Failed to fetch attributes')
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(undefined, undefined)
-    expect(mockClient.getAttributesOfSelectedNodes).toHaveBeenCalled()
+    expect(mockClient.networks.getAttributesOfSelectedNodes).toHaveBeenCalled()
   })
 
   it('should execute an interconnect query with custom NDEx URL', async () => {
     const mockNdexUuid = 'test-network-uuid-custom-url'
-    const mockParameters = 'nodeId1,nodeId2'
+    const mockParameters = '1,2'
     const mockAccessToken = 'test-access-token'
     const mockNdexUrl = 'https://custom.ndex.org'
     const mockCx2Network = createMockCx2Network()
 
     const mockClient = {
-      interConnectQuery: jest.fn().mockResolvedValue(mockCx2Network),
-      setAuthToken: jest.fn(),
+      networks: {
+        interConnectQuery: vi.fn().mockResolvedValue(mockCx2Network),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)
@@ -315,25 +323,26 @@ describe('fetchGeneNamesFromIds', () => {
     )
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(mockAccessToken, mockNdexUrl)
-    expect(mockClient.interConnectQuery).toHaveBeenCalled()
+    expect(mockClient.networks.interConnectQuery).toHaveBeenCalled()
     expect(result).toEqual(mockCx2Network)
   })
 
   it('should fetch gene names with custom NDEx URL', async () => {
     const mockNetworkUUID = 'test-network-uuid-custom-url'
-    const mockIds = ['id1', 'id2']
+    const mockIds = ['1', '2']
     const mockAccessToken = 'test-access-token'
     const mockNdexUrl = 'https://custom.ndex.org'
     const mockGeneNameMap = {
-      id1: { name: 'Gene1' },
-      id2: { name: 'Gene2' },
+      1: { name: 'Gene1' },
+      2: { name: 'Gene2' },
     }
 
     const mockClient = {
-      getAttributesOfSelectedNodes: jest
-        .fn()
-        .mockResolvedValue(mockGeneNameMap),
-      setAuthToken: jest.fn(),
+      networks: {
+        getAttributesOfSelectedNodes: vi
+          .fn()
+          .mockResolvedValue(mockGeneNameMap),
+      },
     }
 
     mockGetNdexClient.mockReturnValue(mockClient as any)

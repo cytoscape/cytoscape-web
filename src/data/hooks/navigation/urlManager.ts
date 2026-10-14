@@ -1,7 +1,6 @@
 import { NavigateOptions } from 'react-router-dom'
 
-import config from '../../../assets/config.json'
-import { logHistory } from '../../../debug'
+import { logHistory, registerDebugTool } from '../../../debug'
 import { NavigationConfig } from './NavigationConfig'
 
 let lastNetworkId: string = '' // Last displayed network ID
@@ -95,7 +94,7 @@ export const navigateToNetwork = (
   config: NavigationConfig,
   navigate: (path: string, options?: NavigateOptions) => void,
 ): void => {
-  const { workspaceId, networkId, searchParams, replace } = config
+  const { workspaceId, networkId, searchParams, replace, force } = config
   navigationCount++
 
   // Convert to safe value
@@ -112,25 +111,29 @@ export const navigateToNetwork = (
     path += `?${searchString}`
   }
 
-  // 1. Control frequent navigation calls (history operations are exceptions)
+  // Guards 1-4 drop the call; history operations and forced navigations
+  // are exceptions
+  const bypassGuards = isHistoryNavigation || force === true
+
+  // 1. Control frequent navigation calls
   const now = Date.now()
-  if (now - lastNavigationTime < 300 && !isHistoryNavigation) {
+  if (now - lastNavigationTime < 300 && !bypassGuards) {
     logHistory.info(
       `[URLManager:${navigationCount}] Navigation throttled - too frequent calls`,
     )
     return
   }
 
-  // 2. Ignore if already handling navigation (history operations are exceptions)
-  if (isHandlingNavigation && !isHistoryNavigation) {
+  // 2. Ignore if already handling navigation
+  if (isHandlingNavigation && !bypassGuards) {
     logHistory.info(
       `[URLManager:${navigationCount}] Already handling navigation, skipping`,
     )
     return
   }
 
-  // 3. Ignore if path is exactly the same (history operations are exceptions)
-  if (path === lastUrlPath && !isHistoryNavigation) {
+  // 3. Ignore if path is exactly the same
+  if (path === lastUrlPath && !bypassGuards) {
     logHistory.info(
       `[URLManager:${navigationCount}] Skipping navigation to same path: ${path}`,
     )
@@ -138,7 +141,7 @@ export const navigateToNetwork = (
   }
 
   // 4. Check if network ID matches the one currently in the pathname to avoid duplicates
-  if (safeNetworkId !== '' && !isHistoryNavigation) {
+  if (safeNetworkId !== '' && !bypassGuards) {
     const currentPathname = window.location.pathname
     const currentNetworkIdMatch = currentPathname.match(/\/networks\/([^/?]+)/)
     const currentNetworkId = currentNetworkIdMatch
@@ -426,20 +429,14 @@ export const initHistoryClearing = (): void => {
   })
 }
 
-if (config.debug) {
-  if (window.debug === undefined) {
-    window.debug = {}
-  }
-
-  window.debug.history = {
-    getInfo: getHistoryInfo,
-    printDebug: printHistoryDebug,
-    getEntries: () => historyEntries,
-    getBrowserLength: () => window.history.length,
-    getCurrentState: getCurrentHistoryState,
-    clearInternal: clearInternalHistory,
-    resetToRoot: resetNavigationToRoot,
-    clearBrowser: clearBrowserHistory,
-    initClearing: initHistoryClearing,
-  }
-}
+registerDebugTool('history', {
+  getInfo: getHistoryInfo,
+  printDebug: printHistoryDebug,
+  getEntries: () => historyEntries,
+  getBrowserLength: () => window.history.length,
+  getCurrentState: getCurrentHistoryState,
+  clearInternal: clearInternalHistory,
+  resetToRoot: resetNavigationToRoot,
+  clearBrowser: clearBrowserHistory,
+  initClearing: initHistoryClearing,
+})

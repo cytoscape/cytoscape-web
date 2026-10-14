@@ -1,7 +1,6 @@
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
-import { Box, Button,Slider, Stack, Typography } from '@mui/material'
-import debounce from 'lodash.debounce'
+import { Box, Button, Slider, Stack, Typography } from '@mui/material'
 import * as React from 'react'
 
 const percentToOpacity = (val: number): number => +(val / 100).toFixed(2)
@@ -12,7 +11,7 @@ export function OpacitySlider(props: {
   onValueChange: (value: number) => void
   closePopover: (reason: string) => void
 }): React.ReactElement {
-  const { onValueChange, currentValue } = props
+  const { currentValue } = props
   const [localOpacityValue, setLocalOpacityValue] = React.useState<number>(
     currentValue ?? 0,
   )
@@ -21,20 +20,23 @@ export function OpacitySlider(props: {
     setLocalOpacityValue(currentValue ?? 0)
   }, [currentValue])
   return (
-    <Box sx={{ p: 1, mt: 3, width: 200, height: 120 }}>
+    <Box sx={{ p: 1, mt: 3, width: 200 }}>
       <Stack
-        sx={{ p: 1, mb: 1 }}
+        sx={{ p: 1, mb: 3 }}
         spacing={2}
         direction="row"
         alignItems="center"
       >
-        <VisibilityOffIcon sx={{ color: '#D9D9D9' }} />
+        <VisibilityOffIcon
+          sx={{ color: (theme) => theme.palette.text.disabled }}
+        />
         <Slider
           data-testid="opacity-slider"
           valueLabelDisplay="on"
           value={opacityToPercent(localOpacityValue)}
-          onChange={(e, newVal: number) => {
-            setLocalOpacityValue(percentToOpacity(newVal))
+          onChange={(e, newVal) => {
+            const value = Array.isArray(newVal) ? newVal[0] : newVal
+            setLocalOpacityValue(percentToOpacity(value))
             // debouncedOpacityValueChange(percentToOpacity(newVal))
           }}
           marks={[
@@ -50,10 +52,12 @@ export function OpacitySlider(props: {
         />
         <VisibilityIcon />
       </Stack>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1 }}>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, p: 1 }}
+      >
         <Button
           data-testid="opacity-slider-cancel-button"
-          color="primary"
+          variant="outlined"
           onClick={() => {
             props.closePopover('cancel')
             setLocalOpacityValue(currentValue ?? 0)
@@ -63,13 +67,7 @@ export function OpacitySlider(props: {
         </Button>
         <Button
           data-testid="opacity-slider-confirm-button"
-          sx={{
-            color: '#FFFFFF',
-            backgroundColor: '#337ab7',
-            '&:hover': {
-              backgroundColor: '#285a9b',
-            },
-          }}
+          variant="contained"
           onClick={() => {
             props.onValueChange(localOpacityValue)
             props.closePopover('confirm')

@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { OpaqueAspects } from 'src/models/OpaqueAspectModel'
+import { OpaqueAspects } from '@/models/OpaqueAspectModel'
 
 import { useAppStore } from '../../data/hooks/stores/AppStore'
 import {
@@ -10,6 +10,7 @@ import {
   Table,
   ValueType,
   VisualStyle,
+  VisualStyleSet,
 } from '../../models'
 import { SelectedDataScope } from '../../models/AppModel/SelectedDataScope'
 import { SelectedDataType } from '../../models/AppModel/SelectedDataType'
@@ -22,6 +23,7 @@ import {
   ServiceInputDefinition,
 } from '../../models/AppModel/ServiceInputDefinition'
 import { ServiceStatus } from '../../models/AppModel/ServiceStatus'
+import { getVisualStyleSetSnapshot } from '../../data/hooks/stores/VisualStyleStore'
 import { exportCyNetworkToCx2 } from '../../models/CxModel/impl'
 import { CyNetwork } from '../../models/CyNetworkModel'
 import { TableRecord } from '../../models/StoreModel/TableStoreModel'
@@ -67,6 +69,12 @@ export const createNetworkDataObj = (
   visualStyleOptions?: VisualStyleOptions,
   viewModel?: NetworkView,
   opaqueAspect?: OpaqueAspects,
+  /**
+   * The network's named-style set. Optional so existing callers keep working;
+   * omitting it reads the store directly, which makes this otherwise-pure
+   * function depend on live global state and is untestable without mocking.
+   */
+  visualStyleSet?: VisualStyleSet,
 ) => {
   const selectedNodes = new Set(viewModel?.selectedNodes)
   const selectedEdges = new Set(viewModel?.selectedEdges)
@@ -106,6 +114,7 @@ export const createNetworkDataObj = (
         nodeTable: table.nodeTable,
         edgeTable: table.edgeTable,
         visualStyle,
+        visualStyleSet: visualStyleSet ?? getVisualStyleSetSnapshot(network.id),
         networkViews: viewModel ? [viewModel] : [],
         visualStyleOptions,
         otherAspects: opaqueAspect ? [opaqueAspect as any] : undefined,
@@ -117,6 +126,46 @@ export const createNetworkDataObj = (
       return exportCyNetworkToCx2(cyNetwork, filteredSummary, summary.name)
     } else {
       throw new Error('Illegal Input')
+    }
+  } else if (inputNetwork.format === Format.edgeList) {
+    const filteredEdges = filterElements
+      ? network.edges.filter((edge) => selectedEdges.has(edge.id))
+      : network.edges
+
+    const columns = table?.edgeTable.columns || []
+
+    const outputColumns = [
+      { id: 'source', type: 'string' },
+      { id: 'target', type: 'string' },
+      ...columns.map((c) => ({
+        id: c.name,
+        type: c.type,
+      })),
+    ]
+
+    const rows: Record<string, Record<string, any>> = {}
+
+    filteredEdges.forEach((edge) => {
+      const row = table?.edgeTable.rows.get(edge.id)
+
+      const rowData: Record<string, any> = {
+        source: edge.s,
+        target: edge.t,
+      }
+
+      columns.forEach((c) => {
+        const val = row?.[c.name]
+        if (val !== undefined) {
+          rowData[c.name] = val
+        }
+      })
+
+      rows[edge.id] = rowData
+    })
+
+    return {
+      columns: outputColumns,
+      rows,
     }
   } else {
     // output edgelist format
@@ -168,7 +217,7 @@ const filterTable = (
           // Filter the columns for the current row
           const filteredRow = selectedColumns.reduce(
             (colAcc, columnName) => {
-              if (row.hasOwnProperty(columnName)) {
+              if (Object.prototype.hasOwnProperty.call(row, columnName)) {
                 colAcc[columnName] = row[columnName]
               }
               return colAcc
@@ -188,7 +237,7 @@ const filterTable = (
       (acc, [nodeId, row]) => {
         const filteredRow = selectedColumns.reduce(
           (colAcc, columnName) => {
-            if (row.hasOwnProperty(columnName)) {
+            if (Object.prototype.hasOwnProperty.call(row, columnName)) {
               colAcc[columnName] = row[columnName]
             }
             return colAcc
@@ -224,7 +273,12 @@ export const useRunTask = (): ((
     }: RunTaskProps): Promise<CytoContainerResult> => {
       // Prepare the task request with user-selected data
       let data: JsonNode = {}
-      if (serviceInputDefinition !== undefined) {
+      // A service app with input type 'none' declines any data payload; only
+      // its parameter options are sent (CW-468).
+      if (
+        serviceInputDefinition !== undefined &&
+        serviceInputDefinition.type !== SelectedDataType.None
+      ) {
         const { type, scope, inputNetwork, inputColumns } =
           serviceInputDefinition
         if (inputNetwork !== null && network !== undefined) {
@@ -238,6 +292,7 @@ export const useRunTask = (): ((
             visualStyleOptions,
             viewModel,
             opaqueAspect,
+            getVisualStyleSetSnapshot(network.id),
           )
         } else if (inputColumns !== null && table !== undefined) {
           data = createTableDataObj(
@@ -264,7 +319,7 @@ export const useRunTask = (): ((
       })
       return result
     },
-    [],
+    [submitAndProcessTask],
   )
   return runTask
 }
@@ -330,7 +385,7 @@ export const useSubmitAndProcessTask = (): {
 
       return taskResult
     },
-    [],
+    [setCurrentTask],
   )
   return { submitAndProcessTask }
 }

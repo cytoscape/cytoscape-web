@@ -1,52 +1,64 @@
-import Button from '@mui/material/Button'
-import { PrimeReactProvider } from 'primereact/api'
-import { OverlayPanel } from 'primereact/overlaypanel'
-import { TieredMenu } from 'primereact/tieredmenu'
-import { useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 
-import { DropdownMenuProps } from '../DropdownMenuProps'
+import { RootMenu } from '../../../models/AppModel/RootMenu'
+import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
+import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
+import { DropdownMenu } from '../DropdownMenu'
+import { useMenuBarMenu } from '../MenuBar'
 import { MergeNetwork } from './MergeNetwork'
+import { MergeNetworkDialogHost } from './MergeNetworkDialogHost'
 
-export const ToolsMenu: React.FC<DropdownMenuProps> = (
-  props: DropdownMenuProps,
-) => {
-  const { label } = props
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const open = Boolean(anchorEl)
+export const ToolsMenu = () => {
+  const { open, setOpen } = useMenuBarMenu('tools-menu')
+
+  const hasNoNetworks =
+    useWorkspaceStore((state) => state.workspace.networkIds).length === 0
 
   const handleClose = (): void => {
-    ;(op.current as any)?.hide()
-    setAnchorEl(null)
+    setOpen(false)
   }
 
-  const op = useRef(null)
+  // The Merge Networks dialog, mounted only while open (see
+  // MergeNetworkDialogHost).
+  const [openMerge, setOpenMerge] = useState(false)
+  const handleOpenMerge = (): void => {
+    handleClose()
+    setOpenMerge(true)
+  }
+
+  const closeMenu = useCallback((): void => {
+    setOpen(false)
+  }, [setOpen])
+
+  // Service apps whose cyWebMenuItem.root resolves to the Tools menu.
+  const { menuItems: serviceMenuItems, dialogs } = useServiceAppMenu(
+    RootMenu.Tools,
+    closeMenu,
+  )
 
   const menuItems = [
     {
       label: 'Merge Networks',
-      template: <MergeNetwork handleClose={handleClose} />,
+      template: <MergeNetwork onClick={handleOpenMerge} />,
     },
+    ...serviceMenuItems,
   ]
 
   return (
-    <PrimeReactProvider>
-      <Button
-        data-testid="toolbar-tools-menu-button"
-        sx={{
-          color: 'white',
-          textTransform: 'none',
-        }}
-        id={label}
-        aria-controls={open ? 'basic-menu' : undefined}
-        aria-haspopup="true"
-        aria-expanded={open ? 'true' : undefined}
-        onClick={(e) => (op.current as any)?.toggle(e)}
-      >
-        {label}
-      </Button>
-      <OverlayPanel ref={op} unstyled>
-        <TieredMenu model={menuItems} />
-      </OverlayPanel>
-    </PrimeReactProvider>
+    <>
+      <DropdownMenu
+        id="tools-menu"
+        label="Tools"
+        menuItems={menuItems}
+        open={open}
+        onOpenChange={setOpen}
+        disabled={hasNoNetworks}
+        disabledTooltip="Load or create a network first"
+      />
+      {openMerge && (
+        <MergeNetworkDialogHost handleClose={() => setOpenMerge(false)} />
+      )}
+      {dialogs}
+    </>
   )
 }

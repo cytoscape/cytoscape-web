@@ -7,6 +7,8 @@ import { Renderer } from '../../models/RendererModel/Renderer'
 import { NetworkView } from '../../models/ViewModel'
 import { NetworkTab } from './NetworkTab'
 
+const TABS_HEIGHT = 40
+
 interface NetworkTabsProps {
   network: Network
   views: NetworkView[]
@@ -23,7 +25,6 @@ export const NetworkTabs = ({
   isActive,
   bgColor,
   handleClick,
-  setIsActive,
 }: NetworkTabsProps) => {
   const selected = useUiStateStore(
     (state) => state.ui.networkViewUi.activeTabIndex,
@@ -77,8 +78,11 @@ export const NetworkTabs = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'flex-start',
+          flexShrink: 0,
           p: 0,
           m: 0,
+          backgroundColor: (theme) => theme.palette.background.subtle,
+          borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
         }}
       >
         <Tabs
@@ -86,13 +90,12 @@ export const NetworkTabs = ({
           sx={{
             display: 'flex',
             alignItems: 'center',
-            '& button': {
-              height: '2.5em',
-              minHeight: '2.5em',
-            },
-            height: '2.5em',
-            minHeight: '2.5em',
+            justifyItems: 'center',
             flexGrow: 1,
+            minHeight: TABS_HEIGHT,
+            '& button': {
+              minHeight: TABS_HEIGHT,
+            },
           }}
           value={selected}
           onChange={handleChange}
@@ -122,7 +125,11 @@ export const NetworkTabs = ({
           })}
         </Tabs>
       </Box>
-      <Box ref={boxRef} sx={{ flexGrow: 1, width: '100%' }}>
+      {/* minHeight 0: a flex item's default `min-height: auto` keeps it from
+          shrinking below its content, and the renderers' canvases are sized in
+          pixels — so the table panel growing would push the view out of the
+          pane instead of shrinking it. */}
+      <Box ref={boxRef} sx={{ flexGrow: 1, minHeight: 0, width: '100%' }}>
         {rendererList.map((renderer: Renderer, index: number) => {
           return (
             <NetworkTab

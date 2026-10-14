@@ -80,4 +80,3 @@ export const createViewModelFromCX = (id: IdType, cx: Cx2): NetworkView => {
 
   return createNetworkViewFromViews(id, nodeViews, edgeViews)
 }
-

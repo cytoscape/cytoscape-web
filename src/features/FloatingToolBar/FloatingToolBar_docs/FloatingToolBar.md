@@ -33,6 +33,7 @@ The main container component that renders all toolbar buttons.
 
 - Automatically disables `ApplyLayoutButton` when `rendererId === 'circlePacking'` (circle packing renderer doesn't support layouts)
 - Passes props down to child button components
+- Passes `viewNetworkId` (falling back to `targetNetworkId`) to `FitButton` only. `NetworkTab` sets `viewNetworkId` to its own network so the fit button acts on its view, while the share and open-in-Cytoscape buttons keep their fallback to the active view
 - Renders with absolute positioning at bottom-right of viewport
 
 **Styling:**
@@ -61,7 +62,7 @@ Button that fits the network view to the viewport.
 
 - Fits the network view to the viewport
 - Prioritizes network-specific fit behavior over renderer-specific fit
-- Uses active network view if available, otherwise uses current network
+- Fits `targetNetworkId` when given, otherwise the active network view, otherwise the current network. The Hierarchy Viewer's TREE VIEW and SUB NETWORK VIEWER both use the `cyjs` renderer and register one fit function each, so each toolbar must name its own network or it fits whichever view is active (#762)
 - Shows tooltip when enabled or disabled
 
 ### OpenInCytoscapeButton

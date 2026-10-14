@@ -1,4 +1,4 @@
-import { Core } from 'cytoscape'
+import { Core, NodeSingular } from 'cytoscape'
 import * as d3Hierarchy from 'd3-hierarchy'
 import { HierarchyNode } from 'd3-hierarchy'
 
@@ -54,7 +54,15 @@ export const createTreeLayout = async ({
 }): Promise<HierarchyNode<D3TreeNode>> => {
   // Get the internal data store. In this case, it is a cytoscape instance
   const cyNet: Core = NetworkFn.getInternalNetworkDataStore(network) as Core
-  const root = findRoot(cyNet)
+  const root: NodeSingular | undefined = findRoot(cyNet)
+  if (root === undefined) {
+    // Not a single-rooted tree / DAG. Return the empty sentinel so the caller
+    // can report it instead of crashing (issue #630).
+    logUi.warn(
+      `[${createTreeLayout.name}]: Cannot build the hierarchy without a single root`,
+    )
+    return {} as HierarchyNode<D3TreeNode>
+  }
   const treeElementList: any[] = []
   const visited3: { [key: string]: number } = {}
 
@@ -93,7 +101,6 @@ export const createTreeLayout = async ({
   cyNetDag2tree2(
     root,
     null,
-    cyNet,
     nodeTable,
     visited3,
     treeElementList,
@@ -107,7 +114,7 @@ export const createTreeLayout = async ({
 
     // hierarchyRootNode.sum((d: D3TreeNode) => d.members.length)
     hierarchyRootNode
-      .sum((d: D3TreeNode) => 1)
+      .sum(() => 1)
       .sort((a, b) => {
         const valA = a.value as number
         const valB = b.value as number

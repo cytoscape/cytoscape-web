@@ -1,4 +1,4 @@
-import { Network } from '../NetworkModel'
+import type { Network } from '@/models/NetworkModel'
 import { Table } from '../TableModel'
 import { NetworkView } from '../ViewModel'
 import { VisualProperty } from './VisualProperty'

@@ -1,6 +1,19 @@
+/**
+ * @deprecated The Module Federation exposure of this hook (cyweb/CreateNetworkFromCx2) is deprecated for external apps.
+ * This hook is still used internally by the host application — it is NOT being removed.
+ * External apps should use `cyweb/NetworkApi` (`useNetworkApi`) instead of importing this hook directly.
+ * This cyweb/CreateNetworkFromCx2 Module Federation export will be removed after 2 release cycles.
+ */
 import { useCallback } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 
+import { Cx2 } from '../../models/CxModel/Cx2'
+import { createCyNetworkFromCx2 } from '../../models/CxModel/impl'
+import { formatValidationErrors } from '../../models/CxModel/impl/formatValidationErrors'
+import { validateCX2 } from '../../models/CxModel/impl/validator'
+import { CyNetwork } from '../../models/CyNetworkModel'
+import { NetworkSummary } from '../../models/NetworkSummaryModel'
+import { createNetworkSummary } from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { useUrlNavigation } from '../hooks/navigation/useUrlNavigation'
 import { useNetworkStore } from '../hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../hooks/stores/NetworkSummaryStore'
@@ -8,11 +21,6 @@ import { useTableStore } from '../hooks/stores/TableStore'
 import { useViewModelStore } from '../hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../hooks/stores/WorkspaceStore'
-import { Cx2 } from '../../models/CxModel/Cx2'
-import { createCyNetworkFromCx2 } from '../../models/CxModel/impl'
-import { CyNetwork } from '../../models/CyNetworkModel'
-import { NetworkSummary } from '../../models/NetworkSummaryModel'
-import { createNetworkSummary } from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 
 /**
  * Props for creating a network with a view from a CX2 object.
@@ -22,6 +30,17 @@ interface CreateNetworkFromCx2Props {
    * CX2 data to convert into a full network with view.
    */
   cxData: Cx2
+  /**
+   * Whether to add the new network to the workspace and set it as the current network.
+   * @default true
+   */
+  addToWorkspace?: boolean
+  /**
+   * Whether to navigate to the new network after creation.
+   * Requires addToWorkspace to be true to have effect.
+   * @default true
+   */
+  navigate?: boolean
 }
 
 /**
@@ -49,7 +68,21 @@ export const useCreateNetworkFromCx2 = (): ((
   const workspace = useWorkspaceStore((state) => state.workspace)
 
   const createNetworkFromCx = useCallback(
-    ({ cxData }: CreateNetworkFromCx2Props) => {
+    ({
+      cxData,
+      addToWorkspace = true,
+      navigate = true,
+    }: CreateNetworkFromCx2Props) => {
+      // This hook is exposed to external apps via Module Federation, so
+      // cxData is external input and must be validated before conversion
+      // (EXTERNAL_INPUT_VALIDATION_POLICY.md; REVIEW.md R2-21)
+      const validation = validateCX2(cxData)
+      if (!validation.isValid) {
+        throw new Error(
+          `CX2 validation failed: ${formatValidationErrors(validation)}`,
+        )
+      }
+
       // Convert CX2 to a fully populated CyNetwork
       const cyNetwork: CyNetwork = createCyNetworkFromCx2(uuidv4(), cxData)
       const {
@@ -58,6 +91,7 @@ export const useCreateNetworkFromCx2 = (): ((
         nodeTable,
         edgeTable,
         visualStyle,
+        visualStyleSet,
         networkViews,
       } = cyNetwork
 
@@ -91,22 +125,27 @@ export const useCreateNetworkFromCx2 = (): ((
 
       // Store network data in Zustand
       addNetwork(network)
-      addVisualStyle(network.id, visualStyle)
+      addVisualStyle(network.id, visualStyle, visualStyleSet)
       addTable(network.id, nodeTable, edgeTable)
       addViewModel(network.id, networkViews[0]) // For now, just store the first view
       addSummary(network.id, summary)
 
-      // Add network to workspace
-      addNetworkIds(network.id)
+      if (addToWorkspace) {
+        // Add network to workspace
+        addNetworkIds(network.id)
 
-      // Select it as the current network
-      setCurrentNetworkId(network.id)
-      navigateToNetwork({
-        workspaceId: workspace.id,
-        networkId: network.id,
-        searchParams: new URLSearchParams(location.search),
-        replace: false,
-      })
+        // Select it as the current network
+        setCurrentNetworkId(network.id)
+
+        if (navigate) {
+          navigateToNetwork({
+            workspaceId: workspace.id,
+            networkId: network.id,
+            searchParams: new URLSearchParams(location.search),
+            replace: false,
+          })
+        }
+      }
 
       return cyNetwork
     },

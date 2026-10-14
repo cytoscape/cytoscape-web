@@ -1,0 +1,116 @@
+// src/app-api/types/AppContext.ts
+
+import { CyApp } from '../../models/AppModel/CyApp'
+import type { CyWebApiType } from '../core'
+import type { ContextMenuApi } from '../core/contextMenuApi'
+import type { NodeGraphicsApi } from '../core/nodeGraphicsApi'
+import type { AppDataApi } from './AppDataTypes'
+import type { DialogApi } from './AppDialogTypes'
+import type { ResourceApi, ResourceDeclaration } from './AppResourceTypes'
+import type { PanelApi } from './PanelTypes'
+
+/**
+ * Per-app API object passed to mount(). Extends CyWebApiType and adds
+ * `resource` and per-app `contextMenu` as required fields — the host
+ * always injects them before calling mount().
+ *
+ * Intentionally distinct from CyWebApiType:
+ *   CyWebApiType   = window.CyWebApi shape — no `resource` (window-safe)
+ *   AppContextApis = AppContext.apis shape — `resource` required (mount-safe)
+ */
+export interface AppContextApis extends CyWebApiType {
+  /** Per-app resource registration API. Always provided by the host. */
+  readonly resource: ResourceApi
+  /**
+   * Per-app context menu API (factory-bound to this app's ID).
+   * Items registered here are auto-cleaned when the app is disabled.
+   * Overrides the anonymous contextMenu from CyWebApiType.
+   */
+  readonly contextMenu: ContextMenuApi
+  /**
+   * Per-app node-graphics render hook API (factory-bound to this app's ID).
+   * The hook and every image it produced are dropped when the app is disabled.
+   * Overrides the anonymous nodeGraphics from CyWebApiType.
+   */
+  readonly nodeGraphics: NodeGraphicsApi
+  /**
+   * Per-app key/value storage (factory-bound to this app's ID), for results
+   * keyed to a network id. Entries are NOT dropped when the app is disabled.
+   */
+  readonly appData: AppDataApi
+  /**
+   * Per-app Dialog API (factory-bound to this app's ID). Opens a host-framed
+   * modal for a form, progress UI, or anything else that needs component
+   * state — the escape hatch for 'apps-menu' items, which are plain data.
+   * Dialogs are closed when the app is disabled.
+   */
+  readonly dialog: DialogApi
+  /**
+   * Per-app Panel API (factory-bound to this app's ID): open a collapsible
+   * pane and select a tab in it. Bound to the app only so that, when two apps
+   * registered the same tab id, `open` selects this app's own tab.
+   * Overrides the anonymous panel from CyWebApiType.
+   */
+  readonly panel: PanelApi
+}
+
+/**
+ * Context object passed to external apps during mount().
+ *
+ * Provides pre-instantiated, per-app API instances. The host creates
+ * a unique AppContextApis object for each app — it is NOT the same as
+ * window.CyWebApi (which has no `resource` field and uses the anonymous
+ * contextMenu singleton).
+ */
+export interface AppContext {
+  /** The unique ID of this app instance */
+  readonly appId: string
+
+  /**
+   * Per-app API instances. Includes all domain APIs from CyWebApiType
+   * plus `resource` (ResourceApi) and a per-app `contextMenu` factory.
+   */
+  readonly apis: AppContextApis
+}
+
+/**
+ * Extended CyApp interface with lifecycle callbacks, declarative resource
+ * registration, and API version declaration.
+ *
+ * Backward-compatible — existing apps without lifecycle methods or the
+ * resources field continue to work unchanged.
+ */
+export interface CyAppWithLifecycle extends CyApp {
+  /**
+   * Declared API version this app targets (e.g. '1.0').
+   * The host may use this for compatibility checks in future releases.
+   */
+  apiVersion?: string
+
+  /**
+   * Declarative resource registrations. The host registers these automatically
+   * when the app is loaded — no mount() implementation needed. Resources
+   * declared here follow the same slot model, visibility rules, and cleanup
+   * semantics as runtime-registered resources.
+   *
+   * For dynamic registration (conditional, user-driven), use
+   * apis.resource.registerPanel() from mount() instead.
+   */
+  resources?: ResourceDeclaration[]
+
+  /**
+   * Called when the app is activated (after React components are registered).
+   * Receives an AppContext providing access to all app APIs.
+   * If this returns a Promise, the host awaits it before marking
+   * the app as ready.
+   */
+  mount?(context: AppContext): void | Promise<void>
+
+  /**
+   * Called when the app is deactivated or unloaded.
+   * Apps must clean up DOM nodes, listeners, timers, and async tasks.
+   * No async work should survive past unmount().
+   * Will always be called, even on page reload.
+   */
+  unmount?(): void | Promise<void>
+}

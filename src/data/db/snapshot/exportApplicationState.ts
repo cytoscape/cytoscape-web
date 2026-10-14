@@ -10,10 +10,11 @@
  */
 
 import packageJson from '../../../../package.json'
-import { logDb } from '../../../debug'
+import { logDb, registerDebugTool } from '../../../debug'
 import { getDatabaseVersion } from '../index'
-import { exportDatabaseSnapshot } from './index'
+import { encodeRichValues } from '../serialization/richValues'
 import type { DatabaseSnapshot } from './index'
+import { buildDatabaseSnapshot } from './index'
 
 /**
  * Application state structure combining database and store states.
@@ -157,7 +158,7 @@ const serializeStoreState = (
       for (const [key, value] of Object.entries(state)) {
         try {
           serialized[key] = serializeStoreState(value, visited)
-        } catch (error) {
+        } catch {
           // If serialization fails for a property, skip it with error message
           serialized[key] = '[Serialization Error]'
         }
@@ -166,7 +167,7 @@ const serializeStoreState = (
     }
 
     return state
-  } catch (error) {
+  } catch {
     // If serialization fails entirely, return error placeholder
     return '[Serialization Error]'
   }
@@ -188,9 +189,14 @@ export const exportApplicationState = async (): Promise<string> => {
   try {
     logDb.info('[exportApplicationState] Starting application state export...')
 
-    // Export database snapshot
-    const dbSnapshotJson = await exportDatabaseSnapshot()
-    const dbSnapshot: DatabaseSnapshot = JSON.parse(dbSnapshotJson)
+    // Build the database snapshot object directly — the old code
+    // stringified the snapshot and immediately re-parsed it, two full
+    // extra passes over the payload (REVIEW.md A6). Rich values (Dates in
+    // summaries, any legacy Maps) are structurally encoded instead.
+    const dbSnapshot: DatabaseSnapshot = await buildDatabaseSnapshot()
+    const encodedDbData: DatabaseSnapshot['data'] = encodeRichValues(
+      dbSnapshot.data,
+    )
 
     // Collect store states
     // We need to dynamically import stores to avoid circular dependencies
@@ -234,9 +240,6 @@ export const exportApplicationState = async (): Promise<string> => {
       const { useMessageStore } = await import(
         '../../hooks/stores/MessageStore'
       )
-      const { useCredentialStore } = await import(
-        '../../hooks/stores/CredentialStore'
-      )
 
       // Get store states
       stores.workspace = serializeStoreState(useWorkspaceStore.getState())
@@ -258,7 +261,11 @@ export const exportApplicationState = async (): Promise<string> => {
       stores.opaqueAspect = serializeStoreState(useOpaqueAspectStore.getState())
       stores.undo = serializeStoreState(useUndoStore.getState())
       stores.message = serializeStoreState(useMessageStore.getState())
-      stores.credential = serializeStoreState(useCredentialStore.getState())
+      // SECURITY: the credential store holds the Keycloak client, whose
+      // enumerable properties include token/refreshToken/idToken after
+      // login. This export is meant to be shared for debugging, so
+      // credentials must never be serialized into it.
+      stores.credential = '[REDACTED: credentials are never exported]'
     } catch (storeError) {
       logDb.warn(
         '[exportApplicationState] Failed to export some store states:',
@@ -282,7 +289,7 @@ export const exportApplicationState = async (): Promise<string> => {
     // Build application state
     const appState: ApplicationState = {
       metadata: dbSnapshot.metadata,
-      database: dbSnapshot.data,
+      database: encodedDbData,
       stores,
       summary: {
         networkCount,
@@ -412,12 +419,4 @@ export const manualExportAppState = async (
   }
 }
 
-// Expose to window.debug when debug mode is enabled
-import config from '../../../assets/config.json'
-if (config.debug) {
-  const win = window as unknown as { debug?: Record<string, any> }
-  if (win.debug === undefined) {
-    win.debug = {}
-  }
-  win.debug.exportAppState = manualExportAppState
-}
+registerDebugTool('exportAppState', manualExportAppState)

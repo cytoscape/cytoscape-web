@@ -1,12 +1,4 @@
-import {
-  Box,
-  Divider,
-  Popover,
-  Tab,
-  Tabs,
-  Tooltip,
-  Typography,
-} from '@mui/material'
+import { Box, Divider, Popover, Tooltip } from '@mui/material'
 import * as React from 'react'
 
 import { IdType } from '../../../models/IdType'
@@ -16,6 +8,10 @@ import {
   VisualPropertyName,
   VisualPropertyValueType,
 } from '../../../models/VisualStyleModel'
+import {
+  CustomGraphicsType,
+  CustomGraphicsTypeType,
+} from '../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import { VisualPropertyValueTypeName } from '../../../models/VisualStyleModel/VisualPropertyValueTypeName'
 import {
   Boolean as BooleanRender,
@@ -27,10 +23,6 @@ import {
   CustomGraphicPicker,
   CustomGraphicRender,
 } from '../VisualPropertyRender/CustomGraphics'
-import {
-  CustomGraphicsType,
-  CustomGraphicsTypeType,
-} from '../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import {
   EdgeArrowShape,
   EdgeArrowShapePicker,
@@ -72,21 +64,16 @@ import {
   VisualPropertyViewBox,
 } from './VisualPropertyViewBox'
 
+type VisualPropertyRenderers = {
+  // This registry intentionally contains renderers with heterogeneous props;
+  // the visual-property metadata selects the matching renderer at runtime.
+  pickerRender: (props: any) => React.ReactElement
+  valueRender: (props: any) => React.ReactElement
+}
+
 const vpType2RenderMap: Record<
   VisualPropertyValueTypeName,
-  {
-    pickerRender: (props: {
-      currentValue: VisualPropertyValueType | null
-      onValueChange: (newValue: VisualPropertyValueType) => void
-      closePopover: (reason: string) => void
-      currentNetworkId?: IdType
-      showCheckbox?: boolean
-      vpName?: VisualPropertyName
-    }) => React.ReactElement
-    valueRender: (props: {
-      value: VisualPropertyValueType
-    }) => React.ReactElement
-  }
+  VisualPropertyRenderers
 > = {
   nodeShape: {
     pickerRender: NodeShapePicker,
@@ -108,7 +95,7 @@ const vpType2RenderMap: Record<
     pickerRender: FontPicker,
     valueRender: Font,
   },
-  horizontalAlign: {
+  [VisualPropertyValueTypeName.HorizontalAlign]: {
     pickerRender: HorizontalAlignPicker,
     valueRender: HorizontalAlign,
   },
@@ -148,141 +135,13 @@ const vpType2RenderMap: Record<
     pickerRender: () => <></>,
     valueRender: () => <></>,
   },
-  nodeImageChart1: {
-    pickerRender: CustomGraphicPicker,
-    valueRender: CustomGraphicRender,
-  },
-  nodeImageChart2: {
-    pickerRender: CustomGraphicPicker,
-    valueRender: CustomGraphicRender,
-  },
-  nodeImageChart3: {
-    pickerRender: CustomGraphicPicker,
-    valueRender: CustomGraphicRender,
-  },
-  nodeImageChart4: {
-    pickerRender: CustomGraphicPicker,
-    valueRender: CustomGraphicRender,
-  },
-  nodeImageChart5: {
-    pickerRender: CustomGraphicPicker,
-    valueRender: CustomGraphicRender,
-  },
-
-  nodeImageChart6: {
-    pickerRender: CustomGraphicPicker,
-    valueRender: CustomGraphicRender,
-  },
-
-  nodeImageChart7: {
-    pickerRender: CustomGraphicPicker,
-    valueRender: CustomGraphicRender,
-  },
-  nodeImageChart8: {
-    pickerRender: CustomGraphicPicker,
-    valueRender: CustomGraphicRender,
-  },
-  nodeImageChart9: {
-    pickerRender: CustomGraphicPicker,
-    valueRender: CustomGraphicRender,
-  },
-  // image chart position and size properties will currently be hidden in the vizmapper and uneditable
-  // in the future if these properties are supported in the cy.js renderer we can add them here
-  // and implement the picker and value render functions
-  nodeImageChartPosition1: {
-    pickerRender: () => <></>,
-    valueRender: () => <></>,
-  },
-  nodeImageChartPosition2: {
-    pickerRender: () => <></>,
-    valueRender: () => <></>,
-  },
-  nodeImageChartPosition3: {
-    pickerRender: () => <></>,
-    valueRender: () => <></>,
-  },
-  nodeImageChartPosition4: {
-    pickerRender: () => <></>,
-    valueRender: () => <></>,
-  },
-  nodeImageChartPosition5: {
-    pickerRender: () => <></>,
-    valueRender: () => <></>,
-  },
-  nodeImageChartPosition6: {
-    pickerRender: () => <></>,
-    valueRender: () => <></>,
-  },
-  nodeImageChartPosition7: {
-    pickerRender: () => <></>,
-    valueRender: () => <></>,
-  },
-  nodeImageChartPosition8: {
-    pickerRender: () => <></>,
-    valueRender: () => <></>,
-  },
-  nodeImageChartPosition9: {
-    pickerRender: () => <></>,
-    valueRender: () => <></>,
-  },
-  nodeImageChartSize1: {
-    pickerRender: NumberInput,
-    valueRender: NumberRender,
-  },
-  nodeImageChartSize2: {
-    pickerRender: NumberInput,
-    valueRender: NumberRender,
-  },
-  nodeImageChartSize3: {
-    pickerRender: NumberInput,
-    valueRender: NumberRender,
-  },
-  nodeImageChartSize4: {
-    pickerRender: NumberInput,
-    valueRender: NumberRender,
-  },
-  nodeImageChartSize5: {
-    pickerRender: NumberInput,
-    valueRender: NumberRender,
-  },
-  nodeImageChartSize6: {
-    pickerRender: NumberInput,
-    valueRender: NumberRender,
-  },
-  nodeImageChartSize7: {
-    pickerRender: NumberInput,
-    valueRender: NumberRender,
-  },
-  nodeImageChartSize8: {
-    pickerRender: NumberInput,
-    valueRender: NumberRender,
-  },
-  nodeImageChartSize9: {
-    pickerRender: NumberInput,
-    valueRender: NumberRender,
-  },
 }
 
 // in some cases, we have specialized value renders
 // e.g. opacity needs to be rendered as 0% -> 100% instead of 0.0 to 1.0
 // another example is label rotation which will be rendered in angles
 const vpName2RenderMap: Partial<
-  Record<
-    VisualPropertyName,
-    {
-      pickerRender: (props: {
-        currentValue: VisualPropertyValueType | null
-        onValueChange: (newValue: VisualPropertyValueType) => void
-        closePopover: (reason: string) => void
-        currentNetworkId?: IdType
-        showCheckbox?: boolean
-        vpName?: VisualPropertyName
-      }) => React.ReactElement
-      valueRender: (props: {
-        value: VisualPropertyValueType
-      }) => React.ReactElement
-    }
-  >
+  Record<VisualPropertyName, VisualPropertyRenderers>
 > = {
   nodeBorderOpacity: {
     pickerRender: OpacitySlider,
@@ -311,6 +170,20 @@ interface VisualPropertyRenderProps {
   vpValueType: VisualPropertyValueTypeName
   vpName: VisualPropertyName
 }
+
+// Opacity visual properties are stored as 0-1 but shown to the user as 0-100%
+// (see vpName2RenderMap above). CW-591 keeps the continuous-mapping editor
+// consistent with the main style editor by using this set.
+export const OPACITY_VISUAL_PROPERTIES: ReadonlySet<string> = new Set([
+  'nodeOpacity',
+  'nodeBorderOpacity',
+  'nodeLabelOpacity',
+  'edgeOpacity',
+  'edgeLabelOpacity',
+])
+
+export const isOpacityVisualProperty = (vpName: string): boolean =>
+  OPACITY_VISUAL_PROPERTIES.has(vpName)
 
 export function VisualPropertyValueRender(
   props: VisualPropertyRenderProps,
@@ -375,9 +248,7 @@ export function VisualPropertyValueForm(
     setValuePicker(value)
   }
 
-  const closePopover = (
-    reason: 'backdropClick' | 'escapeKeyDown' | 'confirm' | 'cancel',
-  ): void => {
+  const closePopover = (): void => {
     setValuePicker(null)
   }
 
@@ -411,12 +282,15 @@ export function VisualPropertyValueForm(
         anchorEl={valuePicker}
         disableEscapeKeyDown={true}
         hideBackdrop={true}
-        onClose={(e: any, reason: 'backdropClick' | 'escapeKeyDown') =>
-          closePopover(reason)
-        }
+        onClose={() => closePopover()}
         anchorOrigin={{ vertical: 'top', horizontal: 55 }}
       >
-        <Box sx={{ overflow: 'hidden' }}>
+        {/*
+          Scroll rather than clip: a picker wider than the Paper (the color
+          swatch grids, the shape grids) would otherwise be unreachable on a
+          narrow viewport (#653).
+        */}
+        <Box sx={{ overflowX: 'auto', overflowY: 'hidden' }}>
           <Box
             sx={{
               margin: 'auto',

@@ -1,10 +1,21 @@
 # App API Use Case Examples — Toy Code Samples
 
-**Rev. 1 (2/13/2026): Keiichiro ONO and Claude Code w/ Opus 4.6**
+- **Rev. 1 (2/13/2026): Keiichiro ONO and Claude Code w/ Opus 4.6**
+- **Rev. 2 (3/5/2026): Keiichiro ONO and Claude Code w/ Sonnet 4.6 — Updated to Phase 1 final implementation**
 
 Concrete code samples for each use case from [module-federation-audit.md § 5](../module-federation-audit.md) ("Use Case Gap Matrix"), implemented against the app API defined in [app-api-specification.md](../specifications/app-api-specification.md).
 
 Each example is a self-contained React component that a Module Federation external app could register. All examples import exclusively from `cyweb/*` app API modules — no raw store imports.
+
+**Rev. 2 Changes:**
+
+- Fixed Use Case A: `addToWorkspace: true` is required for the network to appear in the workspace and for `fit` to work
+- Fixed Use Case B: removed unused `useElementApi` import
+- Updated Use Case G (React): added `workspace` commands (`get_workspace`, `switch_network`)
+- Updated Use Case G (Vanilla JS): added workspace tools, and extended Chrome extension to subscribe to `cywebapi:ready` event
+- **New Use Case H:** Event-Driven Real-Time Dashboard (`useCyWebEvent` + `WorkspaceApi`)
+- **New Use Case I:** Non-React App with Lifecycle Hooks (`CyAppWithLifecycle` + `window.CyWebApi`)
+- Updated Summary table
 
 **Parent documents:**
 
@@ -20,6 +31,10 @@ Each example is a self-contained React component that a Module Federation extern
 >
 > **APIs used:** `NetworkApi` + `LayoutApi` + `VisualStyleApi` + `ViewportApi`
 
+**Rev. 2 fix:** `addToWorkspace: true` is required so the network is added to WorkspaceStore.
+Without it, the network is created in the core stores but never displayed. The `fit` call
+(which calls the renderer) would also fail because no view is mounted for the network.
+
 ```typescript
 // NetworkGeneratorMenu.tsx — Menu component registered as ComponentType.Menu
 import { useNetworkApi } from 'cyweb/NetworkApi'
@@ -27,7 +42,6 @@ import { useLayoutApi } from 'cyweb/LayoutApi'
 import { useVisualStyleApi } from 'cyweb/VisualStyleApi'
 import { useViewportApi } from 'cyweb/ViewportApi'
 import {
-  ApiErrorCode,
   VisualPropertyName,
   ValueTypeName,
 } from 'cyweb/ApiTypes'
@@ -35,13 +49,13 @@ import type { IdType } from 'cyweb/ApiTypes'
 import { MenuItem } from '@mui/material'
 
 export const NetworkGeneratorMenu = (): JSX.Element => {
-  const { createNetworkFromEdgeList } = useNetworkApi()
-  const { applyLayout } = useLayoutApi()
-  const { setDefault, createPassthroughMapping } = useVisualStyleApi()
-  const { fit } = useViewportApi()
+  const networkApi = useNetworkApi()
+  const layoutApi = useLayoutApi()
+  const visualStyleApi = useVisualStyleApi()
+  const viewportApi = useViewportApi()
 
   const handleGenerate = async (): Promise<void> => {
-    // 1. Create network from edge list
+    // 1. Create network from edge list and add it to the workspace
     const edgeList: Array<[IdType, IdType, string?]> = [
       ['GeneA', 'GeneB', 'activates'],
       ['GeneB', 'GeneC', 'inhibits'],
@@ -50,10 +64,12 @@ export const NetworkGeneratorMenu = (): JSX.Element => {
       ['GeneA', 'GeneC', 'phosphorylates'],
     ]
 
-    const createResult = createNetworkFromEdgeList({
+    const createResult = networkApi.createNetworkFromEdgeList({
       name: 'Generated Pathway',
       description: 'Auto-generated signaling pathway',
       edgeList,
+      // addToWorkspace must be true for the network to appear and for fit to work
+      addToWorkspace: true,
     })
 
     if (!createResult.success) {
@@ -64,15 +80,17 @@ export const NetworkGeneratorMenu = (): JSX.Element => {
     const { networkId } = createResult.data
 
     // 2. Apply visual styles
-    setDefault(networkId, VisualPropertyName.NodeShape, 'ellipse')
-    setDefault(networkId, VisualPropertyName.NodeBackgroundColor, '#4A90D9')
-    setDefault(networkId, VisualPropertyName.NodeWidth, 60)
-    setDefault(networkId, VisualPropertyName.NodeHeight, 60)
-    setDefault(networkId, VisualPropertyName.EdgeLineColor, '#999999')
-    setDefault(networkId, VisualPropertyName.EdgeWidth, 2)
+    visualStyleApi.setDefault(networkId, VisualPropertyName.NodeShape, 'ellipse')
+    visualStyleApi.setDefault(networkId, VisualPropertyName.NodeBackgroundColor, '#4A90D9')
+    visualStyleApi.setDefault(networkId, VisualPropertyName.NodeWidth, 60)
+    visualStyleApi.setDefault(networkId, VisualPropertyName.NodeHeight, 60)
+    visualStyleApi.setDefault(networkId, VisualPropertyName.EdgeLineColor, '#999999')
+    visualStyleApi.setDefault(networkId, VisualPropertyName.EdgeWidth, 2)
 
     // Map node label to name attribute (passthrough)
-    createPassthroughMapping(
+    // Note: createNetworkFromEdgeList already creates this mapping automatically,
+    // but calling it again is a no-op if the mapping already exists.
+    visualStyleApi.createPassthroughMapping(
       networkId,
       VisualPropertyName.NodeLabel,
       'name',
@@ -80,7 +98,8 @@ export const NetworkGeneratorMenu = (): JSX.Element => {
     )
 
     // 3. Apply layout (async — layout engine is callback-based)
-    const layoutResult = await applyLayout(networkId, {
+    //    applyLayout dispatches layout:started and layout:completed events.
+    const layoutResult = await layoutApi.applyLayout(networkId, {
       fitAfterLayout: false, // We'll fit manually after
     })
 
@@ -89,7 +108,7 @@ export const NetworkGeneratorMenu = (): JSX.Element => {
     }
 
     // 4. Fit viewport
-    await fit(networkId)
+    await viewportApi.fit(networkId)
   }
 
   return (
@@ -104,35 +123,35 @@ export const NetworkGeneratorMenu = (): JSX.Element => {
 
 > **Scenario:** Read the current network's topology, compute a custom circular layout, update positions, and fit.
 >
-> **APIs used:** `ElementApi` (read) + `ViewportApi`
+> **APIs used:** `ViewportApi`
+
+**Rev. 2 fix:** Removed unused `useElementApi` import. In a complete implementation the
+node IDs would be obtained from the host (e.g., passed as a prop or read from a store),
+not from `ElementApi.getNode`.
 
 ```typescript
 // CircularLayoutMenu.tsx — Applies a circular layout to the current network
-import { useElementApi } from 'cyweb/ElementApi'
 import { useViewportApi } from 'cyweb/ViewportApi'
 import type { IdType } from 'cyweb/ApiTypes'
 import { MenuItem } from '@mui/material'
 
 export const CircularLayoutMenu = ({
   networkId,
+  nodeIds,
 }: {
   networkId: IdType
+  nodeIds: IdType[]
 }): JSX.Element => {
-  const { getNode } = useElementApi()
-  const { updateNodePositions, fit } = useViewportApi()
+  const viewportApi = useViewportApi()
 
   const handleApplyCircularLayout = async (): Promise<void> => {
-    // In a real app, you'd get node IDs from the network.
-    // Here we assume we know the node IDs.
-    const nodeIds: IdType[] = ['GeneA', 'GeneB', 'GeneC', 'GeneD']
-
     // Compute circular positions
     const radius = 200
     const cx = 0
     const cy = 0
-    // PositionRecord (Record, not Map) — JSON-serializable for bridge relay
-    const positions: Record<IdType, [number, number]> = {}
 
+    // PositionRecord is a plain object (Record, not Map) — JSON-serializable.
+    const positions: Record<IdType, [number, number]> = {}
     nodeIds.forEach((nodeId, index) => {
       const angle = (2 * Math.PI * index) / nodeIds.length
       positions[nodeId] = [
@@ -142,7 +161,7 @@ export const CircularLayoutMenu = ({
     })
 
     // Update positions in bulk
-    const result = updateNodePositions(networkId, positions)
+    const result = viewportApi.updateNodePositions(networkId, positions)
 
     if (!result.success) {
       console.error('Failed to update positions:', result.error.message)
@@ -150,7 +169,7 @@ export const CircularLayoutMenu = ({
     }
 
     // Fit viewport to show the new layout
-    await fit(networkId)
+    await viewportApi.fit(networkId)
   }
 
   return (
@@ -169,6 +188,9 @@ export const CircularLayoutMenu = ({
 >
 > **APIs used:** `VisualStyleApi` + `SelectionApi` + `ApiTypes`
 
+All `VisualStyleApi` write operations automatically trigger `style:changed` events via the
+Event Bus (the VisualStyleStore subscription in `initEventBus` fires on any property change).
+
 ```typescript
 // StyleEditorPanel.tsx — Panel component for interactive style editing
 import { useVisualStyleApi } from 'cyweb/VisualStyleApi'
@@ -182,19 +204,12 @@ export const StyleEditorPanel = ({
 }: {
   networkId: IdType
 }): JSX.Element => {
-  const {
-    setDefault,
-    setBypass,
-    deleteBypass,
-    createDiscreteMapping,
-    createContinuousMapping,
-    createPassthroughMapping,
-  } = useVisualStyleApi()
-  const { getSelection } = useSelectionApi()
+  const visualStyleApi = useVisualStyleApi()
+  const selectionApi = useSelectionApi()
 
   // Set a global default node color
   const handleSetDefaultColor = (): void => {
-    const result = setDefault(
+    const result = visualStyleApi.setDefault(
       networkId,
       VisualPropertyName.NodeBackgroundColor,
       '#FF6B6B',
@@ -206,7 +221,7 @@ export const StyleEditorPanel = ({
 
   // Map node color to a categorical "type" attribute
   const handleCreateDiscreteMapping = (): void => {
-    const result = createDiscreteMapping(
+    const result = visualStyleApi.createDiscreteMapping(
       networkId,
       VisualPropertyName.NodeBackgroundColor,
       'type', // column name in node table
@@ -219,7 +234,7 @@ export const StyleEditorPanel = ({
 
   // Map edge width to a numeric "weight" attribute
   const handleCreateContinuousMapping = (): void => {
-    const result = createContinuousMapping(
+    const result = visualStyleApi.createContinuousMapping(
       networkId,
       VisualPropertyName.EdgeWidth,
       'double', // visual property value type
@@ -234,7 +249,7 @@ export const StyleEditorPanel = ({
 
   // Passthrough: show "name" attribute as node label
   const handleCreatePassthrough = (): void => {
-    createPassthroughMapping(
+    visualStyleApi.createPassthroughMapping(
       networkId,
       VisualPropertyName.NodeLabel,
       'name',
@@ -242,9 +257,14 @@ export const StyleEditorPanel = ({
     )
   }
 
+  // Remove the edge width mapping
+  const handleRemoveMapping = (): void => {
+    visualStyleApi.removeMapping(networkId, VisualPropertyName.EdgeWidth)
+  }
+
   // Highlight currently selected nodes with a bypass
   const handleHighlightSelected = (): void => {
-    const selResult = getSelection(networkId)
+    const selResult = selectionApi.getSelection(networkId)
     if (!selResult.success) {
       console.error(selResult.error.message)
       return
@@ -257,7 +277,7 @@ export const StyleEditorPanel = ({
     }
 
     // Set a bright yellow bypass on selected nodes
-    setBypass(
+    visualStyleApi.setBypass(
       networkId,
       VisualPropertyName.NodeBackgroundColor,
       selectedNodes,
@@ -265,25 +285,25 @@ export const StyleEditorPanel = ({
     )
 
     // Also increase their size
-    setBypass(networkId, VisualPropertyName.NodeWidth, selectedNodes, 80)
-    setBypass(networkId, VisualPropertyName.NodeHeight, selectedNodes, 80)
+    visualStyleApi.setBypass(networkId, VisualPropertyName.NodeWidth, selectedNodes, 80)
+    visualStyleApi.setBypass(networkId, VisualPropertyName.NodeHeight, selectedNodes, 80)
   }
 
   // Remove all color bypasses from selected nodes
   const handleClearBypasses = (): void => {
-    const selResult = getSelection(networkId)
+    const selResult = selectionApi.getSelection(networkId)
     if (!selResult.success) return
 
     const { selectedNodes } = selResult.data
     if (selectedNodes.length === 0) return
 
-    deleteBypass(
+    visualStyleApi.deleteBypass(
       networkId,
       VisualPropertyName.NodeBackgroundColor,
       selectedNodes,
     )
-    deleteBypass(networkId, VisualPropertyName.NodeWidth, selectedNodes)
-    deleteBypass(networkId, VisualPropertyName.NodeHeight, selectedNodes)
+    visualStyleApi.deleteBypass(networkId, VisualPropertyName.NodeWidth, selectedNodes)
+    visualStyleApi.deleteBypass(networkId, VisualPropertyName.NodeHeight, selectedNodes)
   }
 
   return (
@@ -303,6 +323,9 @@ export const StyleEditorPanel = ({
       <Button onClick={handleCreatePassthrough}>
         Label = Name (Passthrough)
       </Button>
+      <Button onClick={handleRemoveMapping}>
+        Remove Edge Width Mapping
+      </Button>
 
       <Typography variant="subtitle2">Bypasses</Typography>
       <Button onClick={handleHighlightSelected}>Highlight Selected</Button>
@@ -318,18 +341,19 @@ export const StyleEditorPanel = ({
 
 > **Scenario:** Perform a simple degree analysis on the network, write results as a new column, select high-degree nodes, and style them.
 >
-> **APIs used:** `TableApi` + `ElementApi` + `SelectionApi` + `VisualStyleApi`
+> **APIs used:** `TableApi` + `SelectionApi` + `VisualStyleApi`
+
+`TableApi.setValues` triggers `data:changed` automatically. `SelectionApi.exclusiveSelect`
+triggers `selection:changed` automatically.
 
 ```typescript
 // DegreeAnalysisMenu.tsx — Runs degree analysis and annotates the network
 import { useTableApi } from 'cyweb/TableApi'
-import { useElementApi } from 'cyweb/ElementApi'
 import { useSelectionApi } from 'cyweb/SelectionApi'
 import { useVisualStyleApi } from 'cyweb/VisualStyleApi'
 import {
   ValueTypeName,
   VisualPropertyName,
-  ApiErrorCode,
 } from 'cyweb/ApiTypes'
 import type { IdType } from 'cyweb/ApiTypes'
 import { MenuItem } from '@mui/material'
@@ -343,28 +367,19 @@ export const DegreeAnalysisMenu = ({
   nodeIds: IdType[]
   edgeData: Array<{ edgeId: IdType; sourceId: IdType; targetId: IdType }>
 }): JSX.Element => {
-  const { createColumn, setValue, setValues } = useTableApi()
-  const { getEdge } = useElementApi()
-  const { exclusiveSelect } = useSelectionApi()
-  const { setBypass, createContinuousMapping } = useVisualStyleApi()
+  const tableApi = useTableApi()
+  const selectionApi = useSelectionApi()
+  const visualStyleApi = useVisualStyleApi()
 
   const handleDegreeAnalysis = (): void => {
-    // 1. Create a new column for degree values
-    const colResult = createColumn(
+    // 1. Create a new column for degree values (ok if it already exists)
+    tableApi.createColumn(
       networkId,
       'node',
       'degree',
       ValueTypeName.Integer,
       0,
     )
-
-    if (!colResult.success) {
-      // Column may already exist — that's okay for re-analysis
-      if (colResult.error.code !== ApiErrorCode.InvalidInput) {
-        console.error('Failed to create column:', colResult.error.message)
-        return
-      }
-    }
 
     // 2. Compute degree for each node
     const degreeCounts = new Map<IdType, number>()
@@ -377,7 +392,8 @@ export const DegreeAnalysisMenu = ({
       degreeCounts.set(targetId, (degreeCounts.get(targetId) ?? 0) + 1)
     }
 
-    // 3. Write degree values back to the table using batch update
+    // 3. Write degree values back using batch CellEdit
+    //    CellEdit uses `id` (not `row`) to identify the element.
     const cellEdits = Array.from(degreeCounts.entries()).map(
       ([nodeId, degree]) => ({
         id: nodeId,
@@ -386,7 +402,7 @@ export const DegreeAnalysisMenu = ({
       }),
     )
 
-    const writeResult = setValues(networkId, 'node', cellEdits)
+    const writeResult = tableApi.setValues(networkId, 'node', cellEdits)
     if (!writeResult.success) {
       console.error('Failed to write degrees:', writeResult.error.message)
       return
@@ -398,11 +414,11 @@ export const DegreeAnalysisMenu = ({
       .map(([nodeId]) => nodeId)
 
     if (highDegreeNodes.length > 0) {
-      exclusiveSelect(networkId, highDegreeNodes, [])
+      selectionApi.exclusiveSelect(networkId, highDegreeNodes, [])
     }
 
     // 5. Map node size to degree via continuous mapping
-    createContinuousMapping(
+    visualStyleApi.createContinuousMapping(
       networkId,
       VisualPropertyName.NodeWidth,
       'double',
@@ -411,7 +427,7 @@ export const DegreeAnalysisMenu = ({
       ValueTypeName.Integer,
     )
 
-    createContinuousMapping(
+    visualStyleApi.createContinuousMapping(
       networkId,
       VisualPropertyName.NodeHeight,
       'double',
@@ -422,7 +438,7 @@ export const DegreeAnalysisMenu = ({
 
     // 6. Highlight hub nodes with a color bypass
     if (highDegreeNodes.length > 0) {
-      setBypass(
+      visualStyleApi.setBypass(
         networkId,
         VisualPropertyName.NodeBackgroundColor,
         highDegreeNodes,
@@ -433,7 +449,7 @@ export const DegreeAnalysisMenu = ({
 
   return (
     <MenuItem onClick={handleDegreeAnalysis}>
-      Run Degree Analysis & Annotate
+      Run Degree Analysis &amp; Annotate
     </MenuItem>
   )
 }
@@ -461,8 +477,8 @@ export const ImportExportPanel = ({
 }: {
   networkId: IdType | undefined
 }): JSX.Element => {
-  const { createNetworkFromCx2 } = useNetworkApi()
-  const { exportToCx2 } = useExportApi()
+  const networkApi = useNetworkApi()
+  const exportApi = useExportApi()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // --- Import ---
@@ -486,8 +502,10 @@ export const ImportExportPanel = ({
       return
     }
 
-    // App API validates CX2 internally via validateCX2()
-    const result = createNetworkFromCx2({
+    // App API validates CX2 internally via validateCX2().
+    // navigate: true (default) sets the new network as current.
+    // addToWorkspace: true (default) adds it to the workspace.
+    const result = networkApi.createNetworkFromCx2({
       cxData,
       navigate: true,
       addToWorkspace: true,
@@ -512,7 +530,7 @@ export const ImportExportPanel = ({
       return
     }
 
-    const result = exportToCx2(networkId, {
+    const result = exportApi.exportToCx2(networkId, {
       networkName: 'exported-network',
     })
 
@@ -584,10 +602,10 @@ export const GraphEditorPanel = ({
 }: {
   networkId: IdType
 }): JSX.Element => {
-  const { createNode, createEdge, deleteNodes, deleteEdges } = useElementApi()
-  const { setValue, createColumn } = useTableApi()
-  const { setBypass } = useVisualStyleApi()
-  const { fit } = useViewportApi()
+  const elementApi = useElementApi()
+  const tableApi = useTableApi()
+  const visualStyleApi = useVisualStyleApi()
+  const viewportApi = useViewportApi()
   const [addedNodeIds, setAddedNodeIds] = useState<IdType[]>([])
   const [addedEdgeIds, setAddedEdgeIds] = useState<IdType[]>([])
 
@@ -598,14 +616,14 @@ export const GraphEditorPanel = ({
     const newEdgeIds: IdType[] = []
 
     // Ensure a "cluster" column exists
-    createColumn(networkId, 'node', 'cluster', ValueTypeName.String, '')
+    tableApi.createColumn(networkId, 'node', 'cluster', ValueTypeName.String, '')
 
     // 1. Create nodes in a grid pattern
     for (let i = 0; i < nodeCount; i++) {
       const x = (i % 3) * 100
       const y = Math.floor(i / 3) * 100
 
-      const result = createNode(networkId, [x, y], {
+      const result = elementApi.createNode(networkId, [x, y], {
         attributes: { name: `New-${i}` },
         autoSelect: false,
       })
@@ -614,7 +632,7 @@ export const GraphEditorPanel = ({
         newNodeIds.push(result.data.nodeId)
 
         // Set cluster attribute
-        setValue(
+        tableApi.setValue(
           networkId,
           'node',
           result.data.nodeId,
@@ -626,7 +644,7 @@ export const GraphEditorPanel = ({
 
     // 2. Connect nodes in a chain
     for (let i = 0; i < newNodeIds.length - 1; i++) {
-      const result = createEdge(
+      const result = elementApi.createEdge(
         networkId,
         newNodeIds[i],
         newNodeIds[i + 1],
@@ -643,19 +661,19 @@ export const GraphEditorPanel = ({
 
     // 3. Style the new nodes with a bypass
     if (newNodeIds.length > 0) {
-      setBypass(
+      visualStyleApi.setBypass(
         networkId,
         VisualPropertyName.NodeBackgroundColor,
         newNodeIds,
         '#2ECC71',
       )
-      setBypass(
+      visualStyleApi.setBypass(
         networkId,
         VisualPropertyName.NodeBorderColor,
         newNodeIds,
         '#27AE60',
       )
-      setBypass(
+      visualStyleApi.setBypass(
         networkId,
         VisualPropertyName.NodeBorderWidth,
         newNodeIds,
@@ -667,14 +685,14 @@ export const GraphEditorPanel = ({
     setAddedEdgeIds((prev) => [...prev, ...newEdgeIds])
 
     // 4. Fit viewport to include new nodes
-    await fit(networkId)
+    await viewportApi.fit(networkId)
   }
 
   // Delete all nodes added by this editor (cascade deletes edges too)
   const handleDeleteAdded = async (): Promise<void> => {
     if (addedNodeIds.length === 0) return
 
-    const result = deleteNodes(networkId, addedNodeIds)
+    const result = elementApi.deleteNodes(networkId, addedNodeIds)
 
     if (result.success) {
       console.log(
@@ -683,7 +701,7 @@ export const GraphEditorPanel = ({
       )
       setAddedNodeIds([])
       setAddedEdgeIds([])
-      await fit(networkId)
+      await viewportApi.fit(networkId)
     } else {
       console.error('Delete failed:', result.error.message)
     }
@@ -714,7 +732,9 @@ export const GraphEditorPanel = ({
 
 > **Scenario:** A relay app receives commands from an LLM agent via WebSocket, translates them into app API calls, and returns structured results so the agent can iterate.
 >
-> **APIs used:** `NetworkApi` + `ElementApi` + `TableApi` + `LayoutApi` + `ViewportApi` + `ApiTypes`
+> **APIs used:** `NetworkApi` + `ElementApi` + `TableApi` + `LayoutApi` + `ViewportApi` + `WorkspaceApi` + `ApiTypes`
+
+**Rev. 2 update:** Added `get_workspace` and `switch_network` commands using `WorkspaceApi`.
 
 ```typescript
 // AgentRelayPanel.tsx — WebSocket relay between LLM agent and Cytoscape Web
@@ -723,6 +743,7 @@ import { useElementApi } from 'cyweb/ElementApi'
 import { useTableApi } from 'cyweb/TableApi'
 import { useLayoutApi } from 'cyweb/LayoutApi'
 import { useViewportApi } from 'cyweb/ViewportApi'
+import { useWorkspaceApi } from 'cyweb/WorkspaceApi'
 import { ApiErrorCode, ValueTypeName } from 'cyweb/ApiTypes'
 import type { ApiResult, IdType } from 'cyweb/ApiTypes'
 import { Box, Button, Typography } from '@mui/material'
@@ -759,11 +780,12 @@ function toAgentResponse(
 }
 
 export const AgentRelayPanel = (): JSX.Element => {
-  const { createNetworkFromEdgeList } = useNetworkApi()
-  const { createNode, createEdge } = useElementApi()
-  const { setValue, createColumn } = useTableApi()
-  const { applyLayout } = useLayoutApi()
-  const { fit } = useViewportApi()
+  const networkApi = useNetworkApi()
+  const elementApi = useElementApi()
+  const tableApi = useTableApi()
+  const layoutApi = useLayoutApi()
+  const viewportApi = useViewportApi()
+  const workspaceApi = useWorkspaceApi()
 
   const wsRef = useRef<WebSocket | null>(null)
   const [connected, setConnected] = useState(false)
@@ -777,13 +799,35 @@ export const AgentRelayPanel = (): JSX.Element => {
   const handleCommand = useCallback(
     async (cmd: AgentCommand): Promise<AgentResponse> => {
       switch (cmd.action) {
+        // ── Workspace ──
+        case 'getWorkspace': {
+          const result = workspaceApi.getWorkspaceInfo()
+          return toAgentResponse(cmd.id, result)
+        }
+
+        case 'getNetworkList': {
+          const result = workspaceApi.getNetworkList()
+          return toAgentResponse(cmd.id, result)
+        }
+
+        case 'switchNetwork': {
+          const result = workspaceApi.switchCurrentNetwork(cmd.params.networkId as IdType)
+          return toAgentResponse(cmd.id, result)
+        }
+
         // ── Network creation ──
         case 'createNetwork': {
-          const result = createNetworkFromEdgeList({
+          const result = networkApi.createNetworkFromEdgeList({
             name: (cmd.params.name as string) ?? 'Agent Network',
             edgeList:
               (cmd.params.edgeList as Array<[IdType, IdType, string?]>) ?? [],
+            addToWorkspace: true,
           })
+          return toAgentResponse(cmd.id, result)
+        }
+
+        case 'deleteNetwork': {
+          const result = networkApi.deleteNetwork(cmd.params.networkId as IdType)
           return toAgentResponse(cmd.id, result)
         }
 
@@ -794,7 +838,7 @@ export const AgentRelayPanel = (): JSX.Element => {
           const attributes =
             (cmd.params.attributes as Record<string, unknown>) ?? {}
 
-          const result = createNode(networkId, position, {
+          const result = elementApi.createNode(networkId, position, {
             attributes,
             autoSelect: false,
           })
@@ -807,7 +851,7 @@ export const AgentRelayPanel = (): JSX.Element => {
           const sourceId = cmd.params.sourceId as IdType
           const targetId = cmd.params.targetId as IdType
 
-          const result = createEdge(networkId, sourceId, targetId, {
+          const result = elementApi.createEdge(networkId, sourceId, targetId, {
             attributes:
               (cmd.params.attributes as Record<string, unknown>) ?? {},
             autoSelect: false,
@@ -823,7 +867,7 @@ export const AgentRelayPanel = (): JSX.Element => {
           const column = cmd.params.column as string
           const value = cmd.params.value
 
-          const result = setValue(networkId, tableType, elementId, column, value)
+          const result = tableApi.setValue(networkId, tableType, elementId, column, value)
           return toAgentResponse(cmd.id, result)
         }
 
@@ -836,7 +880,7 @@ export const AgentRelayPanel = (): JSX.Element => {
             (cmd.params.dataType as ValueTypeName) ?? ValueTypeName.String
           const defaultValue = cmd.params.defaultValue ?? ''
 
-          const result = createColumn(
+          const result = tableApi.createColumn(
             networkId,
             tableType,
             columnName,
@@ -849,7 +893,8 @@ export const AgentRelayPanel = (): JSX.Element => {
         // ── Layout ──
         case 'applyLayout': {
           const networkId = cmd.params.networkId as IdType
-          const result = await applyLayout(networkId, {
+          const result = await layoutApi.applyLayout(networkId, {
+            algorithmName: cmd.params.algorithmName as string | undefined,
             fitAfterLayout: true,
           })
           return toAgentResponse(cmd.id, result)
@@ -858,7 +903,7 @@ export const AgentRelayPanel = (): JSX.Element => {
         // ── Fit ──
         case 'fit': {
           const networkId = cmd.params.networkId as IdType
-          const result = await fit(networkId)
+          const result = await viewportApi.fit(networkId)
           return toAgentResponse(cmd.id, result)
         }
 
@@ -873,15 +918,7 @@ export const AgentRelayPanel = (): JSX.Element => {
           }
       }
     },
-    [
-      createNetworkFromEdgeList,
-      createNode,
-      createEdge,
-      setValue,
-      createColumn,
-      applyLayout,
-      fit,
-    ],
+    [networkApi, elementApi, tableApi, layoutApi, viewportApi, workspaceApi],
   )
 
   // WebSocket connection management
@@ -972,6 +1009,17 @@ import websockets
 
 async def build_network():
     async with websockets.connect("ws://localhost:8765") as ws:
+        # 0. Query workspace state
+        cmd_id = str(uuid.uuid4())
+        await ws.send(json.dumps({
+            "id": cmd_id,
+            "action": "getWorkspace",
+            "params": {}
+        }))
+        resp = json.loads(await ws.recv())
+        if resp["success"]:
+            print(f"Workspace: {resp['data']['name']}, networks: {resp['data']['networkCount']}")
+
         # 1. Create a network
         cmd_id = str(uuid.uuid4())
         await ws.send(json.dumps({
@@ -1052,6 +1100,7 @@ asyncio.run(build_network())
 > **Access path:** `window.CyWebApi` global — no bundler or React required
 >
 > **Architecture:**
+>
 > ```
 > Claude Code → MCP Bridge Server (localhost Node.js)
 >                   ↕ chrome.runtime messaging
@@ -1061,6 +1110,9 @@ asyncio.run(build_network())
 >                   ↕ window.CyWebApi
 >               Cytoscape Web Core
 > ```
+
+**Rev. 2 update:** Added `workspace` tools (`get_workspace`, `get_network_list`, `switch_network`).
+Also added event subscription example in the `onApiReady` bootstrap.
 
 ### Content Script: `content-script.js`
 
@@ -1073,7 +1125,9 @@ function onApiReady(callback) {
   if (window.CyWebApi) {
     callback(window.CyWebApi)
   } else {
-    window.addEventListener('cywebapi:ready', () => callback(window.CyWebApi), { once: true })
+    window.addEventListener('cywebapi:ready', () => callback(window.CyWebApi), {
+      once: true,
+    })
   }
 }
 
@@ -1081,24 +1135,52 @@ function onApiReady(callback) {
  * Dispatch a single MCP tool call to the appropriate CyWebApi method.
  * All responses are plain JSON — no Map, no class instances.
  *
- * @param {string} tool   - MCP tool name (e.g. 'create_network')
- * @param {object} args   - Tool arguments
+ * @param {object} api  - window.CyWebApi
+ * @param {string} tool - MCP tool name (e.g. 'create_network')
+ * @param {object} args - Tool arguments
  * @returns {Promise<{success: boolean, data?: unknown, error?: {code: string, message: string}}>}
  */
 async function dispatchTool(api, tool, args) {
   switch (tool) {
+    // ── Workspace ─────────────────────────────────────────────────────────────
+    case 'get_workspace': {
+      return toResponse(api.workspace.getWorkspaceInfo())
+    }
+
+    case 'get_network_list': {
+      return toResponse(api.workspace.getNetworkList())
+    }
+
+    case 'switch_network': {
+      return toResponse(api.workspace.switchCurrentNetwork(args.networkId))
+    }
+
     // ── Network ──────────────────────────────────────────────────────────────
     case 'create_network': {
       const result = api.network.createNetworkFromEdgeList({
         name: args.name ?? 'Untitled',
         description: args.description,
         edgeList: args.edgeList ?? [],
+        addToWorkspace: true,
+      })
+      return toResponse(result)
+    }
+
+    case 'create_network_from_cx2': {
+      const result = api.network.createNetworkFromCx2({
+        cxData: args.cxData,
+        navigate: args.navigate ?? true,
+        addToWorkspace: args.addToWorkspace ?? true,
       })
       return toResponse(result)
     }
 
     case 'delete_network': {
       return toResponse(api.network.deleteNetwork(args.networkId))
+    }
+
+    case 'delete_current_network': {
+      return toResponse(api.network.deleteCurrentNetwork())
     }
 
     // ── Elements ─────────────────────────────────────────────────────────────
@@ -1129,20 +1211,71 @@ async function dispatchTool(api, tool, args) {
       return toResponse(api.element.getNode(args.networkId, args.nodeId))
     }
 
+    case 'get_edge': {
+      return toResponse(api.element.getEdge(args.networkId, args.edgeId))
+    }
+
     // ── Table ─────────────────────────────────────────────────────────────────
-    case 'set_value': {
+    case 'get_value': {
       return toResponse(
-        api.table.setValue(args.networkId, args.tableType, args.elementId, args.column, args.value),
+        api.table.getValue(
+          args.networkId,
+          args.tableType,
+          args.elementId,
+          args.column,
+        ),
       )
     }
 
     case 'get_row': {
-      return toResponse(api.table.getRow(args.networkId, args.tableType, args.elementId))
+      return toResponse(
+        api.table.getRow(args.networkId, args.tableType, args.elementId),
+      )
+    }
+
+    case 'set_value': {
+      return toResponse(
+        api.table.setValue(
+          args.networkId,
+          args.tableType,
+          args.elementId,
+          args.column,
+          args.value,
+        ),
+      )
+    }
+
+    case 'set_values': {
+      // args.cellEdits: Array<{ id, column, value }>
+      return toResponse(
+        api.table.setValues(args.networkId, args.tableType, args.cellEdits),
+      )
     }
 
     case 'create_column': {
       return toResponse(
-        api.table.createColumn(args.networkId, args.tableType, args.columnName, args.dataType, args.defaultValue ?? ''),
+        api.table.createColumn(
+          args.networkId,
+          args.tableType,
+          args.columnName,
+          args.dataType,
+          args.defaultValue ?? '',
+        ),
+      )
+    }
+
+    // ── Selection ─────────────────────────────────────────────────────────────
+    case 'get_selection': {
+      return toResponse(api.selection.getSelection(args.networkId))
+    }
+
+    case 'exclusive_select': {
+      return toResponse(
+        api.selection.exclusiveSelect(
+          args.networkId,
+          args.nodeIds ?? [],
+          args.edgeIds ?? [],
+        ),
       )
     }
 
@@ -1167,43 +1300,60 @@ async function dispatchTool(api, tool, args) {
 
     case 'get_node_positions': {
       // PositionRecord return is plain JSON — no Map conversion needed
-      return toResponse(api.viewport.getNodePositions(args.networkId, args.nodeIds))
+      return toResponse(
+        api.viewport.getNodePositions(args.networkId, args.nodeIds),
+      )
     }
 
     case 'update_node_positions': {
       // args.positions is Record<nodeId, [x, y]> — plain JSON from MCP
-      return toResponse(api.viewport.updateNodePositions(args.networkId, args.positions))
+      return toResponse(
+        api.viewport.updateNodePositions(args.networkId, args.positions),
+      )
     }
 
     // ── Visual Style ──────────────────────────────────────────────────────────
     case 'set_default': {
-      return toResponse(api.visualStyle.setDefault(args.networkId, args.vpName, args.vpValue))
+      return toResponse(
+        api.visualStyle.setDefault(args.networkId, args.vpName, args.vpValue),
+      )
     }
 
     case 'set_bypass': {
       return toResponse(
-        api.visualStyle.setBypass(args.networkId, args.vpName, args.elementIds, args.vpValue),
+        api.visualStyle.setBypass(
+          args.networkId,
+          args.vpName,
+          args.elementIds,
+          args.vpValue,
+        ),
+      )
+    }
+
+    case 'delete_bypass': {
+      return toResponse(
+        api.visualStyle.deleteBypass(
+          args.networkId,
+          args.vpName,
+          args.elementIds,
+        ),
       )
     }
 
     // ── Export ────────────────────────────────────────────────────────────────
     case 'export_cx2': {
-      return toResponse(api.export.exportToCx2(args.networkId))
-    }
-
-    // ── Selection ─────────────────────────────────────────────────────────────
-    case 'get_selection': {
-      return toResponse(api.selection.getSelection(args.networkId))
-    }
-
-    case 'exclusive_select': {
       return toResponse(
-        api.selection.exclusiveSelect(args.networkId, args.nodeIds ?? [], args.edgeIds ?? []),
+        api.export.exportToCx2(args.networkId, {
+          networkName: args.networkName,
+        }),
       )
     }
 
     default:
-      return { success: false, error: { code: 'INVALID_INPUT', message: `Unknown tool: ${tool}` } }
+      return {
+        success: false,
+        error: { code: 'INVALID_INPUT', message: `Unknown tool: ${tool}` },
+      }
   }
 }
 
@@ -1212,12 +1362,38 @@ function toResponse(result) {
   if (result.success) {
     return { success: true, data: result.data ?? null }
   }
-  return { success: false, error: { code: result.error.code, message: result.error.message } }
+  return {
+    success: false,
+    error: { code: result.error.code, message: result.error.message },
+  }
 }
 
 // ── Bootstrap ────────────────────────────────────────────────────────────────
 
 onApiReady((api) => {
+  // Optional: subscribe to CyWeb events and forward them to the background script
+  window.addEventListener('network:switched', (e) => {
+    chrome.runtime.sendMessage({
+      type: 'CYWEB_EVENT',
+      event: 'network:switched',
+      detail: e.detail,
+    })
+  })
+  window.addEventListener('selection:changed', (e) => {
+    chrome.runtime.sendMessage({
+      type: 'CYWEB_EVENT',
+      event: 'selection:changed',
+      detail: e.detail,
+    })
+  })
+  window.addEventListener('data:changed', (e) => {
+    chrome.runtime.sendMessage({
+      type: 'CYWEB_EVENT',
+      event: 'data:changed',
+      detail: e.detail,
+    })
+  })
+
   // Listen for MCP tool calls relayed from the extension background script
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message.type !== 'MCP_TOOL_CALL') return false
@@ -1261,7 +1437,14 @@ async function callContentScript(tool, args, callId) {
   if (!cywebTabId) {
     cywebTabId = await findCyWebTab()
     if (!cywebTabId) {
-      return { callId, success: false, error: { code: 'OPERATION_FAILED', message: 'Cytoscape Web tab not found' } }
+      return {
+        callId,
+        success: false,
+        error: {
+          code: 'OPERATION_FAILED',
+          message: 'Cytoscape Web tab not found',
+        },
+      }
     }
   }
 
@@ -1271,7 +1454,14 @@ async function callContentScript(tool, args, callId) {
       { type: 'MCP_TOOL_CALL', callId, tool, args },
       (response) => {
         if (chrome.runtime.lastError) {
-          resolve({ callId, success: false, error: { code: 'OPERATION_FAILED', message: chrome.runtime.lastError.message } })
+          resolve({
+            callId,
+            success: false,
+            error: {
+              code: 'OPERATION_FAILED',
+              message: chrome.runtime.lastError.message,
+            },
+          })
         } else {
           resolve({ callId, ...response })
         }
@@ -1295,6 +1485,19 @@ function connectToMcpBridge() {
     setTimeout(connectToMcpBridge, 3000) // Reconnect after 3s
   }
 }
+
+// Forward CyWeb events from content script to MCP Bridge Server
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.type === 'CYWEB_EVENT' && ws?.readyState === WebSocket.OPEN) {
+    ws.send(
+      JSON.stringify({
+        type: 'EVENT',
+        event: message.event,
+        detail: message.detail,
+      }),
+    )
+  }
+})
 
 // Initialize on extension startup
 chrome.runtime.onInstalled.addListener(connectToMcpBridge)
@@ -1320,14 +1523,28 @@ let extensionSocket = null
 // Accept connection from the Chrome extension background script
 wss.on('connection', (ws) => {
   extensionSocket = ws
-  ws.on('close', () => { extensionSocket = null })
+  ws.on('close', () => {
+    extensionSocket = null
+  })
+  // Forward CyWeb events from extension to any attached MCP clients
+  ws.on('message', (data) => {
+    const msg = JSON.parse(data)
+    if (msg.type === 'EVENT') {
+      // Could emit to MCP resource subscribers here
+      console.error(`[event] ${msg.event}:`, JSON.stringify(msg.detail))
+    }
+  })
 })
 
 /** Send a tool call to the extension and wait for the response */
 function callExtension(tool, args) {
   return new Promise((resolve, reject) => {
     if (!extensionSocket) {
-      reject(new Error('Chrome extension not connected. Open Cytoscape Web and install the extension.'))
+      reject(
+        new Error(
+          'Chrome extension not connected. Open Cytoscape Web and install the extension.',
+        ),
+      )
       return
     }
     const callId = Math.random().toString(36).slice(2)
@@ -1340,46 +1557,87 @@ function callExtension(tool, args) {
       resolve(msg)
     }
     extensionSocket.on('message', onMessage)
-    setTimeout(() => { extensionSocket.off('message', onMessage); reject(new Error('Timeout')) }, 30000)
+    setTimeout(() => {
+      extensionSocket.off('message', onMessage)
+      reject(new Error('Timeout'))
+    }, 30000)
   })
 }
 
 // Register MCP tools — one per CyWebApi operation
-server.tool('create_network', { name: z.string(), edgeList: z.array(z.tuple([z.string(), z.string(), z.string().optional()])) },
+server.tool('get_workspace', {}, async () => {
+  const result = await callExtension('get_workspace', {})
+  return { content: [{ type: 'text', text: JSON.stringify(result) }] }
+})
+
+server.tool('get_network_list', {}, async () => {
+  const result = await callExtension('get_network_list', {})
+  return { content: [{ type: 'text', text: JSON.stringify(result) }] }
+})
+
+server.tool(
+  'switch_network',
+  { networkId: z.string() },
+  async ({ networkId }) => {
+    const result = await callExtension('switch_network', { networkId })
+    return { content: [{ type: 'text', text: JSON.stringify(result) }] }
+  },
+)
+
+server.tool(
+  'create_network',
+  {
+    name: z.string(),
+    edgeList: z.array(z.tuple([z.string(), z.string(), z.string().optional()])),
+  },
   async ({ name, edgeList }) => {
     const result = await callExtension('create_network', { name, edgeList })
     return { content: [{ type: 'text', text: JSON.stringify(result) }] }
-  }
+  },
 )
 
-server.tool('create_node', { networkId: z.string(), position: z.tuple([z.number(), z.number()]).optional(), attributes: z.record(z.unknown()).optional() },
+server.tool(
+  'create_node',
+  {
+    networkId: z.string(),
+    position: z.tuple([z.number(), z.number()]).optional(),
+    attributes: z.record(z.unknown()).optional(),
+  },
   async (args) => {
     const result = await callExtension('create_node', args)
     return { content: [{ type: 'text', text: JSON.stringify(result) }] }
-  }
+  },
 )
 
-server.tool('apply_layout', { networkId: z.string(), algorithmName: z.string().optional() },
+server.tool(
+  'apply_layout',
+  {
+    networkId: z.string(),
+    algorithmName: z.string().optional(),
+  },
   async (args) => {
     const result = await callExtension('apply_layout', args)
     return { content: [{ type: 'text', text: JSON.stringify(result) }] }
-  }
+  },
 )
 
-server.tool('get_node_positions', { networkId: z.string(), nodeIds: z.array(z.string()) },
+server.tool(
+  'get_node_positions',
+  {
+    networkId: z.string(),
+    nodeIds: z.array(z.string()),
+  },
   async (args) => {
     // Returns PositionRecord: { nodeId: [x, y] } — plain JSON, no conversion needed
     const result = await callExtension('get_node_positions', args)
     return { content: [{ type: 'text', text: JSON.stringify(result) }] }
-  }
+  },
 )
 
-server.tool('export_cx2', { networkId: z.string() },
-  async (args) => {
-    const result = await callExtension('export_cx2', args)
-    return { content: [{ type: 'text', text: JSON.stringify(result) }] }
-  }
-)
+server.tool('export_cx2', { networkId: z.string() }, async (args) => {
+  const result = await callExtension('export_cx2', args)
+  return { content: [{ type: 'text', text: JSON.stringify(result) }] }
+})
 
 // ... additional tools for each CyWebApi operation
 
@@ -1402,36 +1660,420 @@ await server.connect(transport)
 
 ### Key Design Points of the Vanilla JS Variant
 
-| Concern | React variant (Use Case G original) | Vanilla JS / Extension variant |
-| ------- | ------------------------------------ | ------------------------------ |
-| API access | `useXxxApi()` hooks inside React component | `window.CyWebApi.xxx` in content script |
-| React required | Yes | **No** |
-| Module Federation required | Yes | **No** |
-| WebSocket location | In browser (Adapter App React component) | In extension background script (Service Worker) |
-| Cross-origin issue | HTTPS→ws://localhost blocked by Mixed Content | Extension `host_permissions` bypasses Private Network Access |
-| Position type | `Record<IdType, [x, y]>` (JSON-ready) | Same — no `Map` conversion needed |
-| `apply_layout` async | `await` in React `useCallback` | `await` in `dispatchTool` |
-| `cywebapi:ready` guard | Not needed (React hook lifecycle manages timing) | Required — content script may load before Cytoscape Web |
+| Concern                    | React variant (Use Case G original)              | Vanilla JS / Extension variant                               |
+| -------------------------- | ------------------------------------------------ | ------------------------------------------------------------ |
+| API access                 | `useXxxApi()` hooks inside React component       | `window.CyWebApi.xxx` in content script                      |
+| React required             | Yes                                              | **No**                                                       |
+| Module Federation required | Yes                                              | **No**                                                       |
+| WebSocket location         | In browser (Adapter App React component)         | In extension background script (Service Worker)              |
+| Cross-origin issue         | HTTPS→ws://localhost blocked by Mixed Content    | Extension `host_permissions` bypasses Private Network Access |
+| Position type              | `Record<IdType, [x, y]>` (JSON-ready)            | Same — no `Map` conversion needed                            |
+| `apply_layout` async       | `await` in React `useCallback`                   | `await` in `dispatchTool`                                    |
+| `cywebapi:ready` guard     | Not needed (React hook lifecycle manages timing) | **Required** — content script may load before Cytoscape Web  |
+| Event Bus                  | `useCyWebEvent` hook                             | `window.addEventListener` + forward to background            |
+
+---
+
+## Use Case H: Event-Driven Real-Time Dashboard
+
+> **Scenario:** A panel app displays real-time statistics about the current network and workspace.
+> It subscribes to CyWeb events to keep its display current without polling.
+>
+> **APIs used:** `WorkspaceApi` + `SelectionApi` + `useCyWebEvent` (Event Bus)
+
+This example demonstrates the Event Bus pattern: using `useCyWebEvent` with stable
+`useCallback` references to subscribe to multiple event types in a single component.
+
+**Important:** Wrap all `useCyWebEvent` handlers in `useCallback` (or define them as stable
+references outside the component). An unstable handler reference causes the hook to
+re-subscribe on every render.
+
+```typescript
+// NetworkDashboardPanel.tsx — Real-time network statistics panel
+import { useWorkspaceApi } from 'cyweb/WorkspaceApi'
+import { useSelectionApi } from 'cyweb/SelectionApi'
+import { useCyWebEvent } from 'cyweb/EventBus'
+import type { IdType } from 'cyweb/ApiTypes'
+import { Box, Typography, Divider, Chip, Stack } from '@mui/material'
+import { useState, useEffect, useCallback } from 'react'
+
+interface NetworkStats {
+  networkId: IdType
+  name: string
+  nodeCount: number
+  edgeCount: number
+  isModified: boolean
+}
+
+interface SelectionStats {
+  selectedNodes: number
+  selectedEdges: number
+}
+
+export const NetworkDashboardPanel = (): JSX.Element => {
+  const workspaceApi = useWorkspaceApi()
+  const selectionApi = useSelectionApi()
+
+  const [workspaceName, setWorkspaceName] = useState<string>('')
+  const [networkCount, setNetworkCount] = useState<number>(0)
+  const [currentNetwork, setCurrentNetwork] = useState<NetworkStats | null>(null)
+  const [selection, setSelection] = useState<SelectionStats>({ selectedNodes: 0, selectedEdges: 0 })
+  const [lastEvent, setLastEvent] = useState<string>('—')
+  const [layoutRunning, setLayoutRunning] = useState(false)
+  const [pendingDataChange, setPendingDataChange] = useState(false)
+
+  // Load initial workspace state
+  const refreshWorkspace = useCallback(() => {
+    const wsInfo = workspaceApi.getWorkspaceInfo()
+    if (!wsInfo.success) return
+
+    setWorkspaceName(wsInfo.data.name)
+    setNetworkCount(wsInfo.data.networkCount)
+
+    const currentId = wsInfo.data.currentNetworkId
+    if (!currentId) {
+      setCurrentNetwork(null)
+      return
+    }
+
+    const summary = workspaceApi.getNetworkSummary(currentId)
+    if (summary.success) {
+      setCurrentNetwork({
+        networkId: currentId,
+        name: summary.data.name,
+        nodeCount: summary.data.nodeCount,
+        edgeCount: summary.data.edgeCount,
+        isModified: summary.data.isModified,
+      })
+    }
+
+    const sel = selectionApi.getSelection(currentId)
+    if (sel.success) {
+      setSelection({
+        selectedNodes: sel.data.selectedNodes.length,
+        selectedEdges: sel.data.selectedEdges.length,
+      })
+    }
+  }, [workspaceApi, selectionApi])
+
+  useEffect(() => {
+    refreshWorkspace()
+  }, [refreshWorkspace])
+
+  // ── Event Bus subscriptions ──────────────────────────────────────────────
+
+  // When a network is added: refresh workspace
+  const handleNetworkCreated = useCallback(({ networkId }: { networkId: IdType }) => {
+    setLastEvent(`network:created — ${networkId}`)
+    refreshWorkspace()
+  }, [refreshWorkspace])
+  useCyWebEvent('network:created', handleNetworkCreated)
+
+  // When a network is removed: refresh workspace
+  const handleNetworkDeleted = useCallback(({ networkId }: { networkId: IdType }) => {
+    setLastEvent(`network:deleted — ${networkId}`)
+    refreshWorkspace()
+  }, [refreshWorkspace])
+  useCyWebEvent('network:deleted', handleNetworkDeleted)
+
+  // When the active network changes: refresh workspace and clear selection
+  const handleNetworkSwitched = useCallback(
+    ({ networkId, previousId }: { networkId: IdType; previousId: IdType }) => {
+      setLastEvent(`network:switched → ${networkId}`)
+      setSelection({ selectedNodes: 0, selectedEdges: 0 })
+      refreshWorkspace()
+    },
+    [refreshWorkspace],
+  )
+  useCyWebEvent('network:switched', handleNetworkSwitched)
+
+  // When selection changes: update selection stats
+  const handleSelectionChanged = useCallback(
+    ({ selectedNodes, selectedEdges }: { networkId: IdType; selectedNodes: IdType[]; selectedEdges: IdType[] }) => {
+      setSelection({ selectedNodes: selectedNodes.length, selectedEdges: selectedEdges.length })
+      setLastEvent(`selection:changed — ${selectedNodes.length}N ${selectedEdges.length}E`)
+    },
+    [],
+  )
+  useCyWebEvent('selection:changed', handleSelectionChanged)
+
+  // When layout starts/completes: show running indicator
+  const handleLayoutStarted = useCallback(({ algorithm }: { networkId: IdType; algorithm: string }) => {
+    setLayoutRunning(true)
+    setLastEvent(`layout:started — ${algorithm}`)
+  }, [])
+  useCyWebEvent('layout:started', handleLayoutStarted)
+
+  const handleLayoutCompleted = useCallback(({ algorithm }: { networkId: IdType; algorithm: string }) => {
+    setLayoutRunning(false)
+    setLastEvent(`layout:completed — ${algorithm}`)
+    // Refresh summary (node count may not change, but isModified might)
+    refreshWorkspace()
+  }, [refreshWorkspace])
+  useCyWebEvent('layout:completed', handleLayoutCompleted)
+
+  // When data changes: flash indicator
+  const handleDataChanged = useCallback(
+    ({ tableType, rowIds }: { networkId: IdType; tableType: 'node' | 'edge'; rowIds: IdType[] }) => {
+      setPendingDataChange(true)
+      setLastEvent(
+        rowIds.length > 0
+          ? `data:changed — ${rowIds.length} ${tableType} rows`
+          : `data:changed — ${tableType} schema`,
+      )
+      // Refresh summary to update nodeCount/edgeCount if rows were added/removed
+      refreshWorkspace()
+      setTimeout(() => setPendingDataChange(false), 1000)
+    },
+    [refreshWorkspace],
+  )
+  useCyWebEvent('data:changed', handleDataChanged)
+
+  return (
+    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
+      <Typography variant="h6">Network Dashboard</Typography>
+
+      <Stack direction="row" spacing={1} alignItems="center">
+        <Typography variant="body2" color="text.secondary">Workspace:</Typography>
+        <Typography variant="body2">{workspaceName || '—'}</Typography>
+        <Chip label={`${networkCount} networks`} size="small" />
+      </Stack>
+
+      <Divider />
+
+      {currentNetwork ? (
+        <>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography variant="body2" fontWeight="bold">
+              {currentNetwork.name}
+            </Typography>
+            {currentNetwork.isModified && (
+              <Chip label="modified" size="small" color="warning" />
+            )}
+          </Stack>
+          <Typography variant="body2" color="text.secondary">
+            {currentNetwork.nodeCount} nodes · {currentNetwork.edgeCount} edges
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Selected: {selection.selectedNodes}N {selection.selectedEdges}E
+          </Typography>
+        </>
+      ) : (
+        <Typography variant="body2" color="text.secondary">
+          No network selected
+        </Typography>
+      )}
+
+      <Divider />
+
+      <Stack direction="row" spacing={1} alignItems="center">
+        {layoutRunning && <Chip label="layout running…" size="small" color="info" />}
+        {pendingDataChange && <Chip label="data changed" size="small" color="success" />}
+      </Stack>
+
+      <Typography variant="caption" color="text.secondary">
+        Last event: {lastEvent}
+      </Typography>
+    </Box>
+  )
+}
+```
+
+---
+
+## Use Case I: Non-React App with App Lifecycle Hooks
+
+> **Scenario:** An external app that does not use React components (e.g., a data pipeline
+> script, a visualization library, or a D3.js-based panel) uses `CyAppWithLifecycle` to
+> run initialization logic when activated and clean up when deactivated.
+>
+> **APIs used:** `window.CyWebApi` (via `AppContext.apis`) + App Lifecycle (`mount`/`unmount`)
+
+This example shows how to use `CyAppWithLifecycle` to:
+
+- Run one-time initialization in `mount()` using the pre-built `context.apis`
+- Subscribe to CyWeb events using `window.addEventListener` (Vanilla JS, no React)
+- Clean up all listeners and state in `unmount()`
+
+```typescript
+// my-pipeline-app.ts — A non-React app registered via Module Federation
+// This app exposes no panel or menu components — it runs silently in the background.
+
+import type { CyAppWithLifecycle, AppContext, IdType } from 'cyweb/ApiTypes'
+import { ComponentType } from 'cyweb/ApiTypes' // if needed for component registration
+
+// ── Internal state ───────────────────────────────────────────────────────────
+
+let cleanupFns: Array<() => void> = []
+
+// ── App definition ───────────────────────────────────────────────────────────
+
+export const MyPipelineApp: CyAppWithLifecycle = {
+  name: 'my-pipeline-app',
+
+  // No React component registrations — this is a headless app.
+  // components: [],
+
+  /**
+   * Called when the app is activated (after React components are registered).
+   * context.apis is the same object as window.CyWebApi at runtime.
+   * If this returns a Promise, the host awaits it before marking the app as ready.
+   */
+  async mount(context: AppContext): Promise<void> {
+    const { apis } = context
+
+    // 1. Read initial workspace state
+    const wsInfo = apis.workspace.getWorkspaceInfo()
+    if (wsInfo.success) {
+      console.log(
+        `[pipeline] Workspace: ${wsInfo.data.name} (${wsInfo.data.networkCount} networks)`,
+      )
+    }
+
+    // 2. If a network is already open, run initial analysis
+    const currentIdResult = apis.workspace.getCurrentNetworkId()
+    if (currentIdResult.success) {
+      await runAnalysis(apis, currentIdResult.data.networkId)
+    }
+
+    // 3. Subscribe to events using window.addEventListener (no React, no useCyWebEvent)
+
+    // Re-run analysis when the active network changes
+    const onNetworkSwitched = async (e: Event): Promise<void> => {
+      const { networkId } = (
+        e as CustomEvent<{ networkId: IdType; previousId: IdType }>
+      ).detail
+      if (networkId) {
+        await runAnalysis(apis, networkId)
+      }
+    }
+    window.addEventListener('network:switched', onNetworkSwitched)
+    cleanupFns.push(() =>
+      window.removeEventListener('network:switched', onNetworkSwitched),
+    )
+
+    // Re-run analysis when table data changes in any network
+    const onDataChanged = async (e: Event): Promise<void> => {
+      const { networkId, tableType, rowIds } = (
+        e as CustomEvent<{
+          networkId: IdType
+          tableType: 'node' | 'edge'
+          rowIds: IdType[]
+        }>
+      ).detail
+
+      // Only react to node data changes with actual row mutations
+      if (tableType === 'node' && rowIds.length > 0) {
+        await runAnalysis(apis, networkId)
+      }
+    }
+    window.addEventListener('data:changed', onDataChanged)
+    cleanupFns.push(() =>
+      window.removeEventListener('data:changed', onDataChanged),
+    )
+
+    console.log('[pipeline] App mounted and subscribed to events')
+  },
+
+  /**
+   * Called when the app is deactivated or the page is unloaded.
+   * Must clean up all listeners, timers, DOM nodes, and async tasks.
+   * Always called, even on page reload.
+   */
+  unmount(): void {
+    for (const cleanup of cleanupFns) {
+      cleanup()
+    }
+    cleanupFns = []
+    console.log('[pipeline] App unmounted, all listeners removed')
+  },
+}
+
+// ── Domain logic ─────────────────────────────────────────────────────────────
+
+/**
+ * Example analysis: compute node degree and write it to the 'pipeline_degree' column.
+ */
+async function runAnalysis(
+  apis: AppContext['apis'],
+  networkId: IdType,
+): Promise<void> {
+  // Ensure the output column exists
+  apis.table.createColumn(networkId, 'node', 'pipeline_degree', 'integer', 0)
+
+  // Get current selection to find "interesting" nodes
+  const sel = apis.selection.getSelection(networkId)
+  if (!sel.success) return
+
+  const targetNodes = sel.data.selectedNodes
+
+  if (targetNodes.length === 0) return
+
+  // Compute a simple score: sum of selected neighbors (toy example)
+  const scores = targetNodes.map((nodeId, i) => ({
+    id: nodeId,
+    column: 'pipeline_degree',
+    value: i + 1, // placeholder — real app would use graph topology
+  }))
+
+  const writeResult = apis.table.setValues(networkId, 'node', scores)
+  if (!writeResult.success) {
+    console.error(
+      '[pipeline] Failed to write scores:',
+      writeResult.error.message,
+    )
+    return
+  }
+
+  // Apply layout after analysis (optional)
+  const layoutResult = await apis.layout.applyLayout(networkId, {
+    fitAfterLayout: true,
+  })
+  if (!layoutResult.success) {
+    console.warn('[pipeline] Layout failed:', layoutResult.error.message)
+  }
+
+  console.log(
+    `[pipeline] Analysis complete for ${networkId}: ${targetNodes.length} nodes updated`,
+  )
+}
+```
+
+### Key Lifecycle Design Points
+
+| Concern                             | Guidance                                                                                                        |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `mount()` can be async              | If it returns a `Promise`, the host awaits it. Use `async/await` freely.                                        |
+| `context.apis` vs `window.CyWebApi` | They are the same object. Prefer `context.apis` inside `mount()` for testability.                               |
+| Event subscriptions                 | Use `window.addEventListener` in `mount()` and remove them in `unmount()`. Track cleanup functions explicitly.  |
+| No React?                           | `CyAppWithLifecycle` extends `CyApp`. You can register zero React components and use the lifecycle hooks alone. |
+| `unmount()` is always called        | Including on page reload. Do not rely on browser unload events — use `unmount()` exclusively for cleanup.       |
+| Re-entrancy                         | `mount()` is called at most once per activation. `unmount()` is called at most once per deactivation.           |
 
 ---
 
 ## Summary: Use Case Coverage
 
-| Use Case                            | APIs Used                                                          | Sync/Async                     | Lines of App Code                         |
-| ----------------------------------- | ------------------------------------------------------------------ | ------------------------------ | ----------------------------------------- |
-| **A: Network Generator**            | `NetworkApi`, `LayoutApi`, `VisualStyleApi`, `ViewportApi`         | Mixed (layout + fit are async) | ~50                                       |
-| **B: Custom Layout**                | `ElementApi`, `ViewportApi`                                        | Mixed (fit is async)           | ~30                                       |
-| **C: Style Modification**           | `VisualStyleApi`, `SelectionApi`                                   | Sync                           | ~80                                       |
-| **D: Analysis / Annotation**        | `TableApi`, `ElementApi`, `SelectionApi`, `VisualStyleApi`         | Sync                           | ~70                                       |
-| **E: Data Import/Export**           | `NetworkApi`, `ExportApi`                                          | Sync                           | ~60                                       |
-| **F: Graph Structure Modification** | `ElementApi`, `TableApi`, `VisualStyleApi`, `ViewportApi`          | Mixed (fit is async)           | ~80                                       |
-| **G: LLM Agent Relay (React)**      | `NetworkApi`, `ElementApi`, `TableApi`, `LayoutApi`, `ViewportApi` | Mixed (layout + fit are async) | ~150 (relay) + ~50 (Python agent)         |
-| **G: LLM Agent Relay (Vanilla JS)** | `window.CyWebApi.*` (all domains)                                  | Mixed (layout + fit are async) | ~130 (content script) + ~80 (background) + ~80 (MCP bridge) |
+| Use Case                            | APIs Used                                                                          | Sync/Async                     |
+| ----------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------ |
+| **A: Network Generator**            | `NetworkApi`, `LayoutApi`, `VisualStyleApi`, `ViewportApi`                         | Mixed (layout + fit are async) |
+| **B: Custom Layout**                | `ViewportApi`                                                                      | Mixed (fit is async)           |
+| **C: Style Modification**           | `VisualStyleApi`, `SelectionApi`                                                   | Sync                           |
+| **D: Analysis / Annotation**        | `TableApi`, `SelectionApi`, `VisualStyleApi`                                       | Sync                           |
+| **E: Data Import/Export**           | `NetworkApi`, `ExportApi`                                                          | Sync                           |
+| **F: Graph Structure Modification** | `ElementApi`, `TableApi`, `VisualStyleApi`, `ViewportApi`                          | Mixed (fit is async)           |
+| **G: LLM Agent Relay (React)**      | `NetworkApi`, `ElementApi`, `TableApi`, `LayoutApi`, `ViewportApi`, `WorkspaceApi` | Mixed                          |
+| **G: LLM Agent Relay (Vanilla JS)** | `window.CyWebApi.*` (all domains)                                                  | Mixed (layout + fit are async) |
+| **H: Event-Driven Dashboard**       | `WorkspaceApi`, `SelectionApi`, `useCyWebEvent`                                    | Sync (reads only)              |
+| **I: Non-React App w/ Lifecycle**   | `window.CyWebApi` via `AppContext.apis`, lifecycle hooks                           | Mixed                          |
 
-All seven use cases that were **Partial** or **No** in the audit are now fully implementable with the app API. Key improvements visible in the code:
+All seven use cases that were **Partial** or **No** in the audit are now fully implementable
+with the app API. Key design properties visible across the examples:
 
 - **No raw store imports** — every operation goes through `cyweb/*` app API modules or `window.CyWebApi`
-- **Structured error handling** — `ApiResult` discriminated union with `ApiErrorCode` enables programmatic error handling (especially critical for Use Case G)
+- **Structured error handling** — `ApiResult` discriminated union with `ApiErrorCode` enables programmatic error handling (especially critical for Use Cases G and I)
 - **Type-safe visual properties** — `VisualPropertyName` and `ValueTypeName` are imported from `cyweb/ApiTypes`
-- **Sync/async clarity** — follows § 1.6 policy: store operations are sync, layout and fit are `Promise`
-- **JSON-serializable positions** — `PositionRecord` (not `Map`) flows through WebSocket and MCP without conversion
+- **Sync/async clarity** — store operations are sync; `layout.applyLayout` and `viewport.fit` are `Promise`-based
+- **Event Bus** — `useCyWebEvent` (React) and `window.addEventListener` (Vanilla JS) provide the same typed events
+- **Stable handler references** — `useCallback` is required for `useCyWebEvent` handlers to avoid re-subscribing on each render
+- **App lifecycle** — `mount`/`unmount` enable headless apps with proper initialization and cleanup, even without React components

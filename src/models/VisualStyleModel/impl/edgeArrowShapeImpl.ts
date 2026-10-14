@@ -7,7 +7,7 @@ export const isOpenShape = (shape: string): boolean => {
     } else {
       return false
     }
-  } catch (e) {
+  } catch {
     return false
   }
 }
