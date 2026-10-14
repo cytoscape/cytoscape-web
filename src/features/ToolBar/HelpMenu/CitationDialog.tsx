@@ -2,7 +2,6 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import {
   Box,
   Button,
-  DialogActions,
   DialogContent,
   DialogTitle,
   Link,
@@ -12,6 +11,7 @@ import {
 import { ReactElement, useMemo } from 'react'
 
 import { CyDialog } from '@/components/CyDialog'
+import { DialogCloseButton } from '@/components/DialogCloseButton'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { logUi } from '../../../debug'
 import { MessageSeverity } from '../../../models/MessageModel'
@@ -149,20 +149,13 @@ export const CitationDialog = ({
   }
 
   return (
-    <CyDialog data-testid="citation-dialog" open={open} maxWidth="md" fullWidth>
-      <DialogTitle>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          Citations
-        </Box>
-      </DialogTitle>
-
-      <DialogContent sx={{ pb: 0 }}>
+    <CyDialog data-testid="citation-dialog" open={open} maxWidth="sm">
+      <DialogTitle sx={{ pr: 6 }}>Citations</DialogTitle>
+      <DialogCloseButton
+        data-testid="citation-dialog-close-button"
+        onClose={onClose}
+      />
+      <DialogContent>
         <Paper
           variant="filled"
           sx={{
@@ -186,16 +179,6 @@ export const CitationDialog = ({
           </Box>
         </Paper>
       </DialogContent>
-
-      <DialogActions sx={{ m: 0, padding: (theme) => theme.spacing(2, 3) }}>
-        <Button
-          data-testid="citation-dialog-close-button"
-          variant="contained"
-          onClick={onClose}
-        >
-          Close
-        </Button>
-      </DialogActions>
     </CyDialog>
   )
 }

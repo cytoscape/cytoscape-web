@@ -2,7 +2,6 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import {
   Box,
   Button,
-  DialogActions,
   DialogContent,
   DialogTitle,
   Paper,
@@ -11,6 +10,7 @@ import {
 import { ReactElement } from 'react'
 
 import { CyDialog } from '@/components/CyDialog'
+import { DialogCloseButton } from '@/components/DialogCloseButton'
 import { logUi } from '../../../debug'
 
 interface LicenseDialogProps {
@@ -44,10 +44,6 @@ export const LicenseDialog = ({
   SOFTWARE.
   `
 
-  const handleCloseDialog = (): void => {
-    onClose()
-  }
-
   const handleCopyText = (): void => {
     navigator.clipboard.writeText(LicenseText).catch((err) => {
       logUi.error(`[${handleCopyText.name}]: Failed to copy text: `, err)
@@ -56,7 +52,11 @@ export const LicenseDialog = ({
 
   return (
     <CyDialog data-testid="license-dialog" open={open}>
-      <DialogTitle>MIT License</DialogTitle>
+      <DialogTitle sx={{ pr: 6 }}>MIT License</DialogTitle>
+      <DialogCloseButton
+        data-testid="license-dialog-close-button"
+        onClose={onClose}
+      />
       <DialogContent>
         <Paper
           variant="filled"
@@ -110,15 +110,6 @@ export const LicenseDialog = ({
           </Box>
         </Paper>
       </DialogContent>
-      <DialogActions>
-        <Button
-          data-testid="license-dialog-close-button"
-          variant="contained"
-          onClick={handleCloseDialog}
-        >
-          Close
-        </Button>
-      </DialogActions>
     </CyDialog>
   )
 }

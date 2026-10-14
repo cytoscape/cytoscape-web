@@ -1,46 +1,46 @@
-# LicenseMenu Feature
+# License (Help menu)
 
 ## Overview
 
-The `LicenseMenu` feature implements the **License** toolbar menu. It gives users easy access to the application's license text and provides utilities such as copying the license to the clipboard.
+**Help > License** shows the application's MIT license text and lets the user
+copy it to the clipboard. It is a row in the Help menu, not a toolbar menu of
+its own; see [HelpMenu.md](../HelpMenu_docs/HelpMenu.md) for the menu as a
+whole.
 
 ## Architecture
 
-- **UI Component**
-  - `LicenseMenu.tsx`: Renders the **License** button and manages the open/close state of the `LicenseDialog`.
+- **Menu row**
+  - `LicenseMenuItem.tsx`: Renders the **License** row and calls the `onClick`
+    `HelpMenu` gives it. It renders no dialog itself (`menuRowDialogs.test.ts`).
 
 - **Dialog Component**
-  - `LicenseDialog.tsx`: A Material-UI dialog that displays license information and provides action buttons.
-    - **Close** button: Dismisses the dialog.
-    - **Copy** button: Copies the license text to the clipboard.
+  - `LicenseDialog.tsx`: Rendered by `HelpMenu` beside the menu, so it outlives
+    the menu that opened it.
+    - Close "X" (`DialogCloseButton`, test id `license-dialog-close-button`):
+      the dialog's only exit.
+    - **Copy License** button (`license-dialog-copy-button`): copies the
+      license text to the clipboard.
 
 ## Behavior
 
 ### Opening and Closing
 
-- Clicking the **License** button sets local `open` state to `true` and opens the `LicenseDialog`.
-- The dialog remains open until the user clicks **Close** or otherwise triggers `setOpen(false)`.
-
-### License Display
-
-- The dialog displays the full license text in a scrollable content area.
-- It is intended to provide transparency around usage terms and third-party dependencies.
+- Clicking **License** closes the Help menu and sets `HelpMenu`'s
+  `openDialog` to the license dialog.
+- The dialog stays open until the user clicks the Close "X". Backdrop click and
+  Esc are inert (`docs/specifications/DIALOG_DISMISS_POLICY.md`).
 
 ### Copy to Clipboard
 
-- The **Copy** button allows users to copy the entire license text.
-- This supports workflows such as reporting, documentation, or offline review.
+- **Copy License** copies the full license text. A clipboard failure is logged
+  through `logUi`; nothing is shown to the user.
 
 ## Design Decisions
 
 - **Dedicated Dialog**
-  - A modal dialog provides enough space for long license texts and keeps the main UI uncluttered.
-
-- **Always-Available Menu Entry**
-  - The License menu is always visible in the toolbar to make legal information easy to find.
+  - A modal dialog gives the license text room without cluttering the main UI.
 
 ## Future Improvements
 
-- Include additional notices for third-party libraries or datasets.
-- Add filtering or sections for different components (core app vs. extensions).
-- Provide a link to online license and privacy policy for the latest version.
+- Include notices for third-party libraries or datasets.
+- Link to the online license and privacy policy for the latest version.

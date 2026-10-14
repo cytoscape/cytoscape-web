@@ -20,10 +20,12 @@ The `HelpMenu` feature implements the **Help** toolbar menu. It centralizes link
   - `ExportDatabaseMenuItem`: Exports the internal Dexie/IndexedDB database to a file.
 
 - **Dialog Components** (rendered by `HelpMenu` next to the menu, never inside a row)
-  - `AboutDialog`: Application information (version link, build id, cache version).
-  - `LicenseDialog`: The MIT license text.
+  - `AboutDialog`: A short description with links to the code repository, Cytoscape Desktop and the Cytoscape home page; build information (version linked to the release notes, build id, build date, cache version) with a copy button; and a link to the Cytoscape Web roadmap. The URLs are exported constants (`CODE_REPO_URL`, `CYTOSCAPE_DESKTOP_URL`, `CYTOSCAPE_HOME_URL`, `RELEASE_NOTES_URL`, `ROADMAP_URL`) and every link opens in a new tab with `rel="noopener noreferrer"`.
+  - `LicenseDialog`: The MIT license text, with a copy button.
   - `CitationDialog`: The papers to cite, with a copy button.
-  - `BugReportDialog`: Loads the Atlassian issue collector.
+  - `BugReportDialog`: Asks for reproduction steps and data, and loads the Atlassian issue collector. The **Report a Bug** button (`id="myCustomTrigger"`) stays disabled until the collector has attached its click handler; the collector's description is pre-filled with the version, operating system and browser (`getIssueEnvironment`), so the dialog does not ask for them.
+
+  Each dialog closes through the Close "X" in its top-right corner (`components/DialogCloseButton.tsx`, test id `<dialog>-close-button`). Bug Report also has a **Cancel** button next to its main action. Backdrop click and Esc are inert, as everywhere (`docs/specifications/DIALOG_DISMISS_POLICY.md`).
   - `ImportDatabaseSnapshotDialog` (lazy): file picker, then a confirmation; imports a database snapshot into the local cache and reloads.
 
 ## Behavior
@@ -61,13 +63,13 @@ item is appended after a divider at the bottom.
 
 - Clicking the **Help** trigger opens the toolbar `DropdownMenu` (a non-modal Popper shared with the other menus; see `MenuBar`).
 - Rows that navigate call `handleClose` after starting the action.
-- Rows that open a dialog call `openDialogFromMenu(<dialog>)`, which closes the menu first and then sets `openDialog`; the dialog's own Close button clears it. The menu is gone by the time the dialog shows, so the dialog stands alone.
+- Rows that open a dialog call `openDialogFromMenu(<dialog>)`, which closes the menu first and then sets `openDialog`; the dialog's Close "X" clears it. The menu is gone by the time the dialog shows, so the dialog stands alone.
 
 ## Design Decisions
 
 - **Dialogs are owned by `HelpMenu`, not by their rows**
   - A row lives inside the menu Popper and is unmounted whenever the menu closes — and the menu closes on focus-out, which a dialog's focus trap triggers. State kept in the row would vanish with it (this was a real regression after the menubar rework). Keeping the dialog beside the menu, as `LicenseDialog` always did, makes its lifetime independent of the menu.
-  - `DropdownMenu` still tolerates a row that renders its own portaled dialog (other menus and app-supplied rows do), but the Help menu does not rely on that.
+  - No toolbar menu row renders a dialog any more (`menuRowDialogs.test.ts` enforces it), and `DropdownMenu` no longer tolerates one.
 
 - **Separation of Concerns**
   - `HelpMenu` defines the menu structure and which dialog is open.

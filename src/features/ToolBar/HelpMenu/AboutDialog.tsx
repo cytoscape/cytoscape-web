@@ -1,10 +1,9 @@
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
-import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import {
   Box,
   Button,
-  DialogActions,
   DialogContent,
+  DialogTitle,
   Link,
   Paper,
   Tooltip,
@@ -13,11 +12,17 @@ import {
 import { ReactElement } from 'react'
 
 import { CyDialog } from '@/components/CyDialog'
+import { DialogCloseButton } from '@/components/DialogCloseButton'
 import logo from '../../../assets/cytoscape.svg'
 import packageInfo from '../../../../package.json'
 import { getDatabaseVersion } from '../../../data/db'
 import { logUi } from '../../../debug'
 
+export const CODE_REPO_URL = 'https://github.com/cytoscape/cytoscape-web'
+export const CYTOSCAPE_HOME_URL = 'https://home.cytoscape.org/'
+export const CYTOSCAPE_DESKTOP_URL = 'https://desktop.cytoscape.org/'
+export const ROADMAP_URL =
+  'https://github.com/cytoscape/cytoscape-home/blob/main/roadmap.md#web'
 // Release notes live on the GitHub releases index. The generic page is used
 // (rather than a version-specific tag) so the link never 404s when the
 // package version lags the latest published tag.
@@ -72,18 +77,58 @@ export const AboutDialog = ({
 
   return (
     <CyDialog data-testid="about-dialog" open={open}>
+      <DialogTitle sx={{ pr: 6 }}>About Cytoscape Web</DialogTitle>
+      <DialogCloseButton
+        data-testid="about-dialog-close-button"
+        onClose={onClose}
+      />
       <DialogContent sx={{ minWidth: 360 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
-          <img
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'flex-start',
+          }}
+        >
+          <Box
+            component="img"
             src={logo}
             alt="Cytoscape Web logo"
-            style={{ width: 40, height: 40 }}
+            sx={{ width: 300, height: 'auto' }}
           />
-          <Typography variant="h6">Cytoscape Web</Typography>
+          <Box sx={{ ml: 2 }}>
+            <Typography variant="body1" component="p">
+              An{' '}
+              <Link
+                href={CODE_REPO_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                open-source
+              </Link>{' '}
+              platform for network visualization and analysis, bringing{' '}
+              <Link
+                href={CYTOSCAPE_DESKTOP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Cytoscape
+              </Link>{' '}
+              workflows directly to the web.
+            </Typography>
+            <Typography variant="body1" component="p" sx={{ mt: 2 }}>
+              For more information about the Cytoscape ecosystem, visit our{' '}
+              <Link
+                href={CYTOSCAPE_HOME_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                website
+              </Link>
+              .
+            </Typography>
+          </Box>
         </Box>
-        <Typography variant="body1">
-          A web-based network visualization and analysis platform.
-        </Typography>
         <Paper
           variant="filled"
           sx={{
@@ -92,10 +137,7 @@ export const AboutDialog = ({
             color: (theme) => theme.palette.text.secondary,
           }}
         >
-          <Typography
-            variant="body1"
-            sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}
-          >
+          <Typography variant="body2" gutterBottom>
             Version:&nbsp;
             <Tooltip title="View release notes on GitHub">
               <Link
@@ -103,14 +145,8 @@ export const AboutDialog = ({
                 href={RELEASE_NOTES_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                sx={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 0.25,
-                }}
               >
                 {packageInfo.version}
-                <OpenInNewIcon sx={{ fontSize: 14 }} />
               </Link>
             </Tooltip>
           </Typography>
@@ -132,16 +168,18 @@ export const AboutDialog = ({
             Copy
           </Button>
         </Paper>
-      </DialogContent>
-      <DialogActions>
-        <Button
-          data-testid="about-dialog-close-button"
-          variant="contained"
-          onClick={onClose}
+        <Typography
+          variant="caption"
+          component="div"
+          sx={{ textAlign: 'right' }}
         >
-          Close
-        </Button>
-      </DialogActions>
+          See our{' '}
+          <Link href={ROADMAP_URL} target="_blank" rel="noopener noreferrer">
+            roadmap
+          </Link>{' '}
+          for what&apos;s planned next for Cytoscape Web.
+        </Typography>
+      </DialogContent>
     </CyDialog>
   )
 }
