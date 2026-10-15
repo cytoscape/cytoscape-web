@@ -35,6 +35,11 @@ The `Vizmapper/Forms` feature provides the editable UI for configuring visual pr
    - Confirm → store updates via `VisualStyleStore` and undo stack push if applicable
    - Cancel → local state reset; no store updates
 
+### Column and Mapping Type
+- A column or mapping type that `typesCanBeMapped` rejects for the other selection is disabled, with a tooltip naming the conflict.
+- The current column and mapping type stay enabled even when rejected. A CX2 file can carry a mapping the form would not offer, such as a passthrough from an integer column onto a color, and the form shows it instead of opening blank (#831).
+- Every option is a direct `MenuItem` child of its `Select`. MUI matches the `Select` value against those children's `value` props, so an option wrapped in a `Tooltip` leaves the current value unmatched.
+
 ### Discrete Mapping
 - Builds the value list from the selected column and existing mapping keys.
 - Allows multi-select operations (select all/none); batch delete of mapping entries.
