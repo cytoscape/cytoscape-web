@@ -32,14 +32,6 @@
     ]
   },
   {
-    "status": [
-      {
-        "error": "",
-        "success": true
-      }
-    ]
-  },
-  {
     "nodes": [
       {
         "id": 0,
@@ -493,6 +485,14 @@
         "mappings": [],
         "dependencies": {},
         "cytoscapeVersion": "3.0"
+      }
+    ]
+  },
+  {
+    "status": [
+      {
+        "error": "",
+        "success": true
       }
     ]
   }

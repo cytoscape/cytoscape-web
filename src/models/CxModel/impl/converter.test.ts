@@ -67,6 +67,32 @@ describe('converter', () => {
       expect(cyNetwork.network.nodes.map((n) => n.id)).toContain('3')
     })
 
+    // #830: the extractor used to skip the last entry, assuming it was status,
+    // so a file with status elsewhere lost its last aspect.
+    describe('reads nodes and edges wherever status sits (#830)', () => {
+      const nodes = { nodes: [{ id: 1 }, { id: 2 }, { id: 3 }] }
+      const edges = {
+        edges: [
+          { id: 1, s: 1, t: 2 },
+          { id: 2, s: 2, t: 3 },
+        ],
+      }
+      const status = { status: [{ success: true }] }
+      const orders: Record<string, Cx2> = {
+        'status first': [{ CXVersion: '2.0' }, status, nodes, edges],
+        'status between': [{ CXVersion: '2.0' }, nodes, status, edges],
+        'nodes last': [{ CXVersion: '2.0' }, edges, status, nodes],
+        'status last': [{ CXVersion: '2.0' }, nodes, edges, status],
+      }
+
+      it.each(Object.entries(orders))('%s', (_, cx2) => {
+        const cyNetwork = createCyNetworkFromCx2('order', cx2)
+
+        expect(cyNetwork.network.nodes).toHaveLength(3)
+        expect(cyNetwork.network.edges).toHaveLength(2)
+      })
+    })
+
     it('should create a CyNetwork with node attributes', () => {
       const networkId = 'test-network-3'
       const cx2: Cx2 = [

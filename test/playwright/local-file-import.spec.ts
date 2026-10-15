@@ -1,3 +1,4 @@
+import { Page } from '@playwright/test'
 import path from 'path'
 
 import {
@@ -16,6 +17,23 @@ const CX2_FIXTURE = path.resolve(
   __dirname,
   '../fixtures/cx2/valid/small-network.valid.cx2',
 )
+
+// Node and edge counts of the only workspace network, via window.CyWebApi.
+const getElementCounts = async (
+  page: Page,
+): Promise<{ nodes: number; edges: number }> =>
+  page.evaluate(() => {
+    const api = (window as any).CyWebApi
+    const ids = api?.workspace.getNetworkIds()
+    const networkId = ids?.success ? ids.data.networkIds[0] : undefined
+    if (networkId === undefined) return { nodes: -1, edges: -1 }
+    const nodes = api.element.getNodeIds(networkId)
+    const edges = api.element.getEdgeIds(networkId)
+    return {
+      nodes: nodes.success ? nodes.data.nodeIds.length : -1,
+      edges: edges.success ? edges.data.edgeIds.length : -1,
+    }
+  })
 
 test.describe('Local Network File Import', () => {
   test('imports a CX2 file through the Data menu', async ({ page }) => {
@@ -50,6 +68,8 @@ test.describe('Local Network File Import', () => {
     await expect(page.getByText('Test Network 20 nodes').first()).toBeVisible({
       timeout: 15000,
     })
+    // #830 regression: every aspect is read, not only those before the last.
+    expect(await getElementCounts(page)).toEqual({ nodes: 20, edges: 30 })
 
     // #665 regression: the view itself must render. The import races the
     // debounced IndexedDB persist, and losing that race used to replace the

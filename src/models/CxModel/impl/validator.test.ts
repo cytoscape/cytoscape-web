@@ -96,6 +96,28 @@ describe('validateCx2Structure', () => {
     })
   })
 
+  // #830: CX2 puts status last, but readers find aspects by name, so a file
+  // with status elsewhere imports whole. It passes with a warning.
+  describe('status position', () => {
+    const misplaced = () => [
+      { CXVersion: '2.0' },
+      { status: [{ success: true }] },
+      { nodes: [{ id: 1 }] },
+    ]
+
+    it('accepts status before other aspects, with a warning', () => {
+      const result = validateCx2Structure(misplaced())
+      expect(result.isValid).toBe(true)
+      expect(result.warnings).toHaveLength(1)
+      expect(result.warnings[0].message).toMatch(/status/i)
+    })
+
+    it('does not warn when status is last', () => {
+      const result = validateCx2Structure(createMinimalValidCx())
+      expect(result.warnings).toHaveLength(0)
+    })
+  })
+
   describe('preamble validation', () => {
     it('should accept preamble with optional hasFragments', () => {
       const result = validateCx2Structure([

@@ -40,14 +40,6 @@
     ]
   },
   {
-    "status": [
-      {
-        "error": "",
-        "success": true
-      }
-    ]
-  },
-  {
     "attributeDeclarations": [
       {
         "nodes": {
@@ -517,6 +509,14 @@
           "interaction": "inhibits",
           "weight": 1.45
         }
+      }
+    ]
+  },
+  {
+    "status": [
+      {
+        "error": "",
+        "success": true
       }
     ]
   }

@@ -102,10 +102,23 @@ export const validateCx2Structure = (input: unknown): ValidationResult => {
       warnings: [],
     }
   }
+  // CX2 puts status last. Readers find aspects by name, so a file with status
+  // elsewhere still imports whole; say so instead of rejecting it (#830).
+  const warnings: ValidationIssue[] = []
+  const statusIndex = input.findIndex((aspect) =>
+    Object.prototype.hasOwnProperty.call(aspect, 'status'),
+  )
+  if (statusIndex !== input.length - 1) {
+    warnings.push({
+      message: `Status aspect should be the last entry, found at index ${statusIndex}`,
+      severity: 'warning',
+      path: [statusIndex.toString()],
+    })
+  }
   return {
     isValid: true,
     errors: [],
-    warnings: [],
+    warnings,
   }
 }
 
