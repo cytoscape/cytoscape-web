@@ -1,0 +1,457 @@
+# Quick Tour of Cytoscape Web
+
+<a id="quick_tour_of_cytoscape_web" />
+
+This page describes the layout of Cytoscape Web and what each menu, panel
+and tool does.
+
+When your workspace is empty, the network area shows **Welcome to Cytoscape
+Web** with four buttons: **Open Sample Networks**, **Import from file**,
+**Load from NDEx** and **Take a tour**. **Open Sample Networks** loads a set
+of example networks from NDEx, so you can try every feature right away.
+
+The first time you open Cytoscape Web, a welcome dialog explains the main
+ideas: workspace, networks, styles, tables and hierarchies. Choose
+**Take the tour** for a guided walk through the interface, or **Explore on my
+own** to close it. You can start the tour again at any time from
+**Help → Take a tour**.
+
+When a network is loaded, Cytoscape Web looks similar to this:
+
+![Cytoscape Web with a network loaded](manual-assets/Quick_Tour/quick_tour_2.jpg)
+
+The screen has four areas:
+
+- The **[menu bar](#menu_bar)** across the top. It holds the menus, and at
+  the right the **[search box](#search_tool)**, the light/dark mode button
+  and the **[sign-in button](#login)**.
+- The **side panel** on the left, with the tabs **WORKSPACE**, **STYLE** and
+  **FILTER**. The **[WORKSPACE](#workspace_tab)** tab lists the networks in
+  your workspace. Only one of them is shown at a time: the *current*
+  network.
+- The **[network view](#network_view)** in the middle, which draws the
+  current network.
+- The **[table panel](#table_panel)** at the bottom, which shows the data
+  columns of the nodes, edges and network.
+
+Drag the borders between areas to resize them. The side panel and the table
+panel each have a **Close panel** button to hide them and give the network
+view more room. A second panel on the right holds the
+**[Sub Network Viewer](#cell_view)** and panels added by apps. Open it with
+the arrow button (**Open panel**) at the top right of the window.
+
+<a id="menu_bar" />
+
+## The Menu Bar
+
+The **Edit**, **Analysis** and **Tools** menus are inactive until the
+workspace holds at least one network. Apps and service apps can add their own
+items to any menu. See [Extending Cytoscape Web](extending).
+
+<a id="data" />
+
+### Data
+
+The **Data** menu opens, imports, saves and removes networks:
+
+- **Open Network(s) from NDEx...** — search NDEx and open one or more
+  networks.
+- **Open Workspace from NDEx...** — open a workspace you saved to NDEx.
+  Requires you to sign in.
+- **Open Sample Networks** — load the example networks.
+- **Open Network in Cytoscape Desktop** — send the current network to the
+  Cytoscape desktop application.
+- **Import → Network from File...** and **Import → Table from File...** —
+  load a network, or add columns to the current network, from a file.
+- **Duplicate Network** — add a copy of the current network to the
+  workspace.
+- **Save Network to NDEx** — save changes to a network that came from NDEx.
+- **Save Copy to NDEx** — save the current network to NDEx as a new network.
+- **Download Network File (.cx2)** — save the current network to your
+  computer.
+- **Save Workspace** and **Save Workspace As...** — save the whole workspace
+  to NDEx.
+- **Export → Network to Image...** — save a PNG, SVG or PDF image of the
+  network view.
+- **Remove Current Network** and **Remove All Networks** — remove networks
+  from the workspace. You are asked to confirm; this cannot be undone.
+- **Clear Local Database** — delete everything Cytoscape Web stores in your
+  browser and start over. See [Advanced Topics](advanced).
+
+The NDEx save items need you to sign in. For details, see
+[Creating and Saving Networks](creating-networks) and
+[Exporting Your Data](export).
+
+<a id="edit" />
+
+### Edit
+
+The **Edit** menu changes the network itself:
+
+- **Create Node** — add a node near the top left of the view.
+- **Create Edge** — connect two selected nodes. Select at least two nodes
+  first; if more are selected, the first two in the selection are used.
+- **Delete Selected Nodes** and **Delete Selected Edges**.
+- **Undo** and **Redo** — the item names the change it will undo or redo,
+  for example **Undo - Apply layout**.
+
+You can also right-click in the network view. On empty space, **Create
+Node** adds a node where you clicked. On a node, **Create Edge from this
+Node** starts an edge: click a second node to finish it, or press Esc to
+cancel.
+
+Nodes and edges cannot be created in a hierarchy network.
+
+Undo keeps the last 20 changes for each network. It covers edits such as
+layouts, table edits, style changes and node or edge changes. Some actions
+cannot be undone, for example applying a filter.
+
+<a id="layout" />
+
+### Layout
+
+The **Layout** menu arranges the nodes of the current network. Choosing an
+algorithm runs it with its current settings and then fits the network to the
+view.
+
+**Apply Default Layout** runs the default algorithm, which is **gForce Layout
+(force-directed)** unless you change it. Below it, the algorithms are grouped
+by type:
+
+- Force-directed: **Compound Spring Embedder Layout (CoSE)**, **Cosmos Layout
+  (GPU-based, nondeterministic)**, **gForce Layout (force-directed)**
+- Geometric: **Circular Layout**, **Concentric Layout**, **Grid Layout**,
+  **Radial Layout (Concentric Layout by G6)**
+- Hierarchical: **Biological Flow Layout**, **Hierarchical Layout (DAGRE)**
+
+Layouts added by apps follow. **Compound Spring Embedder Layout (CoSE)** is
+inactive for networks with more than 2,000 nodes and edges combined. Hover
+over an algorithm to read what it does.
+
+The last two items are:
+
+- **Layout Tools** — opens the [Layout Tools](#layout_tools) panel in the
+  lower-left corner of the network view.
+- **Settings...** — opens the **Layout Option Editor**. Pick an algorithm,
+  change its parameters, and click **Apply Layout**. Tick **Set as default**
+  to make it the algorithm that **Apply Default Layout** runs.
+
+Layouts cannot be applied while the **Cell View** of a hierarchy is shown.
+
+<a id="analysis" />
+
+### Analysis
+
+The **Analysis** menu has two items:
+
+- **Run LLM Query** — sends the genes of the selected systems to a large
+  language model (LLM), which describes the biological processes they share.
+  It works on hierarchy networks only: select one or more systems first. The
+  answer appears in the **LLM QUERY** tab of the side panel, where
+  **Regenerate response** asks again.
+- **LLM Query Options...** — choose the **Provider**, the **LLM Model**, the
+  API key and the **Prompt**.
+
+Three providers are available:
+
+- **OpenAI** — the default. Needs your own OpenAI API key, and OpenAI bills
+  you for each query. The default model is `gpt-6-luna`; `gpt-6.1-sol` and
+  `gpt-5` are also suggested, and you can type any other model name.
+- **Ollama (local)** — a model running on your own computer. No API key is
+  needed. The **Endpoint URL** defaults to `http://localhost:11434/v1`.
+- **Custom (OpenAI-compatible)** — any other service that speaks the OpenAI
+  API. Enter its **Endpoint URL** and, if it needs one, an API key.
+
+**Run LLM Query** stays inactive until a provider is set up.
+
+<Note>
+Cytoscape Web keeps your API key in memory only, and only while the tab is
+open: you enter it again after a reload. The key goes only to the provider
+you entered it for, and only over HTTPS or to your own computer.
+</Note>
+
+<a id="tools" />
+
+### Tools
+
+The **Tools** menu holds **Merge Networks**, which combines two or more
+networks into one. See [Merging Networks](merge).
+
+<a id="apps" />
+
+### Apps
+
+The **Apps** menu lists the items of the apps and service apps you have
+installed. **Manage Apps...** opens the dialog where you install, turn on and
+remove them. See [Extending Cytoscape Web](extending).
+
+<a id="help" />
+
+### Help
+
+The **Help** menu holds:
+
+- **About Cytoscape Web** — the version and build information.
+- **Take a tour** — the guided tour of the interface.
+- **User Manual** — this manual, in a new tab.
+- **Developer** — **Developer's Guide**, **Code Repository**, and
+  **Export Database Snapshot** / **Import Database Snapshot...** for saving
+  and restoring your local data (see [Advanced Topics](advanced)).
+- **License**
+- **Citation** — how to cite Cytoscape Web.
+- **Report a Bug** — send a bug report to the Cytoscape team.
+
+<a id="search_tool" />
+
+### Search Box
+
+The search box in the menu bar (**Search current network**) finds nodes and
+edges in the current network and selects them. Type a query and press Enter,
+or click the search button. The trash button, shown once you type, clears
+the query and the selection.
+
+The search looks in every text column (String and list of String columns).
+Numbers and true/false columns are not searched. Searches ignore case.
+Spaces and commas split the query into separate terms; put a phrase in double
+quotes to search for it as one term, for example `"cell cycle", protein`.
+Hover over the search box to see more examples.
+
+Click ![Search settings button](manual-assets/Quick_Tour/search_settings.png)
+to open the search settings:
+
+- **Operator** — **OR** finds elements that match any term; **AND** finds
+  elements that match every term.
+- **Search Target** — **Nodes**, **Edges**, or both.
+- **Search Mode** — **Exact Match** finds only cells whose whole value
+  matches a term. **Contains** also finds cells where the term is part of a
+  longer value.
+
+By default, searches use **OR**, look at **Nodes** only and use **Exact
+Match**. With these defaults, `gal4` finds the node GAL4 but `gal` finds
+nothing. With **Contains**, `gal` finds GAL4, GAL80 and every other node
+whose text contains "gal".
+
+### Light and Dark Mode
+
+The button to the left of the sign-in button switches between light and dark
+mode. Its tooltip names the mode it turns on.
+
+<a id="login" />
+
+### Sign In Button
+
+The round button at the far right of the menu bar,
+![Sign-in button](manual-assets/Quick_Tour/login_icon.png), signs you in to
+your NDEx account. Your NDEx account is the account for all Cytoscape
+ecosystem applications. Signing in lets you save networks and workspaces to
+NDEx and open your private networks.
+
+Click it and the browser shows the NDEx sign-in page:
+
+![NDEx sign-in page](manual-assets/Quick_Tour/ndex_login.jpg)
+
+Here you can:
+
+- **Sign in** with your NDEx user name and password, or with Google.
+- **Register** a new account. Signing in with Google creates one in a few
+  clicks.
+
+After you sign in, the button shows your initial. Click it to see your name
+and to **Logout**.
+
+<Note>
+The first time you sign in to Cytoscape Web with an NDEx account, you may be
+asked to verify your email address. Do this in the same browser and on the
+same device.
+</Note>
+
+<a id="network_management" />
+
+## Network Management
+
+<a id="workspace_tab" />
+
+### Workspace
+
+A workspace is a collection of networks, like a session in Cytoscape
+Desktop. It can hold many networks, but the network view shows one at a
+time.
+
+The **WORKSPACE** tab of the side panel has three parts:
+
+- A search bar that searches NDEx for networks to open. Apps can add other
+  search sources to it.
+- The name of the workspace.
+- The list of networks. Click a network to show it.
+
+Each network in the list shows its name, its node and edge counts, and a
+label for where it came from:
+
+- ![NDEx label](manual-assets/Quick_Tour/ndex_labelx24.png) — the network
+  was opened from NDEx.
+- ![Local label](manual-assets/Quick_Tour/local_labelx24.png) — the network
+  was imported from a file or created in Cytoscape Web. Its name is the file
+  name.
+
+The counts read like `N: 33 (2) / E: 45 (0)`: 33 nodes, 2 of them
+selected, and 45 edges, none selected.
+
+The **...** button on a network opens a menu of actions for it: **Save to
+NDEx** (or **Save a Copy to NDEx**), **Edit Network Properties**, **Open
+Network in Cytoscape Desktop**, **Duplicate Network**, **Download Network
+File (.cx2)**, **Export Network to Image**, **Share Network (Copy URL to
+Clipboard)** and **Remove the Network from Workspace**. Most of these act on
+the current network only; click a network first to use them. A dot on the
+**...** button means the network has changes that are not saved to NDEx.
+
+A workspace can be saved to NDEx and opened again later from the **Data**
+menu. See [Creating and Saving Networks](creating-networks).
+
+#### Network Size Limits
+
+Web browsers cannot draw very large networks, so Cytoscape Web limits what
+it opens:
+
+- **From NDEx:** a network opens if it has at most 20,000 edges. A network
+  with more edges opens only if it has fewer than 26,000 nodes and edges
+  combined and its file is smaller than 500 MB. Larger networks are shown but
+  cannot be selected in **Open Network(s) from NDEx...**.
+- **From a file:** the file must be smaller than 5 MB.
+
+A network without saved node positions gets a layout when it opens: **gForce
+Layout (force-directed)** for a network, **Hierarchical Layout (DAGRE)** for a
+hierarchy, and **Grid Layout** when the network has 1,000 or more nodes and
+edges combined. A network with more than 26,000 nodes and edges combined gets
+no automatic layout.
+
+<a id="style_tab" />
+
+### Style
+
+The **STYLE** tab sets how the network looks: colors, shapes, sizes, labels
+and arrows, fixed or driven by column data. See [Styles](styles).
+
+### Filter
+
+The **FILTER** tab selects or shows only the nodes and edges that meet
+conditions you set, such as a column value or a minimum degree. See
+[Filters](filters).
+
+<a id="layout_tools" />
+
+### Layout Tools
+
+**Layout Tools** stretches or squeezes the current layout. It appears in two
+places: as a collapsed section at the bottom of the side panel (click it to
+expand), and as a floating panel in the network view, opened from
+**Layout → Layout Tools**.
+
+![Layout Tools expanded below the workspace list](manual-assets/Quick_Tour/quick_tour_9.jpg)
+
+Under **Scale**, choose **Width**, **Height** or **Both**, then drag the
+slider. It scales the node positions from 0.1 times to 10 times. The
+circular-arrow button on the right resets the slider to the middle and keeps
+the current positions, so you can scale again from there. Scaling can be
+undone with **Edit → Undo**.
+
+<a id="network_viewer" />
+
+## Network Viewer
+
+<a id="network_view" />
+
+### Network View
+
+The network view draws the current network. Click a node or edge to select
+it; Shift-drag to select several at once. Scroll to zoom and drag the
+background to pan.
+
+Four buttons at the bottom right of the network view act on the network:
+
+- ![Apply default layout button](manual-assets/Quick_Tour/apply_default_layout.png)
+  **Apply default layout** — runs the default layout. Change the default in
+  **Layout → Settings...**.
+- ![Fit button](manual-assets/Quick_Tour/fit_to_screen.png) **Fit network to
+  the window** — zooms so the whole network fits in the view.
+- ![Open in Cytoscape button](manual-assets/Quick_Tour/open_in_cytoscape.png)
+  **Open in Cytoscape** — sends the network to the Cytoscape desktop
+  application. It needs Cytoscape Desktop running on your computer (default
+  port: 1234), and it does not work in Safari. The first time, Cytoscape Web
+  explains the browser's permission prompt for reaching your computer.
+- ![Share button](manual-assets/Quick_Tour/share_url.png) **Share** — copies
+  a link to the network, including the current view and selection, to your
+  clipboard. It works only for networks saved to NDEx; save a local network
+  to NDEx first.
+
+<a id="cell_view" />
+
+### Cell View
+
+When the current network is a hierarchy, two tabs appear at the top of the
+network view: **Tree View**, the network drawn as nodes and edges, and
+**Cell View**, the hierarchy drawn as nested circles (circle packing):
+
+![Cell View of a hierarchy](manual-assets/Quick_Tour/quick_tour_10.jpg)
+
+In **Cell View**, each circle is a system. A system can contain smaller
+systems, much like Russian nesting dolls. Click a circle to select that
+system. Scroll or double-click to zoom in; the labels of smaller systems
+appear as you zoom. Click the background to clear the selection.
+
+When you select a system, its interaction network appears in the **Sub
+Network Viewer** in the right panel:
+
+![Sub Network Viewer showing the interactions of a selected system](manual-assets/Quick_Tour/quick_tour_11.jpg)
+
+Open the right panel with the arrow button
+![Open panel button](manual-assets/Quick_Tour/sub_net_slider.png) at the
+right edge of the window, and close it with the arrow at the top of the
+panel. Selecting genes in the **Sub Network Viewer** highlights them in the
+**Cell View**.
+
+When the hierarchy's interaction data comes from more than one source, a
+filter below the **Sub Network Viewer** lets you show or hide each source.
+
+Hierarchy networks also add the **LLM QUERY** tab to the side panel. See
+[Analysis](#analysis).
+
+<a id="tables" />
+
+## Tables
+
+<a id="table_panel" />
+
+### Table Panel
+
+The table panel at the bottom of the window shows and edits the network's
+data. It has three tabs: **Nodes**, **Edges** and **Network**. Each column is
+an attribute of the nodes or edges, such as a gene name or an expression
+value.
+
+When nothing is selected in the network view, the **Nodes** table lists
+every node. When you select nodes, it lists only the selected ones, and the
+tab shows how many, for example **Nodes (12)**. The **Edges** table works
+the same way.
+
+Above the columns are two tools:
+
+- ![Insert new column button](manual-assets/Quick_Tour/add_col.png)
+  **Insert new column** — add a column. You choose its name, data type and an
+  optional default value.
+- ![Import table button](manual-assets/Quick_Tour/import_table.png)
+  **Import table from file...** — add columns from a table file.
+
+Double-click a cell to edit it. When a cell is selected, two more buttons
+appear:
+
+- **Apply Value to Column** — copy the cell's value into every row of the
+  column.
+- **Apply Value to Selected Nodes** (or **Edges**) — copy the value into every
+  row the table shows.
+
+Tick the checkboxes at the left of some rows to show **Select Nodes** (or
+**Select Edges**), which selects those elements in the network view.
+
+All table edits can be undone with **Edit → Undo**. For sorting, list
+values, the right-click menu and importing tables, see
+[Node and Edge Column Data](node-and-edge-column-data).
