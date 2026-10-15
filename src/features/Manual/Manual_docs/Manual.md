@@ -59,7 +59,8 @@ ManualApp            route element: app bar, page list, page, "On this page"
 
 ### LiveDemo
 
-- Clears the sandbox database once per document (`sandbox.ts`), then loads a
+- Tries once per document to clear the sandbox database (`sandbox.ts`); a
+  failed clear leaves old rows behind and the demo still runs. It then loads a
   bundled fixture with `networkApi.createNetworkFromCx2` and renders
   `CyjsRenderer` and `VizmapperView` on it.
 - **Reset** deletes the demo network and loads a fresh copy.
