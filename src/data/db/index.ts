@@ -3,6 +3,7 @@ import 'dexie-observable'
 import Dexie, { IndexableType, Table as DxTable } from 'dexie'
 
 import { logDb, registerDebugTool } from '../../debug'
+import { currentDbScope, dbNameFor } from './dbScope'
 import { getTabId } from '@/data/tabState/tabId'
 import { APP_DATA_GLOBAL_SCOPE, AppDataRow } from '@/models/AppDataModel'
 import { CyApp } from '../../models/AppModel/CyApp'
@@ -73,8 +74,9 @@ import {
   serializeWorkspaceFilter,
   WorkspaceFilterRow,
 } from './serialization/workspaceFilter'
-// Unique, fixed DB name for the Cytoscape Web
-export const DB_NAME: string = 'cyweb-db'
+// `cyweb-db` for the editor, `cyweb-manual-db` for the in-app manual. Fixed
+// for the life of the document: see dbScope.ts.
+export const DB_NAME: string = dbNameFor(currentDbScope())
 
 // Current version of the DB (integer only).
 // If older version is found, the migration

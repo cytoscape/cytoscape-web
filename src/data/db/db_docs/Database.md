@@ -24,6 +24,27 @@ The database uses Dexie (IndexedDB wrapper) with the following object stores:
 - **`opaqueAspects`**: Non-core aspects attached to networks
 - **`undoStacks`**: Undo/redo stack data
 
+### Database Scope
+
+A tab opens one of two databases, chosen once from the URL at page load
+(`dbScope.ts`):
+
+| Scope | URL | Database | Reset channel |
+| --- | --- | --- | --- |
+| `app` | everything except `/manual/*` | `cyweb-db` | `cyweb-ui-events` |
+| `manual` | `/manual/*` under the base URL | `cyweb-manual-db` | `cyweb-manual-ui-events` |
+
+The manual renders real components on a fixture network, and every store
+mutation persists. A separate database keeps those writes out of the user's
+workspace, and cross-tab sync cannot carry them into an editor tab. The
+separate channel keeps a manual reset from reloading editor tabs.
+
+`DB_NAME` and `UI_EVENTS_CHANNEL` are resolved at module evaluation and never
+change. Links between the manual and the editor are full page loads.
+
+localStorage keys (onboarding, crash consent, network search, debug flag) stay
+shared across scopes. They are per-browser preferences, not workspace data.
+
 ### Database Versioning
 
 The database uses version-based migrations. The current version is defined in `currentVersion` (currently version 7). When the database schema changes:
