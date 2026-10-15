@@ -107,6 +107,18 @@ describe('manual content', () => {
     },
   )
 
+  it('carries the privacy policy text of docs/privacy-policy.md', () => {
+    // Two copies of one legal text: the repository file and the manual page.
+    // Everything from the "Last Updated" line on must be identical.
+    const policyBody = (source: string): string =>
+      source.slice(source.indexOf('**Last Updated'))
+    expect(policyBody(read('privacy-policy'))).toBe(
+      policyBody(
+        readFileSync(path.join(ROOT, 'docs/privacy-policy.md'), 'utf8'),
+      ),
+    )
+  })
+
   it('every image in public/manual-assets is used by a page', () => {
     const used = new Set(
       MANUAL_PAGES.flatMap((p) =>
