@@ -78,7 +78,8 @@ describe('converter', () => {
         ],
       }
       const status = { status: [{ success: true }] }
-      const orders: Record<string, Cx2> = {
+      // The Cx2 type encodes status-last; a file from another writer need not.
+      const orders: Record<string, unknown[]> = {
         'status first': [{ CXVersion: '2.0' }, status, nodes, edges],
         'status between': [{ CXVersion: '2.0' }, nodes, status, edges],
         'nodes last': [{ CXVersion: '2.0' }, edges, status, nodes],
@@ -86,7 +87,7 @@ describe('converter', () => {
       }
 
       it.each(Object.entries(orders))('%s', (_, cx2) => {
-        const cyNetwork = createCyNetworkFromCx2('order', cx2)
+        const cyNetwork = createCyNetworkFromCx2('order', cx2 as Cx2)
 
         expect(cyNetwork.network.nodes).toHaveLength(3)
         expect(cyNetwork.network.edges).toHaveLength(2)
