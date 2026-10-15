@@ -48,6 +48,10 @@ no `Select` root in `RootMenu`), and the App API is unchanged.
   Selected Nodes (Edit menu) then deletes hidden nodes too, as it does in
   Cytoscape Desktop.
 - Selection changes do not mark the network modified.
+- Selecting never shows a hidden element in the canvas. The renderer's
+  selection sync (`NetworkPanel/CyjsRenderer/syncCySelection.ts`) only selects
+  and unselects; it used to call Cytoscape.js's `show()`, whose element-level
+  `display: element` overrode the visibility bypasses until the next reload.
 
 ### Hide Selected Nodes and Edges
 

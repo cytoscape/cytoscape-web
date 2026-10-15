@@ -136,6 +136,59 @@ test.describe('Select menu', () => {
       .toEqual({ nodes: 0, edges: 0 })
   })
 
+  test('hidden elements stay hidden in the canvas when selected', async ({
+    page,
+  }) => {
+    // window.debug.cy (registerDebugTool in CyjsRenderer) needs debug on
+    await page.addInitScript(() => {
+      localStorage.setItem('cyweb-debug-enabled', 'true')
+    })
+    await gotoAndWaitReady(page)
+    const networkId = await seedNetwork(page)
+    const [beta] = await nodeIdsByName(page, networkId, ['beta'])
+    await page.waitForFunction(
+      (node) =>
+        (window as any).debug?.cy?.getElementById(node).nonempty() === true,
+      beta,
+    )
+    // Rendered visibility of beta and of the edges, as Cytoscape.js sees it
+    const rendered = (): Promise<{ beta: boolean; visibleEdges: number }> =>
+      page.evaluate((node) => {
+        const cy = (window as any).debug.cy
+        return {
+          beta: cy.getElementById(node).visible(),
+          visibleEdges: cy.edges().filter((e: any) => e.visible()).length,
+        }
+      }, beta)
+
+    await page.evaluate(
+      ({ id, node }) =>
+        (window as unknown as ApiWindow).CyWebApi.selection.exclusiveSelect(
+          id,
+          [node],
+          [],
+        ),
+      { id: networkId, node: beta },
+    )
+    await clickSelectMenuRow(page, 'select-menu-hide-selected')
+    await expect.poll(rendered).toEqual({ beta: false, visibleEdges: 1 })
+
+    // Selecting (and deselecting) everything must not show them again (#834)
+    await clickSelectMenuRow(page, 'select-menu-select-all')
+    await expect
+      .poll(() => selectionCounts(page, networkId))
+      .toEqual({ nodes: 4, edges: 3 })
+    expect(await rendered()).toEqual({ beta: false, visibleEdges: 1 })
+    await clickSelectMenuRow(page, 'select-menu-deselect-all')
+    await expect
+      .poll(() => selectionCounts(page, networkId))
+      .toEqual({ nodes: 0, edges: 0 })
+    expect(await rendered()).toEqual({ beta: false, visibleEdges: 1 })
+
+    await clickSelectMenuRow(page, 'select-menu-show-all')
+    await expect.poll(rendered).toEqual({ beta: true, visibleEdges: 3 })
+  })
+
   test('Show All releases a FILTER tab filter applied in show mode', async ({
     page,
   }) => {
