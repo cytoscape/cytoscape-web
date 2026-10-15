@@ -6,6 +6,7 @@ import { useNetworkStore } from '@/data/hooks/stores/NetworkStore'
 import { useTableStore } from '@/data/hooks/stores/TableStore'
 import { useViewModelStore } from '@/data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '@/data/hooks/stores/VisualStyleStore'
+import { showAll } from '@/data/select/selectCommands'
 import { DisplayMode } from '@/models/FilterModel/DisplayMode'
 import {
   FilterPredicate,
@@ -223,6 +224,24 @@ describe('FilterTab', () => {
     expect(screen.getByTestId('filter-status').textContent).toBe(
       'Showing 1 node and 1 edge in 0 ms',
     )
+  })
+
+  it('stops reporting a show-mode run once Show All releases the filter', () => {
+    useFilterStore.setState({
+      workspaceFilters: { f1: nameContains('alpha') },
+      selectedWorkspaceFilterId: 'f1',
+    })
+    render(<FilterTab networkId={NET} />)
+    fireEvent.click(
+      within(screen.getByTestId('filter-display-mode-show')).getByRole('radio'),
+    )
+    expect(screen.getByTestId('filter-status').textContent).toMatch(/^Showing/)
+
+    act(() => {
+      showAll(NET)
+    })
+    expect(useFilterStore.getState().appliedWorkspaceFilters).toEqual({})
+    expect(screen.getByTestId('filter-status').textContent?.trim()).toBe('')
   })
 
   it('warns about a condition on a column the network does not have', () => {

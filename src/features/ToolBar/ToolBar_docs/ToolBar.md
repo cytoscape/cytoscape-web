@@ -2,7 +2,7 @@
 
 ## Overview
 
-The ToolBar feature provides the main application toolbar with menu items for data operations, editing, layout, analysis, tools, apps, help, and license information. It also includes a search box and login button. The toolbar is always visible at the top of the application.
+The ToolBar feature provides the main application toolbar with menu items for data operations, editing, selection and visibility, layout, analysis, tools, apps, help, and license information. It also includes a search box and login button. The toolbar is always visible at the top of the application.
 
 ## Architecture
 
@@ -14,13 +14,14 @@ The ToolBar is organized into menu categories, each with its own submenu system.
 - **ToolBar.tsx**: Main toolbar container
   - AppBar with static positioning
   - Logo display
-  - Menu items (Data, Edit, Layout, Analysis, Tools, Apps, Help, License)
+  - Menu items (Data, Edit, Select, Layout, Analysis, Tools, Apps, Help, License)
   - Search box
   - Login button
 
 ### Menu Categories
 - **DataMenu**: Data import/export operations
 - **EditMenu**: Editing operations (undo/redo, etc.)
+- **SelectMenu**: Select or deselect all nodes and edges, hide the selection, show all (Ctrl/⌘+A selects all); see `SelectMenu/SelectMenu_docs/SelectMenu.md`
 - **LayoutMenu**: Layout algorithm selection
 - **AnalysisMenu**: Analysis tools and LLM queries
 - **ToolsMenu**: Utility tools
