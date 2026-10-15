@@ -143,6 +143,31 @@ The images in `public/manual-assets/` come from the Read the Docs manual
 a `LiveDemo` or a generated table where one fits, and remove an image when
 its page no longer uses it.
 
+## Manual Drift Check
+
+`scripts/check-manual-drift.mjs` lists the pages a branch's code changes ask
+someone to review. The rules are in `drift.ts`, tested in `drift.test.ts`.
+
+- A page is listed when a changed file matches its `sources` and the page's
+  `.mdx` did not change. Tests, `test/**` and the manual itself never count.
+- `DEMO_COPIES` names manual code that copies app logic instead of importing
+  it (`DemoUrlPanel`, `DemoApiPanel`, `BrowserStorageView`). A change to the
+  logic lists the copy too, and editing the page does not clear it.
+- `AGENTS.md` (Docs Change With Behavior) tells every agent to run the
+  check and to update or clear each listed page.
+- A trailer clears a page: `Manual-Reviewed: merge (tooltip wording only)`,
+  several pages separated by commas, or `all`. The reason in parentheses is
+  required. The check reads commit messages and the PR body.
+
+| Where | Mode |
+| --- | --- |
+| CI job **Manual Drift** (`.github/workflows/ci.yml`) | Warning: annotations and a job summary; the job passes. Set `MANUAL_DRIFT_STRICT: '1'` to block. |
+| Agents and people, before pushing | `node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-manual-drift.mjs [--base <ref>] [--strict]` |
+
+Keep `sources` narrow: list the files whose behavior the page states, not the
+whole feature directory. Against the last 50 merges into `development`, the
+current globs list at least one page for 30.
+
 ## Integration Points
 
 - **`src/data/db/dbScope.ts`** — the sandbox database and reset channel.
