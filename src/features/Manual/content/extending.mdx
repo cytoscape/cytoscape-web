@@ -10,7 +10,7 @@ You can add features to Cytoscape Web in two ways:
   them network or table data, and applies the result they send back.
 
 You manage both in **Apps → Manage Apps...**. The dialog has two tabs:
-**Apps** and **Service Apps**.
+Apps and Service Apps.
 
 ## Apps
 
@@ -23,21 +23,21 @@ apps from the Cytoscape team, such as **Hello Cytoscape World App**,
 **Network Workflow Examples** and **Network Statistics**. **Refresh**, at the
 bottom of the dialog, loads the catalog again.
 
-Once an app is on, its menu items appear in the **Apps** menu, above
+Once an app is on, its menu items appear in the Apps menu, above
 **Manage Apps...**. An app can also add a panel or a dialog of its own.
 
 A row can carry other marks:
 
-- **failed** — the app could not be loaded. The reason is shown under the
-  description. If trying again can help, the row has a **Retry** button.
-- **App Store** — you installed the app yourself, from a URL or a link.
-- **Snapshot** — the app came with a workspace you opened from NDEx.
-- **orphan** — the app is no longer in the catalog. Turn it off, then click
-  the trash icon (**Remove orphan app**) to remove it.
+| Mark | Meaning |
+| --- | --- |
+| failed | The app could not be loaded. The reason is shown under the description. If trying again can help, the row has a **Retry** button. |
+| App Store | You installed the app yourself, from a URL or a link. |
+| Snapshot | The app came with a workspace you opened from NDEx. |
+| orphan | The app is no longer in the catalog. Turn it off, then click the trash icon (**Remove orphan app**) to remove it. |
 
 ### Installing an App from a URL
 
-1. Open **Apps → Manage Apps...** and stay on the **Apps** tab.
+1. Open **Apps → Manage Apps...** and stay on the Apps tab.
 2. Under **Install from URL**, paste the app's manifest URL into
    **Single-entry manifest URL**. This is a `.json` address, not the address
    of a `remoteEntry.js` file.
@@ -65,7 +65,7 @@ https://web.cytoscape.org/?installApp=<app or service URL>
 
 Nothing is installed until you agree. Cytoscape Web shows the dialog
 **Install into this workspace?**, which lists each app's name, kind (**App**
-or **Service**), version, author, description and URL. Click **Install** to
+or **Service**), version, author, description and URL. Click Install to
 add all of them, or **Cancel** to add none. Apps installed this way are
 turned on.
 
@@ -74,7 +74,7 @@ already installed, Cytoscape Web skips it and says "Already installed".
 
 ### Using a Different App Catalog
 
-**Advanced**, at the bottom of the **Apps** tab, is for developers. It
+**Advanced**, at the bottom of the Apps tab, is for developers. It
 replaces the catalog with one you supply:
 
 - **Custom manifest URL** — type the catalog's URL and click **Apply**.
@@ -105,7 +105,7 @@ https://cd.ndexbio.org/cy/cytocontainer/v1/updatetablesexample
 ```
 
 When no Service App is registered yet, the tab offers
-**Add Example Services**. It adds three: **Update tables example**,
+**Add Example Services**. It adds three: Update tables example,
 **g:Profiler Enrichment** and **IQuery Enrichment**.
 
 Each registered Service App is listed with its name, endpoint URL and
@@ -117,10 +117,10 @@ service.
 
 The service decides which menu its item goes in: **Data**, **Edit**,
 **Layout**, **Analysis**, **Tools**, **Apps** or **Help**, possibly inside a
-submenu. A service that names any other menu goes in the **Apps** menu, and
-the **Service Apps** tab shows a warning when you add it.
+submenu. A service that names any other menu goes in the Apps menu, and
+the Service Apps tab shows a warning when you add it.
 
-For example, **Update tables example** appears as
+For example, Update tables example appears as
 **Tools → Example Service App → Update tables example**.
 
 ### Running a Service App
@@ -131,7 +131,7 @@ and, depending on the service:
 - **Input Columns** — the table columns to send.
 - **Parameters** — the settings the service accepts.
 
-Click **Submit** to run it, or **Cancel** to close the dialog. **Submit** is
+Click **Submit** to run it, or **Cancel** to close the dialog. The Submit button is
 inactive when the service cannot run: no network is open, the network has
 no column of the type the service needs, or a parameter value is invalid.
 Hover over it to see why.

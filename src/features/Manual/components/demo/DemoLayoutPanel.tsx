@@ -42,6 +42,7 @@ export const DemoLayoutPanel = ({
             disabled={running !== undefined}
             onClick={() => apply(layout.algorithmName)}
             title={layout.description}
+            sx={{ textTransform: 'none' }}
             data-testid={`manual-demo-layout-${layout.algorithmName}`}
           >
             {layout.displayName}

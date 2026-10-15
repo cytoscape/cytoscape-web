@@ -26,9 +26,9 @@ from the code (`VisualPropertyTable`) instead of screenshots.
 ## Component Structure
 
 ```
-ManualApp            route element: app bar, layout switch, page list, page
-├── PageList         sidebar (drawer below md); sections nest in nested/split
-├── PageFooter       previous / next page (nested, split)
+ManualApp            route element: app bar, page list, page
+├── PageList         grouped sidebar, nesting the current page's sections; a menu drawer below md, and below 1600px when a demo is pinned
+├── PageFooter       previous / next page
 ├── ManualPage       lazy-loads one MDX page; owns all content typography
 │   └── <page>.mdx   rendered with mdxComponents
 │       ├── LiveDemo → LiveDemoBody   editor parts on bundled fixtures
@@ -37,7 +37,6 @@ ManualApp            route element: app bar, layout switch, page list, page
 │       ├── BrowserStorageView        read-only counts of what the browser stores
 │       └── Note                      callout
 └── SnackbarMessageList  messages from editor parts inside demos
-└── OnThisPage       h2/h3 list, built from the rendered page
 ```
 
 ## Components
@@ -56,25 +55,30 @@ ManualApp            route element: app bar, layout switch, page list, page
   of `docs/specifications/DIALOG_DISMISS_POLICY.md`.
 - **Open Cytoscape Web** is a plain link to the base URL: a full page load.
 
-### Layouts (under comparison)
+### Page Layout
 
-The app bar switches between three layouts (`layout.ts`); `?layout=` picks one
-and the choice is remembered per browser. Default: `split`.
-
-| Layout | Page list | Text | Demo |
-| --- | --- | --- | --- |
-| `current` | pages only; "On this page" on the right | full width, 16px | in the text |
-| `nested` | the current page's sections nest under it; the section in view is marked and opens its subsections | 68-character measure, 17px, 1.7 line height | in the text |
-| `split` | as `nested` | as `nested` | pinned in a right-hand column (`lg` and up); the text keeps a pointer to it |
-
-`nested` and `split` add previous/next page links at the foot. Below `lg`,
-`split` renders as `nested`. In the pinned column the demo fills the column
-height and the table becomes a tab (`LiveDemoBody` `fill`).
+- **Page list:** grouped (Getting Started, Working with Networks, Extending
+  and Troubleshooting, About; `MANUAL_GROUPS` in `pages.ts`). The current
+  page's `h2` sections nest under it and the section in view is marked; it
+  opens its `h3` subsections. Previous/next links sit at the foot of each
+  page.
+- **Text:** a 68-character measure, 17px, 1.7 line height, more space above
+  headings than below, bold at weight 600.
+- **Demo:** on `lg` screens and up, the page's demo is pinned in a
+  right-hand column while the text scrolls; the text keeps a pointer to it.
+  In the column the demo fills the height and its table becomes a tab.
+  **Expand** enlarges the column over the text (same element, so the demo
+  keeps its state); **Shrink** restores it.
+- **Page list beside a pinned demo:** below 1600px the list folds into the
+  menu button, so the demo gets the width. Pages without a demo keep it.
+- **Moved anchors:** when a page is split, `movedAnchors` maps its old
+  anchors to the page that has them now, so `quick-tour#data` opens
+  `menus#data`. `content.test.ts` checks every moved anchor exists.
 
 ### ManualPage
 
 - Scrolls to the URL hash after the page renders, else to the top.
-- Reports the page's `h2`/`h3` headings to `OnThisPage`.
+- Reports the page's `h2`/`h3` headings to the page list.
 
 ### LiveDemo
 

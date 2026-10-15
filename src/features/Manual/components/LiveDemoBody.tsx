@@ -1,3 +1,5 @@
+import CloseFullscreenIcon from '@mui/icons-material/CloseFullscreen'
+import OpenInFullIcon from '@mui/icons-material/OpenInFull'
 import RestartAltIcon from '@mui/icons-material/RestartAlt'
 import {
   Alert,
@@ -32,6 +34,7 @@ import { FloatingToolBar } from '@/features/FloatingToolBar'
 import VizmapperView from '@/features/Vizmapper'
 import type { IdType } from '@/models/IdType'
 import { sandboxReady } from '../sandbox'
+import { useDemoSlot } from './DemoSlot'
 import { DemoApiPanel } from './demo/DemoApiPanel'
 import { DemoLayoutPanel } from './demo/DemoLayoutPanel'
 import { DemoUrlPanel } from './demo/DemoUrlPanel'
@@ -198,6 +201,7 @@ export default function LiveDemoBody({
   caption,
   fill = false,
 }: LiveDemoProps): ReactElement {
+  const { expanded, setExpanded } = useDemoSlot()
   const [sideRef, sideHeight] = useElementHeight()
   const [state, setState] = useState<DemoState>({ kind: 'loading' })
   // Bumped by Reset: the effect below empties the demo workspace and loads
@@ -349,6 +353,16 @@ export default function LiveDemoBody({
             data-testid="manual-live-demo-export"
           >
             Export Network to Image…
+          </Button>
+        ) : null}
+        {fill ? (
+          <Button
+            size="small"
+            startIcon={expanded ? <CloseFullscreenIcon /> : <OpenInFullIcon />}
+            onClick={() => setExpanded(!expanded)}
+            data-testid="manual-live-demo-expand"
+          >
+            {expanded ? 'Shrink' : 'Expand'}
           </Button>
         ) : null}
         <Button

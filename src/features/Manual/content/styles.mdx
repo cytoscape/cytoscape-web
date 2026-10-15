@@ -14,25 +14,22 @@ The **STYLE** tab has three tabs of its own: **NODES**, **EDGES** and
 **NETWORK**. Each lists the visual properties of that group. Every property
 row has three boxes:
 
-- **Default** — the value every node or edge gets unless something overrides
-  it. Click it to change the default.
-- **Mapping** — a rule that sets the value from a table column, per node or
-  edge. Click it to create or edit the mapping. See
-  [How Mappings Work](#how-mappings-work).
-- **Bypass** — a fixed value for the nodes or edges you select. It overrides
-  both the default and the mapping. Select at least one node or edge first;
-  the box is inactive otherwise.
+| Box | What it holds |
+| --- | --- |
+| Default | The value every node or edge gets unless something overrides it. Click it to change the default. |
+| Mapping | A rule that sets the value from a table column, per node or edge. Click it to create or edit the mapping. See [How Mappings Work](#how-mappings-work). |
+| Bypass | A fixed value for the nodes or edges you select. It overrides both the default and the mapping. Select at least one node or edge first; the box is inactive otherwise. |
 
 A mapping wins over the default for every node or edge it covers. A bypass
 wins over both.
 
 Two properties carry an extra option:
 
-- **Height** has **Lock node width and height**. It makes **Width** follow
-  **Height**, so a node keeps its proportions. **Width** is inactive while the
+- **Height** has **Lock node width and height**. It makes Width follow
+  Height, so a node keeps its proportions. Width is inactive while the
   lock is on.
 - **Stroke Color** has **Edge color to arrows**. It paints the arrows with the
-  edge's **Stroke Color**. The arrow color properties are inactive while it is
+  edge's Stroke Color. The arrow color properties are inactive while it is
   on.
 
 Hover over an inactive box to see why it is inactive.
@@ -42,17 +39,11 @@ Hover over an inactive box to see why it is inactive.
 A mapping reads a table column and turns each value into a visual value. Open
 a property's **Mapping** box, choose a **Column**, then a **Mapping Type**:
 
-1. **Passthrough** — the column value is used as-is. Typical use: label each
-   node with its gene name. For a color property the column must hold text
-   that names a color (`#ff0000`, `red`, `rgb(255,0,0)`); a value that is not a
-   color falls back to the default.
-2. **Discrete** — each distinct column value gets its own visual value. Typical
-   use: a different shape per molecule type, or a different edge color per
-   interaction type.
-3. **Continuous** — a numeric column maps onto a range. A color property gets
-   a color gradient; a size property gets a size range. Drag the handles on
-   the chart to change where the range starts and ends, and click the chart to
-   add a handle.
+| Mapping type | What it does |
+| --- | --- |
+| Passthrough | The column value is used as-is. Typical use: label each node with its gene name. For a color property the column must hold text that names a color (`#ff0000`, `red`, `rgb(255,0,0)`); a value that is not a color falls back to the default. |
+| Discrete | Each distinct column value gets its own visual value. Typical use: a different shape per molecule type, or a different edge color per interaction type. |
+| Continuous | A numeric column maps onto a range. A color property gets a color gradient; a size property gets a size range. Drag the handles on the chart to change where the range starts and ends, and click the chart to add a handle. |
 
 For a continuous color mapping you can pick a palette from the
 **Color Palette** list. The palettes come from published recommendations for
@@ -68,7 +59,7 @@ A network can own several named styles. The row above the **NODES**,
   style;
 - **Save Style to Workspace**, which keeps a copy in **Workspace Styles** for
   use on other networks;
-- apply a style from **Workspace Styles** to this network.
+- apply a style from Workspace Styles to this network.
 
 Applying a workspace style copies it into the network. Later edits to either
 copy do not change the other. A network always keeps at least one style.

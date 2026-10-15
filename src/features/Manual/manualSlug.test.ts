@@ -81,7 +81,9 @@ describe('resolveManualPath', () => {
 
   it('has unique slugs and legacy names', () => {
     const slugs = MANUAL_PAGES.map((p) => p.slug)
-    const legacy = MANUAL_PAGES.map((p) => p.legacyName)
+    const legacy = MANUAL_PAGES.flatMap((p) =>
+      p.legacyName === undefined ? [] : [p.legacyName],
+    )
     expect(new Set(slugs).size).toBe(slugs.length)
     expect(new Set(legacy).size).toBe(legacy.length)
   })

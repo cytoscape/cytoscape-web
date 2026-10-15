@@ -16,7 +16,6 @@ import { useLocation } from 'react-router-dom'
 
 import { type DemoSlot, DemoSlotContext } from './components/DemoSlot'
 import { mdxComponents } from './components/mdxComponents'
-import type { ManualLayout } from './layout'
 import type { ManualPage as ManualPageDef } from './pages'
 
 /** One lazy component per page, so revisiting a page reuses its chunk. */
@@ -43,28 +42,9 @@ const Rendered = ({ onRendered }: { onRendered: () => void }): null => {
   return null
 }
 
-/** The original typography: full-width text, 16px, MUI heading scale. */
-const CURRENT_TYPOGRAPHY: SxProps<Theme> = {
-  lineHeight: 1.65,
-  fontSize: '1rem',
-  '& h1': { typography: 'h4', mt: 0, mb: 3 },
-  '& h2': {
-    typography: 'h5',
-    mt: 5,
-    mb: 1.5,
-    pb: 0.5,
-    borderBottom: 1,
-    borderColor: 'divider',
-  },
-  '& h3': { typography: 'h6', mt: 3.5, mb: 1 },
-  '& h4': { typography: 'subtitle1', fontWeight: 600, mt: 3, mb: 1 },
-  '& p, & ul, & ol': { my: 1.5 },
-  '& li': { my: 0.5 },
-}
-
 /**
- * Readable-measure typography (`nested` and `split`). The values follow the
- * research on screen reading:
+ * Readable-measure typography. The values follow the research on screen
+ * reading:
  *
  * - a measure of about 68 characters (50–75 is the readable range; WCAG
  *   1.4.8 caps it at 80);
@@ -115,7 +95,7 @@ const READABLE_TYPOGRAPHY: SxProps<Theme> = {
   '& table': { fontSize: '0.9375rem' },
 }
 
-/** Shared by both: code, tables, images, quotes. */
+/** Code, tables, images, quotes. */
 const COMMON_CONTENT: SxProps<Theme> = {
   minWidth: 0,
   '& h1, & h2, & h3, & h4': { scrollMarginTop: '72px' },
@@ -172,10 +152,11 @@ const PINNED_TOP = 56
 
 interface ManualPageProps {
   page: ManualPageDef
-  layout: ManualLayout
-  /** False below the `lg` breakpoint: `split` then renders as `nested`. */
+  /** False below the `lg` breakpoint: the demo then stays in the text. */
   allowSplit: boolean
   onToc: (entries: TocEntry[]) => void
+  /** Reports whether the page shows a pinned demo column. */
+  onSplitChange?: (split: boolean) => void
 }
 
 /**
@@ -185,15 +166,16 @@ interface ManualPageProps {
  */
 export const ManualPage = ({
   page,
-  layout,
   allowSplit,
   onToc,
+  onSplitChange,
 }: ManualPageProps): ReactElement => {
   const Content = contentFor(page)
   const article = useRef<HTMLElement>(null)
   const { hash } = useLocation()
 
-  const split = layout === 'split' && allowSplit
+  const split = allowSplit
+  const [expanded, setExpanded] = useState(false)
   const [demoCount, setDemoCount] = useState(0)
   const [column, setColumn] = useState<HTMLElement | null>(null)
   const register = useCallback(() => {
@@ -201,10 +183,18 @@ export const ManualPage = ({
     return () => setDemoCount((n) => n - 1)
   }, [])
   const slot: DemoSlot = useMemo(
-    () => ({ target: split ? column : null, register }),
-    [split, column, register],
+    () => ({
+      target: split ? column : null,
+      register,
+      expanded,
+      setExpanded,
+    }),
+    [split, column, register, expanded],
   )
   const showColumn = split && demoCount > 0
+  useEffect(() => {
+    onSplitChange?.(showColumn)
+  }, [showColumn, onSplitChange])
 
   const handleRendered = useCallback((): void => {
     const root = article.current
@@ -245,13 +235,8 @@ export const ManualPage = ({
           ref={article}
           data-testid="manual-page"
           data-slug={page.slug}
-          data-layout={split ? 'split' : layout}
-          sx={[
-            COMMON_CONTENT,
-            ...(layout === 'current'
-              ? [CURRENT_TYPOGRAPHY]
-              : [READABLE_TYPOGRAPHY]),
-          ]}
+          data-split={showColumn ? 'true' : 'false'}
+          sx={[COMMON_CONTENT, READABLE_TYPOGRAPHY]}
         >
           <Suspense
             fallback={
@@ -268,13 +253,30 @@ export const ManualPage = ({
           <Box
             ref={setColumn}
             data-testid="manual-demo-column"
-            sx={{
-              display: showColumn ? 'block' : 'none',
-              position: 'sticky',
-              top: PINNED_TOP,
-              height: `calc(100vh - ${PINNED_TOP + 16}px)`,
-              minWidth: 0,
-            }}
+            data-expanded={expanded ? 'true' : 'false'}
+            sx={
+              expanded
+                ? {
+                    // Enlarged over the text. The same element, restyled, so
+                    // the demo keeps its state.
+                    display: showColumn ? 'block' : 'none',
+                    position: 'fixed',
+                    top: PINNED_TOP,
+                    right: 16,
+                    bottom: 16,
+                    width: 'min(1200px, calc(100vw - 32px))',
+                    zIndex: 1200,
+                    boxShadow: 8,
+                    borderRadius: 1,
+                  }
+                : {
+                    display: showColumn ? 'block' : 'none',
+                    position: 'sticky',
+                    top: PINNED_TOP,
+                    height: `calc(100vh - ${PINNED_TOP + 16}px)`,
+                    minWidth: 0,
+                  }
+            }
           />
         ) : null}
       </Box>

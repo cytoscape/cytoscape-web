@@ -10,7 +10,7 @@ You can bring a network into Cytoscape Web in several ways:
    delimited text table.
 4. Open a link that names a network, or a CX2 file on the web.
 
-Every network you open goes into your **workspace**. The workspace lives in
+Every network you open goes into your workspace. The workspace lives in
 this browser's local database, so it is still there when you close the tab and
 come back. It is not shared between browsers or computers. To keep a copy
 elsewhere, save networks or the whole workspace to NDEx, or download a network
@@ -52,9 +52,9 @@ Choose **Data → Open Network(s) from NDEx...** to open the
 - Check the box next to each network you want, then click the **Open** button
   in the bottom right corner. The button shows how many networks you selected.
 
-You can also search NDEx from the search box in the top bar: choose **NDEx**
-as the search target and submit a query. The **NDEx - Network Browser** opens
-with your query already run.
+You can also search NDEx from the search box in the top bar. Choose **NDEx**
+as the search target and submit a query. The NDEx - Network Browser opens with
+your query already run.
 
 <Note>
 **Data → Open Sample Networks** adds a set of example networks from NDEx to
@@ -177,49 +177,46 @@ guessed from its values. Click a header to change them:
 
 ![Column editor](manual-assets/Creating_networks/import_network_dialog_2.jpg)
 
-- **Meaning** — one of:
-  - **Source node** and **Target node** — the columns that name the two ends
-    of each edge. Only one column can have each meaning.
-  - **Interaction type** — the edge type, such as *pp*. Only one column can
-    have this meaning.
-  - **Source node attribute** and **Target node attribute** — data about the
-    source or target node of the row.
-  - **Edge attribute** — data about the edge.
-  - **Not imported** ![not imported](manual-assets/Creating_networks/not_imported.png)
-    — the column is left out.
-- **Data Type** — **String**, **Integer**, **Long integer**, **Double**,
-  **Boolean**, or a list of one of these. For a list, set the **List
-  Delimiter** that separates the items in each cell. Source and target node
-  columns must be **String**, **Integer** or **Long integer**.
+**Meaning** is one of:
 
-**Select All** marks every column for import; **Select None** marks every
-column **Not imported**.
+| Meaning | Description |
+| --- | --- |
+| Source node and Target node | The columns that name the two ends of each edge. Only one column can have each meaning. |
+| Interaction type | The edge type, such as *pp*. Only one column can have this meaning. |
+| Source node attribute and Target node attribute | Data about the source or target node of the row. |
+| Edge attribute | Data about the edge. |
+| ![not imported](manual-assets/Creating_networks/not_imported.png) Not imported | The column is left out. |
+
+**Data Type** is **String**, **Integer**, **Long integer**, **Double**,
+**Boolean**, or a list of one of these. For a list, set the **List
+Delimiter** that separates the items in each cell. Source and target node
+columns must be String, Integer or Long integer.
+
+**Select All** marks every column for import. **Select None** marks every
+column Not imported.
 
 Values that do not match a column's data type are shown in red, and the header
 shows how many there are. **Confirm** stays inactive until every imported value
 matches its type and at least one column is a source or target node. Click
-**Confirm** to create the network.
+Confirm to create the network.
 
 ### Import a List of Nodes Without Edges
 
-Assign only a **Source node** (or only a **Target node**) column. The network
+Assign only a Source node (or only a Target node) column. The network
 then has one node per distinct value and no edges.
 
 <a id="advanced_settings" />
 ### Advanced Settings
 
-The **Advanced Settings** button in the **Edit Column Definitions** window
+The **Advanced Settings** button in the Edit Column Definitions window
 controls how the file is read. The preview updates as you change them.
 
-- **File Delimiter** — the character between columns: **Auto-detect** (the
-  default), **Comma (,)**, **Semicolon (;)**, **Pipe (|)**, **Tab**,
-  **Space**, or **Custom** (any single character).
-- **Decimal Delimiter** — the decimal mark in numbers: **Dot (e.g. 1.23)**,
-  **Comma (e.g. 1,23)**, or **Custom**.
-- **Use first row as column names** — on: the first row names the columns.
-  Off: the first row is data.
-- **Skip first N lines** — the number of lines at the top of the file to
-  ignore, such as comment lines.
+| Setting | What it does |
+| --- | --- |
+| File Delimiter | The character between columns: **Auto-detect** (the default), **Comma (,)**, **Semicolon (;)**, **Pipe (\|)**, **Tab**, **Space**, or **Custom** (any single character). |
+| Decimal Delimiter | The decimal mark in numbers: **Dot (e.g. 1.23)**, **Comma (e.g. 1,23)**, or Custom. |
+| Use first row as column names | On: the first row names the columns. Off: the first row is data. |
+| Skip first N lines | The number of lines at the top of the file to ignore, such as comment lines. |
 
 To add columns from a table to a network that already exists, use
 **Data → Import → Table from File...**; see
@@ -239,7 +236,7 @@ You can build or extend a network directly in the network view.
    over.
 
 **Edit → Create Node** and **Edit → Create Edge** in the menu bar do the same.
-See [Edit](quick-tour#edit) in the Quick Tour.
+See [Edit](menus#edit) in the Quick Tour.
 
 ## Import a Network from a URL
 
@@ -262,23 +259,21 @@ changes to either network do not affect the other.
 Saving to NDEx requires signing in with an NDEx account; see the
 [Quick Tour](quick-tour). The **Data** menu offers four options:
 
-- **Save Network to NDEx** — saves the current network.
-  - For a network that came from NDEx, it *overwrites* the network on NDEx.
-    You must own it or have edit permission, and it must have changes since
-    the last save. If someone changed the network on NDEx since you last
-    saved it, the **Networks out of sync** window asks whether to save a new
-    copy instead (**Yes, create copy to NDEx**) or overwrite
-    (**No, overwrite the network in NDEx**).
-  - For a local network, it saves the network to NDEx as a new network, which
-    replaces the local one in your workspace.
-- **Save Copy to NDEx** — saves the current network as a new network in your
-  NDEx account and opens the copy. The original network is not changed.
-- **Save Workspace** — saves the workspace to NDEx. If the workspace was
-  opened from or saved to NDEx before, this overwrites it there. Otherwise it
-  asks for a name, as **Save Workspace As...** does.
-- **Save Workspace As...** — saves the workspace to NDEx under a new name,
-  entered in **Unique Workspace Name**. If you have a workspace with that name
-  already, Cytoscape Web asks whether to overwrite it.
+| Option | What it does |
+| --- | --- |
+| Save Network to NDEx | Saves the current network. For a network that came from NDEx, it *overwrites* the network on NDEx; for a local network, it saves a new network. Details below. |
+| Save Copy to NDEx | Saves the current network as a new network in your NDEx account and opens the copy. The original network is not changed. |
+| Save Workspace | Saves the workspace to NDEx. If the workspace was opened from or saved to NDEx before, this overwrites it there. Otherwise it asks for a name, as Save Workspace As... does. |
+| Save Workspace As... | Saves the workspace to NDEx under a new name, entered in **Unique Workspace Name**. If you have a workspace with that name already, Cytoscape Web asks whether to overwrite it. |
+
+To overwrite a network that came from NDEx, you must own it or have edit
+permission, and it must have changes since the last save. If someone changed
+the network on NDEx since you last saved it, the **Networks out of sync**
+window asks whether to save a new copy instead (**Yes, create copy to NDEx**)
+or overwrite (**No, overwrite the network in NDEx**).
+
+Saving a local network to NDEx creates a new network, which replaces the local
+one in your workspace.
 
 Point at a menu item that is inactive to see why, for example
 *Login to save network to NDEx*.
@@ -327,12 +322,8 @@ For images of the network, see [Exporting Your Data](export).
 
 ## Remove Networks and Clear the Workspace
 
-- **Data → Remove Current Network** removes the current network from your
-  workspace, after a confirmation. The network on NDEx, if any, is not
-  touched.
-- **Data → Remove All Networks** removes every network from your workspace,
-  after a confirmation.
-- **Data → Clear Local Database** deletes everything Cytoscape Web stores in
-  this browser and starts an empty workspace. It is meant for troubleshooting
-  and cannot be undone. Save anything you want to keep to NDEx or to a file
-  first.
+| Menu item | What it does |
+| --- | --- |
+| Data → Remove Current Network | Removes the current network from your workspace, after a confirmation. The network on NDEx, if any, is not touched. |
+| Data → Remove All Networks | Removes every network from your workspace, after a confirmation. |
+| Data → Clear Local Database | Deletes everything Cytoscape Web stores in this browser and starts an empty workspace. It is meant for troubleshooting and cannot be undone. Save anything you want to keep to NDEx or to a file first. |

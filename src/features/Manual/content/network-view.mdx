@@ -1,0 +1,72 @@
+# Network View
+
+The network view draws the current network. This page covers selecting,
+zooming and panning, the buttons at the bottom right of the view, and the
+Cell View for hierarchies.
+
+<a id="network-viewer" />
+<a id="try-the-network-view-and-table" />
+
+## Try It
+
+<LiveDemo panels={['renderer', 'toolbar', 'table']} />
+
+- Drag a node to move it. Scroll to zoom, and drag the background to pan.
+- Click a node to select it. Hold Shift and drag over the background to
+  select several nodes with a box.
+- The table below the network shows only the selected rows. Clear the
+  selection by clicking the background.
+- The buttons at the bottom right of the network are the network view tools
+  described in [Network View](#network-view). **Share** is inactive here,
+  because the demo network is not on NDEx.
+
+<a id="network_viewer" />
+
+<a id="network_view" />
+
+## Network View
+
+The network view draws the current network. Click a node or edge to select
+it; Shift-drag to select several at once. Scroll to zoom and drag the
+background to pan.
+
+Four buttons at the bottom right of the network view act on the network:
+
+| Button | What it does |
+| --- | --- |
+| ![Apply default layout button](manual-assets/Quick_Tour/apply_default_layout.png) Apply default layout | Runs the default layout. Change the default in **Layout → Settings...**. |
+| ![Fit button](manual-assets/Quick_Tour/fit_to_screen.png) Fit network to the window | Zooms so the whole network fits in the view. |
+| ![Open in Cytoscape button](manual-assets/Quick_Tour/open_in_cytoscape.png) Open in Cytoscape | Sends the network to the Cytoscape desktop application. It needs Cytoscape Desktop running on your computer (default port: 1234), and it does not work in Safari. The first time, Cytoscape Web explains the browser's permission prompt for reaching your computer. |
+| ![Share button](manual-assets/Quick_Tour/share_url.png) Share | Copies a link to the network, including the current view and selection, to your clipboard. It works only for networks saved to NDEx; save a local network to NDEx first. |
+
+<a id="cell_view" />
+
+## Cell View
+
+When the current network is a hierarchy, two tabs appear at the top of the
+network view: **Tree View**, the network drawn as nodes and edges, and
+**Cell View**, the hierarchy drawn as nested circles (circle packing):
+
+![Cell View of a hierarchy](manual-assets/Quick_Tour/quick_tour_10.jpg)
+
+In Cell View, each circle is a system. A system can contain smaller
+systems, much like Russian nesting dolls. Click a circle to select that
+system. Scroll or double-click to zoom in; the labels of smaller systems
+appear as you zoom. Click the background to clear the selection.
+
+When you select a system, its interaction network appears in the **Sub
+Network Viewer** in the right panel:
+
+![Sub Network Viewer showing the interactions of a selected system](manual-assets/Quick_Tour/quick_tour_11.jpg)
+
+Open the right panel with the arrow button
+![Open panel button](manual-assets/Quick_Tour/sub_net_slider.png) at the
+right edge of the window, and close it with the arrow at the top of the
+panel. Selecting genes in the Sub Network Viewer highlights them in the
+Cell View.
+
+When the hierarchy's interaction data comes from more than one source, a
+filter below the Sub Network Viewer lets you show or hide each source.
+
+Hierarchy networks also add the **LLM QUERY** tab to the side panel. See
+[Analysis](menus#analysis).

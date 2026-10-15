@@ -107,6 +107,17 @@ describe('manual content', () => {
     },
   )
 
+  it.each(
+    MANUAL_PAGES.flatMap((page) =>
+      Object.entries(page.movedAnchors ?? {}).map(
+        ([anchor, target]) =>
+          [`${page.slug}#${anchor}`, target, anchor] as const,
+      ),
+    ),
+  )('moved anchor %s exists on %s', (_link, target, anchor) => {
+    expect(anchorsOf(read(target)).has(anchor)).toBe(true)
+  })
+
   it('carries the privacy policy text of docs/privacy-policy.md', () => {
     // Two copies of one legal text: the repository file and the manual page.
     // Everything from the "Last Updated" line on must be identical.

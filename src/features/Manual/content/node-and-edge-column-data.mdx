@@ -30,18 +30,20 @@ Try the table on the demo network:
 
 The table panel sits below the network view. It has three tabs:
 
-- **Nodes** — one row per node.
-- **Edges** — one row per edge.
-- **Network** — the network's name, description and properties.
+| Tab | Shows |
+| --- | --- |
+| Nodes | One row per node. |
+| Edges | One row per edge. |
+| Network | The network's name, description and properties. |
 
 The down-arrow button at the right of the tabs (**Close panel**) hides the
 panel.
 
 ### What the Tables Show
 
-When nothing is selected, the **Nodes** and **Edges** tabs list every node
-and edge. When you select nodes or edges in the network view, the matching
-tab lists only the selected ones, and its label shows how many, for example
+When nothing is selected, the Nodes and Edges tabs list every node and edge.
+When you select nodes or edges in the network view, the matching tab lists
+only the selected ones. Its label shows how many, for example
 **Nodes (12)**. Clear the selection to see every row again. Hover over a tab
 label for a reminder.
 
@@ -49,7 +51,7 @@ Some columns are read-only and shown in gray:
 
 - **ID** — the element's internal ID, in both tables.
 - **Source Node** and **Target Node** — the names of an edge's two nodes, in
-  the **Edges** table.
+  the Edges table.
 
 Hover over a column header to see the full column name and its data type.
 
@@ -66,15 +68,16 @@ Each column has one of these data types:
 
 Text that is a web address is shown as a link.
 
-The **Network** tab shows the network's name, visibility, version, owner and
+The Network tab shows the network's name, visibility, version, owner and
 dates, then its **Description** and **Properties**. It is read-only.
 
 ### Arranging Columns and Rows
 
-- **Move a column**: drag its header to a new position.
-- **Resize a column**: drag the edge of its header.
-- **Sort**: click a column header, then click **Sort Asc** or **Sort Desc**
-  in the toolbar above the table.
+| Action | How |
+| --- | --- |
+| Move a column | Drag its header to a new position. |
+| Resize a column | Drag the edge of its header. |
+| Sort | Click a column header, then click **Sort Asc** or **Sort Desc** in the toolbar above the table. |
 
 Cytoscape Web remembers the column order, widths and sort for each network.
 
@@ -123,14 +126,14 @@ elements and nothing else.
 
 Right-clicking a cell offers more:
 
-- **Copy** — copy the cell's value.
-- **Paste** — paste into the table.
-- **Copy Selected** — copy the selected cells.
-- **Copy Node ID** (or **Copy Edge ID**) — copy the row's ID.
-- **Select This Node in Viewport** (or **Edge**) — select only this element
-  in the network view.
-- **Select nodes from selection** (or **edges**) — select the elements of
-  every row in your table selection.
+| Menu item | What it does |
+| --- | --- |
+| Copy | Copy the cell's value. |
+| Paste | Paste into the table. |
+| Copy Selected | Copy the selected cells. |
+| Copy Node ID (or Copy Edge ID) | Copy the row's ID. |
+| Select This Node in Viewport (or Edge) | Select only this element in the network view. |
+| Select nodes from selection (or edges) | Select the elements of every row in your table selection. |
 
 ## Working with Columns
 
@@ -139,10 +142,11 @@ Right-clicking a cell offers more:
 Click the **Insert new column** button at the left of the table toolbar. In
 the **Create New Column** dialog, enter:
 
-- **Column Name** — must be unique in the table.
-- **Data type** — one of the types listed above.
-- **Default value** — the value every row starts with. It must match the data
-  type. For a list type, click the field to open the **Edit list** dialog.
+| Field | Value |
+| --- | --- |
+| Column Name | Must be unique in the table. |
+| Data type | One of the types listed above. |
+| Default value | The value every row starts with. It must match the data type. For a list type, click the field to open the **Edit list** dialog. |
 
 Click **Confirm**. The new column appears first in the table.
 
@@ -150,21 +154,20 @@ Click **Confirm**. The new column appears first in the table.
 
 Click a column header to select the column. The toolbar then shows:
 
-- **Duplicate** — adds a copy of the column next to it. The copy's name is
-  the original name followed by `_copy_` and a number.
-- **Edit Column Name** — opens the **Rename Column** dialog. The new name
-  must be unique in the table. The data type cannot be changed.
-- **Delete Column** — removes the column and its values from the network.
+| Button | What it does |
+| --- | --- |
+| Duplicate | Adds a copy of the column next to it. The copy's name is the original name followed by `_copy_` and a number. |
+| Edit Column Name | Opens the **Rename Column** dialog. The new name must be unique in the table. The data type cannot be changed. |
+| Delete Column | Removes the column and its values from the network. |
 
 When a style mapping reads the column, the rename and delete dialogs list the
 affected visual properties and ask what to do with the mappings:
 
-- **Update the style mapping(s)** — point the mappings at the new name
-  (rename only; this is the default).
-- **Delete the style mapping(s)** — remove the mappings.
-- **Leave the mapping(s) as is** — keep the mappings unchanged. They then
-  read a column that no longer exists, and the network cannot be saved to
-  NDEx until you fix them.
+| Option | Effect |
+| --- | --- |
+| Update the style mapping(s) | Point the mappings at the new name (rename only; this is the default). |
+| Delete the style mapping(s) | Remove the mappings. |
+| Leave the mapping(s) as is | Keep the mappings unchanged. They then read a column that no longer exists, and the network cannot be saved to NDEx until you fix them. |
 
 Renaming and deleting can be undone with **Edit → Undo**. Adding and
 duplicating a column cannot.
@@ -178,7 +181,7 @@ file. Each row of the file is matched to a node or edge through a key column:
 a column in the file whose values match a column in the network, such as gene
 names.
 
-***Sample Data Table***
+*Sample Data Table*
 
 | GENE | COMMON | gal1RGexp | gal1RGsig |
 | --- | --- | --- | --- |
@@ -186,8 +189,8 @@ names.
 | YHR124W | NDT80 | -0.09 | 0.27 |
 | YKL181W | PRS1 | -0.167 | 0.0062 |
 
-Here **GENE** can be the key column: its values match the **name** column of
-a yeast network.
+Here `GENE` can be the key column: its values match the `name` column of a
+yeast network.
 
 The file must be `.csv`, `.tsv` or `.txt`, and smaller than 5 MB. The first
 row can hold the column names.
@@ -221,7 +224,7 @@ row can hold the column names.
 
 ![The Meaning and Data Type options of a file column](manual-assets/Node_Edge_Column_Data/DataColumnKey.jpg)
 
-9. For each other column, choose its **Meaning**:
+9. For each other column, choose its Meaning:
    - **Attribute** — import the column. This is the default.
    - **Not imported** — skip the column.
 
@@ -237,7 +240,7 @@ row can hold the column names.
     **120 / 150 rows will be joined to the table**.
 12. Click **Confirm**.
 
-**Confirm** stays disabled until one column is the key and every imported
+Confirm stays disabled until one column is the key and every imported
 value fits its data type. Hover over it to see why.
 
 When several rows of the file share a key, the last of them supplies the
@@ -245,16 +248,12 @@ values. An import cannot be undone with **Edit → Undo**.
 
 ### Advanced Settings
 
-Click **Advanced Settings** in the **Edit Column Definitions** dialog to
-change how the file is read. The preview updates as you change them.
+Click **Advanced Settings** in the Edit Column Definitions dialog to change
+how the file is read. The preview updates as you change them.
 
-- **File Delimiter** — **Auto-detect** (default), **Comma (,)**,
-  **Semicolon (;)**, **Pipe (|)**, **Tab**, **Space**, or **Custom** (one
-  character).
-- **Decimal Delimiter** — **Dot (e.g. 1.23)** (default), **Comma (e.g.
-  1,23)**, or **Custom**. Use **Comma** for files written with European
-  number formats.
-- **Use first row as column names** — on by default. When off, the columns
-  are named **Column 1**, **Column 2**, and so on.
-- **Skip first N lines** — ignore lines at the top of the file, such as
-  comments before the header.
+| Setting | Options |
+| --- | --- |
+| File Delimiter | **Auto-detect** (default), **Comma (,)**, **Semicolon (;)**, **Pipe (\|)**, **Tab**, **Space**, or **Custom** (one character). |
+| Decimal Delimiter | **Dot (e.g. 1.23)** (default), **Comma (e.g. 1,23)**, or Custom. Use Comma for files written with European number formats. |
+| Use first row as column names | On by default. When off, the columns are named **Column 1**, **Column 2**, and so on. |
+| Skip first N lines | Ignore lines at the top of the file, such as comments before the header. |

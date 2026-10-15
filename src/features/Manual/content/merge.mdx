@@ -17,17 +17,15 @@ opens. The button at its top right switches it to full screen and back.
 
 Choose one of three merge types at the top of the dialog:
 
-- **Union** — every node and edge from every network. Matching nodes and
-  edges are combined into one.
-- **Intersection** — only the nodes found in every selected network, and the
-  edges found in every network between those nodes. Needs at least two
-  networks.
-- **Difference** — the first network minus what it shares with the second.
-  Needs exactly two networks.
+| Merge type | Result |
+| --- | --- |
+| Union | Every node and edge from every network. Matching nodes and edges are combined into one. |
+| Intersection | Only the nodes found in every selected network, and the edges found in every network between those nodes. Needs at least two networks. |
+| Difference | The first network minus what it shares with the second. Needs exactly two networks. |
 
 Hover over the help icon next to the buttons for a short reminder.
 
-For **Difference**, a **Node Removal Rule** appears:
+For Difference, a **Node Removal Rule** appears:
 
 - **Only remove nodes if all their edges are being subtracted, too** — the
   default. A shared node stays when it still has an edge that is not in the
@@ -47,8 +45,8 @@ The demo holds two networks: **galFiltered chart_1** and **HSF1
 neighborhood**. Four node names appear in both: YGL073W, YER103W, YHR053C and
 YBR072W.
 
-1. Click **Merge Networks…**. This opens the same dialog as **Tools → Merge
-   Networks**.
+1. Click **Merge Networks…**. This opens the same dialog as Tools → Merge
+   Networks.
 2. Move both networks to **Networks to Merge** and click **Merge**.
 3. The merged network opens in the demo. Use the list at the top of the demo
    to switch between the three networks.
@@ -64,7 +62,7 @@ YBR072W.
 3. Under **Select Networks to Merge:**, click networks in **Available
    Networks** and click the right arrow to move them to **Networks to Merge**.
    The left arrow moves them back.
-4. The first network in **Networks to Merge** is the base network, marked
+4. The first network in Networks to Merge is the base network, marked
    with a star. Use the up and down arrows to change the order.
 5. Click **Merge**.
 
@@ -73,7 +71,7 @@ network. It uses the base network's style, version and description. Its
 network properties come from all the source networks. It is a local network
 until you save it to NDEx.
 
-**Merge** stays disabled until the selection fits the merge type. Hover over
+The Merge button stays disabled until the selection fits the merge type. Hover over
 it to see why.
 
 <a id="matching_nodes" />
@@ -81,7 +79,7 @@ it to see why.
 ### How Nodes and Edges Are Matched
 
 Two nodes match when they have the same value in their network's matching
-column. By default this is the **name** column. A network without a **name**
+column. By default this is the **name** column. A network without a name
 column uses its first node column. You can change the matching column under
 [Advanced Options](#advanced-options).
 
@@ -89,10 +87,10 @@ Two edges match when they connect the same two matched nodes in the same
 direction and have the same value in their **interaction** column.
 
 When matched nodes or edges both have a value in the same column, the value
-from the network higher in the **Networks to Merge** list is kept. List
+from the network higher in the Networks to Merge list is kept. List
 values are combined, without repeats.
 
-A warning icon next to a network in **Networks to Merge** means its matching
+A warning icon next to a network in Networks to Merge means its matching
 column holds the same value for more than one node. Pick a different matching
 column, or keep the option below turned on.
 
@@ -100,11 +98,11 @@ column, or keep the option below turned on.
 
 - **Enable merging nodes/edges in the same network** — on by default. Nodes
   with the same matching value inside one network are also combined into one
-  node, and so are their matching edges. With this option on, a **Union** of
+  node, and so are their matching edges. With this option on, a Union of
   a single network removes its duplicate nodes. Turn it off to keep them
   separate.
 - **Merge only nodes and ignore edges** — off by default, and available only
-  for **Intersection**. The result keeps the shared nodes, and every edge
+  for Intersection. The result keeps the shared nodes, and every edge
   between them from any of the networks, not only the edges all networks
   share.
 
@@ -130,16 +128,16 @@ switch between node, edge and network columns.
 
 Each row has:
 
-- one drop-down per source network — the column whose values fill this row,
-  or **None**;
-- **Merged Network** — the column's name in the merged network;
-- **Type** — the column's data type in the merged network. The list offers
-  only types that every source column can be converted to.
+| Column | What it holds |
+| --- | --- |
+| One drop-down per source network | The column whose values fill this row, or **None**. |
+| Merged Network | The column's name in the merged network. |
+| Type | The column's data type in the merged network. The list offers only types that every source column can be converted to. |
 
 Columns with the same name in different networks start out on the same row.
 
-In the **Node** view, the first row is the matching column. It is named
-**Matching.Attribute** by default; rename it if you like. In the **Network**
+In the Node view, the first row is the matching column. It is named
+**Matching.Attribute** by default; rename it if you like. In the Network
 view, the first three rows (name, version and description) cannot be renamed.
 
 A row is shown in red when its source columns have conflicting types, its

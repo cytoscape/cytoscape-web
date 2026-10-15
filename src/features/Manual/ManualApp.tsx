@@ -11,35 +11,22 @@ import {
   List,
   ListItemButton,
   ListItemText,
-  ToggleButton,
-  ToggleButtonGroup,
+  ListSubheader,
   Toolbar,
-  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
 } from '@mui/material'
 import { type ReactElement, useCallback, useEffect, useState } from 'react'
-import {
-  Link,
-  Navigate,
-  useLocation,
-  useNavigate,
-  useParams,
-} from 'react-router-dom'
+import { Link, Navigate, useLocation, useParams } from 'react-router-dom'
 
 import { MANUAL_ROUTE_SEGMENT } from '@/data/db/dbScope'
 import { SnackbarMessageList } from '@/features/Messages'
-import {
-  type ManualLayout,
-  readStoredLayout,
-  resolveManualLayout,
-  storeLayout,
-} from './layout'
 import { ManualNotFound, ManualPage, type TocEntry } from './ManualPage'
 import {
   DEFAULT_MANUAL_SLUG,
   findManualPage,
+  MANUAL_GROUPS,
   MANUAL_PAGES,
   type ManualPage as ManualPageDef,
   resolveManualPath,
@@ -47,29 +34,13 @@ import {
 import { useActiveHeading } from './useActiveHeading'
 
 const NAV_WIDTH = 260
-const TOC_WIDTH = 220
 const APP_BAR_HEIGHT = 48
 
 const pagePath = (slug: string): string => `/${MANUAL_ROUTE_SEGMENT}/${slug}`
 
-const LAYOUT_LABELS: Record<ManualLayout, { label: string; hint: string }> = {
-  current: {
-    label: 'Current',
-    hint: 'The original layout: page list, text, "On this page" on the right',
-  },
-  nested: {
-    label: 'Nested',
-    hint: 'Sections nested under the page in the list; readable text width',
-  },
-  split: {
-    label: 'Split',
-    hint: 'Nested, plus the demo pinned beside the text',
-  },
-}
-
 interface PageListProps {
   currentSlug: string
-  /** The current page's sections, nested under it (`nested`, `split`). */
+  /** The current page's sections, nested under it. */
   sections?: TocEntry[]
   activeSection?: string
   onNavigate?: () => void
@@ -136,123 +107,110 @@ const PageList = ({
   onNavigate,
 }: PageListProps): ReactElement => (
   <List dense component="nav" data-testid="manual-nav" aria-label="Manual">
-    {MANUAL_PAGES.map((page) => {
-      const current = page.slug === currentSlug
-      return (
-        <Box key={page.slug} component="li" sx={{ listStyle: 'none' }}>
-          <ListItemButton
-            component={Link}
-            to={pagePath(page.slug)}
-            selected={current}
-            aria-current={current ? 'page' : undefined}
-            onClick={onNavigate}
-            data-testid={`manual-nav-${page.slug}`}
-            sx={{ borderRadius: 1, mx: 1 }}
-          >
-            <ListItemText
-              primary={page.title}
-              primaryTypographyProps={{
-                fontWeight: current ? 600 : 400,
-                fontSize: '0.9rem',
-              }}
-            />
-          </ListItemButton>
-          {current && sections !== undefined && sections.length > 0 ? (
-            <Box
-              component="ul"
-              data-testid="manual-nav-sections"
-              sx={{
-                m: 0,
-                mb: 1,
-                ml: 3,
-                pl: 0,
-                borderLeft: 1,
-                borderColor: 'divider',
-              }}
-            >
-              {groupSections(sections).map(({ section, subsections }) => {
-                // The section in view, or the section holding the subsection
-                // in view, opens its subsections: two levels show at once
-                // only where the reader is.
-                const open =
-                  section.id === activeSection ||
-                  subsections.some((sub) => sub.id === activeSection)
-                return (
+    {MANUAL_GROUPS.map((group) => (
+      <Box key={group} component="li" sx={{ listStyle: 'none' }}>
+        <ListSubheader
+          component="div"
+          disableSticky
+          sx={{
+            bgcolor: 'transparent',
+            lineHeight: 1.5,
+            pt: 1.5,
+            pb: 0.5,
+            fontSize: '0.7rem',
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+          }}
+        >
+          {group}
+        </ListSubheader>
+        <Box component="ul" sx={{ m: 0, p: 0 }}>
+          {MANUAL_PAGES.filter((page) => page.group === group).map((page) => {
+            const current = page.slug === currentSlug
+            return (
+              <Box key={page.slug} component="li" sx={{ listStyle: 'none' }}>
+                <ListItemButton
+                  component={Link}
+                  to={pagePath(page.slug)}
+                  selected={current}
+                  aria-current={current ? 'page' : undefined}
+                  onClick={onNavigate}
+                  data-testid={`manual-nav-${page.slug}`}
+                  sx={{ borderRadius: 1, mx: 1 }}
+                >
+                  <ListItemText
+                    primary={page.title}
+                    primaryTypographyProps={{
+                      fontWeight: current ? 600 : 400,
+                      fontSize: '0.9rem',
+                    }}
+                  />
+                </ListItemButton>
+                {current && sections !== undefined && sections.length > 0 ? (
                   <Box
-                    key={section.id}
-                    component="li"
-                    sx={{ listStyle: 'none' }}
+                    component="ul"
+                    data-testid="manual-nav-sections"
+                    sx={{
+                      m: 0,
+                      mb: 1,
+                      ml: 3,
+                      pl: 0,
+                      borderLeft: 1,
+                      borderColor: 'divider',
+                    }}
                   >
-                    <SectionLink
-                      href={`${pagePath(page.slug)}#${section.id}`}
-                      entry={section}
-                      active={section.id === activeSection}
-                      depth={0}
-                      onNavigate={onNavigate}
-                    />
-                    {open && subsections.length > 0 ? (
-                      <Box component="ul" sx={{ m: 0, p: 0, mb: 0.5 }}>
-                        {subsections.map((sub) => (
-                          <Box
-                            key={sub.id}
-                            component="li"
-                            sx={{ listStyle: 'none' }}
-                          >
-                            <SectionLink
-                              href={`${pagePath(page.slug)}#${sub.id}`}
-                              entry={sub}
-                              active={sub.id === activeSection}
-                              depth={1}
-                              onNavigate={onNavigate}
-                            />
-                          </Box>
-                        ))}
-                      </Box>
-                    ) : null}
+                    {groupSections(sections).map(({ section, subsections }) => {
+                      // The section in view, or the section holding the subsection
+                      // in view, opens its subsections: two levels show at once
+                      // only where the reader is.
+                      const open =
+                        section.id === activeSection ||
+                        subsections.some((sub) => sub.id === activeSection)
+                      return (
+                        <Box
+                          key={section.id}
+                          component="li"
+                          sx={{ listStyle: 'none' }}
+                        >
+                          <SectionLink
+                            href={`${pagePath(page.slug)}#${section.id}`}
+                            entry={section}
+                            active={section.id === activeSection}
+                            depth={0}
+                            onNavigate={onNavigate}
+                          />
+                          {open && subsections.length > 0 ? (
+                            <Box component="ul" sx={{ m: 0, p: 0, mb: 0.5 }}>
+                              {subsections.map((sub) => (
+                                <Box
+                                  key={sub.id}
+                                  component="li"
+                                  sx={{ listStyle: 'none' }}
+                                >
+                                  <SectionLink
+                                    href={`${pagePath(page.slug)}#${sub.id}`}
+                                    entry={sub}
+                                    active={sub.id === activeSection}
+                                    depth={1}
+                                    onNavigate={onNavigate}
+                                  />
+                                </Box>
+                              ))}
+                            </Box>
+                          ) : null}
+                        </Box>
+                      )
+                    })}
                   </Box>
-                )
-              })}
-            </Box>
-          ) : null}
+                ) : null}
+              </Box>
+            )
+          })}
         </Box>
-      )
-    })}
-  </List>
-)
-
-const OnThisPage = ({ entries }: { entries: TocEntry[] }): ReactElement => (
-  <Box
-    component="nav"
-    data-testid="manual-toc"
-    sx={{
-      position: 'sticky',
-      top: 80,
-      fontSize: '0.85rem',
-      '& a': {
-        display: 'block',
-        py: 0.4,
-        color: 'text.secondary',
-        textDecoration: 'none',
-        '&:hover': { color: 'text.primary' },
-      },
-    }}
-  >
-    {entries.length > 0 ? (
-      <Typography variant="overline" color="text.secondary">
-        On this page
-      </Typography>
-    ) : null}
-    {entries.map((entry) => (
-      <Box
-        key={entry.id}
-        component="a"
-        href={`#${entry.id}`}
-        sx={{ pl: entry.level === 3 ? 1.5 : 0 }}
-      >
-        {entry.text}
       </Box>
     ))}
-  </Box>
+  </List>
 )
 
 /** Previous and next page, at the foot of the page. */
@@ -304,27 +262,25 @@ const PageFooter = ({ page }: { page: ManualPageDef }): ReactElement => {
  * The in-app user manual, at /manual/*. A separate top-level route: it never
  * mounts AppShell, and its tab uses the sandbox database (dbScope.ts).
  */
+/** Below this width a page with a pinned demo folds the page list into a menu. */
+const NAV_BESIDE_DEMO_MIN_WIDTH = 1600
+
 export default function ManualApp(): ReactElement {
   const params = useParams()
-  const { hash, search, pathname } = useLocation()
-  const navigate = useNavigate()
+  const { hash, search } = useLocation()
   const theme = useTheme()
   const wide = useMediaQuery(theme.breakpoints.up('md'))
   const large = useMediaQuery(theme.breakpoints.up('lg'))
+  const roomForNavBesideDemo = useMediaQuery(
+    `(min-width: ${NAV_BESIDE_DEMO_MIN_WIDTH}px)`,
+  )
   const [navOpen, setNavOpen] = useState(false)
   const [toc, setToc] = useState<TocEntry[]>([])
+  const [split, setSplit] = useState(false)
   const handleToc = useCallback((entries: TocEntry[]) => setToc(entries), [])
 
-  const layout = resolveManualLayout(search, readStoredLayout())
-  const chooseLayout = (next: ManualLayout): void => {
-    storeLayout(next)
-    const params = new URLSearchParams(search)
-    params.set('layout', next)
-    navigate(`${pathname}?${params.toString()}${hash}`, { replace: true })
-  }
-  const nestedNav = layout !== 'current'
   const activeSection = useActiveHeading(
-    nestedNav ? toc.map((t) => t.id) : [],
+    toc.map((t) => t.id),
     APP_BAR_HEIGHT + 24,
   )
 
@@ -345,21 +301,32 @@ export default function ManualApp(): ReactElement {
       return <Navigate to={`${pagePath(slug)}${search}${hash}`} replace />
     }
   }
+  // An anchor that moved to another page when this one was split.
+  const movedTo =
+    hash.length > 1
+      ? page?.movedAnchors?.[decodeURIComponent(hash.slice(1))]
+      : undefined
+  if (movedTo !== undefined) {
+    return <Navigate to={`${pagePath(movedTo)}${hash}`} replace />
+  }
+
+  // With a pinned demo the page list folds into a menu below 1600px: the
+  // demo needs the width more than the reader needs the list in view.
+  const navBeside = wide && !(split && !roomForNavBesideDemo)
 
   const nav = (
     <PageList
       currentSlug={page?.slug ?? ''}
-      sections={nestedNav ? toc : undefined}
+      sections={toc}
       activeSection={activeSection}
       onNavigate={() => setNavOpen(false)}
     />
   )
-  const showToc = layout === 'current' && large && page !== undefined
 
   return (
     <Box
       data-testid="manual-app"
-      data-layout={layout}
+      data-nav={navBeside ? 'beside' : 'menu'}
       sx={{ minHeight: '100vh', bgcolor: 'background.default' }}
     >
       <AppBar position="sticky" color="default" elevation={0}>
@@ -367,7 +334,7 @@ export default function ManualApp(): ReactElement {
           variant="dense"
           sx={{ gap: 1, borderBottom: 1, borderColor: 'divider' }}
         >
-          {!wide ? (
+          {!navBeside ? (
             <IconButton
               edge="start"
               aria-label="Open the page list"
@@ -398,30 +365,6 @@ export default function ManualApp(): ReactElement {
             v{REACT_APP_VERSION}
           </Typography>
           <Box sx={{ flex: 1 }} />
-          {/* Layout comparison. Remove once a layout is chosen. */}
-          <ToggleButtonGroup
-            size="small"
-            exclusive
-            value={layout}
-            onChange={(_e, value: ManualLayout | null) => {
-              if (value !== null) chooseLayout(value)
-            }}
-            aria-label="Page layout"
-            data-testid="manual-layout-switch"
-            sx={{ display: { xs: 'none', md: 'flex' } }}
-          >
-            {(Object.keys(LAYOUT_LABELS) as ManualLayout[]).map((key) => (
-              <Tooltip key={key} title={LAYOUT_LABELS[key].hint}>
-                <ToggleButton
-                  value={key}
-                  data-testid={`manual-layout-${key}`}
-                  sx={{ px: 1.25, py: 0.25, textTransform: 'none' }}
-                >
-                  {LAYOUT_LABELS[key].label}
-                </ToggleButton>
-              </Tooltip>
-            ))}
-          </ToggleButtonGroup>
           {/* A full page load: the editor must open with its own database. */}
           <Button
             size="small"
@@ -436,7 +379,7 @@ export default function ManualApp(): ReactElement {
       </AppBar>
 
       <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-        {wide ? (
+        {navBeside ? (
           <Box
             sx={{
               width: NAV_WIDTH,
@@ -447,14 +390,14 @@ export default function ManualApp(): ReactElement {
               overflowY: 'auto',
               borderRight: 1,
               borderColor: 'divider',
-              py: 1,
+              pb: 2,
             }}
           >
             {nav}
           </Box>
         ) : (
           <Drawer open={navOpen} onClose={() => setNavOpen(false)}>
-            <Box sx={{ width: NAV_WIDTH, py: 1 }}>{nav}</Box>
+            <Box sx={{ width: NAV_WIDTH + 20, pb: 2 }}>{nav}</Box>
           </Drawer>
         )}
 
@@ -465,9 +408,9 @@ export default function ManualApp(): ReactElement {
             minWidth: 0,
             px: { xs: 2, sm: 4, lg: 6 },
             py: { xs: 3, md: 5 },
-            // The split layout uses the full width for text plus demo; the
-            // others keep the column centred.
-            maxWidth: layout === 'split' && large ? 'none' : 900,
+            // A page with a pinned demo uses the full width for text plus
+            // demo; other pages keep the text column centred.
+            maxWidth: split ? 'none' : 900,
             mx: 'auto',
           }}
         >
@@ -478,20 +421,14 @@ export default function ManualApp(): ReactElement {
               <ManualPage
                 key={page.slug}
                 page={page}
-                layout={layout}
                 allowSplit={large}
                 onToc={handleToc}
+                onSplitChange={setSplit}
               />
-              {nestedNav ? <PageFooter page={page} /> : null}
+              <PageFooter page={page} />
             </>
           )}
         </Box>
-
-        {showToc ? (
-          <Box sx={{ width: TOC_WIDTH, flexShrink: 0, py: 4, pr: 2 }}>
-            <OnThisPage entries={toc} />
-          </Box>
-        ) : null}
       </Box>
       {/* Editor parts in demos report through MessageStore (filter import,
           merge errors); the editor mounts this list in WorkspaceEditor. */}
