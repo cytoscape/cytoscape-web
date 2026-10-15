@@ -144,6 +144,9 @@ Query paramters will set the initial ui state and subsequently removed from the 
   demos write only there.
 - Links between the manual and the editor are full page loads (`<a href>`),
   never `navigate()`. A client-side move would keep the wrong database.
+- `navigateToNetwork` does nothing in a manual tab, even with `force`. Editor
+  components embedded in manual demos (Merge, network rows) call it; following
+  it would boot the editor on the sandbox database.
 - `/manual` redirects to the first page. Read the Docs paths
   (`/manual/en/latest/Styles.html#anchor`, `/manual/Styles.html`) redirect to
   the matching page and keep the anchor.

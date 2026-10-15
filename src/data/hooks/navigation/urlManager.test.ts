@@ -31,6 +31,22 @@ describe('urlManager', () => {
   }
 
   describe('navigateToNetwork', () => {
+    it('never navigates a manual tab into the editor, even when forced', () => {
+      // An editor component embedded in a manual demo (Merge, a network row)
+      // would otherwise leave /manual for /<ws>/networks/<id> — booting the
+      // editor on the manual's sandbox database.
+      window.history.replaceState(null, '', '/manual/merge')
+      const navigate = vi.fn()
+
+      navigateToNetwork(
+        { workspaceId: 'ws-1', networkId: 'net-1', force: true },
+        navigate,
+      )
+
+      expect(navigate).not.toHaveBeenCalled()
+      window.history.replaceState(null, '', '/')
+    })
+
     it('builds the network path with search parameters', () => {
       const navigate = vi.fn()
 
