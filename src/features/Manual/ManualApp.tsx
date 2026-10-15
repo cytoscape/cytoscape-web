@@ -17,6 +17,7 @@ import {
 import { type ReactElement, useCallback, useEffect, useState } from 'react'
 import { Link, Navigate, useLocation, useParams } from 'react-router-dom'
 
+import { MANUAL_ROUTE_SEGMENT } from '@/data/db/dbScope'
 import { ManualNotFound, ManualPage, type TocEntry } from './ManualPage'
 import {
   DEFAULT_MANUAL_SLUG,
@@ -40,8 +41,7 @@ const PageList = ({
       <ListItemButton
         key={page.slug}
         component={Link}
-        to={`../${page.slug}`}
-        relative="path"
+        to={`/${MANUAL_ROUTE_SEGMENT}/${page.slug}`}
         selected={page.slug === currentSlug}
         onClick={onNavigate}
         data-testid={`manual-nav-${page.slug}`}
@@ -115,7 +115,7 @@ export default function ManualApp(): ReactElement {
   if (page === undefined) {
     const slug = resolveManualPath(path)
     if (slug !== undefined) {
-      return <Navigate to={`/manual/${slug}${hash}`} replace />
+      return <Navigate to={`/${MANUAL_ROUTE_SEGMENT}/${slug}${hash}`} replace />
     }
   }
 
@@ -149,7 +149,7 @@ export default function ManualApp(): ReactElement {
           <Typography
             variant="subtitle1"
             component={Link}
-            to={`/manual/${DEFAULT_MANUAL_SLUG}`}
+            to={`/${MANUAL_ROUTE_SEGMENT}/${DEFAULT_MANUAL_SLUG}`}
             sx={{
               fontWeight: 600,
               color: 'inherit',

@@ -10,6 +10,8 @@ import {
 } from 'react'
 import { Link } from 'react-router-dom'
 
+import { MANUAL_ROUTE_SEGMENT } from '@/data/db/dbScope'
+
 import {
   classifyManualLink,
   resolveManualAsset,
@@ -85,8 +87,13 @@ const ManualLink = ({
         </a>
       )
     case 'page':
+      // Absolute, not relative: under the `/manual/*` splat route React
+      // Router 6 resolves `..` against `/manual`, not the current page, so a
+      // relative link left the manual for `/<slug>` — a workspace id.
       return (
-        <Link to={href.startsWith('#') ? href : `../${href}`} relative="path">
+        <Link
+          to={href.startsWith('#') ? href : `/${MANUAL_ROUTE_SEGMENT}/${href}`}
+        >
           {children}
         </Link>
       )

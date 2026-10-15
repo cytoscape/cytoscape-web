@@ -88,6 +88,58 @@ test.describe('manual', () => {
     await expect(page.locator('[data-testid="app-shell"]')).toHaveCount(0)
   })
 
+  test('the page list swaps pages in place', async ({ page }) => {
+    await page.goto('/manual/styles')
+    await expect(page.locator('[data-testid="manual-page"]')).toHaveAttribute(
+      'data-slug',
+      'styles',
+      { timeout: 30_000 },
+    )
+    // A marker that a full page load would clear.
+    await page.evaluate(() => {
+      ;(window as unknown as { __sameDocument?: boolean }).__sameDocument = true
+    })
+
+    await page.locator('[data-testid="manual-nav-merge"]').click()
+
+    await expect(page).toHaveURL(/\/manual\/merge$/)
+    await expect(page.locator('[data-testid="manual-page"]')).toHaveAttribute(
+      'data-slug',
+      'merge',
+    )
+    expect(
+      await page.evaluate(
+        () =>
+          (window as unknown as { __sameDocument?: boolean }).__sameDocument,
+      ),
+    ).toBe(true)
+  })
+
+  test('a link in page text opens the linked page and section', async ({
+    page,
+  }) => {
+    await page.goto('/manual/introduction')
+    const article = page.locator('[data-testid="manual-page"]')
+    await expect(article).toHaveAttribute('data-slug', 'introduction', {
+      timeout: 30_000,
+    })
+    await page.evaluate(() => {
+      ;(window as unknown as { __sameDocument?: boolean }).__sameDocument = true
+    })
+
+    await article.locator('a[href$="/manual/styles"]').first().click()
+
+    await expect(page).toHaveURL(/\/manual\/styles$/)
+    await expect(article).toHaveAttribute('data-slug', 'styles')
+    await expect(page.locator('[data-testid="app-shell"]')).toHaveCount(0)
+    expect(
+      await page.evaluate(
+        () =>
+          (window as unknown as { __sameDocument?: boolean }).__sameDocument,
+      ),
+    ).toBe(true)
+  })
+
   test('maps a Read the Docs link to the same page and section', async ({
     page,
   }) => {
