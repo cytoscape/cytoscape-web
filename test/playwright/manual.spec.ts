@@ -77,6 +77,22 @@ const openDemo = async (page: Page, path: string): Promise<string> => {
   return (await demo.getAttribute('data-network-id')) ?? ''
 }
 
+/**
+ * Shows the page list. Beside a pinned demo on screens under 1600px it is
+ * folded into the menu button; elsewhere it is already in view.
+ */
+const openPageList = async (page: Page): Promise<void> => {
+  // Wait for the page's demo to claim its column first: that is what folds
+  // the list, and reading the attribute earlier races it.
+  await expect(
+    page.locator('[data-testid="manual-live-demo"][data-network-id]'),
+  ).toBeVisible({ timeout: 30_000 })
+  const app = page.locator('[data-testid="manual-app"]')
+  if ((await app.getAttribute('data-nav')) === 'menu') {
+    await page.locator('[data-testid="manual-nav-toggle"]').click()
+  }
+}
+
 test.describe('manual', () => {
   test('opens the first page without mounting the editor', async ({ page }) => {
     await page.goto('/manual')
@@ -84,6 +100,7 @@ test.describe('manual', () => {
     await expect(page.locator('[data-testid="manual-page"]')).toBeVisible({
       timeout: 30_000,
     })
+    await openPageList(page)
     await expect(page.locator('[data-testid="manual-nav"]')).toBeVisible()
     await expect(page.locator('[data-testid="app-shell"]')).toHaveCount(0)
   })
@@ -100,6 +117,7 @@ test.describe('manual', () => {
       ;(window as unknown as { __sameDocument?: boolean }).__sameDocument = true
     })
 
+    await openPageList(page)
     await page.locator('[data-testid="manual-nav-merge"]').click()
 
     await expect(page).toHaveURL(/\/manual\/merge$/)
@@ -255,6 +273,9 @@ test.describe('manual', () => {
   for (const slug of [
     'introduction',
     'quick-tour',
+    'menus',
+    'workspace-panels',
+    'network-view',
     'creating-networks',
     'node-and-edge-column-data',
     'styles',
@@ -361,11 +382,13 @@ test.describe('manual', () => {
     await editor.close()
   })
 
-  test.describe('layouts', () => {
+  test.describe('page layout', () => {
     test.use({ viewport: { width: 1440, height: 900 } })
 
-    test('split pins the demo beside the text', async ({ page }) => {
-      await openDemo(page, '/manual/styles?layout=split')
+    test('pins the demo beside the text and folds the page list', async ({
+      page,
+    }) => {
+      await openDemo(page, '/manual/styles')
       const column = page.locator('[data-testid="manual-demo-column"]')
       await expect(
         column.locator('[data-testid="manual-live-demo"]'),
@@ -373,60 +396,74 @@ test.describe('manual', () => {
       await expect(
         page.locator('[data-testid="manual-live-demo-pointer"]'),
       ).toBeVisible()
+      // Below 1600px the page list folds into a menu to give the demo room.
+      await expect(page.locator('[data-testid="manual-app"]')).toHaveAttribute(
+        'data-nav',
+        'menu',
+      )
 
       // The demo stays in view while the text scrolls.
       await page.evaluate(() => window.scrollTo(0, 2000))
       await expect(column).toBeInViewport()
     })
 
-    test('nested lists the current page sections and marks the one in view', async ({
+    test('Expand enlarges the pinned demo and Shrink restores it', async ({
       page,
     }) => {
-      await page.goto('/manual/styles?layout=nested')
+      await openDemo(page, '/manual/styles')
+      const column = page.locator('[data-testid="manual-demo-column"]')
+      const before = (await column.boundingBox())?.width ?? 0
+      await page.locator('[data-testid="manual-live-demo-expand"]').click()
+      await expect(column).toHaveAttribute('data-expanded', 'true')
+      expect((await column.boundingBox())?.width ?? 0).toBeGreaterThan(
+        before * 1.5,
+      )
+      await page.locator('[data-testid="manual-live-demo-expand"]').click()
+      await expect(column).toHaveAttribute('data-expanded', 'false')
+    })
+
+    test('keeps the page list beside a page without a demo', async ({
+      page,
+    }) => {
+      await page.goto('/manual/privacy-policy')
+      await expect(page.locator('[data-testid="manual-app"]')).toHaveAttribute(
+        'data-nav',
+        'beside',
+        { timeout: 30_000 },
+      )
+      await expect(page.locator('[data-testid="manual-nav"]')).toContainText(
+        'Getting Started',
+      )
+    })
+
+    test('lists the current page sections and marks the one in view', async ({
+      page,
+    }) => {
+      await page.goto('/manual/privacy-policy')
       const sections = page.locator('[data-testid="manual-nav-sections"]')
-      await expect(sections).toContainText('How Mappings Work', {
+      await expect(sections).toContainText('Rights and Choices', {
         timeout: 30_000,
       })
-      await expect(page.locator('[data-testid="manual-toc"]')).toHaveCount(0)
-
       await page
-        .locator('[data-testid="manual-nav-section-how-mappings-work"]')
+        .locator('[data-testid="manual-nav-section-rights-and-choices"]')
         .click()
-      await expect(page).toHaveURL(/#how-mappings-work$/)
+      await expect(page).toHaveURL(/#rights-and-choices$/)
       await expect(
-        page.locator('[data-testid="manual-nav-section-how-mappings-work"]'),
+        page.locator('[data-testid="manual-nav-section-rights-and-choices"]'),
       ).toHaveAttribute('aria-current', 'location')
     })
 
-    test('current keeps the original layout', async ({ page }) => {
-      await page.goto('/manual/styles?layout=current')
-      await expect(page.locator('[data-testid="manual-toc"]')).toBeVisible({
+    test('an old Quick Tour anchor opens the page it moved to', async ({
+      page,
+    }) => {
+      await page.goto('/manual/en/latest/Quick_Tour_of_Cytoscape.html#data')
+      await expect(page).toHaveURL(/\/manual\/menus#data$/, {
         timeout: 30_000,
       })
-      await expect(
-        page.locator('[data-testid="manual-nav-sections"]'),
-      ).toHaveCount(0)
-    })
-
-    test('the switch changes the layout and remembers it', async ({ page }) => {
-      await page.goto('/manual/merge')
-      await page.locator('[data-testid="manual-layout-nested"]').click()
-      await expect(page).toHaveURL(/layout=nested/)
-      await expect(page.locator('[data-testid="manual-app"]')).toHaveAttribute(
-        'data-layout',
-        'nested',
-      )
-
-      await page.goto('/manual/export')
-      await expect(page.locator('[data-testid="manual-app"]')).toHaveAttribute(
-        'data-layout',
-        'nested',
-        { timeout: 30_000 },
-      )
     })
 
     test('next and previous links walk the pages', async ({ page }) => {
-      await page.goto('/manual/styles?layout=nested')
+      await page.goto('/manual/styles')
       // The cookie banner covers the foot of the page until it is answered.
       await page.locator('[data-testid="cookie-consent-accept-button"]').click()
       const footer = page.locator('[data-testid="manual-page-footer"]')
