@@ -15,7 +15,9 @@ import {
   type ReactElement,
   type ReactNode,
   Suspense,
+  useCallback,
   useEffect,
+  useRef,
   useState,
 } from 'react'
 
@@ -90,6 +92,12 @@ export interface LiveDemoProps {
   /** Height of the renderer row, in pixels. */
   height?: number
   caption?: string
+  /**
+   * Fill the parent's height instead of using `height`, with the parts
+   * stacked: renderer, then side panel, then table. Set by LiveDemo when the
+   * demo renders in the `split` layout's pinned column.
+   */
+  fill?: boolean
 }
 
 type DemoState =
@@ -98,9 +106,10 @@ type DemoState =
   | { kind: 'unavailable' }
   | { kind: 'failed'; message: string }
 
+/** Tabs below or beside the renderer. `table` joins them in `fill` mode. */
 type SidePanel = Extract<
   LiveDemoPanel,
-  'style' | 'filter' | 'layout' | 'api' | 'url'
+  'style' | 'filter' | 'layout' | 'api' | 'url' | 'table'
 >
 
 const SIDE_PANELS: readonly SidePanel[] = [
@@ -116,6 +125,7 @@ const SIDE_PANEL_LABELS: Record<SidePanel, string> = {
   layout: 'Layout',
   api: 'App API',
   url: 'Link',
+  table: 'Table',
 }
 
 const SIDE_PANEL_WIDTH = 420
@@ -129,6 +139,25 @@ const DemoNetwork = ({ networkId }: { networkId: IdType }): ReactElement => {
     return <></>
   }
   return DefaultRenderer.getComponent(network, undefined, true, false)
+}
+
+/** The element's current height in pixels, kept up to date as it resizes. */
+const useElementHeight = (): [
+  (element: HTMLElement | null) => void,
+  number,
+] => {
+  const [height, setHeight] = useState(0)
+  const observer = useRef<ResizeObserver | null>(null)
+  // Stable, so React does not detach and reattach it on every render.
+  const ref = useCallback((element: HTMLElement | null): void => {
+    observer.current?.disconnect()
+    if (element === null) return
+    observer.current = new ResizeObserver(([entry]) =>
+      setHeight(Math.floor(entry.contentRect.height)),
+    )
+    observer.current.observe(element)
+  }, [])
+  return [ref, height]
 }
 
 const Lazy = ({ children }: { children: ReactNode }): ReactElement => (
@@ -167,13 +196,20 @@ export default function LiveDemoBody({
   actions = [],
   height = DEFAULT_HEIGHT,
   caption,
+  fill = false,
 }: LiveDemoProps): ReactElement {
+  const [sideRef, sideHeight] = useElementHeight()
   const [state, setState] = useState<DemoState>({ kind: 'loading' })
   // Bumped by Reset: the effect below empties the demo workspace and loads
   // the fixtures again.
   const [generation, setGeneration] = useState(0)
   const [openAction, setOpenAction] = useState<LiveDemoAction | undefined>()
-  const sidePanels = SIDE_PANELS.filter((p) => panels.includes(p))
+  // In the pinned column (`fill`) the table is one more tab instead of a
+  // third stacked area: three stacked areas leave each too short to use.
+  const sidePanels: SidePanel[] = [
+    ...SIDE_PANELS.filter((p) => panels.includes(p)),
+    ...(fill && panels.includes('table') ? (['table'] as const) : []),
+  ]
   const [sideTab, setSideTab] = useState<SidePanel | undefined>(sidePanels[0])
 
   // The shown network follows the workspace's current network, so a merge
@@ -262,7 +298,16 @@ export default function LiveDemoBody({
   return (
     <Paper
       variant="outlined"
-      sx={{ my: 3, overflow: 'hidden' }}
+      sx={
+        fill
+          ? {
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }
+          : { my: 3, overflow: 'hidden' }
+      }
       data-testid="manual-live-demo"
       data-network-id={ready ? shownId : undefined}
     >
@@ -318,14 +363,24 @@ export default function LiveDemoBody({
 
       {/* Side by side on wide screens; stacked, renderer first, on phones. */}
       <Box
-        sx={{
-          display: 'flex',
-          flexDirection: { xs: 'column', md: 'row' },
-          height: {
-            xs: showRenderer && sidePanels.length > 0 ? height * 2 : height,
-            md: height,
-          },
-        }}
+        sx={
+          fill
+            ? {
+                display: 'flex',
+                flexDirection: 'column',
+                flex: '1 1 0',
+                minHeight: 0,
+              }
+            : {
+                display: 'flex',
+                flexDirection: { xs: 'column', md: 'row' },
+                height: {
+                  xs:
+                    showRenderer && sidePanels.length > 0 ? height * 2 : height,
+                  md: height,
+                },
+              }
+        }
       >
         {ready && showRenderer ? (
           <Box
@@ -344,20 +399,32 @@ export default function LiveDemoBody({
         ) : null}
         {ready && sideTab !== undefined ? (
           <Box
-            sx={{
-              width: {
-                xs: '100%',
-                md: showRenderer ? SIDE_PANEL_WIDTH : '100%',
-              },
-              height: { xs: showRenderer ? height : '100%', md: 'auto' },
-              flexShrink: 0,
-              display: 'flex',
-              flexDirection: 'column',
-              borderLeft: { xs: 0, md: showRenderer ? 1 : 0 },
-              borderTop: { xs: showRenderer ? 1 : 0, md: 0 },
-              borderColor: 'divider',
-              overflow: 'hidden',
-            }}
+            sx={
+              fill
+                ? {
+                    flex: '1 1 0',
+                    minHeight: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    borderTop: showRenderer ? 1 : 0,
+                    borderColor: 'divider',
+                    overflow: 'hidden',
+                  }
+                : {
+                    width: {
+                      xs: '100%',
+                      md: showRenderer ? SIDE_PANEL_WIDTH : '100%',
+                    },
+                    height: { xs: showRenderer ? height : '100%', md: 'auto' },
+                    flexShrink: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    borderLeft: { xs: 0, md: showRenderer ? 1 : 0 },
+                    borderTop: { xs: showRenderer ? 1 : 0, md: 0 },
+                    borderColor: 'divider',
+                    overflow: 'hidden',
+                  }
+            }
             data-testid="manual-live-demo-side"
           >
             {sidePanels.length > 1 ? (
@@ -383,6 +450,7 @@ export default function LiveDemoBody({
               </Tabs>
             ) : null}
             <Box
+              ref={sideRef}
               sx={{ flex: 1, minHeight: 0, position: 'relative' }}
               data-testid={`manual-live-demo-${sideTab}`}
             >
@@ -390,7 +458,9 @@ export default function LiveDemoBody({
                 <VizmapperView
                   networkId={shownId}
                   height={
-                    height - (sidePanels.length > 1 ? TAB_STRIP_HEIGHT : 0)
+                    fill
+                      ? sideHeight
+                      : height - (sidePanels.length > 1 ? TAB_STRIP_HEIGHT : 0)
                   }
                 />
               ) : null}
@@ -404,12 +474,26 @@ export default function LiveDemoBody({
               ) : null}
               {sideTab === 'api' ? <DemoApiPanel networkId={shownId} /> : null}
               {sideTab === 'url' ? <DemoUrlPanel networkId={shownId} /> : null}
+              {sideTab === 'table' ? (
+                <Box
+                  data-testid="manual-live-demo-table"
+                  sx={{ height: '100%' }}
+                >
+                  <Lazy>
+                    <TableBrowser
+                      currentNetworkId={shownId}
+                      height={sideHeight}
+                      setHeight={() => undefined}
+                    />
+                  </Lazy>
+                </Box>
+              ) : null}
             </Box>
           </Box>
         ) : null}
       </Box>
 
-      {ready && showTable ? (
+      {ready && showTable && !fill ? (
         <Box
           sx={{ height: TABLE_HEIGHT, borderTop: 1, borderColor: 'divider' }}
           data-testid="manual-live-demo-table"

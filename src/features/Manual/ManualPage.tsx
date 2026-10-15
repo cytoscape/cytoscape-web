@@ -1,4 +1,5 @@
 import { Box, CircularProgress, Typography } from '@mui/material'
+import type { SxProps, Theme } from '@mui/material/styles'
 import type { MDXContent } from 'mdx/types'
 import {
   lazy,
@@ -7,11 +8,15 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
+  useState,
 } from 'react'
 import { useLocation } from 'react-router-dom'
 
+import { type DemoSlot, DemoSlotContext } from './components/DemoSlot'
 import { mdxComponents } from './components/mdxComponents'
+import type { ManualLayout } from './layout'
 import type { ManualPage as ManualPageDef } from './pages'
 
 /** One lazy component per page, so revisiting a page reuses its chunk. */
@@ -38,19 +43,168 @@ const Rendered = ({ onRendered }: { onRendered: () => void }): null => {
   return null
 }
 
+/** The original typography: full-width text, 16px, MUI heading scale. */
+const CURRENT_TYPOGRAPHY: SxProps<Theme> = {
+  lineHeight: 1.65,
+  fontSize: '1rem',
+  '& h1': { typography: 'h4', mt: 0, mb: 3 },
+  '& h2': {
+    typography: 'h5',
+    mt: 5,
+    mb: 1.5,
+    pb: 0.5,
+    borderBottom: 1,
+    borderColor: 'divider',
+  },
+  '& h3': { typography: 'h6', mt: 3.5, mb: 1 },
+  '& h4': { typography: 'subtitle1', fontWeight: 600, mt: 3, mb: 1 },
+  '& p, & ul, & ol': { my: 1.5 },
+  '& li': { my: 0.5 },
+}
+
+/**
+ * Readable-measure typography (`nested` and `split`). The values follow the
+ * research on screen reading:
+ *
+ * - a measure of about 68 characters (50–75 is the readable range; WCAG
+ *   1.4.8 caps it at 80);
+ * - 17px body text with 1.7 line height (WCAG 1.4.12 asks that 1.5 work);
+ * - paragraph spacing larger than line spacing, so paragraphs read as units;
+ * - more space above a heading than below, so it binds to its section;
+ * - bold at weight 600, because the manual bolds every UI label and
+ *   heavier bold at that density stops standing out.
+ */
+const READABLE_TYPOGRAPHY: SxProps<Theme> = {
+  fontSize: '1.0625rem',
+  lineHeight: 1.7,
+  color: 'text.primary',
+  '& > *:not(table):not([data-testid="manual-live-demo"])': {
+    maxWidth: '68ch',
+  },
+  '& h1': {
+    fontSize: '2.125rem',
+    lineHeight: 1.2,
+    fontWeight: 700,
+    letterSpacing: '-0.01em',
+    mt: 0,
+    mb: 2.5,
+  },
+  '& h2': {
+    fontSize: '1.5rem',
+    lineHeight: 1.3,
+    fontWeight: 650,
+    letterSpacing: '-0.005em',
+    mt: 6,
+    mb: 1.5,
+  },
+  '& h3': {
+    fontSize: '1.1875rem',
+    lineHeight: 1.35,
+    fontWeight: 650,
+    mt: 4,
+    mb: 1,
+  },
+  '& h4': { fontSize: '1.0625rem', fontWeight: 650, mt: 3, mb: 0.75 },
+  '& p': { mt: 0, mb: 2 },
+  '& ul, & ol': { mt: 0, mb: 2, pl: 3.5 },
+  '& li': { mb: 0.75 },
+  '& li > p': { mb: 0.75 },
+  '& strong': { fontWeight: 600 },
+  '& h1 + p': { fontSize: '1.1875rem', color: 'text.secondary' },
+  '& tbody tr:nth-of-type(even)': { bgcolor: 'action.hover' },
+  '& table': { fontSize: '0.9375rem' },
+}
+
+/** Shared by both: code, tables, images, quotes. */
+const COMMON_CONTENT: SxProps<Theme> = {
+  minWidth: 0,
+  '& h1, & h2, & h3, & h4': { scrollMarginTop: '72px' },
+  '& a': { color: 'primary.main' },
+  '& img': { maxWidth: '100%', height: 'auto', verticalAlign: 'middle' },
+  '& p > img:only-child': {
+    display: 'block',
+    my: 2,
+    border: 1,
+    borderColor: 'divider',
+    borderRadius: 1,
+  },
+  '& code': {
+    fontFamily: 'monospace',
+    fontSize: '0.875em',
+    px: 0.5,
+    borderRadius: 0.5,
+    bgcolor: 'action.hover',
+  },
+  '& pre': {
+    p: 2,
+    overflowX: 'auto',
+    borderRadius: 1,
+    bgcolor: 'action.hover',
+    '& code': { p: 0, bgcolor: 'transparent' },
+  },
+  '& table': {
+    borderCollapse: 'collapse',
+    my: 2,
+    display: 'block',
+    overflowX: 'auto',
+  },
+  '& th, & td': {
+    border: 1,
+    borderColor: 'divider',
+    px: 1.5,
+    py: 0.75,
+    textAlign: 'left',
+    verticalAlign: 'top',
+  },
+  '& th': { bgcolor: 'action.hover', fontWeight: 600 },
+  '& blockquote': {
+    m: 0,
+    my: 2,
+    pl: 2,
+    borderLeft: 4,
+    borderColor: 'divider',
+    color: 'text.secondary',
+  },
+}
+
+/** Below the app bar (48px) with a small gap. */
+const PINNED_TOP = 56
+
 interface ManualPageProps {
   page: ManualPageDef
+  layout: ManualLayout
+  /** False below the `lg` breakpoint: `split` then renders as `nested`. */
+  allowSplit: boolean
   onToc: (entries: TocEntry[]) => void
 }
 
 /**
- * Renders one manual page. Typography for content elements lives here, in one
- * `sx` block; page files carry no styling.
+ * Renders one manual page. Typography for content elements lives here; page
+ * files carry no styling. In the `split` layout the page's demo renders in a
+ * pinned right-hand column through DemoSlotContext.
  */
-export const ManualPage = ({ page, onToc }: ManualPageProps): ReactElement => {
+export const ManualPage = ({
+  page,
+  layout,
+  allowSplit,
+  onToc,
+}: ManualPageProps): ReactElement => {
   const Content = contentFor(page)
   const article = useRef<HTMLElement>(null)
   const { hash } = useLocation()
+
+  const split = layout === 'split' && allowSplit
+  const [demoCount, setDemoCount] = useState(0)
+  const [column, setColumn] = useState<HTMLElement | null>(null)
+  const register = useCallback(() => {
+    setDemoCount((n) => n + 1)
+    return () => setDemoCount((n) => n - 1)
+  }, [])
+  const slot: DemoSlot = useMemo(
+    () => ({ target: split ? column : null, register }),
+    [split, column, register],
+  )
+  const showColumn = split && demoCount > 0
 
   const handleRendered = useCallback((): void => {
     const root = article.current
@@ -73,92 +227,58 @@ export const ManualPage = ({ page, onToc }: ManualPageProps): ReactElement => {
   }, [hash, onToc])
 
   return (
-    <Box
-      component="article"
-      ref={article}
-      data-testid="manual-page"
-      data-slug={page.slug}
-      sx={{
-        minWidth: 0,
-        lineHeight: 1.65,
-        fontSize: '1rem',
-        '& h1': { typography: 'h4', mt: 0, mb: 3 },
-        '& h2': {
-          typography: 'h5',
-          mt: 5,
-          mb: 1.5,
-          pb: 0.5,
-          borderBottom: 1,
-          borderColor: 'divider',
-        },
-        '& h3': { typography: 'h6', mt: 3.5, mb: 1 },
-        '& h4': { typography: 'subtitle1', fontWeight: 600, mt: 3, mb: 1 },
-        '& h1, & h2, & h3, & h4': { scrollMarginTop: '72px' },
-        '& p, & ul, & ol': { my: 1.5 },
-        '& li': { my: 0.5 },
-        '& a': { color: 'primary.main' },
-        '& img': {
-          maxWidth: '100%',
-          height: 'auto',
-          verticalAlign: 'middle',
-        },
-        '& p > img:only-child': {
-          display: 'block',
-          my: 2,
-          border: 1,
-          borderColor: 'divider',
-          borderRadius: 1,
-        },
-        '& code': {
-          fontFamily: 'monospace',
-          fontSize: '0.875em',
-          px: 0.5,
-          borderRadius: 0.5,
-          bgcolor: 'action.hover',
-        },
-        '& pre': {
-          p: 2,
-          overflowX: 'auto',
-          borderRadius: 1,
-          bgcolor: 'action.hover',
-          '& code': { p: 0, bgcolor: 'transparent' },
-        },
-        '& table': {
-          borderCollapse: 'collapse',
-          my: 2,
-          display: 'block',
-          overflowX: 'auto',
-        },
-        '& th, & td': {
-          border: 1,
-          borderColor: 'divider',
-          px: 1.5,
-          py: 0.75,
-          textAlign: 'left',
-          verticalAlign: 'top',
-        },
-        '& th': { bgcolor: 'action.hover', fontWeight: 600 },
-        '& blockquote': {
-          m: 0,
-          my: 2,
-          pl: 2,
-          borderLeft: 4,
-          borderColor: 'divider',
-          color: 'text.secondary',
-        },
-      }}
-    >
-      <Suspense
-        fallback={
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-            <CircularProgress size={28} />
-          </Box>
+    <DemoSlotContext.Provider value={slot}>
+      <Box
+        sx={
+          showColumn
+            ? {
+                display: 'grid',
+                gridTemplateColumns: 'minmax(0, 68ch) minmax(0, 1fr)',
+                columnGap: 5,
+                alignItems: 'start',
+              }
+            : undefined
         }
       >
-        <Content components={mdxComponents} />
-        <Rendered onRendered={handleRendered} />
-      </Suspense>
-    </Box>
+        <Box
+          component="article"
+          ref={article}
+          data-testid="manual-page"
+          data-slug={page.slug}
+          data-layout={split ? 'split' : layout}
+          sx={[
+            COMMON_CONTENT,
+            ...(layout === 'current'
+              ? [CURRENT_TYPOGRAPHY]
+              : [READABLE_TYPOGRAPHY]),
+          ]}
+        >
+          <Suspense
+            fallback={
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+                <CircularProgress size={28} />
+              </Box>
+            }
+          >
+            <Content components={mdxComponents} />
+            <Rendered onRendered={handleRendered} />
+          </Suspense>
+        </Box>
+        {split ? (
+          <Box
+            ref={setColumn}
+            data-testid="manual-demo-column"
+            sx={{
+              display: showColumn ? 'block' : 'none',
+              position: 'sticky',
+              top: PINNED_TOP,
+              height: `calc(100vh - ${PINNED_TOP + 16}px)`,
+              minWidth: 0,
+            }}
+          />
+        ) : null}
+      </Box>
+    </DemoSlotContext.Provider>
   )
 }
 

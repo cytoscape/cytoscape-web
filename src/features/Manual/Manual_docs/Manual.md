@@ -26,8 +26,9 @@ from the code (`VisualPropertyTable`) instead of screenshots.
 ## Component Structure
 
 ```
-ManualApp            route element: app bar, page list, page, "On this page"
-├── PageList         sidebar (drawer below the md breakpoint)
+ManualApp            route element: app bar, layout switch, page list, page
+├── PageList         sidebar (drawer below md); sections nest in nested/split
+├── PageFooter       previous / next page (nested, split)
 ├── ManualPage       lazy-loads one MDX page; owns all content typography
 │   └── <page>.mdx   rendered with mdxComponents
 │       ├── LiveDemo → LiveDemoBody   editor parts on bundled fixtures
@@ -54,6 +55,21 @@ ManualApp            route element: app bar, page list, page, "On this page"
   click-away. It is a menu, not a form, so it falls in the out-of-scope class
   of `docs/specifications/DIALOG_DISMISS_POLICY.md`.
 - **Open Cytoscape Web** is a plain link to the base URL: a full page load.
+
+### Layouts (under comparison)
+
+The app bar switches between three layouts (`layout.ts`); `?layout=` picks one
+and the choice is remembered per browser. Default: `split`.
+
+| Layout | Page list | Text | Demo |
+| --- | --- | --- | --- |
+| `current` | pages only; "On this page" on the right | full width, 16px | in the text |
+| `nested` | the current page's sections nest under it; the section in view is marked and opens its subsections | 68-character measure, 17px, 1.7 line height | in the text |
+| `split` | as `nested` | as `nested` | pinned in a right-hand column (`lg` and up); the text keeps a pointer to it |
+
+`nested` and `split` add previous/next page links at the foot. Below `lg`,
+`split` renders as `nested`. In the pinned column the demo fills the column
+height and the table becomes a tab (`LiveDemoBody` `fill`).
 
 ### ManualPage
 

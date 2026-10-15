@@ -360,4 +360,78 @@ test.describe('manual', () => {
     await manual.close()
     await editor.close()
   })
+
+  test.describe('layouts', () => {
+    test.use({ viewport: { width: 1440, height: 900 } })
+
+    test('split pins the demo beside the text', async ({ page }) => {
+      await openDemo(page, '/manual/styles?layout=split')
+      const column = page.locator('[data-testid="manual-demo-column"]')
+      await expect(
+        column.locator('[data-testid="manual-live-demo"]'),
+      ).toBeVisible()
+      await expect(
+        page.locator('[data-testid="manual-live-demo-pointer"]'),
+      ).toBeVisible()
+
+      // The demo stays in view while the text scrolls.
+      await page.evaluate(() => window.scrollTo(0, 2000))
+      await expect(column).toBeInViewport()
+    })
+
+    test('nested lists the current page sections and marks the one in view', async ({
+      page,
+    }) => {
+      await page.goto('/manual/styles?layout=nested')
+      const sections = page.locator('[data-testid="manual-nav-sections"]')
+      await expect(sections).toContainText('How Mappings Work', {
+        timeout: 30_000,
+      })
+      await expect(page.locator('[data-testid="manual-toc"]')).toHaveCount(0)
+
+      await page
+        .locator('[data-testid="manual-nav-section-how-mappings-work"]')
+        .click()
+      await expect(page).toHaveURL(/#how-mappings-work$/)
+      await expect(
+        page.locator('[data-testid="manual-nav-section-how-mappings-work"]'),
+      ).toHaveAttribute('aria-current', 'location')
+    })
+
+    test('current keeps the original layout', async ({ page }) => {
+      await page.goto('/manual/styles?layout=current')
+      await expect(page.locator('[data-testid="manual-toc"]')).toBeVisible({
+        timeout: 30_000,
+      })
+      await expect(
+        page.locator('[data-testid="manual-nav-sections"]'),
+      ).toHaveCount(0)
+    })
+
+    test('the switch changes the layout and remembers it', async ({ page }) => {
+      await page.goto('/manual/merge')
+      await page.locator('[data-testid="manual-layout-nested"]').click()
+      await expect(page).toHaveURL(/layout=nested/)
+      await expect(page.locator('[data-testid="manual-app"]')).toHaveAttribute(
+        'data-layout',
+        'nested',
+      )
+
+      await page.goto('/manual/export')
+      await expect(page.locator('[data-testid="manual-app"]')).toHaveAttribute(
+        'data-layout',
+        'nested',
+        { timeout: 30_000 },
+      )
+    })
+
+    test('next and previous links walk the pages', async ({ page }) => {
+      await page.goto('/manual/styles?layout=nested')
+      // The cookie banner covers the foot of the page until it is answered.
+      await page.locator('[data-testid="cookie-consent-accept-button"]').click()
+      const footer = page.locator('[data-testid="manual-page-footer"]')
+      await footer.getByRole('link', { name: 'Filters' }).click()
+      await expect(page).toHaveURL(/\/manual\/filters/)
+    })
+  })
 })
