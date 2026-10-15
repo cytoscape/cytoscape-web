@@ -249,4 +249,115 @@ test.describe('manual', () => {
     })
     await expect(manual.locator('[data-testid="manual-page"]')).toBeVisible()
   })
+
+  // Every page that carries a demo must start it. The list mirrors the
+  // `<LiveDemo` uses in src/features/Manual/content/*.mdx.
+  for (const slug of [
+    'introduction',
+    'quick-tour',
+    'creating-networks',
+    'node-and-edge-column-data',
+    'styles',
+    'filters',
+    'merge',
+    'export',
+    'extending',
+    'advanced',
+  ]) {
+    test(`the ${slug} page starts its live demo`, async ({ page }) => {
+      await openDemo(page, `/manual/${slug}`)
+    })
+  }
+
+  test('the merge demo merges two networks without leaving the manual', async ({
+    page,
+  }) => {
+    await openDemo(page, '/manual/merge')
+    await page.locator('[data-testid="manual-live-demo-merge"]').click()
+    const dialog = page.locator('[data-testid="merge-dialog"]')
+    await expect(dialog).toBeVisible({ timeout: 15_000 })
+
+    await dialog.getByText('galFiltered chart_1', { exact: true }).click()
+    await dialog.locator('button:has([data-testid="ArrowForwardIcon"])').click()
+    await dialog.getByText('HSF1 neighborhood', { exact: true }).click()
+    await dialog.locator('button:has([data-testid="ArrowForwardIcon"])').click()
+    await dialog.locator('[data-testid="merge-dialog-merge-button"]').click()
+
+    await expect(dialog).toBeHidden({ timeout: 15_000 })
+    await expect(page).toHaveURL(/\/manual\/merge$/)
+    await page
+      .locator('[data-testid="manual-live-demo-network-picker"]')
+      .click()
+    await expect(page.getByRole('option')).toHaveCount(3)
+  })
+
+  test('the export demo opens the Export Network to Image dialog', async ({
+    page,
+  }) => {
+    await openDemo(page, '/manual/export')
+    await page.locator('[data-testid="manual-live-demo-export"]').click()
+    await expect(
+      page.locator('[data-testid="export-network-to-image-dialog"]'),
+    ).toBeVisible({ timeout: 15_000 })
+  })
+
+  test('the App API demo runs a call and shows its result', async ({
+    page,
+  }) => {
+    await openDemo(page, '/manual/extending')
+    await page.locator('[data-testid="manual-demo-api-run"]').first().click()
+    await expect(
+      page.locator('[data-testid="manual-demo-api-result"]'),
+    ).toContainText('"success": true', { timeout: 15_000 })
+  })
+
+  test('the link demo encodes the selection', async ({ page }) => {
+    const demoId = await openDemo(page, '/manual/advanced')
+    await page.evaluate(
+      (id) =>
+        (
+          window as unknown as {
+            CyWebApi: {
+              selection: {
+                exclusiveSelect: (
+                  n: string,
+                  a: string[],
+                  b: string[],
+                ) => unknown
+              }
+            }
+          }
+        ).CyWebApi.selection.exclusiveSelect(id, ['7998'], []),
+      demoId,
+    )
+    await expect(page.locator('[data-testid="manual-demo-url"]')).toContainText(
+      'selectednodes=7998',
+    )
+  })
+
+  test('the filter demo shows the FILTER tab', async ({ page }) => {
+    await openDemo(page, '/manual/filters')
+    await expect(page.locator('[data-testid="filter-tab"]')).toBeVisible()
+  })
+
+  test('the privacy page counts the workspace without writing to it', async ({
+    context,
+  }) => {
+    const editor = await context.newPage()
+    await gotoAndSeedNetwork(editor)
+    await expect
+      .poll(
+        async () => (await storeKeys(editor, 'cyweb-db', 'summaries')).length,
+      )
+      .toBeGreaterThan(0)
+
+    const manual = await context.newPage()
+    await manual.goto('/manual/privacy-policy')
+    const table = manual.locator('[data-testid="manual-browser-storage-db"]')
+    await expect(table).toContainText('Network names, descriptions and sizes', {
+      timeout: 30_000,
+    })
+    await manual.close()
+    await editor.close()
+  })
 })

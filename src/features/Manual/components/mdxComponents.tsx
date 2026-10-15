@@ -17,6 +17,7 @@ import {
   resolveManualAsset,
   slugifyHeading,
 } from '../manualSlug'
+import { BrowserStorageView } from './BrowserStorageView'
 import { LiveDemo } from './LiveDemo'
 import { Note } from './Note'
 import { VisualPropertyTable } from './VisualPropertyTable'
@@ -102,8 +103,8 @@ const ManualLink = ({
 
 /**
  * How the manual renders MDX. Content files hold text only; this map owns
- * every presentation decision. Components named here (`LiveDemo`, `Note`,
- * `VisualPropertyTable`)
+ * every presentation decision. Components named here (`BrowserStorageView`,
+ * `LiveDemo`, `Note`, `VisualPropertyTable`)
  * are usable in any page without an import.
  */
 export const mdxComponents: MDXComponents = {
@@ -113,6 +114,7 @@ export const mdxComponents: MDXComponents = {
   h4: heading('h4'),
   img: ManualImage,
   a: ManualLink,
+  BrowserStorageView,
   LiveDemo,
   Note,
   VisualPropertyTable,

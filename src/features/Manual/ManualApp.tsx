@@ -18,6 +18,7 @@ import { type ReactElement, useCallback, useEffect, useState } from 'react'
 import { Link, Navigate, useLocation, useParams } from 'react-router-dom'
 
 import { MANUAL_ROUTE_SEGMENT } from '@/data/db/dbScope'
+import { SnackbarMessageList } from '@/features/Messages'
 import { ManualNotFound, ManualPage, type TocEntry } from './ManualPage'
 import {
   DEFAULT_MANUAL_SLUG,
@@ -227,6 +228,9 @@ export default function ManualApp(): ReactElement {
           </Box>
         ) : null}
       </Box>
+      {/* Editor parts in demos report through MessageStore (filter import,
+          merge errors); the editor mounts this list in WorkspaceEditor. */}
+      <SnackbarMessageList />
     </Box>
   )
 }

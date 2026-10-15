@@ -30,9 +30,12 @@ ManualApp            route element: app bar, page list, page, "On this page"
 ├── PageList         sidebar (drawer below the md breakpoint)
 ├── ManualPage       lazy-loads one MDX page; owns all content typography
 │   └── <page>.mdx   rendered with mdxComponents
-│       ├── LiveDemo → LiveDemoBody   renderer + Style panel on a fixture
+│       ├── LiveDemo → LiveDemoBody   editor parts on bundled fixtures
+│       │   └── demo/                 Layout, App API and Link side panels
 │       ├── VisualPropertyTable       generated from getDefaultVisualStyle()
+│       ├── BrowserStorageView        read-only counts of what the browser stores
 │       └── Note                      callout
+└── SnackbarMessageList  messages from editor parts inside demos
 └── OnThisPage       h2/h3 list, built from the rendered page
 ```
 
@@ -60,14 +63,41 @@ ManualApp            route element: app bar, page list, page, "On this page"
 ### LiveDemo
 
 - Tries once per document to clear the sandbox database (`sandbox.ts`); a
-  failed clear leaves old rows behind and the demo still runs. It then loads a
-  bundled fixture with `networkApi.createNetworkFromCx2` and renders
-  `CyjsRenderer` and `VizmapperView` on it.
-- **Reset** deletes the demo network and loads a fresh copy.
+  failed clear leaves old rows behind and the demo still runs. It then loads
+  its fixtures with `networkApi.createNetworkFromCx2`. The first fixture is
+  shown.
+- Props:
+
+  | Prop | Values | Default |
+  | --- | --- | --- |
+  | `fixtures` | `gal-filtered` (10 nodes, expression columns), `hsf1-neighborhood` (6 nodes, 4 shared names) | `['gal-filtered']` |
+  | `panels` | `renderer`, `toolbar` (floating tools over the renderer), `style`, `filter`, `layout`, `api`, `url` (side panel tabs), `table` (bottom) | `['renderer', 'style']` |
+  | `actions` | `merge`, `exportImage` — header buttons that open the editor's dialogs | none |
+  | `height` | renderer row height in pixels | 520 |
+  | `caption` | header text | a default line |
+
+- The renderer shows the workspace's current network. With several networks
+  (fixtures or a merge result), a picker in the header switches between them.
+- **Reset** deletes every network in the demo's workspace and loads the
+  fixtures again. Leaving the page does the same.
 - Outside the manual scope it renders a notice instead: it must never write
   to a user's workspace.
-- One demo per page. A demo sets the workspace's current network, which the
-  Style panel and undo read.
+- One demo per page. A demo sets the workspace's current network and
+  `ui.activeNetworkView`, which the Style panel, export, undo and the
+  renderer's context menu read.
+- Editor parts that navigate (Merge opens its result with
+  `navigateToNetwork`) stay in the manual: `navigateToNetwork` does nothing
+  in a manual tab (`src/data/hooks/navigation/urlManager.ts`).
+
+### BrowserStorageView
+
+- On the Privacy Policy page. Counts rows per object store of the editor's
+  `cyweb-db`, lists the app's localStorage keys and the site's cookie names.
+  It never shows values and never writes.
+- Checks `indexedDB.databases()` before opening `cyweb-db`, because opening a
+  missing database would create it.
+- `STORE_LABELS` is typed over `ObjectStoreNames`: a new object store fails
+  the type check until it has a label.
 
 ### VisualPropertyTable
 
@@ -96,7 +126,7 @@ Rules for content:
 | External link | `[NDEx](https://www.ndexbio.org)` — opens a new tab |
 | Image | `![Alt text](manual-assets/<Folder>/<file>.jpg)` — files live in `public/manual-assets/`, resolved against the base URL |
 | Callout | `<Note>…</Note>`, `<Note severity="warning">…</Note>` |
-| Working demo | `<LiveDemo />` (props: `panels`, `height`, `caption`) |
+| Working demo | `<LiveDemo />` (props: `fixtures`, `panels`, `actions`, `height`, `caption`) |
 | Visual property list | `<VisualPropertyTable group="node" />` |
 
 MDX is JSX: close every tag (`<br />`, `<a id="x" />`), and escape `{`, `}`

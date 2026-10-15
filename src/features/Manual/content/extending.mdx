@@ -177,6 +177,18 @@ your Service Apps. Opening the workspace again restores them. See
 
 ## For Developers
 
+### Try the App API
+
+Apps work with networks through the App API: the same functions are on
+`window.CyWebApi` in the browser, and in the `cyweb/` modules for apps. Each
+button below runs the code shown under it on the demo network and prints the
+result.
+
+<LiveDemo panels={['renderer', 'api']} />
+
+Every function returns a result object: `{ success: true, data }`, or
+`{ success: false, error }` with a code and message. Functions never throw.
+
 <a id="writing_apps" />
 
 ### Writing Apps
