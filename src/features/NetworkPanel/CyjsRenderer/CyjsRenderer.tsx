@@ -10,7 +10,13 @@ import Cytoscape, {
 } from 'cytoscape'
 import type { DebouncedFunc } from 'lodash'
 import debounce from 'lodash/debounce'
-import { ReactElement, useEffect, useRef, useState } from 'react'
+import {
+  ReactElement,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 
 import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
@@ -260,9 +266,13 @@ const CyjsRenderer = ({
   const { createEdge } = useCreateEdge()
   // The Cytoscape.js listeners live until the next full render, which style and
   // table changes no longer cause (#861): call the latest createEdge, not the
-  // one from the render that registered them.
+  // one from the render that registered them. Updated in a layout effect, not
+  // during render, so it only ever holds a committed render's callback and is
+  // current before the next user event.
   const createEdgeRef = useRef(createEdge)
-  createEdgeRef.current = createEdge
+  useLayoutEffect(() => {
+    createEdgeRef.current = createEdge
+  }, [createEdge])
 
   // ============================================================================
   //                            Application Store State
