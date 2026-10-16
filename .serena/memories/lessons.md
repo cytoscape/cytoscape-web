@@ -77,6 +77,7 @@
 - [2026-03-04] No `console.log`: Production builds strip direct `console.*()` calls through Vite's Oxc minifier. Use the `debug` logger from `src/debug.ts`.
 
 ## Testing
+- [2026-10-16] E2E on a `loading="lazy"` image: Firefox fetches it only near the viewport, so `naturalWidth` stays 0 for an image below the fold while Chromium and WebKit load it early. `scrollIntoViewIfNeeded()` before asserting it loaded.
 - [2026-10-13] E2E after clicking an MUI `Menu` item: the menu fades out still covering the page, but it is already `aria-hidden`, so `getByRole('menu')` reports it gone while a `mouse.down` lands on its items. Wait for `getByRole('menu', { includeHidden: true })` to have count 0 before pointer actions on what it covers.
 - [2026-10-13] E2E drags (dnd-kit): never release (`mouse.up`, `touchEnd`, Space) right after the move that reaches the target. dnd-kit publishes `over` from a passive effect one render behind the pointer, and the drop goes to the stale target; WebKit hits it every time when an 8px gap is entered only on the last step. Wait for the target's `data-drop-over="true"` first (`expectDropOver` in `filter-tab.spec.ts`). Keyboard drags: scroll the pane to its top before picking up, because the arrow keys smooth-scroll it first and a pick-up mid-scroll lands a gap off.
 - [2026-10-13] E2E drags (dnd-kit): hovering near the edge of a scroll container auto-scrolls it, which moves the target out from under the pointer. Scroll the container to a known position before measuring targets. For touch drags, `Emulation.setTouchEmulationEnabled` + `Input.dispatchTouchEvent` on a CDP session (Chromium only) produce real touch pointer events (see `filter-tab.spec.ts`).
@@ -98,6 +99,8 @@
 - [2026-09-30] Manual Hierarchy Viewer checks in the browser pane: `CyWebApi.network.createNetworkFromCx2` does NOT make an HCX file a hierarchy ("This network is not a hierarchy"). Import through Data → Import → Network from File instead, filling the dropzone's `input[type=file]` with a `DataTransfer` built from the fixture (Vite serves `/test/fixtures/...`). Then select a subsystem with `CyWebApi.selection.exclusiveSelect(hierarchyId, [cxNodeId])` and a subnetwork node with `exclusiveSelect('<hierarchyId>_<cxNodeId>', [nodeId])`. The rows from `CyWebApi.table.getTable` come as an array, so take the node id from the row's `id` value, not from the array index.
 
 ## Agent Workflow
+
+- [2026-10-16] CodeRabbit posts a fresh review on every push, often minutes after the checks finish. Before saying a PR's review is settled, list the reviews (`gh pr view <N> --json reviews`) and read every body newer than the last one you answered: findings outside the diff range live only in the review body, not as inline comments.
 
 - [2026-10-13] Before pushing to a PR's branch, check the PR is still open (`gh pr view <N> --json state`). A commit pushed to an already-merged PR's branch reaches nothing, and has to be moved to a new branch and PR (the FILTER tab's drag-and-drop commit landed on merged #814's branch and became #821).
 - [2026-10-13] `gh pr edit` can fail with GitHub's "Projects (classic) is being deprecated" GraphQL error and change nothing. Update a PR's body or base with `gh api -X PATCH repos/<owner>/<repo>/pulls/<N> -F body=@file` (or `-f base=<branch>`) instead.
