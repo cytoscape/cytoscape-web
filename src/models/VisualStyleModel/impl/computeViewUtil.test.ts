@@ -5,6 +5,7 @@ import { Edge, Network, Node } from '../../NetworkModel'
 import NetworkFn from '../../NetworkModel'
 import { Column, Table } from '../../TableModel'
 import { createTable } from '../../TableModel/impl/inMemoryTable'
+import { NetworkView } from '../../ViewModel'
 import { VisualStyle } from '../VisualStyle'
 import { createNewNetworkView, updateNetworkView } from './computeViewUtil'
 import { createVisualStyle } from './visualStyleFnImpl'
@@ -228,6 +229,47 @@ describe('compute-view-util', () => {
 
       expect(updatedView.selectedNodes).toEqual(['n1', 'n2'])
       expect(updatedView.selectedEdges).toEqual(['e1'])
+    })
+
+    // #859: ViewModelStore.add replaces a view only when the viewId matches.
+    // Dropping it made every style or table change append a full copy.
+    it('should keep the viewId and type of the given view', () => {
+      const initialView: NetworkView = {
+        ...createNewNetworkView(network, visualStyle, nodeTable, edgeTable),
+        type: 'nodeLink',
+        viewId: 'test-network-nodeLink-1',
+      }
+
+      const updatedView = updateNetworkView(
+        network,
+        initialView,
+        visualStyle,
+        nodeTable,
+        edgeTable,
+      )
+
+      expect(updatedView.viewId).toBe('test-network-nodeLink-1')
+      expect(updatedView.type).toBe('nodeLink')
+    })
+
+    it('should not invent a viewId or type the given view lacks', () => {
+      const initialView = createNewNetworkView(
+        network,
+        visualStyle,
+        nodeTable,
+        edgeTable,
+      )
+
+      const updatedView = updateNetworkView(
+        network,
+        initialView,
+        visualStyle,
+        nodeTable,
+        edgeTable,
+      )
+
+      expect('viewId' in updatedView).toBe(false)
+      expect('type' in updatedView).toBe(false)
     })
 
     it('should update all node views', () => {
