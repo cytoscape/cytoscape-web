@@ -678,7 +678,7 @@ export function ContinuousNumberMappingForm(props: {
           </Tooltip>
           <Tooltip
             placement="top"
-            title={`${m.attribute} values less than the minmum (${minState.value}) will be mapped to this height value (${m.ltMinVpValue}).`}
+            title={`${m.attribute} values less than the minimum (${minState.value}) will be mapped to this height value (${m.ltMinVpValue}).`}
           >
             <Paper
               variant="outlined"
