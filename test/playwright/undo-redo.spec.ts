@@ -44,6 +44,9 @@ type CyWebApiWindow = {
 type Rendered = {
   nodes: Record<string, [number, number]>
   edgeCount: number
+  // Elements in the graph that Cytoscape.js does not draw (display: none,
+  // visibility: hidden). Membership alone does not prove a redraw.
+  hiddenCount: number
 }
 
 const getNodeCount = async (page: Page): Promise<number> =>
@@ -79,7 +82,11 @@ const getRendered = async (page: Page): Promise<Rendered | null> =>
       const { x, y } = node.position()
       nodes[node.id()] = [Math.round(x), Math.round(y)]
     })
-    return { nodes, edgeCount: cy.edges().length }
+    return {
+      nodes,
+      edgeCount: cy.edges().length,
+      hiddenCount: cy.elements().filter((ele: any) => !ele.visible()).length,
+    }
   })
 
 test.describe('Undo and Redo', () => {
@@ -138,7 +145,7 @@ test.describe('Undo and Redo', () => {
     expect(Object.keys(expected!)).toHaveLength(2)
     await expect
       .poll(() => getRendered(page), { timeout: 10000 })
-      .toEqual({ nodes: expected, edgeCount: 1 })
+      .toEqual({ nodes: expected, edgeCount: 1, hiddenCount: 0 })
 
     // Select every node and delete them all
     const selected = await page.evaluate((ids) => {
@@ -154,12 +161,12 @@ test.describe('Undo and Redo', () => {
     await expect.poll(() => getNodeCount(page), { timeout: 10000 }).toBe(0)
     await expect
       .poll(() => getRendered(page), { timeout: 10000 })
-      .toEqual({ nodes: {}, edgeCount: 0 })
+      .toEqual({ nodes: {}, edgeCount: 0, hiddenCount: 0 })
 
     // Undo draws both nodes and their edge again, where they were
     await clickEditMenuItem(page, /^Undo - /)
     await expect
       .poll(() => getRendered(page), { timeout: 10000 })
-      .toEqual({ nodes: expected, edgeCount: 1 })
+      .toEqual({ nodes: expected, edgeCount: 1, hiddenCount: 0 })
   })
 })
