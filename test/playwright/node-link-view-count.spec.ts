@@ -27,9 +27,6 @@ interface PersistedView {
 const FINAL_WIDTH = 123
 const FINAL_NAME = 'renamed-2'
 
-/** CyjsRenderer arms its style effect this long after a render (1000 ms). */
-const RENDER_GATE_MS = 1_200
-
 const createNetwork = async (page: Page): Promise<string> => {
   const networkId = await page.evaluate(() => {
     const result = (
@@ -46,6 +43,27 @@ const createNetwork = async (page: Page): Promise<string> => {
   })
   expect(networkId).toBeTruthy()
   return networkId!
+}
+
+/** Creates the network, waits until it is on screen, and picks a node. */
+const openNetwork = async (
+  page: Page,
+): Promise<{ networkId: string; nodeId: string }> => {
+  await gotoAndWaitReady(page)
+  const networkId = await createNetwork(page)
+
+  await page.waitForFunction(
+    () => (window as unknown as DebugGlobals).debug?.cy?.nodes().length === 3,
+    undefined,
+    { timeout: 30_000 },
+  )
+  const nodeId = await page.evaluate(
+    (id) =>
+      (window as unknown as DebugGlobals).CyWebApi.table.getTable(id, 'node')
+        .data.rows[0].id as string,
+    networkId,
+  )
+  return { networkId, nodeId }
 }
 
 /** The persisted node-link views of a network; [] while the row is absent. */
@@ -87,7 +105,7 @@ const valueOf = (
   vp: string,
 ): unknown => view?.nodeViews[nodeId]?.values.find(([name]) => name === vp)?.[1]
 
-test.describe('Node-link view count (#859)', () => {
+test.describe('Node-link view write-back (#859, #861)', () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem('cyweb-debug-enabled', 'true')
@@ -97,34 +115,15 @@ test.describe('Node-link view count (#859)', () => {
   test('style and table changes replace the one node-link view in place', async ({
     page,
   }) => {
-    await gotoAndWaitReady(page)
-    const networkId = await createNetwork(page)
-
-    await page.waitForFunction(
-      () => (window as unknown as DebugGlobals).debug?.cy?.nodes().length === 3,
-      undefined,
-      { timeout: 30_000 },
-    )
-    const nodeId = await page.evaluate(
-      (id) =>
-        (window as unknown as DebugGlobals).CyWebApi.table.getTable(id, 'node')
-          .data.rows[0].id as string,
-      networkId,
-    )
+    const { networkId, nodeId } = await openNetwork(page)
 
     // Apply one change and wait until a persisted view carries its computed
     // value, which proves it went through the renderer's style effect.
-    //
-    // The effect is gated on `isViewCreated`, which every (re-)render clears and
-    // a 1 s timer sets again — and today a style or table change also triggers
-    // a full re-render. A change made inside that window is redrawn on the
-    // canvas but never written back, so the spec waits it out first.
     const change = async (
       apply: () => Promise<{ success: boolean }>,
       vp: string,
       expected: unknown,
     ): Promise<void> => {
-      await page.waitForTimeout(RENDER_GATE_MS)
       expect((await apply()).success).toBe(true)
       await expect
         .poll(
@@ -181,5 +180,73 @@ test.describe('Node-link view count (#859)', () => {
     // views[0] is the one getViewModel returns; it used to keep stale values.
     expect(valueOf(views[0], nodeId, 'nodeWidth')).toBe(FINAL_WIDTH)
     expect(valueOf(views[0], nodeId, 'nodeLabel')).toBe(FINAL_NAME)
+  })
+
+  // #861: every style or table change used to redraw the whole network, and
+  // each redraw closed the renderer's write-back for one second. Of several
+  // changes made within a second, only the canvas saw the later ones; the view
+  // model, and so the persisted row, kept the first. Each change here sets a
+  // different property, so the row shows whether every one was written back.
+  test('changes less than a second apart all reach the persisted view, without a redraw', async ({
+    page,
+  }) => {
+    const { networkId, nodeId } = await openNetwork(page)
+
+    // A full render removes every element and adds a new one in its place, so
+    // the element object shows whether one happened.
+    await page.evaluate((n) => {
+      const w = window as unknown as DebugGlobals & { __node?: unknown }
+      w.__node = w.debug!.cy.getElementById(n)[0]
+    }, nodeId)
+
+    // Each change commits before the next starts (two frames apart), so each
+    // reaches the renderer as a separate update, the way edits from the UI do.
+    const elapsedMs = await page.evaluate(
+      async ([id, n]) => {
+        const api = (window as unknown as DebugGlobals).CyWebApi
+        const nextFrames = (): Promise<void> =>
+          new Promise((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+          )
+        const changes = [
+          () => api.visualStyle.setDefault(id, 'nodeWidth', 77),
+          () => api.visualStyle.setDefault(id, 'nodeBorderWidth', 7),
+          () => api.table.setValue(id, 'node', n, 'name', 'burst'),
+        ]
+        const start = performance.now()
+        for (const apply of changes) {
+          if (!apply().success) throw new Error('change rejected')
+          await nextFrames()
+        }
+        return performance.now() - start
+      },
+      [networkId, nodeId] as const,
+    )
+    expect(elapsedMs).toBeLessThan(1_000)
+
+    await expect
+      .poll(
+        async () => {
+          const [view] = await persistedViews(page, networkId)
+          return [
+            valueOf(view, nodeId, 'nodeWidth'),
+            valueOf(view, nodeId, 'nodeBorderWidth'),
+            valueOf(view, nodeId, 'nodeLabel'),
+          ]
+        },
+        { timeout: 15_000 },
+      )
+      .toEqual([77, 7, 'burst'])
+
+    const onScreen = await page.evaluate((n) => {
+      const w = window as unknown as DebugGlobals & { __node?: unknown }
+      const node = w.debug!.cy.getElementById(n)
+      return {
+        sameElement: node[0] === w.__node,
+        width: node.data('nodeWidth'),
+        label: node.data('nodeLabel'),
+      }
+    }, nodeId)
+    expect(onScreen).toEqual({ sameElement: true, width: 77, label: 'burst' })
   })
 })
