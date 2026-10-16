@@ -388,6 +388,9 @@ test.describe('manual', () => {
       '[data-testid="manual-screenshot-cell-view"] img',
     )
     await expect(image).toBeVisible({ timeout: 30_000 })
+    // The image is loading="lazy": Firefox fetches it only near the
+    // viewport, so bring it into view before checking it loaded.
+    await image.scrollIntoViewIfNeeded()
     await expect
       .poll(() =>
         image.evaluate((img) => (img as HTMLImageElement).naturalWidth),
