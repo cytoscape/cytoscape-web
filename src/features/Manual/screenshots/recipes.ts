@@ -122,13 +122,21 @@ export const SCREENSHOT_RECIPES: readonly ScreenshotRecipe[] = [
   },
   {
     id: 'cell-view',
-    alt: 'A hierarchy shown in Cell View: systems drawn as nested circles',
+    alt: 'The U-2 OS cell map in Cell View: cell components drawn as nested circles',
     viewport: { width: 1280, height: 800 },
     steps: [
       {
-        importNetwork: 'test/fixtures/hcx/valid/tree.valid.cx2',
-        expectText: 'Test Network',
+        // The U-2 OS Multi-scale Integrated Cell Map (NDEx a5bf5dc8-…, the
+        // test fixture renamed without its "DEV+TEST" suffix): a real
+        // 276-system hierarchy with one interaction type, so Cell View is
+        // offered.
+        importNetwork:
+          'src/features/Manual/screenshots/fixtures/u2os-cell-map.hcx.cx2',
+        expectText: 'U-2 OS Multi-scale Integrated Cell Map',
       },
+      // The Sub Network Viewer opens empty ("Please select a subsystem");
+      // close it so Cell View gets the width.
+      { click: { testid: 'side-panel-close-button' } },
       { click: { role: 'tab', name: 'Cell View' } },
       { waitFor: { testid: 'circle-packing-svg' } },
     ],
