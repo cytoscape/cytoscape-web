@@ -3,7 +3,7 @@ import type { Network } from '@/models/NetworkModel'
 import { NetworkSummary } from '../../NetworkSummaryModel'
 import { TableType } from '../../StoreModel/TableStoreModel'
 import { ValueType } from '../../TableModel'
-import { EdgeView } from '../../ViewModel'
+import { EdgeView, NetworkView } from '../../ViewModel'
 import { VisualStyle } from '../../VisualStyleModel'
 
 /**
@@ -40,7 +40,8 @@ export interface EdgeOperationStoreActions {
   // Store state getters
   networks: Map<IdType, Network>
   tables: Record<IdType, { nodeTable: any; edgeTable: any }>
-  viewModels: Record<IdType, any>
+  // One list of views per network, primary view first (ViewModelStore shape)
+  viewModels: Record<IdType, NetworkView[] | undefined>
   visualStyles: Record<IdType, VisualStyle>
 }
 
@@ -91,7 +92,9 @@ export const deleteEdgesCore = (
 
   // Collect data before deletion for undo/redo
   const tableRecord = tables[networkId]
-  const viewModel = viewModels[networkId]
+  // Capture from the primary view; the undo restores into every view of the
+  // network (ViewModelStore.addEdgeViews).
+  const viewModel = viewModels[networkId]?.[0]
 
   const deletedEdgeRows = new Map<IdType, Record<string, ValueType>>()
   if (tableRecord?.edgeTable) {
