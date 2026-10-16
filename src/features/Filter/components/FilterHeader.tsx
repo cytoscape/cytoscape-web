@@ -277,6 +277,7 @@ export const FilterHeader = ({
         title="Remove Filter"
         message={`Remove the filter "${selected.name}"?`}
         buttonTitle="Remove"
+        isAlert
         onConfirm={() => {
           const next = filters.find((filter) => filter.id !== selected.id)
           deleteWorkspaceFilter(selected.id)
