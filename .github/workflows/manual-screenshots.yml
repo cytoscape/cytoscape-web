@@ -8,6 +8,10 @@ name: Manual Screenshots
 # artifact; with "commit" checked they are also committed to that branch.
 # A pull request that changes a recipe runs it too (artifact only), so the
 # reviewer can see the new images.
+#
+# Capturing runs repository code (the app build and Playwright), so that job
+# gets a read-only token. Only the commit job, which runs nothing but git and
+# only on a manual run with "commit" checked, can write.
 
 on:
   pull_request:
@@ -27,18 +31,22 @@ on:
         default: false
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   capture:
     name: Capture manual screenshots
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
     container:
       image: mcr.microsoft.com/playwright:v1.61.0-noble
       options: --user 1001
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: ./.github/actions/setup-node-dependencies
         with:
@@ -57,10 +65,25 @@ jobs:
           path: public/manual-assets/generated/
           retention-days: 14
 
+  commit:
+    name: Commit manual screenshots
+    needs: capture
+    if: github.event_name == 'workflow_dispatch' && inputs.commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download the images
+        uses: actions/download-artifact@v4
+        with:
+          name: manual-screenshots
+          path: public/manual-assets/generated/
+
       - name: Commit the images
-        if: github.event_name == 'workflow_dispatch' && inputs.commit
         run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add public/manual-assets/generated/

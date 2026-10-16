@@ -265,7 +265,15 @@ export const MANUAL_PAGES: readonly ManualPage[] = [
     title: 'Privacy Policy',
     legacyName: 'Cytoscape_Privacy_Policy',
     group: 'About',
-    sources: ['docs/privacy-policy.md', 'src/features/CookieConsent.tsx'],
+    sources: [
+      'docs/privacy-policy.md',
+      'src/features/CookieConsent.tsx',
+      'src/data/hooks/useCrashDataConsent.ts',
+      'src/features/Error.tsx',
+      'src/data/external-api/error-report/**',
+      'src/boot/googleAnalytics.ts',
+      'src/features/LLMQuery/api/**',
+    ],
     load: () => import('./content/privacy-policy.mdx'),
   },
 ]

@@ -36,15 +36,19 @@ describe('urlManager', () => {
       // would otherwise leave /manual for /<ws>/networks/<id> — booting the
       // editor on the manual's sandbox database.
       window.history.replaceState(null, '', '/manual/merge')
-      const navigate = vi.fn()
+      try {
+        const navigate = vi.fn()
 
-      navigateToNetwork(
-        { workspaceId: 'ws-1', networkId: 'net-1', force: true },
-        navigate,
-      )
+        navigateToNetwork(
+          { workspaceId: 'ws-1', networkId: 'net-1', force: true },
+          navigate,
+        )
 
-      expect(navigate).not.toHaveBeenCalled()
-      window.history.replaceState(null, '', '/')
+        expect(navigate).not.toHaveBeenCalled()
+      } finally {
+        // Later tests must not run in the manual scope.
+        window.history.replaceState(null, '', '/')
+      }
     })
 
     it('builds the network path with search parameters', () => {

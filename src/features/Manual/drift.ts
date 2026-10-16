@@ -47,13 +47,16 @@ export const DEMO_COPIES: readonly DemoCopy[] = [
       'src/app-api/core/elementApi.ts',
     ],
   },
+  // UiIcon redraws two icons; each copy belongs to the page that shows it.
   {
-    page: 'network-view',
+    page: 'menus',
     copy: 'src/features/Manual/components/UiIcon.tsx',
-    sources: [
-      'src/features/Login/LoginButton.tsx',
-      'src/features/ToolBar/DataMenu/LoadFromNdexDialog.tsx',
-    ],
+    sources: ['src/features/Login/LoginButton.tsx'],
+  },
+  {
+    page: 'creating-networks',
+    copy: 'src/features/Manual/components/UiIcon.tsx',
+    sources: ['src/features/ToolBar/DataMenu/LoadFromNdexDialog.tsx'],
   },
   {
     page: 'privacy-policy',

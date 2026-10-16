@@ -68,7 +68,17 @@ const readEditorDatabase = async (): Promise<Snapshot> => {
   }
   return await new Promise<Snapshot>((resolve, reject) => {
     const request = indexedDB.open(editorDb)
-    request.onerror = () => reject(request.error)
+    // Another tab can delete the database between the list and this open,
+    // and opening a missing database creates it. Abort that creation: the
+    // view must never write.
+    request.onupgradeneeded = () => {
+      request.transaction?.abort()
+    }
+    request.onerror = () => {
+      // The aborted creation above: the database is gone, not unreadable.
+      if (request.error?.name === 'AbortError') resolve({ kind: 'empty' })
+      else reject(request.error)
+    }
     request.onsuccess = () => {
       const db = request.result
       // Let an editor tab upgrade its schema without waiting on this view.
