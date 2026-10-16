@@ -184,6 +184,26 @@ When the user drags nodes:
 3. If positions changed, `postEdit` is called with an `UndoCommandType` for node movement
 4. View model updates propagate to stores and can be undone/redone
 
+### Style Re-application (`onStyleModelUpdate`)
+
+When the visual style, the tables or the visual editor properties change, the
+renderer re-applies the style to `getViewModel(id)` (the network's first view)
+and writes the result back with `ViewModelStore.add`. `add` replaces a view only
+when its `viewId` matches and appends one otherwise, so `updateNetworkView`
+(`src/models/VisualStyleModel/impl/computeViewUtil.ts`) carries the input view's
+`viewId` and `type` through. That keeps a network at one node-link view, and
+gives that view the current computed `values` that readers of `getViewModel`
+(e.g. `useNodeGraphicsSync`) rely on.
+
+Before #859 the identity was dropped, and every style or table change appended
+a full copy of the view, persisted to `cyNetworkViews` with the rest. Databases
+written then may still hold those copies; removing them is tracked in #860.
+
+The effect does nothing until `isViewCreated` is set, which happens one second
+after each render. Every style or table change currently triggers a full render
+too, so a change made within a second of the previous one is drawn but not
+written back (#861).
+
 ## Utility Behavior
 
 ### `cyjsFactoryUtil.ts`
