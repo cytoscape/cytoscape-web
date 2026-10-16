@@ -229,6 +229,15 @@ Switching it back on calls `releaseWorkspaceFilter`: the workspace filter's
 visibility bypasses are removed (show mode only) and its record dropped, then
 the `filterWidgets` filter applies its own. No workspace filter is changed.
 
+**Show All (Select menu).** The toolbar's Select › Show All removes every node
+and edge visibility bypass of the network, whoever wrote it. It drops the
+network's record when the applied filter is in show mode (a select-mode record
+stays) and switches the subnetwork's `filterWidgets` filter off, so neither
+claims to hide anything afterwards. Select › Hide Selected Nodes and Edges adds
+`none` bypasses to those of an applied show filter; re-applying the filter
+rewrites them, which shows the hand-hidden elements that pass, as in Cytoscape
+Desktop. See `src/features/ToolBar/SelectMenu/SelectMenu_docs/SelectMenu.md`.
+
 ## FILTER tab
 
 The tab (`src/features/Filter/`, see `Filter_docs/Filter.md`) follows
@@ -265,7 +274,9 @@ Cytoscape Desktop's Filter tab:
   `[n, max]`, "at most n" `[min, n]`, "equal to n" `[n, n]`.
 - "Apply when filter changes" (default on below 100,000 nodes and edges),
   select / show, Apply, and a status line ("Selected 2 nodes and 0 edges in
-  3 ms", or "Showing ..." in show mode).
+  3 ms", or "Showing ..." in show mode). The line clears when the network's
+  record is dropped (Show All, or the `filterWidgets` filter switched back
+  on), since the filter no longer hides anything.
 - Export writes every workspace filter to `cytoscape-filters.json`. Import
   adds the filters of a file under free names and reports what it skipped.
 

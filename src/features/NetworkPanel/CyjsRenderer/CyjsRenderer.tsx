@@ -53,6 +53,7 @@ import {
 import { ContextMenuState, NetworkContextMenu } from './NetworkContextMenu'
 import { applyNodeGraphics, resetNodeGraphics } from './nodeGraphicsApply'
 import { registerCyExtensions } from './registerCyExtensions'
+import { syncCySelection } from './syncCySelection'
 import {
   panReferenceSize,
   setPanReferenceSize,
@@ -1176,80 +1177,7 @@ const CyjsRenderer = ({
         return
       }
 
-      const { selectedNodes, selectedEdges } = networkView
-
-      // Helper functions
-      const getCurrentSelection = () => {
-        const currentEdgesToCompare: string[] = cy
-          .edges(':selected')
-          .map((ele: any) => ele.data('id'))
-
-        return {
-          nodes: cy.nodes(':selected').map((ele: any) => ele.data('id')),
-          edges: currentEdgesToCompare,
-        }
-      }
-
-      const hasSelectionChanged = (current: {
-        nodes: string[]
-        edges: string[]
-      }) => {
-        // Check if selection actually changed to avoid unnecessary updates
-        const nodesChanged =
-          selectedNodes.length !== current.nodes.length ||
-          !selectedNodes.every((id) => current.nodes.includes(id))
-        const edgesChanged =
-          selectedEdges.length !== current.edges.length ||
-          !selectedEdges.every((id) => current.edges.includes(id))
-        return nodesChanged || edgesChanged
-      }
-
-      const clearAllSelection = () => {
-        cy.elements().unselect()
-        cy.elements().show()
-      }
-
-      const updateNodeSelection = () => {
-        if (selectedNodes.length === 0) {
-          cy.nodes().unselect()
-        } else {
-          cy.nodes().show().unselect()
-          cy.nodes()
-            .filter((ele: SingularElementArgument) =>
-              selectedNodes.includes(ele.data('id')),
-            )
-            .select()
-        }
-      }
-
-      const updateEdgeSelection = () => {
-        if (selectedEdges.length === 0) {
-          cy.edges().unselect()
-        } else {
-          cy.edges().show()
-          cy.edges()
-            .filter((ele: SingularElementArgument) =>
-              selectedEdges.includes(ele.data('id')),
-            )
-            .select()
-        }
-      }
-
-      // Check if selection actually changed to avoid unnecessary updates
-      const currentSelection = getCurrentSelection()
-      if (!hasSelectionChanged(currentSelection)) {
-        return
-      }
-
-      // Handle clear selection case
-      if (selectedNodes.length === 0 && selectedEdges.length === 0) {
-        clearAllSelection()
-        return
-      }
-
-      // Update selections
-      updateNodeSelection()
-      updateEdgeSelection()
+      syncCySelection(cy, networkView.selectedNodes, networkView.selectedEdges)
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- selection fields are the intended granularity; whole networkView would resync on every view mutation
     [networkView?.selectedNodes, networkView?.selectedEdges],
