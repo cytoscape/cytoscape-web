@@ -282,6 +282,7 @@ export default function ManualApp(): ReactElement {
   const activeSection = useActiveHeading(
     toc.map((t) => t.id),
     APP_BAR_HEIGHT + 24,
+    hash,
   )
 
   const path = params['*'] ?? ''
@@ -307,7 +308,7 @@ export default function ManualApp(): ReactElement {
       ? page?.movedAnchors?.[decodeURIComponent(hash.slice(1))]
       : undefined
   if (movedTo !== undefined) {
-    return <Navigate to={`${pagePath(movedTo)}${hash}`} replace />
+    return <Navigate to={`${pagePath(movedTo)}${search}${hash}`} replace />
   }
 
   // With a pinned demo the page list folds into a menu below 1600px: the

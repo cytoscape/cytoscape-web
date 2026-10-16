@@ -1,16 +1,41 @@
 import { useEffect, useState } from 'react'
 
+/** Events that mean the reader moved the page themselves. */
+const READER_SCROLL_EVENTS = ['wheel', 'touchmove', 'keydown'] as const
+
 /**
  * The id of the section the reader is in: the last heading in `ids` whose top
  * has scrolled above `offset` pixels from the top of the viewport, or the
  * first heading before any has. Recomputed on scroll and resize.
+ *
+ * `hash` is the URL hash. After a jump to one of the headings (a section
+ * link), that heading stays marked until the reader scrolls: a section near
+ * the end of a page cannot reach the top, so the scroll position alone would
+ * mark a later one.
  */
 export const useActiveHeading = (
   ids: readonly string[],
   offset: number,
+  hash: string,
 ): string | undefined => {
   const [active, setActive] = useState<string | undefined>()
   const key = ids.join('|')
+  const jumpedTo = decodeURIComponent(hash.replace(/^#/, ''))
+  const [pinned, setPinned] = useState<string | undefined>()
+
+  useEffect(() => {
+    const headingIds = key === '' ? [] : key.split('|')
+    setPinned(headingIds.includes(jumpedTo) ? jumpedTo : undefined)
+    const release = (): void => setPinned(undefined)
+    for (const event of READER_SCROLL_EVENTS) {
+      window.addEventListener(event, release, { passive: true })
+    }
+    return () => {
+      for (const event of READER_SCROLL_EVENTS) {
+        window.removeEventListener(event, release)
+      }
+    }
+  }, [key, jumpedTo])
 
   useEffect(() => {
     if (key === '') {
@@ -47,5 +72,5 @@ export const useActiveHeading = (
     }
   }, [key, offset])
 
-  return active
+  return pinned ?? active
 }
