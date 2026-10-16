@@ -55,6 +55,7 @@ describe('findManualDrift', () => {
         contentFile: 'src/features/Manual/content/merge.mdx',
         triggeredBy: ['src/features/MergeNetworks/components/MergeDialog.tsx'],
         demoCopies: [],
+        screenshots: [],
       },
     ])
   })
@@ -114,6 +115,42 @@ describe('findManualDrift', () => {
       drift([
         'src/features/FloatingToolBar/shareUrl.ts',
         'src/features/Manual/components/demo/DemoUrlPanel.tsx',
+      ]),
+    ).toEqual([])
+  })
+
+  it('asks for a recapture when a screenshot subject changes', () => {
+    const shot = {
+      id: 'merge-dialog',
+      file: 'public/manual-assets/generated/merge-dialog.png',
+      pages: ['merge'],
+      sources: ['src/features/MergeNetworks/components/**'],
+    }
+    const run = (changedFiles: string[]) =>
+      findManualDrift({
+        changedFiles,
+        pages: PAGES,
+        reviewed: NONE,
+        demoCopies: [],
+        screenshots: [shot],
+      })
+
+    // The page text changed, but the image still shows the old dialog.
+    const [finding] = run([
+      'src/features/MergeNetworks/components/MergeDialog.tsx',
+      'src/features/Manual/content/merge.mdx',
+    ])
+    expect(finding.screenshots).toEqual(['merge-dialog'])
+    expect(describeFinding(finding)).toContain(
+      'node scripts/capture-manual-screenshots.mjs merge-dialog',
+    )
+
+    // Recaptured in the same PR, and the page updated: nothing to do.
+    expect(
+      run([
+        'src/features/MergeNetworks/components/MergeDialog.tsx',
+        'src/features/Manual/content/merge.mdx',
+        'public/manual-assets/generated/merge-dialog.png',
       ]),
     ).toEqual([])
   })

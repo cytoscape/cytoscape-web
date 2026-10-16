@@ -20,6 +20,8 @@ import {
 import { BrowserStorageView } from './BrowserStorageView'
 import { LiveDemo } from './LiveDemo'
 import { Note } from './Note'
+import { Screenshot } from './Screenshot'
+import { UiIcon } from './UiIcon'
 import { VisualPropertyTable } from './VisualPropertyTable'
 
 /** Plain text of a heading's children, for its id. */
@@ -104,7 +106,8 @@ const ManualLink = ({
 /**
  * How the manual renders MDX. Content files hold text only; this map owns
  * every presentation decision. Components named here (`BrowserStorageView`,
- * `LiveDemo`, `Note`, `VisualPropertyTable`)
+ * `LiveDemo`, `Note`, `Screenshot`, `UiIcon`,
+ * `VisualPropertyTable`)
  * are usable in any page without an import.
  */
 export const mdxComponents: MDXComponents = {
@@ -117,5 +120,7 @@ export const mdxComponents: MDXComponents = {
   BrowserStorageView,
   LiveDemo,
   Note,
+  Screenshot,
+  UiIcon,
   VisualPropertyTable,
 }

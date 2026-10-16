@@ -19,11 +19,14 @@
 // description.
 
 import { execFileSync } from 'node:child_process'
-import { appendFileSync } from 'node:fs'
+import { appendFileSync, readFileSync } from 'node:fs'
 
 // Plain imports of TypeScript files: Node 24 strips the types. Both files
 // have no relative imports, which is what makes this work.
 const { MANUAL_PAGES } = await import('../src/features/Manual/pages.ts')
+const { SCREENSHOT_RECIPES, screenshotPath } = await import(
+  '../src/features/Manual/screenshots/recipes.ts'
+)
 const { describeFinding, findManualDrift, parseReviewedTrailers } =
   await import('../src/features/Manual/drift.ts')
 
@@ -49,10 +52,24 @@ const reviewed = parseReviewedTrailers(
 const knownSlugs = new Set(MANUAL_PAGES.map((page) => page.slug))
 const unknown = [...reviewed.slugs].filter((slug) => !knownSlugs.has(slug))
 
+// Which pages show each screenshot: `<Screenshot id="…" />` in their MDX.
+const screenshots = SCREENSHOT_RECIPES.map((recipe) => ({
+  id: recipe.id,
+  file: `public/${screenshotPath(recipe.id)}`,
+  sources: recipe.sources,
+  pages: MANUAL_PAGES.filter((page) =>
+    readFileSync(
+      `src/features/Manual/content/${page.slug}.mdx`,
+      'utf8',
+    ).includes(`<Screenshot id="${recipe.id}"`),
+  ).map((page) => page.slug),
+}))
+
 const findings = findManualDrift({
   changedFiles,
   pages: MANUAL_PAGES,
   reviewed,
+  screenshots,
 })
 
 const inCi = process.env.GITHUB_ACTIONS === 'true'
@@ -89,6 +106,12 @@ if (findings.length === 0) {
         `### ${finding.title} — \`${finding.contentFile}\``,
         '',
         ...finding.triggeredBy.map((file) => `- \`${file}\``),
+        ...(finding.screenshots.length > 0
+          ? [
+              '',
+              `Screenshots to recapture: \`node scripts/capture-manual-screenshots.mjs ${finding.screenshots.join(' ')}\``,
+            ]
+          : []),
         ...(finding.demoCopies.length > 0
           ? [
               '',

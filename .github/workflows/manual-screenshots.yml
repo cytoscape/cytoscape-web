@@ -1,0 +1,72 @@
+name: Manual Screenshots
+
+# Captures the in-app manual's screenshots on Linux, in the same Playwright
+# image the integration tests use, so committed images do not change with the
+# machine that took them. Recipes: src/features/Manual/screenshots/recipes.ts.
+#
+# Run it from the Actions tab on a branch. The images are uploaded as an
+# artifact; with "commit" checked they are also committed to that branch.
+# A pull request that changes a recipe runs it too (artifact only), so the
+# reviewer can see the new images.
+
+on:
+  pull_request:
+    paths:
+      - 'src/features/Manual/screenshots/**'
+      - 'test/manual-screenshots/**'
+  workflow_dispatch:
+    inputs:
+      ids:
+        description: Recipe ids to capture, separated by spaces (empty for all)
+        required: false
+        default: ''
+      commit:
+        description: Commit the images to the branch the workflow runs on
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    name: Capture manual screenshots
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: mcr.microsoft.com/playwright:v1.61.0-noble
+      options: --user 1001
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-node-dependencies
+        with:
+          cache-suffix: playwright-noble
+
+      - name: Capture
+        env:
+          IDS: ${{ inputs.ids }}
+        # IDS is split on spaces on purpose: each id is one argument.
+        run: node scripts/capture-manual-screenshots.mjs $IDS
+
+      - name: Upload the images
+        uses: actions/upload-artifact@v4
+        with:
+          name: manual-screenshots
+          path: public/manual-assets/generated/
+          retention-days: 14
+
+      - name: Commit the images
+        if: github.event_name == 'workflow_dispatch' && inputs.commit
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/manual-assets/generated/
+          if git diff --cached --quiet; then
+            echo "The screenshots did not change."
+          else
+            git commit -m "docs(manual): recapture screenshots" -m "Captured by the Manual Screenshots workflow."
+            git push
+          fi

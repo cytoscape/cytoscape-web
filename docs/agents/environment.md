@@ -28,14 +28,15 @@ Vite 8 with the Module Federation Vite plugin provides the microfrontend build:
 
 ### Scripts
 
-| Script                                       | Purpose                                                                       |
-| -------------------------------------------- | ----------------------------------------------------------------------------- |
-| `scripts/generate-test-fixtures/`            | Generate CX2, SIF, table, and URL test fixtures                               |
-| `scripts/generate-model-diagram/`            | Generate Mermaid diagrams of model dependencies                               |
-| `scripts/generate-state-diagram/`            | Generate state structure diagrams                                             |
-| `scripts/download-ndex-networks.ts`          | Download networks from NDEx for testing                                       |
-| `scripts/manual-database-snapshot-export.js` | Export IndexedDB snapshots                                                    |
-| `scripts/check-manual-drift.mjs`             | List manual pages a branch's changes may make stale (CI job **Manual Drift**) |
-| `scripts/batch-renaming/`                    | CSV-based batch file renaming with git-mv                                     |
+| Script                                       | Purpose                                                                                                           |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `scripts/generate-test-fixtures/`            | Generate CX2, SIF, table, and URL test fixtures                                                                   |
+| `scripts/generate-model-diagram/`            | Generate Mermaid diagrams of model dependencies                                                                   |
+| `scripts/generate-state-diagram/`            | Generate state structure diagrams                                                                                 |
+| `scripts/download-ndex-networks.ts`          | Download networks from NDEx for testing                                                                           |
+| `scripts/manual-database-snapshot-export.js` | Export IndexedDB snapshots                                                                                        |
+| `scripts/check-manual-drift.mjs`             | List manual pages a branch's changes may make stale (CI job **Manual Drift**)                                     |
+| `scripts/capture-manual-screenshots.mjs`     | Capture the in-app manual's screenshots from their recipes (workflow **Manual Screenshots** for committed images) |
+| `scripts/batch-renaming/`                    | CSV-based batch file renaming with git-mv                                                                         |
 
 ---

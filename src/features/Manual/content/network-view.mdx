@@ -34,10 +34,10 @@ Four buttons at the bottom right of the network view act on the network:
 
 | Button | What it does |
 | --- | --- |
-| ![Apply default layout button](manual-assets/Quick_Tour/apply_default_layout.png) Apply default layout | Runs the default layout. Change the default in **Layout → Settings...**. |
-| ![Fit button](manual-assets/Quick_Tour/fit_to_screen.png) Fit network to the window | Zooms so the whole network fits in the view. |
-| ![Open in Cytoscape button](manual-assets/Quick_Tour/open_in_cytoscape.png) Open in Cytoscape | Sends the network to the Cytoscape desktop application. It needs Cytoscape Desktop running on your computer (default port: 1234), and it does not work in Safari. The first time, Cytoscape Web explains the browser's permission prompt for reaching your computer. |
-| ![Share button](manual-assets/Quick_Tour/share_url.png) Share | Copies a link to the network, including the current view and selection, to your clipboard. It works only for networks saved to NDEx; save a local network to NDEx first. |
+| <UiIcon name="apply-layout" label="Apply default layout button" /> Apply default layout | Runs the default layout. Change the default in **Layout → Settings...**. |
+| <UiIcon name="fit" label="Fit button" /> Fit network to the window | Zooms so the whole network fits in the view. |
+| <UiIcon name="open-in-cytoscape" label="Open in Cytoscape button" /> Open in Cytoscape | Sends the network to the Cytoscape desktop application. It needs Cytoscape Desktop running on your computer (default port: 1234), and it does not work in Safari. The first time, Cytoscape Web explains the browser's permission prompt for reaching your computer. |
+| <UiIcon name="share" label="Share button" /> Share | Copies a link to the network, including the current view and selection, to your clipboard. It works only for networks saved to NDEx; save a local network to NDEx first. |
 
 <a id="cell_view" />
 
@@ -47,7 +47,7 @@ When the current network is a hierarchy, two tabs appear at the top of the
 network view: **Tree View**, the network drawn as nodes and edges, and
 **Cell View**, the hierarchy drawn as nested circles (circle packing):
 
-![Cell View of a hierarchy](manual-assets/Quick_Tour/quick_tour_10.jpg)
+<Screenshot id="cell-view" />
 
 In Cell View, each circle is a system. A system can contain smaller
 systems, much like Russian nesting dolls. Click a circle to select that
@@ -60,7 +60,7 @@ Network Viewer** in the right panel:
 ![Sub Network Viewer showing the interactions of a selected system](manual-assets/Quick_Tour/quick_tour_11.jpg)
 
 Open the right panel with the arrow button
-![Open panel button](manual-assets/Quick_Tour/sub_net_slider.png) at the
+<UiIcon name="open-panel" label="Open panel button" /> at the
 right edge of the window, and close it with the arrow at the top of the
 panel. Selecting genes in the Sub Network Viewer highlights them in the
 Cell View.

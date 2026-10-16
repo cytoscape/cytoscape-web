@@ -6,7 +6,9 @@ import { compile } from '@mdx-js/mdx'
 import remarkGfm from 'remark-gfm'
 import { describe, expect, it } from 'vitest'
 
+import { UI_ICON_NAMES } from './components/uiIconNames'
 import { slugifyHeading } from './manualSlug'
+import { SCREENSHOT_RECIPES, screenshotPath } from './screenshots/recipes'
 import { MANUAL_PAGES } from './pages'
 
 // Checks the manual's content against itself and the repository: every page
@@ -37,6 +39,9 @@ const anchorsOf = (source: string): Set<string> => {
 }
 
 /** `[text](target)` and `![alt](target)`, excluding code. */
+const screenshotsOf = (source: string): string[] =>
+  Array.from(prose(source).matchAll(/<Screenshot\s+id="([^"]+)"/g), (m) => m[1])
+
 const linksOf = (source: string): { image: boolean; target: string }[] =>
   Array.from(prose(source).matchAll(/(!?)\[[^\]]*\]\(([^)\s]+)\)/g)).map(
     (m) => ({ image: m[1] === '!', target: m[2] }),
@@ -97,6 +102,17 @@ describe('manual content', () => {
     },
   )
 
+  it.each(MANUAL_PAGES.map((p) => p.slug))(
+    '%s uses only UiIcon names that exist',
+    (slug) => {
+      const unknown = Array.from(
+        read(slug).matchAll(/<UiIcon\s+name="([^"]+)"/g),
+        (m) => m[1],
+      ).filter((name) => !(UI_ICON_NAMES as readonly string[]).includes(name))
+      expect(unknown).toEqual([])
+    },
+  )
+
   it.each(MANUAL_PAGES.map((p) => [p.slug, p.sources] as const))(
     '%s names sources that exist',
     (_slug, sources) => {
@@ -130,14 +146,46 @@ describe('manual content', () => {
     )
   })
 
+  it.each(MANUAL_PAGES.map((p) => p.slug))(
+    '%s shows only screenshots that have a recipe',
+    (slug) => {
+      const known = new Set(SCREENSHOT_RECIPES.map((r) => r.id))
+      expect(screenshotsOf(read(slug)).filter((id) => !known.has(id))).toEqual(
+        [],
+      )
+    },
+  )
+
+  it.each(SCREENSHOT_RECIPES.map((r) => r.id))(
+    'screenshot %s is captured and used by a page',
+    (id) => {
+      // Missing file: run `node scripts/capture-manual-screenshots.mjs <id>`.
+      expect(existsSync(path.join(PUBLIC, screenshotPath(id)))).toBe(true)
+      expect(
+        MANUAL_PAGES.some((p) => screenshotsOf(read(p.slug)).includes(id)),
+      ).toBe(true)
+    },
+  )
+
+  it.each(SCREENSHOT_RECIPES.map((r) => [r.id, r.sources] as const))(
+    'screenshot %s names sources that exist',
+    (_id, sources) => {
+      const stale = sources.filter(
+        (pattern) => globSync(pattern, { cwd: ROOT }).length === 0,
+      )
+      expect(stale).toEqual([])
+    },
+  )
+
   it('every image in public/manual-assets is used by a page', () => {
-    const used = new Set(
-      MANUAL_PAGES.flatMap((p) =>
+    const used = new Set([
+      ...MANUAL_PAGES.flatMap((p) =>
         linksOf(read(p.slug))
           .filter((l) => l.image)
           .map((l) => l.target),
       ),
-    )
+      ...SCREENSHOT_RECIPES.map((r) => screenshotPath(r.id)),
+    ])
     const unused = globSync('manual-assets/**/*.{jpg,png,gif,svg}', {
       cwd: PUBLIC,
     }).filter((file) => !used.has(file))

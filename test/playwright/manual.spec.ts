@@ -382,6 +382,23 @@ test.describe('manual', () => {
     await editor.close()
   })
 
+  test('shows captured screenshots and live app icons', async ({ page }) => {
+    await page.goto('/manual/network-view')
+    const image = page.locator(
+      '[data-testid="manual-screenshot-cell-view"] img',
+    )
+    await expect(image).toBeVisible({ timeout: 30_000 })
+    await expect
+      .poll(() =>
+        image.evaluate((img) => (img as HTMLImageElement).naturalWidth),
+      )
+      .toBeGreaterThan(0)
+    // The Fit icon is the app's own SVG icon, not an image file.
+    await expect(
+      page.locator('[data-testid="manual-ui-icon-fit"] svg'),
+    ).toBeVisible()
+  })
+
   test.describe('page layout', () => {
     test.use({ viewport: { width: 1440, height: 900 } })
 

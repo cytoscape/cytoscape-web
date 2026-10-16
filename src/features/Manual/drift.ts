@@ -48,6 +48,14 @@ export const DEMO_COPIES: readonly DemoCopy[] = [
     ],
   },
   {
+    page: 'network-view',
+    copy: 'src/features/Manual/components/UiIcon.tsx',
+    sources: [
+      'src/features/Login/LoginButton.tsx',
+      'src/features/ToolBar/DataMenu/LoadFromNdexDialog.tsx',
+    ],
+  },
+  {
     page: 'privacy-policy',
     copy: 'src/features/Manual/components/BrowserStorageView.tsx',
     sources: [
@@ -73,6 +81,15 @@ const IGNORED = [
 const matchesAny = (file: string, globs: readonly string[]): boolean =>
   globs.some((glob) => matchesGlob(file, glob))
 
+/** A captured screenshot, the pages that show it, and what it depicts. */
+export interface DriftScreenshot {
+  readonly id: string
+  /** The image file, from the repo root. */
+  readonly file: string
+  readonly pages: readonly string[]
+  readonly sources: readonly string[]
+}
+
 export interface DriftFinding {
   readonly slug: string
   readonly title: string
@@ -82,6 +99,8 @@ export interface DriftFinding {
   readonly triggeredBy: readonly string[]
   /** Manual demo code that copies the changed logic, when any. */
   readonly demoCopies: readonly string[]
+  /** Screenshots on the page whose subject changed: recapture them. */
+  readonly screenshots: readonly string[]
 }
 
 /**
@@ -93,8 +112,15 @@ export const findManualDrift = (input: {
   pages: readonly DriftPage[]
   reviewed: ReviewedPages
   demoCopies?: readonly DemoCopy[]
+  screenshots?: readonly DriftScreenshot[]
 }): DriftFinding[] => {
-  const { changedFiles, pages, reviewed, demoCopies = DEMO_COPIES } = input
+  const {
+    changedFiles,
+    pages,
+    reviewed,
+    demoCopies = DEMO_COPIES,
+    screenshots = [],
+  } = input
   const changed = new Set(changedFiles)
   const relevant = changedFiles.filter((file) => !matchesAny(file, IGNORED))
 
@@ -116,7 +142,19 @@ export const findManualDrift = (input: {
     const copyTriggers = staleCopies.flatMap((c) =>
       relevant.filter((f) => matchesAny(f, c.sources)),
     )
-    const triggeredBy = [...new Set([...pageTriggers, ...copyTriggers])].sort()
+    // A recaptured image answers its own sources, as an edited copy does.
+    const staleShots = screenshots.filter(
+      (shot) =>
+        shot.pages.includes(page.slug) &&
+        !changed.has(shot.file) &&
+        relevant.some((f) => matchesAny(f, shot.sources)),
+    )
+    const shotTriggers = staleShots.flatMap((shot) =>
+      relevant.filter((f) => matchesAny(f, shot.sources)),
+    )
+    const triggeredBy = [
+      ...new Set([...pageTriggers, ...copyTriggers, ...shotTriggers]),
+    ].sort()
     if (triggeredBy.length === 0) return []
 
     return [
@@ -126,6 +164,7 @@ export const findManualDrift = (input: {
         contentFile,
         triggeredBy,
         demoCopies: staleCopies.map((c) => c.copy),
+        screenshots: staleShots.map((shot) => shot.id),
       },
     ]
   })
@@ -170,6 +209,12 @@ export const describeFinding = (finding: DriftFinding): string => {
     lines.push(
       'Manual demo code that copies this logic, check it too:',
       ...finding.demoCopies.map((f) => `  - ${f}`),
+    )
+  }
+  if (finding.screenshots.length > 0) {
+    lines.push(
+      'Screenshots that show this, recapture them:',
+      `  node scripts/capture-manual-screenshots.mjs ${finding.screenshots.join(' ')}`,
     )
   }
   lines.push(

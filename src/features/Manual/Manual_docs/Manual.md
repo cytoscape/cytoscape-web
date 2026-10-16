@@ -148,6 +148,8 @@ Rules for content:
 | Callout | `<Note>…</Note>`, `<Note severity="warning">…</Note>` |
 | Working demo | `<LiveDemo />` (props: `fixtures`, `panels`, `actions`, `height`, `caption`) |
 | Visual property list | `<VisualPropertyTable group="node" />` |
+| App icon in text | `<UiIcon name="fit" label="Fit button" />` |
+| Screenshot of the app | `<Screenshot id="app-overview" />` (recipe in `screenshots/recipes.ts`) |
 
 MDX is JSX: close every tag (`<br />`, `<a id="x" />`), and escape `{`, `}`
 and `<` in text.
@@ -156,12 +158,35 @@ Name UI the way the UI names it: menu paths as **Data → Import → Network
 from File**, labels in bold, exactly as the source spells them. Check a label
 in the source before writing it.
 
-## Screenshots
+## Screenshots and Icons
 
-The images in `public/manual-assets/` come from the Read the Docs manual
-(v1.0.x), scaled to 1400 px and converted to JPEG. Some show older UI. Prefer
-a `LiveDemo` or a generated table where one fits, and remove an image when
-its page no longer uses it.
+Images of the app come from the app, not from a camera.
+
+- **Icons** — `<UiIcon name="fit" label="Fit button" />` draws an app icon in
+  the text. Most entries import the icon the app's component exports
+  (`FitIcon`, `ShareIcon`, `INSERT_COLUMN_GLYPH`, `NetworkSourceChip`…), so
+  a changed icon changes in the manual too. Names: `components/uiIconNames.ts`.
+- **Screenshots** — `<Screenshot id="cell-view" />` shows
+  `public/manual-assets/generated/<id>.png`, captured by a recipe in
+  `screenshots/recipes.ts`: a fixed viewport, steps that drive the app
+  (import a network, click by `data-testid` or role), and the element to
+  crop to.
+
+| Task | How |
+| --- | --- |
+| Capture one or more | `node scripts/capture-manual-screenshots.mjs cell-view layout-tools` (builds the app and serves it on port 5502; `MANUAL_SCREENSHOT_URL` uses a running server) |
+| Capture all | `node scripts/capture-manual-screenshots.mjs` |
+| Capture for commit | the **Manual Screenshots** workflow (Actions tab, on your branch, "commit" checked). It runs in the same Linux Playwright image as CI, so images do not change with the machine that took them. A PR that changes a recipe runs it and uploads the images as an artifact. |
+| Add an image | add a recipe, put `<Screenshot id="…" />` on a page, capture |
+
+`content.test.ts` fails when a page names an unknown screenshot or icon, a
+recipe has no image or no page, or a recipe's `sources` match nothing. The
+drift check lists a screenshot for recapture when its `sources` change.
+
+Six images remain hand-taken, because no recipe can reach them: the NDEx
+sign-in page and My Workspaces (need an NDEx account), the Sub Network
+Viewer with a subsystem selected, two column-editor popovers, and the
+browser's reload button.
 
 ## Manual Drift Check
 
