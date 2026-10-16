@@ -11,10 +11,11 @@ to an external site. It has three layers:
    points at the real UI: the toolbar, loading data, the workspace panel, the
    canvas, quick network actions (fit / layout), the table browser, and styling.
 3. **Persistent access** — a **Help → Take a tour** menu item that relaunches the
-   tour any time, alongside the existing external **User Manual** link.
+   tour any time, alongside the **User Manual** item.
 
-The existing external manual (`web-manual.cytoscape.org`) is unchanged; this
-feature is the in-app complement.
+Help → User Manual opens the in-app manual (`/manual`, `src/features/Manual/`)
+in a new tab. Onboarding does not run there: the manual never hydrates a
+workspace, so `cywebapi:ready` never fires.
 
 ## Architecture
 
@@ -35,8 +36,9 @@ feature is the in-app complement.
 Main components:
 
 - `OnboardingHost.tsx` — mounted once at the App root (beside the cookie / multi-
-  tab notices). Waits for the app to be ready (`cywebapi:ready` event, with an
-  8s fallback), then shows the Welcome dialog on first run. Always renders the
+  tab notices). Waits for the app to be ready (`isWorkspaceHydrated()` or the
+  `cywebapi:ready` event; there is no timeout fallback), then shows the Welcome
+  dialog on first run. Always renders the
   `TourRunner` (a no-op unless a tour is active).
 - `WelcomeDialog.tsx` — the first-run concept carousel with "Take the tour" and
   "Explore on my own" actions.

@@ -7,6 +7,9 @@ import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { logUi } from '../../debug'
 import { IdType } from '../../models'
 
+/** The button's icon; the manual draws the same one (UiIcon). */
+export const FitIcon = ZoomOutMap
+
 interface FitButtonProps {
   rendererId: string
   // Network drawn in this button's view. Views that share a renderer (the
@@ -82,7 +85,7 @@ export const FitButton = ({
       size="small"
       disableFocusRipple={true}
     >
-      <ZoomOutMap fontSize="inherit" />
+      <FitIcon fontSize="inherit" />
     </IconButton>
   )
 
@@ -95,7 +98,7 @@ export const FitButton = ({
       disableFocusRipple={true}
       disabled={disabled}
     >
-      <ZoomOutMap fontSize="inherit" />
+      <FitIcon fontSize="inherit" />
     </IconButton>
   )
   if (disabled) {

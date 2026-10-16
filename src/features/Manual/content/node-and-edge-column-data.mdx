@@ -1,0 +1,259 @@
+# Node and Edge Column Data
+
+<a id="node_and_edge_column_data" />
+
+A network becomes more useful when its nodes and edges carry data: a gene's
+annotation, an expression value, the confidence of an interaction. Cytoscape
+Web stores this data in tables, one row per node or edge and one column per
+attribute. You can view and edit the tables, add columns, and import columns
+from a file.
+
+Column data can drive how the network looks. A mapping turns a column's
+values into colors, sizes, shapes or labels. See
+[How Mappings Work](styles#how-mappings-work) on the Styles page.
+
+<LiveDemo
+  panels={['renderer', 'table']}
+  caption="Live demo — the real table on a 10-node yeast network. Changes stay in this tab and never touch your workspace."
+/>
+
+Try the table on the demo network:
+
+- Select nodes in the network. The **Nodes** tab narrows to their rows.
+- Click **Insert new column** to add a column, or select a column header to
+  sort, rename or delete it.
+- Switch to the **Edges** tab to see the edge table.
+
+<a id="table_panel" />
+
+## Table Panel
+
+The table panel sits below the network view. It has three tabs:
+
+| Tab | Shows |
+| --- | --- |
+| Nodes | One row per node. |
+| Edges | One row per edge. |
+| Network | The network's name, description and properties. |
+
+The down-arrow button at the right of the tabs (**Close panel**) hides the
+panel.
+
+### What the Tables Show
+
+When nothing is selected, the Nodes and Edges tabs list every node and edge.
+When you select nodes or edges in the network view, the matching tab lists
+only the selected ones. Its label shows how many, for example
+**Nodes (12)**. Clear the selection to see every row again. Hover over a tab
+label for a reminder.
+
+Some columns are read-only and shown in gray:
+
+- **ID** — the element's internal ID, in both tables.
+- **Source Node** and **Target Node** — the names of an edge's two nodes, in
+  the Edges table.
+
+Hover over a column header to see the full column name and its data type.
+
+Each column has one of these data types:
+
+| Data type | Holds |
+| --- | --- |
+| String | Text |
+| Integer | Whole numbers |
+| Long integer | Large whole numbers |
+| Double | Decimal numbers |
+| Boolean | true or false |
+| List of strings, integers, long integers, floating point numbers or booleans | Several values of that type in one cell |
+
+Text that is a web address is shown as a link.
+
+The Network tab shows the network's name, visibility, version, owner and
+dates, then its **Description** and **Properties**. It is read-only.
+
+### Arranging Columns and Rows
+
+| Action | How |
+| --- | --- |
+| Move a column | Drag its header to a new position. |
+| Resize a column | Drag the edge of its header. |
+| Sort | Click a column header, then click **Sort Asc** or **Sort Desc** in the toolbar above the table. |
+
+Cytoscape Web remembers the column order, widths and sort for each network.
+
+### Editing Values
+
+- Double-click a cell to edit it. Press Enter or click outside the cell to
+  save, or press Esc to cancel.
+- A Boolean cell is a checkbox. Click it to switch between true and false.
+- An integer or long integer column does not accept decimal values. A decimal
+  typed into it is ignored.
+- Copy and paste work with the usual keyboard shortcuts. Pasted values that do
+  not fit a column's data type are skipped.
+
+To edit a list cell, double-click it. The **Edit list** dialog opens with two
+tabs:
+
+- **Manual** — one row per item. Use **Add item** and the delete button on
+  each row, then **Save**.
+- **Paste** — paste many items at once. Choose a **Separator** (**New line**,
+  **Comma**, **Tab** or **Semicolon**), or leave it on **Auto-detect**. The
+  preview marks each recognized item, and each value that does not fit the
+  list's type. **Append** adds the items to the list; **Replace** replaces it.
+
+Cell edits can be undone with **Edit → Undo**.
+
+### Applying One Value to Many Rows
+
+Select a cell, then use one of these toolbar buttons:
+
+- **Apply Value to Column** — copies the cell's value into every row of the
+  column.
+- **Apply Value to Selected Nodes** (or **Selected Edges**) — copies the
+  value into every row the table currently shows. When nodes are selected in
+  the network, these are the selected nodes. When none are selected, this is
+  every node.
+
+The same actions are in the menu that opens when you right-click a cell:
+**Apply to entire column** and **Apply to selected nodes**. The ID, Source
+Node and Target Node columns cannot be filled this way.
+
+### Selecting Nodes and Edges from the Table
+
+Tick the checkboxes at the left of the rows you want, then click **Select
+Nodes** (or **Select Edges**) in the toolbar. The network view selects those
+elements and nothing else.
+
+Right-clicking a cell offers more:
+
+| Menu item | What it does |
+| --- | --- |
+| Copy | Copy the cell's value. |
+| Paste | Paste into the table. |
+| Copy Selected | Copy the selected cells. |
+| Copy Node ID (or Copy Edge ID) | Copy the row's ID. |
+| Select This Node in Viewport (or Edge) | Select only this element in the network view. |
+| Select nodes from selection (or edges) | Select the elements of every row in your table selection. |
+
+## Working with Columns
+
+### Adding a Column
+
+Click the **Insert new column** button at the left of the table toolbar. In
+the **Create New Column** dialog, enter:
+
+| Field | Value |
+| --- | --- |
+| Column Name | Must be unique in the table. |
+| Data type | One of the types listed above. |
+| Default value | The value every row starts with. It must match the data type. For a list type, click the field to open the **Edit list** dialog. |
+
+Click **Confirm**. The new column appears first in the table.
+
+### Duplicating, Renaming and Deleting a Column
+
+Click a column header to select the column. The toolbar then shows:
+
+| Button | What it does |
+| --- | --- |
+| Duplicate | Adds a copy of the column next to it. The copy's name is the original name followed by `_copy_` and a number. |
+| Edit Column Name | Opens the **Rename Column** dialog. The new name must be unique in the table. The data type cannot be changed. |
+| Delete Column | Removes the column and its values from the network. |
+
+When a style mapping reads the column, the rename and delete dialogs list the
+affected visual properties and ask what to do with the mappings:
+
+| Option | Effect |
+| --- | --- |
+| Update the style mapping(s) | Point the mappings at the new name (rename only; this is the default). |
+| Delete the style mapping(s) | Remove the mappings. |
+| Leave the mapping(s) as is | Keep the mappings unchanged. They then read a column that no longer exists, and the network cannot be saved to NDEx until you fix them. |
+
+Renaming and deleting can be undone with **Edit → Undo**. Adding and
+duplicating a column cannot.
+
+<a id="import_data_table_files" />
+
+## Import Data Table Files
+
+You can add columns to a network's node or edge table from a delimited text
+file. Each row of the file is matched to a node or edge through a key column:
+a column in the file whose values match a column in the network, such as gene
+names.
+
+*Sample Data Table*
+
+| GENE | COMMON | gal1RGexp | gal1RGsig |
+| --- | --- | --- | --- |
+| YHR051W | COX6 | -0.034 | 0.37 |
+| YHR124W | NDT80 | -0.09 | 0.27 |
+| YKL181W | PRS1 | -0.167 | 0.0062 |
+
+Here `GENE` can be the key column: its values match the `name` column of a
+yeast network.
+
+The file must be `.csv`, `.tsv` or `.txt`, and smaller than 5 MB. The first
+row can hold the column names.
+
+<a id="basic_operation" />
+
+### Basic Operation
+
+1. Open the network you want to add data to. See
+   [Creating Networks](creating-networks).
+2. Choose **Data → Import → Table from File...**, or click the
+   **Import table from file...** button
+   <UiIcon name="import-table" label="Import table from file button" />
+   in the table toolbar.
+3. In **Upload Tabular Data File**, click **Browse** or drag the file onto
+   the dialog. If the file has parsing errors, a dialog lists them and asks
+   whether to continue.
+4. The **Edit Column Definitions** dialog opens with a preview of the file.
+
+<Screenshot id="join-table-to-network" />
+
+5. Under **Import data as**, choose **Node table columns** or **Edge table
+   columns**.
+6. Under **Key Column for Network**, choose the network column to match
+   against. Only String, Integer and Long integer columns are listed.
+7. Leave **Case sensitive key values** on to require an exact match. Turn it
+   off to treat `YHR051W` and `yhr051w` as the same key.
+8. Click the header of the file's key column. Under **Meaning**, click the
+   key button. Exactly one column can be the key, and it must be a String,
+   Integer or Long integer column.
+
+![The Meaning and Data Type options of a file column](manual-assets/Node_Edge_Column_Data/DataColumnKey.jpg)
+
+9. For each other column, choose its Meaning:
+   - **Attribute** — import the column. This is the default.
+   - **Not imported** — skip the column.
+
+   **Select All** marks every column as an attribute; **Select None** marks
+   every column as not imported. Both reset the data types to String.
+10. Check each column's **Data Type**. Cytoscape Web guesses the type from
+    the values. Click a header to change it. For a list type, set the **List
+    Delimiter** that separates the items within a cell (default `|`).
+11. Check the preview. Rows that match a node or edge are shown in bold;
+    rows that match nothing are dimmed. Values that do not fit their
+    column's data type are shown in red, and the column header shows a
+    warning icon. A message reports how many rows will be joined, for example
+    **120 / 150 rows will be joined to the table**.
+12. Click **Confirm**.
+
+Confirm stays disabled until one column is the key and every imported
+value fits its data type. Hover over it to see why.
+
+When several rows of the file share a key, the last of them supplies the
+values. An import cannot be undone with **Edit → Undo**.
+
+### Advanced Settings
+
+Click **Advanced Settings** in the Edit Column Definitions dialog to change
+how the file is read. The preview updates as you change them.
+
+| Setting | Options |
+| --- | --- |
+| File Delimiter | **Auto-detect** (default), **Comma (,)**, **Semicolon (;)**, **Pipe (\|)**, **Tab**, **Space**, or **Custom** (one character). |
+| Decimal Delimiter | **Dot (e.g. 1.23)** (default), **Comma (e.g. 1,23)**, or Custom. Use Comma for files written with European number formats. |
+| Use first row as column names | On by default. When off, the columns are named **Column 1**, **Column 2**, and so on. |
+| Skip first N lines | Ignore lines at the top of the file, such as comments before the header. |

@@ -1,0 +1,254 @@
+# Extending Cytoscape Web
+
+<a id="extending_cytoscape_web" />
+
+You can add features to Cytoscape Web in two ways:
+
+- **Apps** run inside Cytoscape Web. An app can add menu items, panels and
+  dialogs, and can read and change your networks.
+- **Service Apps** are web services on another server. Cytoscape Web sends
+  them network or table data, and applies the result they send back.
+
+You manage both in **Apps → Manage Apps...**. The dialog has two tabs:
+Apps and Service Apps.
+
+## Apps
+
+The **Apps** tab lists the apps you can turn on. Each row shows the app's
+name, version and description. Use the switch at the right of a row to turn
+an app on or off. An app that is on is marked **active**.
+
+The list comes from a catalog that ships with Cytoscape Web. It holds example
+apps from the Cytoscape team, such as **Hello Cytoscape World App**,
+**Network Workflow Examples** and **Network Statistics**. **Refresh**, at the
+bottom of the dialog, loads the catalog again.
+
+Once an app is on, its menu items appear in the Apps menu, above
+**Manage Apps...**. An app can also add a panel or a dialog of its own.
+
+A row can carry other marks:
+
+| Mark | Meaning |
+| --- | --- |
+| failed | The app could not be loaded. The reason is shown under the description. If trying again can help, the row has a **Retry** button. |
+| App Store | You installed the app yourself, from a URL or a link. |
+| Snapshot | The app came with a workspace you opened from NDEx. |
+| orphan | The app is no longer in the catalog. Turn it off, then click the trash icon (**Remove orphan app**) to remove it. |
+
+### Installing an App from a URL
+
+1. Open **Apps → Manage Apps...** and stay on the Apps tab.
+2. Under **Install from URL**, paste the app's manifest URL into
+   **Single-entry manifest URL**. This is a `.json` address, not the address
+   of a `remoteEntry.js` file.
+3. Click **Install**.
+
+The app is added to the list turned off. Turn it on with its switch.
+
+Cytoscape Web installs apps only from the Cytoscape App Store's servers
+(`https://apps.cytoscape.org`). An app from any other address is refused
+with the message "The app URL is not from an allowed origin".
+
+To remove an app you installed, click **More options** (the three dots) on
+its row, then **Uninstall**, and confirm. Apps that ship in the catalog
+cannot be uninstalled; turn them off instead.
+
+### Installing from a Link
+
+A link to Cytoscape Web can install apps when it opens. Such a link carries
+one or more `installApp` parameters, each holding the URL of an app or a
+Service App:
+
+```
+https://web.cytoscape.org/?installApp=<app or service URL>
+```
+
+Nothing is installed until you agree. Cytoscape Web shows the dialog
+**Install into this workspace?**, which lists each app's name, kind (**App**
+or **Service**), version, author, description and URL. Click Install to
+add all of them, or **Cancel** to add none. Apps installed this way are
+turned on.
+
+Only install apps from sources you trust. If a Service App in the link is
+already installed, Cytoscape Web skips it and says "Already installed".
+
+### Using a Different App Catalog
+
+**Advanced**, at the bottom of the Apps tab, is for developers. It
+replaces the catalog with one you supply:
+
+- **Custom manifest URL** — type the catalog's URL and click **Apply**.
+- **Upload manifest file** — the upload icon loads a catalog from a `.json`
+  file on your computer.
+
+The link above the URL field shows the current catalog; click it to view its
+contents. **Reset to default** (the × icon) returns to the built-in catalog.
+
+<a id="service_apps" />
+
+## Service Apps
+
+A Service App runs on a remote server. When you run it, Cytoscape Web sends
+the server data from your network, such as the whole network or some table
+columns. Use only services you trust with your data.
+
+To add a Service App:
+
+1. Open **Apps → Manage Apps...** and click the **Service Apps** tab.
+2. Paste the service's URL into **Enter new external service URL**.
+3. Click **Add**.
+
+For example, this URL adds the **Update tables example** Service App:
+
+```
+https://cd.ndexbio.org/cy/cytocontainer/v1/updatetablesexample
+```
+
+When no Service App is registered yet, the tab offers
+**Add Example Services**. It adds three: Update tables example,
+**g:Profiler Enrichment** and **IQuery Enrichment**.
+
+Each registered Service App is listed with its name, endpoint URL and
+description. The refresh icon reloads a service's definition from its
+server; **Refresh all** reloads every one. The trash icon removes the
+service.
+
+### Where a Service App Appears
+
+The service decides which menu its item goes in: **Data**, **Edit**,
+**Layout**, **Analysis**, **Tools**, **Apps** or **Help**, possibly inside a
+submenu. A service that names any other menu goes in the Apps menu, and
+the Service Apps tab shows a warning when you add it.
+
+For example, Update tables example appears as
+**Tools → Example Service App → Update tables example**.
+
+### Running a Service App
+
+Choosing a Service App's menu item opens a dialog with the service's name
+and, depending on the service:
+
+- **Input Columns** — the table columns to send.
+- **Parameters** — the settings the service accepts.
+
+Click **Submit** to run it, or **Cancel** to close the dialog. The Submit button is
+inactive when the service cannot run: no network is open, the network has
+no column of the type the service needs, or a parameter value is invalid.
+Hover over it to see why.
+
+While the service runs, a **Running Remote Service...** dialog shows its
+progress. Depending on the service, the result can add new networks, add or
+update table columns, change the selection, move nodes, update the network,
+or open a web page.
+
+<a id="community" />
+
+## Community Service Apps
+
+These Service Apps can be added by URL. Both need a network with a node
+table column holding a space-separated list of gene symbols. Both appear
+under **Apps → Run Functional Enrichment**.
+
+**g:Profiler Enrichment** tests a gene set against biological databases for
+significantly enriched pathways.
+
+```
+https://cd.ndexbio.org/cy/cytocontainer/v1/gprofilerenrichment
+```
+
+**IQuery Enrichment** searches NDEx IQuery for pathways that match the gene
+set.
+
+```
+https://cd.ndexbio.org/cy/cytocontainer/v1/iqueryenrichment
+```
+
+## Keeping Your Apps
+
+Your apps and Service Apps are saved in your browser, with the rest of your
+workspace. **Data → Clear Local Database** removes them.
+
+To keep them, save the workspace to NDEx with **Data → Save Workspace As...**.
+The saved workspace records which apps you installed and which are on, and
+your Service Apps. Opening the workspace again restores them. See
+[Creating Networks](creating-networks) for saving to NDEx.
+
+<a id="developers" />
+
+## For Developers
+
+### Try the App API
+
+Apps work with networks through the App API: the same functions are on
+`window.CyWebApi` in the browser, and in the `cyweb/` modules for apps. Each
+button below runs the code shown under it on the demo network and prints the
+result.
+
+<LiveDemo panels={['renderer', 'api']} />
+
+Every function returns a result object: `{ success: true, data }`, or
+`{ success: false, error }` with a code and message. Functions never throw.
+
+<a id="writing_apps" />
+
+### Writing Apps
+
+Apps are JavaScript or TypeScript modules that Cytoscape Web loads with
+Module Federation. They work through the Cytoscape Web App API.
+
+- Start at
+  [cytoscape-web-app-examples](https://github.com/cytoscape/cytoscape-web-app-examples).
+  It has the developer guides, the example apps and the
+  `npm create cytoscape-app` starter template.
+- The API's types are published as
+  [`@cytoscape-web/api-types`](https://www.npmjs.com/package/@cytoscape-web/api-types).
+  The App API is at 1.0 beta and may change before 1.0.
+- Scripts that are not apps, such as browser extensions, reach the same API
+  through `window.CyWebApi`.
+
+<a id="writing_service_apps" />
+
+### Writing Service Apps
+
+A Service App is a REST service. See the
+[Service App specification](https://github.com/cytoscape/cytoscape-web/wiki/Specification-for-Service-App-in-Cytoscape-Web-%28draft-v2%29).
+The service's `cyWebMenuItem` sets where its menu item appears: `root` names
+the top menu, and `path` the submenus and the item itself.
+
+These example services can be used for testing or as a reference:
+
+1. Add Network
+
+   ```
+   https://cd.ndexbio.org/cy/cytocontainer/v1/addnetworksexample
+   ```
+
+2. Open URL
+
+   ```
+   https://cd.ndexbio.org/cy/cytocontainer/v1/openurlexample
+   ```
+
+3. Update Layout
+
+   ```
+   https://cd.ndexbio.org/cy/cytocontainer/v1/updatelayoutsexample
+   ```
+
+4. Update Network
+
+   ```
+   https://cd.ndexbio.org/cy/cytocontainer/v1/updatenetworkexample
+   ```
+
+5. Update Selection
+
+   ```
+   https://cd.ndexbio.org/cy/cytocontainer/v1/updateselectionexample
+   ```
+
+6. Update Tables
+
+   ```
+   https://cd.ndexbio.org/cy/cytocontainer/v1/updatetablesexample
+   ```

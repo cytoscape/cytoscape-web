@@ -1,0 +1,203 @@
+# Filters
+
+A filter finds the nodes and edges that meet a set of conditions, such as
+"degree at least 5" or "type is protein". It then either selects them or
+shows only them. You build filters in the **FILTER** tab of the side panel,
+next to **STYLE**.
+
+The FILTER tab works like the Filter tab of Cytoscape Desktop. Filter
+files move between the two applications.
+
+<LiveDemo panels={['renderer', 'filter']} />
+
+Try it on the demo network:
+
+1. In the **Filter** panel, click **+** and choose **Column filter**.
+2. Choose the column **Node: Degree** and set a range, for example from 3
+   up.
+3. The nodes that match are selected in the network as you change the
+   range.
+
+Switch the filter from **select** to **show** to hide the nodes that do not
+match instead.
+
+## The Filter Tab
+
+The tab has three parts, from top to bottom:
+
+| Part | What it holds |
+| --- | --- |
+| The filter picker | A list of your filters and an options menu (the three dots, **Options...**). |
+| The conditions | The conditions of the filter shown in the picker. |
+| The apply panel | How and when the filter is applied. |
+
+The filter acts on the network in the active view. Filters belong to the
+workspace, not to one network: the same filter can be applied to any
+network in the workspace.
+
+There is always at least one filter. A new workspace starts with an empty
+one named "Default filter".
+
+### Managing Filters
+
+The options menu holds:
+
+| Menu item | What it does |
+| --- | --- |
+| New filter | Creates an empty filter. You are asked for a name. |
+| Rename current filter | Renames the filter. A name already used by another filter is refused. |
+| Copy current filter | Makes a copy with the same conditions. Its name is the original's with a number added, such as "Hubs 2". |
+| Remove current filter | Asks for confirmation. Inactive when only one filter is left. |
+| Export filters... and Import filters... | See [Filter Files](#filter-files). |
+
+## Building Conditions
+
+Click **+** (**Add new condition...**) and choose the kind of condition:
+
+| Condition | What it does |
+| --- | --- |
+| Column filter | Compares a table column with a value. |
+| Degree filter | Counts a node's edges. |
+| Topology filter | Counts a node's neighbours. |
+| Group | Holds other conditions. |
+
+The minus icon on a condition (**Remove this condition**) removes it.
+
+### Column Filter
+
+Choose a column from the list (**Choose column...**). Node columns come
+first, then edge columns, labelled like **Node: name** or **Edge: weight**.
+A condition on a node column tests nodes; one on an edge column tests edges.
+
+The comparison depends on the column's type:
+
+| Column type | Comparisons | Value |
+| --- | --- | --- |
+| Text | **contains**, **doesn't contain**, **is**, **is not**, **matches regex** | Typed text |
+| Number (integer or decimal) | is, is not | A range: **between** _low_ **and** _high_ **inclusive.** Set it with the slider or the two fields |
+| True/false | is | **true** or **false** |
+
+Text comparisons ignore upper and lower case. The matches regex comparison takes a
+JavaScript regular expression, which must match the whole value, not part
+of it.
+
+For a list column, a third box chooses whether **any element** or
+**every element** of the list must pass.
+
+### Degree Filter
+
+**Degree** _(edges)_ is / is not between _low_ and _high_ inclusive.
+
+The edges box chooses which edges to count: **In + Out** (all), **In**
+(edges that end at the node) or **Out** (edges that start at it). Every edge
+counts as pointing from its source node to its target node. Degree filters
+test nodes only.
+
+### Topology Filter
+
+**Nodes with** **at least** / **less than** _N_
+**neighbours within distance** _D_.
+
+A neighbour is any node within _D_ edges of the node, in either direction.
+To count only some neighbours, click the topology filter's own +
+(**Add neighbour condition...**) and add conditions the neighbours must
+pass. Topology filters test nodes only.
+
+### Combining Conditions
+
+Once a filter or group has two or more conditions, a box above them chooses
+how they combine:
+
+- **Match all (AND)** — an element must pass every condition.
+- **Match any (OR)** — an element must pass at least one.
+
+Use a Group to mix the two, for example "A and (B or C)". A group can
+hold other groups.
+
+### Moving and Grouping Conditions
+
+Drag a condition by its handle (the dotted icon) to change the filter's
+structure:
+
+| Drop it on | Result |
+| --- | --- |
+| A gap between conditions | Moves it there. |
+| A group or a topology filter | Adds it at the end of that group, or to that topology filter's neighbour conditions. |
+| Another condition | Puts both in a new Match all (AND) group, in the place of the condition you dropped it on. |
+
+A group left empty by a move is removed. Dragging also works with touch,
+and with the keyboard: focus the handle, press Space, move with the arrow
+keys, and press Space again. Escape cancels.
+
+### Conditions That Cannot Work
+
+A warning icon appears next to a condition that cannot work on the current
+network: for example, its column does not exist in this network, the column
+has the wrong type, or the regular expression is invalid. Hover over the
+icon to read why. Such a condition matches nothing.
+
+## Applying a Filter
+
+The apply panel at the bottom of the tab has two choices:
+
+- **select** — the nodes and edges that pass become the selection. The
+  previous selection is replaced, so a filter about nodes only deselects every
+  edge.
+- **show** — only the nodes and edges that pass stay visible; the rest are
+  hidden. A filter about nodes only hides no edge itself, but an edge whose
+  node is hidden is not drawn. The selection is not changed.
+
+Click **Apply** to apply the filter. When **Apply when filter changes** is
+checked, the filter is applied again each time you change a condition or
+pick another filter. It is checked by default for networks with fewer than
+100,000 nodes and edges. Changing between select and show applies
+the filter at once.
+
+The line under Apply reports the result, for example
+"Selected 12 nodes and 30 edges in 4 ms". A filter with no conditions does
+nothing.
+
+<Note>
+The show choice hides elements by setting a visibility bypass on them in the
+network's style, so the hidden elements stay hidden after a reload and when
+you save the network. To show every element again, switch the filter to
+select. See [Styles](styles) for bypasses.
+</Note>
+
+Applying a filter cannot be undone with **Edit → Undo**.
+
+Each network has one applied filter at a time. Applying another filter to
+the same network replaces the first one's result.
+
+In the Hierarchy Viewer, applying a filter from the **FILTER** tab to a
+subnetwork turns off the subnetwork's own filter panel, if it has one.
+
+## Filter Files
+
+**Export filters...** saves every filter in the workspace to a file named
+`cytoscape-filters.json`. **Import filters...** adds the filters of such a
+file to the workspace. An imported filter whose name is taken gets a number
+added. A message reports how many filters were imported and how many were
+skipped.
+
+The file format is the one Cytoscape Desktop uses for **Export filters** and
+**Import filters** in its Filter panel. These parts of a Cytoscape Desktop
+file are skipped on import:
+
+- Chains (the **Chain** tab of Cytoscape Desktop).
+- Filters that use a condition from a Cytoscape Desktop app.
+
+Whether a filter selects or shows is not saved in the file.
+
+Filters are saved in your browser with the workspace. They are kept when
+you delete networks. **Data → Clear Local Database** and opening a workspace
+from NDEx remove them, and **Save Workspace** to NDEx does not include them.
+Export your filters to keep a copy.
+
+### Limits
+
+- A file over 5,000,000 characters, nested more than 32 levels deep, or
+  holding more than 10,000 conditions is refused.
+- A regular expression longer than 1,000 characters is refused.
+- Filters run in the browser tab. A very slow regular expression on a large
+  network can make the tab unresponsive while it runs.

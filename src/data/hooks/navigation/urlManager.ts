@@ -2,6 +2,7 @@ import { NavigateOptions } from 'react-router-dom'
 
 import { logHistory, registerDebugTool } from '../../../debug'
 import { NavigationConfig } from './NavigationConfig'
+import { currentDbScope } from '@/data/db/dbScope'
 
 let lastNetworkId: string = '' // Last displayed network ID
 let lastUrlPath: string = '' // Last set URL path
@@ -96,6 +97,16 @@ export const navigateToNetwork = (
 ): void => {
   const { workspaceId, networkId, searchParams, replace, force } = config
   navigationCount++
+
+  // 0. A manual tab never navigates into the editor, not even when forced.
+  // The manual embeds editor components (Merge, network rows) that call this;
+  // following them would boot the editor on the manual's sandbox database.
+  if (currentDbScope() === 'manual') {
+    logHistory.info(
+      `[URLManager:${navigationCount}] Manual tab: not navigating to network ${networkId ?? ''}`,
+    )
+    return
+  }
 
   // Convert to safe value
   const safeNetworkId: string = networkId ?? ''
