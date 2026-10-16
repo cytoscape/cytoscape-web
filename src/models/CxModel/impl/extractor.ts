@@ -21,14 +21,13 @@ import { CxValue } from '../Cx2/CxValue'
 
 export const CX_ANNOTATIONS_KEY = '__Annotations'
 
+// Find the aspect by name. CX2 puts the CXVersion descriptor first and status
+// last, but a reader must not rely on it: skipping the last entry dropped the
+// edges of any file that put status elsewhere (#830).
 const getAspect = (cx2: Cx2, aspectTag: string): object[] => {
-  const slice: Aspect[] = cx2.slice(1, cx2.length - 1) as Aspect[]
-
-  for (const aspect of slice) {
-    const aspectName: string = Object.keys(aspect)[0]
-    const aspectValues: object[] = aspect[aspectName]
-    if (aspectName === aspectTag) {
-      return aspectValues
+  for (const aspect of cx2) {
+    if (Object.prototype.hasOwnProperty.call(aspect, aspectTag)) {
+      return (aspect as Aspect)[aspectTag]
     }
   }
 

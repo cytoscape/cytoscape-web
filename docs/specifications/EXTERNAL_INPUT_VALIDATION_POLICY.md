@@ -15,6 +15,7 @@ This document outlines the application's policy for validating external inputs, 
 The `validateCX2` function performs comprehensive validation of CX2 data, including:
 
 1. **Structure Validation**: Ensures the data is a valid CX2 array structure with proper version (2.0) and aspect format
+   - A `status` aspect is required. CX2 puts it last, but a `status` elsewhere is accepted with a warning: the extractor finds every aspect by name, so no aspect is lost (#830).
 2. **Metadata Validation**: Verifies that metadata aspects are consistent with the actual data
 3. **Referential Integrity**: Validates that:
    - All nodes have unique IDs
