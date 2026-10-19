@@ -37,7 +37,7 @@ The menu, top to bottom (`---` marks a divider):
 - About Cytoscape Web
 - ---
 - Take a tour
-- User Manual: opens `web-manual.cytoscape.org`
+- User Manual: opens the in-app manual (`<base>/manual/`) in a new tab. A new document, so the manual tab opens its own sandbox database (`src/data/db/dbScope.ts`).
 - **Developer** (submenu)
   - Developer's Guide: opens the
     [Cytoscape-Web-Developer-Tutorial](https://github.com/cytoscape/cytoscape-web/wiki/Cytoscape-Web-Developer-Tutorial)

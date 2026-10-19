@@ -59,7 +59,8 @@ gene-set queries, on a build that loads faster and ships 25% less code.
 - Create a self-loop edge from the node context menu (#673)
 - Opaque CX2 aspects survive Merge Networks (#609)
 - Paste bare base64 image bytes as a node image, without a `data:` prefix (#743)
-- Use images as node custom graphics, by URL or local upload (#612)
+- Show an image in each node: map a column of image URLs or base64 data onto Image/Chart 1
+  with a passthrough mapping (#612)
 - Image custom graphics are carried through CX2 import and export (#612)
 - Cytoscape Web warns when exported content may not render in Cytoscape Desktop (#612)
 

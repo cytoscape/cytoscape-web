@@ -17,6 +17,9 @@ import { Network } from '../../models/NetworkModel'
 import { CytoscapeDesktopPermissionDialog } from '../CytoscapeDesktopPermissionDialog'
 import { useFeatureAvailability } from '../FeatureAvailability'
 
+/** The button's icon; the manual draws the same one (UiIcon). */
+export const OpenInCytoscapeIcon = OpenInNew
+
 interface OpenInCytoscapeButtonProps {
   targetNetworkId?: IdType
   networkLabel?: string
@@ -94,7 +97,7 @@ export const OpenInCytoscapeButton = ({
               featureAvailabilityState.state.isCyDeskAvailable === false
             }
           >
-            <OpenInNew fontSize="inherit" />
+            <OpenInCytoscapeIcon fontSize="inherit" />
           </IconButton>
         </span>
       </Tooltip>

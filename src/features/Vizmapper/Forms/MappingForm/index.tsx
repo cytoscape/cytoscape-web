@@ -411,7 +411,14 @@ function MappingFormContent(props: {
                     }`
                 return (
                   <MenuItem disabled={!enabled} key={c.name} value={c.name}>
-                    <Tooltip arrow title={title} placement="right">
+                    {/* describeChild: the tooltip describes the option; the
+                        column name stays its accessible name. */}
+                    <Tooltip
+                      arrow
+                      describeChild
+                      title={title}
+                      placement="right"
+                    >
                       <Box
                         sx={{
                           textOverflow: 'ellipsis',
@@ -457,6 +464,7 @@ function MappingFormContent(props: {
                     ) : (
                       <Tooltip
                         arrow
+                        describeChild
                         placement="right"
                         title={`${mappingFnType} mapping functions${
                           column !== '' ? ` on column '${column}' ` : ' '

@@ -114,6 +114,29 @@ const callApi = async (
     [domain, fn, args] as const,
   )
 
+/** The network ids in the workspace row of IndexedDB, read directly. */
+const persistedNetworkIds = async (page: Page): Promise<string[]> =>
+  await page.evaluate(
+    async () =>
+      await new Promise<string[]>((resolve, reject) => {
+        const open = indexedDB.open('cyweb-db')
+        open.onerror = () => reject(open.error)
+        open.onsuccess = () => {
+          const db = open.result
+          const request = db
+            .transaction('workspace', 'readonly')
+            .objectStore('workspace')
+            .getAll()
+          request.onsuccess = () => {
+            db.close()
+            const rows = request.result as { networkIds?: string[] }[]
+            resolve(rows.flatMap((row) => row.networkIds ?? []))
+          }
+          request.onerror = () => reject(request.error)
+        }
+      }),
+  )
+
 const currentNetworkId = async (page: Page): Promise<string> =>
   (await callApi(page, 'workspace', 'getWorkspaceInfo')).data.currentNetworkId
 
@@ -231,7 +254,13 @@ test.describe('App API deletes move the URL off the deleted network', () => {
     expect(await currentNetworkId(page)).toBe(FIRST_SAMPLE_ID)
     await expect(page).toHaveURL(new RegExp(`/networks/${FIRST_SAMPLE_ID}`))
 
-    // The workspace row in IndexedDB no longer lists it after a reload
+    // The workspace row in IndexedDB no longer lists it after a reload.
+    // The store writes the row without waiting, and a reload aborts a write
+    // still in flight: WebKit in CI was slow enough that the old row
+    // survived. Wait for the write, then reload.
+    await expect
+      .poll(async () => await persistedNetworkIds(page), { timeout: 5_000 })
+      .not.toContain(SECOND_SAMPLE_ID)
     await gotoAndWaitReady(page, page.url())
     expect(await networkIds()).not.toContain(SECOND_SAMPLE_ID)
     expect(await networkIds()).toContain(FIRST_SAMPLE_ID)

@@ -423,6 +423,9 @@ export function TableColumnAppendForm(props: BaseMenuItemProps) {
             size="small"
             sx={{ minWidth: 200 }}
             inputProps={{ 'aria-label': 'Key column for network' }}
+            // The dialog sits at zIndex 2000; the list must open above it,
+            // as the column popovers do (previewTableParts.tsx).
+            MenuProps={{ sx: { zIndex: 2001 } }}
             value={networkKeyColumn?.name ?? ''}
             onChange={(event) =>
               setNetworkKeyColumn(
