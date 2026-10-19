@@ -17,6 +17,11 @@ export type ScreenshotTarget =
   | { readonly text: string }
   /** An element whose `aria-label` is exactly `label`. */
   | { readonly label: string }
+  /**
+   * A Playwright selector, for elements with no test id or accessible name
+   * (a Style panel row's boxes). Prefer the other kinds.
+   */
+  | { readonly selector: string }
 
 export type ScreenshotStep =
   /** Data → Import → Network from File..., then upload `file` (repo path). */
@@ -176,6 +181,24 @@ const JOIN_DIALOG = { role: 'dialog', name: 'Edit Column Definitions' } as const
 /** Network from File's dialog for a table: the same title as JOIN_DIALOG. */
 const CREATE_DIALOG = JOIN_DIALOG
 const MERGE_DIALOG = { role: 'dialog', name: 'Advanced Network Merge' } as const
+/**
+ * A Style panel row's boxes: 0 Default, 1 Mapping, 2 Bypass. Rows have no
+ * test id; the row is the element whose child is the property's name.
+ */
+const styleBox = (property: string, box: 0 | 1 | 2): ScreenshotTarget => ({
+  selector: `[data-testid="vizmapper"] div:has(> :text-is("${property}")) > div >> nth=${box}`,
+})
+/** A swatch of the color picker's Swatches tab. */
+const SWATCH = (hex: string): string =>
+  `[data-testid="visual-property-value-picker-popover"] [title="${hex}"]`
+/** The value box of one row of a discrete mapping. */
+const DISCRETE_VALUE = (value: string): ScreenshotTarget => ({
+  selector: `[data-testid="mapping-form-popover"] tr:has([data-testid="discrete-mapping-checkbox-${value}"]) td >> nth=2 >> div >> nth=0`,
+})
+const CURRENT_PALETTE =
+  '[data-testid="mapping-form-popover"] span:text-is("Current Palette:") + button'
+const BYPASS_VALUE =
+  '[data-testid="bypass-form-popover"] :text("Apply the bypass value") + *'
 const HSF1_NETWORK = 'src/assets/networks/hsf1-neighborhood.cx2'
 const HSF1_NAME = 'HSF1 neighborhood'
 
@@ -575,6 +598,143 @@ export const SCREENSHOT_SEQUENCES: readonly ScreenshotSequence[] = [
     sources: [
       'src/features/Filter/FilterTab.tsx',
       'src/features/Filter/components/**',
+    ],
+  },
+  {
+    id: 'styles-tutorial',
+    title: 'Creating a Basic Style with Discrete and Continuous Mappings',
+    viewport: { width: 1280, height: 800 },
+    frames: [
+      {
+        id: 'shape-default',
+        alt: 'The Shape picker opened from the Default box, with the ellipse ringed',
+        step: 1,
+        steps: [
+          { importNetwork: GAL_NETWORK, expectText: GAL_NAME },
+          { click: { testid: 'network-browser-panel-style-tab' } },
+          { click: { testid: 'vizmapper-nodes-tab' } },
+          { click: styleBox('Shape', 0) },
+        ],
+        highlight: [{ testid: 'node-shape-picker-option-ellipse' }],
+      },
+      {
+        id: 'fill-default',
+        alt: 'The color picker opened from the Default box of Fill Color, with a light grey ringed',
+        step: 2,
+        steps: [
+          { click: { testid: 'node-shape-picker-option-ellipse' } },
+          { click: { testid: 'node-shape-picker-confirm-button' } },
+          { click: styleBox('Fill Color', 0) },
+          { click: { testid: 'color-picker-swatches-tab' } },
+        ],
+        highlight: [{ selector: SWATCH('#d2d2d2') }],
+      },
+      {
+        id: 'stroke-mapping',
+        alt: 'The mapping form of Stroke Color, with the Column list ringed',
+        step: 3,
+        steps: [
+          { click: { selector: SWATCH('#d2d2d2') } },
+          { click: { testid: 'color-picker-confirm-button' } },
+          { click: { testid: 'vizmapper-edges-tab' } },
+          { click: styleBox('Stroke Color', 1) },
+          { waitFor: { testid: 'mapping-form-popover' } },
+        ],
+        highlight: [{ testid: 'mapping-form-column-select' }],
+      },
+      {
+        id: 'discrete',
+        alt: 'A discrete mapping on interaction, listing pp and pd',
+        step: 4,
+        steps: [
+          { click: { testid: 'mapping-form-column-select' } },
+          { click: { role: 'option', name: 'interaction' } },
+          { click: { testid: 'mapping-form-type-select' } },
+          { click: { role: 'option', name: 'discrete' } },
+        ],
+        highlight: [
+          { testid: 'discrete-mapping-checkbox-pp' },
+          { testid: 'discrete-mapping-delete-button-pd' },
+        ],
+      },
+      {
+        id: 'discrete-color',
+        alt: 'The color picker of the pp value, with a dark blue ringed',
+        step: 5,
+        steps: [
+          { click: DISCRETE_VALUE('pp') },
+          { click: { testid: 'color-picker-swatches-tab' } },
+        ],
+        highlight: [{ selector: SWATCH('#0b00a8') }],
+      },
+      {
+        id: 'fill-mapping',
+        alt: 'The mapping form of Fill Color on the Nodes tab, with the Column list ringed',
+        step: 6,
+        steps: [
+          { click: { selector: SWATCH('#0b00a8') } },
+          { click: { testid: 'color-picker-confirm-button' } },
+          { click: DISCRETE_VALUE('pd') },
+          { click: { testid: 'color-picker-swatches-tab' } },
+          { click: { selector: SWATCH('#00a800') } },
+          { click: { testid: 'color-picker-confirm-button' } },
+          { click: { testid: 'mapping-form-close-button' } },
+          { click: { testid: 'vizmapper-nodes-tab' } },
+          { click: styleBox('Fill Color', 1) },
+          { waitFor: { testid: 'mapping-form-popover' } },
+        ],
+        highlight: [{ testid: 'mapping-form-column-select' }],
+      },
+      {
+        id: 'continuous',
+        alt: 'A continuous mapping on gal1RGexp, with its gradient',
+        step: 7,
+        steps: [
+          { click: { testid: 'mapping-form-column-select' } },
+          { click: { role: 'option', name: 'gal1RGexp' } },
+          { click: { testid: 'mapping-form-type-select' } },
+          { click: { role: 'option', name: 'continuous' } },
+        ],
+        highlight: [{ testid: 'mapping-form-type-select' }],
+      },
+      {
+        id: 'palette',
+        alt: 'The Set Palette window on the diverging palettes',
+        step: 8,
+        steps: [
+          { click: { selector: CURRENT_PALETTE } },
+          { click: { testid: 'palette-category-tab-diverging' } },
+        ],
+        highlight: [{ label: 'Diverging 1' }],
+      },
+      {
+        id: 'select-node',
+        alt: 'One node selected in the network view',
+        step: 9,
+        steps: [
+          { click: { label: 'Diverging 1' } },
+          { click: { role: 'button', name: 'Confirm' } },
+          { click: { testid: 'mapping-form-close-button' } },
+          { selectNodes: ['7998'] },
+        ],
+      },
+      {
+        id: 'bypass',
+        alt: 'The Bypass form of Fill Color for the selected node',
+        step: 10,
+        steps: [
+          { click: styleBox('Fill Color', 2) },
+          { waitFor: { testid: 'bypass-form-popover' } },
+        ],
+        highlight: [{ selector: BYPASS_VALUE }],
+      },
+    ],
+    sources: [
+      'src/features/Vizmapper/index.tsx',
+      'src/features/Vizmapper/Forms/**',
+      'src/features/Vizmapper/PalettePicker/**',
+      'src/features/Vizmapper/VisualPropertyRender/Color.tsx',
+      'src/features/Vizmapper/VisualPropertyRender/NodeShape.tsx',
     ],
   },
 ]

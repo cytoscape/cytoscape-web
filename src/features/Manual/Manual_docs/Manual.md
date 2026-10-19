@@ -202,6 +202,32 @@ Images of the app come from the app, not from a camera.
   elements to ring (`highlight`: what the reader acts on), and the crop.
   Images: `public/manual-assets/generated/<sequence>/<frame>.png`.
 
+Sequences:
+
+| Id | Page › section | Frames |
+| --- | --- | --- |
+| `import-table` | Node and Edge Column Data › Basic Operation | 11 |
+| `network-from-table` | Creating and Saving Networks › Import a Network from a Table | 10 |
+| `merge` | Merging Networks › Basic Operations | 7 |
+| `column-filter` | Filters › Select Nodes with a Column Filter | 7 |
+| `styles-tutorial` | Styles › Creating a Basic Style with Discrete and Continuous Mappings | 10 |
+
+Recipe steps (`ScreenshotStep`):
+
+| Step | Does |
+| --- | --- |
+| `importNetwork` | Data → Import → Network from File..., upload a repo file, wait for its name and the renderer |
+| `click`, `hover`, `waitFor` | Act on a target: `testid`, `role` + `name`, `text`, `label` (exact `aria-label`), or `selector` (a Playwright selector, for elements with neither, such as a Style panel row's boxes). Role targets include elements an open popover hides from assistive technology. |
+| `upload` | Set the file of the `<input type="file">` inside a target |
+| `press` | Press a key |
+| `fill` | Replace a field's text |
+| `selectNodes` | Select nodes of the current network through `window.CyWebApi`, then wait for what the selection loads |
+| `wait` | Wait a fixed time, for an animation or layout |
+
+Before each capture the pointer moves to the bottom-right corner, so no
+hover tooltip shows, and the focused element loses focus, so no focus ring
+shows, unless it is inside an open menu, which would close.
+
 | Task | How |
 | --- | --- |
 | Capture one or more | `node scripts/capture-manual-screenshots.mjs cell-view import-table` (recipe or sequence ids; builds the app and serves it on port 5502; `MANUAL_SCREENSHOT_URL` uses a running server) |

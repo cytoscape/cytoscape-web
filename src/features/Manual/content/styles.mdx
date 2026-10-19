@@ -108,31 +108,32 @@ edges and `gal1RGexp` on nodes.
 
 ### Creating a Basic Style with Discrete and Continuous Mappings
 
-First, set two default values:
+Steps 1–2 set two default values. Steps 3–5 color the edges by interaction
+type with a discrete mapping, steps 6–8 color the nodes by expression with
+a continuous mapping, and steps 9–10 add a bypass.
 
-1. In the **NODES** tab of the **STYLE** panel, click the **Default** box of **Shape**. Choose
-   the ellipse.
-2. Click the **Default** box of **Fill Color** and choose a light grey.
+<Steps sequence="styles-tutorial">
 
-Next, color the edges by interaction type with a discrete mapping:
-
+1. In the **NODES** tab of the **STYLE** panel, click the **Default** box of
+   **Shape**. Choose the ellipse, then click **Confirm**.
+2. Click the **Default** box of **Fill Color** and choose a light grey, then
+   click **Confirm**.
 3. Open the **EDGES** tab. Click the **Mapping** box of **Stroke Color**.
 4. Under **Column**, choose **interaction**. Under **Mapping Type**, choose
    **discrete**. The form lists every value of the column: **pp**
    (protein–protein) and **pd** (protein–DNA).
-5. Give **pp** a dark blue and **pd** a green.
-
-Then color the nodes by expression with a continuous mapping:
-
+5. Click the value box of **pp** and choose a dark blue. Give **pd** a
+   green the same way, then click **Close**.
 6. Open the **NODES** tab. Click the **Mapping** box of **Fill Color**.
 7. Under **Column**, choose **gal1RGexp**. Under **Mapping Type**, choose
    **continuous**. The nodes take colors from a default gradient at once.
-8. Choose a different gradient from **Color Palette**, for example a red–blue
-   diverging palette, so negative and positive expression read as opposite
-   colors.
-
-Finally, try a bypass:
-
+8. Click the button next to **Current Palette:** and choose a diverging
+   palette, so negative and positive expression read as opposite colors.
+   Click **Confirm**, then **Close**.
 9. Click one node in the network to select it.
-10. Click the **Bypass** box of **Fill Color** and pick a bright yellow. Only
-    the selected node changes; the mapping still colors the rest.
+10. Click the **Bypass** box of **Fill Color**, then the box next to
+    **Apply the bypass value to all selected nodes:**, and pick a bright
+    yellow. Only the selected node changes; the mapping still colors the
+    rest.
+
+</Steps>

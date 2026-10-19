@@ -35,6 +35,9 @@ const locate = (page: Page, target: ScreenshotTarget): Locator => {
   if ('testid' in target) {
     return page.locator(`[data-testid="${target.testid}"]`).first()
   }
+  if ('selector' in target) {
+    return page.locator(target.selector).first()
+  }
   if ('label' in target) {
     return page.getByLabel(target.label, { exact: true }).first()
   }
@@ -239,6 +242,12 @@ for (const sequence of SCREENSHOT_SEQUENCES) {
       }
       await page.waitForTimeout(500)
       // A focus ring left by the last click or key is not part of the step.
+      // A tooltip under the pointer is not part of the step either: park the
+      // pointer in the bottom-right corner.
+      await page.mouse.move(
+        sequence.viewport.width - 1,
+        sequence.viewport.height - 1,
+      )
       // An open menu closes when its item loses focus, so keep that focus.
       await page.evaluate(() => {
         const active = document.activeElement
