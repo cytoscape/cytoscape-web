@@ -88,6 +88,10 @@ const runStep = async (page: Page, step: ScreenshotStep): Promise<void> => {
     await expect(locate(page, step.waitFor)).toBeVisible({ timeout: 30_000 })
     return
   }
+  if ('wait' in step) {
+    await page.waitForTimeout(step.wait)
+    return
+  }
   if ('selectNodes' in step) {
     await page.evaluate(async (nodeIds) => {
       type Result<T> = { success: boolean; data?: T }
@@ -231,9 +235,14 @@ for (const sequence of SCREENSHOT_SEQUENCES) {
       }
       await page.waitForTimeout(500)
       // A focus ring left by the last click or key is not part of the step.
+      // An open menu closes when its item loses focus, so keep that focus.
       await page.evaluate(() => {
-        if (document.activeElement instanceof HTMLElement) {
-          document.activeElement.blur()
+        const active = document.activeElement
+        if (
+          active instanceof HTMLElement &&
+          active.closest('[role="menu"]') === null
+        ) {
+          active.blur()
         }
       })
       if (frame.highlight !== undefined) {

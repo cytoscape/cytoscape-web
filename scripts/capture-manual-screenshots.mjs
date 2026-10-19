@@ -21,9 +21,10 @@ const args = [
   'playwright.manual-screenshots.config.ts',
 ]
 if (ids.length > 0) {
-  // Test titles are the recipe ids. Anchored at the end, so `cell` does not
-  // match `cell-view`.
-  args.push('--grep', `(${ids.join('|')})$`)
+  // Test titles are the recipe ids. Anchored at both ends of the title, so
+  // `cell` does not match `cell-view` and `network-from-table` does not match
+  // `create-network-from-table`.
+  args.push('--grep', `(^| )(${ids.join('|')})$`)
 }
 if (process.platform !== 'linux' && !process.env.CI) {
   console.warn(

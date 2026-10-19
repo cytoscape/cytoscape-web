@@ -165,17 +165,29 @@ The interaction column is optional. A minimal network table has two columns:
 
 A table may hold columns you do not want; you can leave them out.
 
-After you choose a table file, the **Edit Column Definitions** window opens.
-It shows a preview of the table. The **Network name** box starts with the file
-name; change it if you like.
+<Steps sequence="network-from-table">
 
-<Screenshot id="create-network-from-table" />
+1. Choose **Data → Import → Network from File...**.
+2. In **Upload network file**, click **Browse** or drag the table file onto
+   the window.
+3. The **Edit Column Definitions** window opens with a preview of the table.
+   Every column starts as an **Edge attribute**, with a data type guessed
+   from its values. The **Network name** box starts with the file name;
+   change it if you like.
+4. Click the header of the column that names each edge's source node. Under
+   **Meaning**, choose **Source node**.
+5. Click the header of the target column and choose **Target node**.
+6. If a column holds the edge type, such as *pp*, choose **Interaction
+   type** for it. This is optional.
+7. For each other column, choose its Meaning and check its **Data Type**.
+   Both are described below.
+8. Check the preview. Values that do not match a column's data type are
+   shown in red, and the header shows how many there are.
+9. Click **Confirm**. It stays inactive until every imported value matches
+   its type and at least one column is a source or target node.
+10. The new network opens, and its row is added to the **WORKSPACE** panel.
 
-Each column header shows two settings: the column's data type and its
-*meaning*. Every column starts as an **Edge attribute**, with a data type
-guessed from its values. Click a header to change them:
-
-<Screenshot id="create-network-column-editor" />
+</Steps>
 
 **Meaning** is one of:
 
@@ -194,11 +206,6 @@ columns must be String, Integer or Long integer.
 
 **Select All** marks every column for import. **Select None** marks every
 column Not imported.
-
-Values that do not match a column's data type are shown in red, and the header
-shows how many there are. **Confirm** stays inactive until every imported value
-matches its type and at least one column is a source or target node. Click
-Confirm to create the network.
 
 ### Import a List of Nodes Without Edges
 

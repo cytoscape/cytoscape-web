@@ -27,6 +27,8 @@ export type ScreenshotStep =
   /** Set the file of the `<input type="file">` inside `target`. */
   | { readonly upload: string; readonly into: ScreenshotTarget }
   | { readonly press: string }
+  /** Let an animation or layout finish, in milliseconds. */
+  | { readonly wait: number }
   /** Select these nodes of the current network, as a click on them does. */
   | { readonly selectNodes: readonly string[] }
 
@@ -89,48 +91,6 @@ export const SCREENSHOT_RECIPES: readonly ScreenshotRecipe[] = [
     ],
     capture: { role: 'dialog', name: 'Export Network To Image' },
     sources: ['src/features/ToolBar/DataMenu/ExportNetworkToImage/**'],
-  },
-  {
-    id: 'create-network-from-table',
-    alt: 'The Edit Column Definitions window for a table file imported as a network',
-    viewport: { width: 1280, height: 800 },
-    steps: [
-      { click: DATA_MENU },
-      { click: { role: 'menuitem', name: 'Import' } },
-      { click: { role: 'menuitem', name: 'Network from File...' } },
-      {
-        upload: 'test/fixtures/tables/table-data-from-cy-tutorial.csv',
-        into: { testid: 'file-upload-dropzone' },
-      },
-      { waitFor: { testid: 'create-network-from-table-modal' } },
-    ],
-    capture: { role: 'dialog', name: 'Edit Column Definitions' },
-    sources: [
-      'src/features/TableDataLoader/components/CreateNetworkFromTable/**',
-      'src/features/TableDataLoader/components/previewTableParts.tsx',
-    ],
-  },
-  {
-    id: 'create-network-column-editor',
-    alt: 'The Meaning and Data Type options of a column, opened from its header',
-    viewport: { width: 1280, height: 800 },
-    steps: [
-      { click: DATA_MENU },
-      { click: { role: 'menuitem', name: 'Import' } },
-      { click: { role: 'menuitem', name: 'Network from File...' } },
-      {
-        upload: 'test/fixtures/tables/table-data-from-cy-tutorial.csv',
-        into: { testid: 'file-upload-dropzone' },
-      },
-      { waitFor: { testid: 'create-network-from-table-modal' } },
-      { click: { role: 'button', name: 'Edit column target' } },
-    ],
-    // The popover opens inside the dialog's bounds.
-    capture: { role: 'dialog', name: 'Edit Column Definitions' },
-    sources: [
-      'src/features/TableDataLoader/components/CreateNetworkFromTable/**',
-      'src/features/TableDataLoader/components/previewTableParts.tsx',
-    ],
   },
   {
     id: 'cell-view',
@@ -211,6 +171,8 @@ export interface ScreenshotSequence {
 }
 
 const JOIN_DIALOG = { role: 'dialog', name: 'Edit Column Definitions' } as const
+/** Network from File's dialog for a table: the same title as JOIN_DIALOG. */
+const CREATE_DIALOG = JOIN_DIALOG
 
 export const SCREENSHOT_SEQUENCES: readonly ScreenshotSequence[] = [
   {
@@ -335,6 +297,124 @@ export const SCREENSHOT_SEQUENCES: readonly ScreenshotSequence[] = [
       'src/features/TableDataLoader/components/JoinTableToNetwork/**',
       'src/features/TableDataLoader/components/previewTableParts.tsx',
       'src/features/TableBrowser/components/TableToolbar.tsx',
+    ],
+  },
+  {
+    id: 'network-from-table',
+    title: 'Import a Network from a Table',
+    // Wide enough for the preview's six columns without scrolling.
+    viewport: { width: 1600, height: 900 },
+    frames: [
+      {
+        id: 'menu',
+        alt: 'Data → Import → Network from File... in the menu bar',
+        step: 1,
+        steps: [
+          { click: DATA_MENU },
+          { click: { role: 'menuitem', name: 'Import' } },
+        ],
+        highlight: [{ role: 'menuitem', name: 'Network from File...' }],
+      },
+      {
+        id: 'upload',
+        alt: 'The Upload network file window',
+        step: 2,
+        steps: [
+          { click: { role: 'menuitem', name: 'Network from File...' } },
+          { waitFor: { testid: 'file-upload-dropzone' } },
+        ],
+        highlight: [{ testid: 'file-upload-browse-button' }],
+        capture: { role: 'dialog', name: 'Upload network file' },
+      },
+      {
+        id: 'column-definitions',
+        alt: 'The Edit Column Definitions window with a preview of the table',
+        step: 3,
+        steps: [
+          {
+            upload: 'test/fixtures/tables/table-data-from-cy-tutorial.csv',
+            into: { testid: 'file-upload-dropzone' },
+          },
+          { waitFor: { testid: 'create-network-from-table-modal' } },
+        ],
+        highlight: [{ testid: 'create-network-from-table-name-input' }],
+        capture: CREATE_DIALOG,
+      },
+      {
+        id: 'source',
+        alt: 'The Meaning buttons of the source column, with Source node ringed',
+        step: 4,
+        steps: [{ click: { role: 'button', name: 'Edit column source' } }],
+        highlight: [{ label: 'Source node' }],
+        capture: CREATE_DIALOG,
+      },
+      {
+        id: 'target',
+        alt: 'The Meaning buttons of the target column, with Target node ringed',
+        step: 5,
+        steps: [
+          { click: { label: 'Source node' } },
+          { press: 'Escape' },
+          { click: { role: 'button', name: 'Edit column target' } },
+        ],
+        highlight: [{ label: 'Target node' }],
+        capture: CREATE_DIALOG,
+      },
+      {
+        id: 'interaction',
+        alt: 'The Meaning buttons of the interaction column, with Interaction type ringed',
+        step: 6,
+        steps: [
+          { click: { label: 'Target node' } },
+          { press: 'Escape' },
+          { click: { role: 'button', name: 'Edit column interaction' } },
+        ],
+        highlight: [{ label: 'Interaction type' }],
+        capture: CREATE_DIALOG,
+      },
+      {
+        id: 'other-columns',
+        alt: 'The Meaning and Data Type options of another column',
+        step: 7,
+        steps: [
+          { click: { label: 'Interaction type' } },
+          { press: 'Escape' },
+          { click: { role: 'button', name: 'Edit column symbol' } },
+        ],
+        highlight: [{ label: 'Not imported' }, { label: 'Interaction type' }],
+        capture: CREATE_DIALOG,
+      },
+      {
+        id: 'preview',
+        alt: 'The preview with source, target and interaction columns set',
+        step: 8,
+        steps: [{ press: 'Escape' }],
+        capture: CREATE_DIALOG,
+      },
+      {
+        id: 'confirm',
+        alt: 'The Confirm button',
+        step: 9,
+        steps: [],
+        highlight: [{ testid: 'table-column-assignment-confirm-button' }],
+        capture: CREATE_DIALOG,
+      },
+      {
+        id: 'result',
+        alt: 'The new network in the workspace and the network view',
+        step: 10,
+        steps: [
+          { click: { testid: 'table-column-assignment-confirm-button' } },
+          { waitFor: { text: 'table-data-from-cy-tutorial' } },
+          { waitFor: { testid: 'cyjs-renderer' } },
+          { wait: 2000 },
+        ],
+      },
+    ],
+    sources: [
+      'src/features/ToolBar/FileUpload.tsx',
+      'src/features/TableDataLoader/components/CreateNetworkFromTable/**',
+      'src/features/TableDataLoader/components/previewTableParts.tsx',
     ],
   },
 ]
