@@ -12,6 +12,9 @@ export {
   type SelectionState,
 } from './useCopyShareableNetworkUrl'
 
+/** The button's icon; the manual draws the same one (UiIcon). */
+export const ShareIcon = Share
+
 interface ShareNetworkButtonProps {
   targetNetworkId?: IdType
 }
@@ -60,7 +63,7 @@ export const ShareNetworkButton = ({
             disableFocusRipple
             disabled={isLocal}
           >
-            <Share fontSize="inherit" />
+            <ShareIcon fontSize="inherit" />
           </IconButton>
         </span>
       </Tooltip>

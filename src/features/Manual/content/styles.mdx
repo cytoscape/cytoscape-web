@@ -1,0 +1,298 @@
+# Styles
+
+<a id="styles" />
+
+A style decides how a network looks: node colors and shapes, edge widths and
+arrows, labels, and the background. You edit it in the **STYLE** tab of the
+side panel, also called the *Vizmapper*.
+
+<DemoOnly>
+
+<LiveDemo caption="Live demo — this is the real Style panel on a 10-node yeast network. Changes stay in this tab and never touch your workspace." />
+
+</DemoOnly>
+
+## Introduction to the Style Interface
+
+The **STYLE** tab has three tabs of its own: **NODES**, **EDGES** and
+**NETWORK**. Each lists the visual properties of that group. Every property
+row has three boxes:
+
+| Box | What it holds |
+| --- | --- |
+| Default | The value every node or edge gets unless something overrides it. Click it to change the default. |
+| Mapping | A rule that sets the value from a table column, per node or edge. Click it to create or edit the mapping. See [How Mappings Work](#how-mappings-work). |
+| Bypass | A fixed value for the nodes or edges you select. It overrides both the default and the mapping. Select at least one node or edge first; the box is inactive otherwise. |
+
+A mapping wins over the default for every node or edge it covers. A bypass
+wins over both.
+
+Two properties carry an extra option:
+
+- **Height** has **Lock node width and height**. It makes Width follow
+  Height, so a node keeps its proportions. Width is inactive while the
+  lock is on.
+- **Stroke Color** has **Edge color to arrows**. It paints the arrows with the
+  edge's Stroke Color. The arrow color properties are inactive while it is
+  on.
+
+Hover over an inactive box to see why it is inactive.
+
+## How Mappings Work
+
+A mapping reads a table column and turns each value into a visual value. Open
+a property's **Mapping** box, choose a **Column**, then a **Mapping Type**:
+
+| Mapping type | What it does |
+| --- | --- |
+| Passthrough | The column value is used as-is. Typical use: label each node with its gene name. For a color property the column must hold text that names a color (`#ff0000`, `red`, `rgb(255,0,0)`); a value that is not a color falls back to the default. |
+| Discrete | Each distinct column value gets its own visual value. Typical use: a different shape per molecule type, or a different edge color per interaction type. |
+| Continuous | A numeric column maps onto a range. A color property gets a color gradient; a size property gets a size range. Drag the handles on the chart to change where the range starts and ends, and click the chart to add a handle. |
+
+Each mapping type accepts only some columns:
+
+| Mapping type | Columns it accepts |
+| --- | --- |
+| Passthrough | A column of the property's own type. Text properties accept any column that is not a list. Color properties and **Image/Chart 1** accept String columns only. |
+| Discrete | Any column, including lists. For a list column, each node or edge uses the first value in its list, as Cytoscape Desktop does. An empty list gets the default. |
+| Continuous | Integer, Long integer and Double columns. |
+
+A column or mapping type that cannot apply is grayed out. Hover over it to
+see why.
+
+For a continuous color mapping you can pick a palette. Click the button
+next to **Current Palette:**. The **Set Palette** dialog has three tabs:
+**Sequential**, **Diverging** and **Viridis**. It opens on Diverging when the
+column holds both negative and positive values, and on Sequential otherwise.
+Check **reverse colors** to flip a palette, or **colorblind-friendly** to list
+only palettes that stay readable with color blindness. The palettes come from
+published recommendations for scientific and cartographic color, such as
+[ColorBrewer](https://colorbrewer2.org) and Viridis.
+
+### Continuous Mappings on Shapes and Line Types
+
+**Shape**, **Border Line Type**, **Line Type** and the arrow shapes can
+also take a continuous mapping. The form shows a track with handles above
+a number axis. Each handle has a value (a shape or a line type) and a
+threshold. A node or edge gets the value of the last handle whose threshold
+its column value has reached. Values do not blend between handles.
+
+- Click the track, or click **New Handle**, to add a handle.
+- Drag a middle handle to move its threshold, or click its × to delete it.
+- Type a number into a handle to set its threshold exactly. The first and
+  last handles move only this way.
+- The boxes at the two ends set the value for column values below the first
+  threshold and above the last one.
+
+<Screenshot id="continuous-shape" />
+
+### Opacity
+
+Opacity properties, such as **Opacity**, **Border Opacity** and
+**Label Opacity**, show their values as percentages, from 0% (invisible) to
+100% (solid).
+
+### Line Types Cytoscape Web Cannot Draw
+
+Cytoscape Web draws solid, dotted and dashed lines, plus double lines for
+node borders. When you import a CX2 file whose style uses another line type,
+a message lists the types it found. Cytoscape Web draws them as solid lines.
+
+## Charts and Images on Nodes
+
+The last row of the **NODES** tab, **Image/Chart 1**, draws a chart or an
+image inside each node. The graphic always scales to the node's size.
+
+### Pie and Donut Charts
+
+A pie or donut chart shows several numeric columns of a node as slices.
+
+1. Click the **Image/Chart 1** Default box. The **Custom Graphics** dialog
+   opens.
+2. Choose **Pie Chart** or **Donut Chart**, then click **Next**.
+3. Move up to 16 numeric columns to **Selected Attributes**. Their order sets
+   the order of the slices. Click **Next**.
+4. Choose a color for each slice. Click **Next**.
+5. Set **Start Angle (degrees)**, where the first slice begins. For a donut,
+   also set **Hole Size**, from 0 (no hole) to 1 (all hole).
+6. Click **Confirm**.
+
+The chart types are grayed out when the node table has no numeric columns.
+To chart only some nodes, select them and use the Bypass box instead of the
+Default box. To remove a chart, open the dialog again and click the red
+**Remove custom graphic** button at the top right.
+
+### Images
+
+To give each node its own image, put the images in a String node column:
+either a web address (`https://…`) or the image data itself, as base64 text,
+with or without a `data:` prefix. Then map the column onto
+**Image/Chart 1**:
+
+<Steps sequence="node-images">
+
+1. Open the network. Its node table needs the image column; here it is
+   **image**, holding base64 image data.
+2. In the **STYLE** tab, open **NODES** and click the **Mapping** box of
+   **Image/Chart 1**, the last row.
+3. Choose the image column as the **Column** and **passthrough** as the
+   **Mapping Type**.
+4. Click **Close**. Each node shows its own image.
+
+</Steps>
+
+The **Custom Graphics** dialog cannot create a new image graphic. It edits
+only an image the network already has, for example from an imported CX2
+file. There, choose **URL** to enter a web address, or **Upload** to use a
+PNG, JPEG, SVG, GIF or WebP file of up to 2 MB. An uploaded image is stored
+in the network itself.
+
+Cytoscape Desktop does not show images from a CX2 file, because it loads
+images from its own image library. Downloading such a network shows a warning.
+
+## Managing Several Styles
+
+A network can own several named styles, and you choose which one is active.
+The bar above the **NODES**, **EDGES** and **NETWORK** tabs shows the active
+style. Click its name to open the **Styles** dialog:
+
+| Section | Clicking a style |
+| --- | --- |
+| This Network | Makes it the active style. You can undo the switch. |
+| Other Networks | Copies it into this network. The original does not change. |
+| Workspace Styles | Copies it into this network. |
+| General Styles | Copies a style that comes with Cytoscape Web into this network. |
+
+Type in **Search styles** to filter every section by name. The general
+styles are:
+
+| Style | Looks like |
+| --- | --- |
+| Minimal | Small pale nodes, faint edges |
+| Directed | Arrowheads for directed graphs |
+| High Contrast | Heavy dark shapes for projectors |
+| Dark | Light nodes on a dark canvas |
+| Big Labels | Oversized text for figures |
+| Outline | Unfilled nodes, colored borders |
+| Box | Square-cornered rectangles |
+| Blueprint | Dashed edges, hexagonal nodes |
+
+The ⋮ button at the right of the bar manages the network's styles:
+
+- **New Style (copy of current)…**, **Duplicate Current Style**,
+  **Rename Current Style…** and **Delete Current Style…**;
+- **Save Style to Workspace…**, which keeps a copy in **Workspace Styles** for
+  use on other networks;
+- **Apply Style from Workspace…**.
+
+Copying a style into a network makes an independent copy. Later edits to
+either copy do not change the other. A network always keeps at least one
+style.
+
+Workspace styles live in this browser's local workspace.
+
+### Copy a General Style to Two Networks
+
+<Steps sequence="general-style">
+
+1. Open the **STYLE** tab and click the active style's name, above the
+   **NODES** tab.
+2. In the **Styles** dialog, under **General Styles**, click **Dark**.
+3. The network now uses its own copy of Dark, which is the active style.
+4. To use the same style on other networks, click ⋮ and choose
+   **Save Style to Workspace…**.
+5. Keep the name or change it, then click **Save**.
+6. In the **WORKSPACE** tab, click the second network.
+7. In the **STYLE** tab, click the style name again. Under
+   **Workspace Styles**, click the style you saved.
+8. The second network now uses its own copy of the style. Later edits to it
+   do not change the first network.
+
+</Steps>
+
+Step 7 also works from **Other Networks**, which lists the styles of the
+other networks you have opened in this workspace. Workspace Styles keeps a
+style after you remove the network it came from.
+
+### Styles in CX2 Files and NDEx
+
+Only Cytoscape Web shows a network's extra styles. Saving a network to NDEx,
+or downloading it as a CX2 file, keeps all of its styles and which one is
+active, and opening it in Cytoscape Web again brings every style back.
+
+Cytoscape Desktop shows only the active style. The other styles are not
+listed in its Style panel. The NDEx website and Cytoscape Web 1.0 also draw
+the network with the active style only. Before you save, or before
+**Open Network in Cytoscape Desktop**, make the style you want them to show
+the active one.
+
+If another program edits the style and saves the file, Cytoscape Web uses
+that edited version for the active style. It is not known whether Cytoscape
+Desktop keeps the extra styles in a file it saves.
+
+## List of Node, Edge and Network Properties
+
+These tables come from the application itself, so they always match the
+version you are running.
+
+### Node Properties
+
+<VisualPropertyTable group="node" />
+
+### Edge Properties
+
+<VisualPropertyTable group="edge" />
+
+### Network Properties
+
+<VisualPropertyTable group="network" />
+
+## Styles Tutorial
+
+<DemoOnly>
+
+Use the live demo at the top of this page. It runs on a 10-node piece of
+the *galFiltered* yeast network, which has gene expression columns. Press
+**Reset** at any time to start over.
+
+</DemoOnly>
+
+<WithoutDemo>
+
+Follow along in the editor on a network with a numeric node column. The
+steps name the columns of the *galFiltered* yeast network: `interaction` on
+edges and `gal1RGexp` on nodes.
+
+</WithoutDemo>
+
+### Creating a Basic Style with Discrete and Continuous Mappings
+
+Steps 1–2 set two default values. Steps 3–5 color the edges by interaction
+type with a discrete mapping, steps 6–8 color the nodes by expression with
+a continuous mapping, and steps 9–10 add a bypass.
+
+<Steps sequence="styles-tutorial">
+
+1. In the **NODES** tab of the **STYLE** panel, click the **Default** box of
+   **Shape**. Choose the ellipse, then click **Confirm**.
+2. Click the **Default** box of **Fill Color** and choose a light grey, then
+   click **Confirm**.
+3. Open the **EDGES** tab. Click the **Mapping** box of **Stroke Color**.
+4. Under **Column**, choose **interaction**. Under **Mapping Type**, choose
+   **discrete**. The form lists every value of the column: **pp**
+   (protein–protein) and **pd** (protein–DNA).
+5. Click the value box of **pp** and choose a dark blue. Give **pd** a
+   green the same way, then click **Close**.
+6. Open the **NODES** tab. Click the **Mapping** box of **Fill Color**.
+7. Under **Column**, choose **gal1RGexp**. Under **Mapping Type**, choose
+   **continuous**. The nodes take colors from a default gradient at once.
+8. Click the button next to **Current Palette:** and choose a diverging
+   palette, so negative and positive expression read as opposite colors.
+   Click **Confirm**, then **Close**.
+9. Click one node in the network to select it.
+10. Click the **Bypass** box of **Fill Color**, then the box next to
+    **Apply the bypass value to all selected nodes:**, and pick a bright
+    yellow. Only the selected node changes; the mapping still colors the
+    rest.
+
+</Steps>

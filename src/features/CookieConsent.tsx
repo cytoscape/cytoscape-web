@@ -1,6 +1,7 @@
 import Cookies from 'js-cookie'
 import { CookieConsent } from 'react-cookie-consent'
 
+import { MANUAL_ROUTE_SEGMENT } from '../data/db/dbScope'
 import { useCrashDataConsent } from '../data/hooks/useCrashDataConsent'
 
 export const COOKIE_NAME = 'cytoscapeWebCookieConsent'
@@ -55,8 +56,11 @@ export const CookieConsentWidget: React.FC = () => {
       This site uses cookies to support Cytoscape Web’s network visualization
       tools and improve your experience. By accepting, you consent to our data
       practices.{' '}
+      {/* A new tab, so reading the policy never unloads the editor. */}
       <a
-        href="https://github.com/cytoscape/cytoscape-web/blob/development/privacy-policy.md"
+        href={`${import.meta.env.BASE_URL}${MANUAL_ROUTE_SEGMENT}/privacy-policy`}
+        target="_blank"
+        rel="noopener noreferrer"
         style={{ color: '#e0e0e0' }}
       >
         Learn more
