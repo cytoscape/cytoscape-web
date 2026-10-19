@@ -177,18 +177,19 @@ Workspace styles live in this browser's local workspace.
 
 ### Styles in CX2 Files and NDEx
 
-Saving a network to NDEx, or downloading it as a CX2 file, keeps all of its
-styles and which one is active. Opening that network in Cytoscape Web again
-brings every style back.
+Only Cytoscape Web shows a network's extra styles. Saving a network to NDEx,
+or downloading it as a CX2 file, keeps all of its styles and which one is
+active, and opening it in Cytoscape Web again brings every style back.
 
-Other programs see only the active style. Cytoscape Desktop, the NDEx
-website and Cytoscape Web 1.0 draw the network with the style that was
-active when it was saved. Set the style you want them to show as active
-before you save.
+Cytoscape Desktop shows only the active style. The other styles are not
+listed in its Style panel. The NDEx website and Cytoscape Web 1.0 also draw
+the network with the active style only. Before you save, or before
+**Open Network in Cytoscape Desktop**, make the style you want them to show
+the active one.
 
 If another program edits the style and saves the file, Cytoscape Web uses
 that edited version for the active style. It is not known whether Cytoscape
-Desktop keeps the other styles when it saves the file.
+Desktop keeps the extra styles in a file it saves.
 
 ## List of Node, Edge and Network Properties
 
