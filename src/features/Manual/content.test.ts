@@ -205,11 +205,11 @@ describe('manual content', () => {
   )
 
   it.each(MANUAL_PAGES.map((p) => p.slug))(
-    '%s uses only step sequences that exist, at most one',
+    '%s uses only step sequences that exist, each once',
     (slug) => {
-      // The page's pinned column shows one sequence.
       const blocks = stepBlocksOf(read(slug))
-      expect(blocks.length).toBeLessThanOrEqual(1)
+      const ids = blocks.map((b) => b.sequence)
+      expect(new Set(ids).size).toBe(ids.length)
       const known = new Set(SCREENSHOT_SEQUENCES.map((q) => q.id))
       expect(
         blocks.map((b) => b.sequence).filter((id) => !known.has(id)),

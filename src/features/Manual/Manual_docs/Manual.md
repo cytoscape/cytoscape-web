@@ -211,6 +211,8 @@ Sequences:
 | `merge` | Merging Networks › Basic Operations | 7 |
 | `column-filter` | Filters › Select Nodes with a Column Filter | 7 |
 | `styles-tutorial` | Styles › Creating a Basic Style with Discrete and Continuous Mappings | 10 |
+| `node-images` | Styles › Images | 4 |
+| `general-style` | Styles › Copy a General Style to Two Networks | 8 |
 
 Recipe steps (`ScreenshotStep`):
 
@@ -225,8 +227,16 @@ Recipe steps (`ScreenshotStep`):
 | `wait` | Wait a fixed time, for an animation or layout |
 
 Before each capture the pointer moves to the bottom-right corner, so no
-hover tooltip shows, and the focused element loses focus, so no focus ring
-shows, unless it is inside an open menu, which would close.
+hover tooltip shows. Before a sequence frame the focused element also loses
+focus, so no focus ring shows, unless it is inside an open menu, which would
+close.
+
+A page may hold several sequences, each once.
+
+Fixtures written by a script keep the script beside them:
+`screenshots/fixtures/make-egfr-images.mjs` writes `egfr-images.cx2`, whose
+`image` column holds SVG icons as base64 `data:` URIs, so the `node-images`
+capture loads no image from another site.
 
 | Task | How |
 | --- | --- |

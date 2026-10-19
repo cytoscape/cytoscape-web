@@ -211,6 +211,8 @@ for (const recipe of SCREENSHOT_RECIPES) {
     for (const step of recipe.steps) {
       await runStep(page, step)
     }
+    // As in a sequence frame: no tooltip under the pointer.
+    await page.mouse.move(recipe.viewport.width - 1, recipe.viewport.height - 1)
     // Let menus and dialogs finish opening before the capture.
     await page.waitForTimeout(500)
 

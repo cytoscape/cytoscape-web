@@ -60,6 +60,14 @@ const GAL_NAME = 'galFiltered chart_1'
 const U2OS_CELL_MAP =
   'src/features/Manual/screenshots/fixtures/u2os-cell-map.hcx.cx2'
 
+/**
+ * A Style panel row's boxes: 0 Default, 1 Mapping, 2 Bypass. Rows have no
+ * test id; the row is the element whose child is the property's name.
+ */
+const styleBox = (property: string, box: 0 | 1 | 2): ScreenshotTarget => ({
+  selector: `[data-testid="vizmapper"] div:has(> :text-is("${property}")) > div >> nth=${box}`,
+})
+
 export const SCREENSHOT_RECIPES: readonly ScreenshotRecipe[] = [
   {
     id: 'app-overview',
@@ -145,6 +153,30 @@ export const SCREENSHOT_RECIPES: readonly ScreenshotRecipe[] = [
       'src/features/HierarchyViewer/components/MainPanel.tsx',
     ],
   },
+  {
+    id: 'continuous-shape',
+    alt: 'A continuous mapping of gal1RGexp onto Shape: handles on a track, each with a shape and a threshold',
+    viewport: { width: 1280, height: 900 },
+    steps: [
+      { importNetwork: GAL_NETWORK, expectText: GAL_NAME },
+      { click: { testid: 'network-browser-panel-style-tab' } },
+      { click: { testid: 'vizmapper-nodes-tab' } },
+      { click: styleBox('Shape', 1) },
+      { waitFor: { testid: 'mapping-form-popover' } },
+      { click: { testid: 'mapping-form-column-select' } },
+      { click: { role: 'option', name: 'gal1RGexp' } },
+      { click: { testid: 'mapping-form-type-select' } },
+      { click: { role: 'option', name: 'continuous' } },
+      { wait: 500 },
+    ],
+    // The popover's test id is on its full-window root; crop to the form.
+    capture: {
+      selector: '[data-testid="mapping-form-popover"] .MuiPaper-root',
+    },
+    sources: [
+      'src/features/Vizmapper/Forms/MappingForm/ContinuousMappingForm/ContinuousDiscreteMappingForm.tsx',
+    ],
+  },
 ]
 
 /** One image of a sequence, taken after its steps run. */
@@ -181,13 +213,6 @@ const JOIN_DIALOG = { role: 'dialog', name: 'Edit Column Definitions' } as const
 /** Network from File's dialog for a table: the same title as JOIN_DIALOG. */
 const CREATE_DIALOG = JOIN_DIALOG
 const MERGE_DIALOG = { role: 'dialog', name: 'Advanced Network Merge' } as const
-/**
- * A Style panel row's boxes: 0 Default, 1 Mapping, 2 Bypass. Rows have no
- * test id; the row is the element whose child is the property's name.
- */
-const styleBox = (property: string, box: 0 | 1 | 2): ScreenshotTarget => ({
-  selector: `[data-testid="vizmapper"] div:has(> :text-is("${property}")) > div >> nth=${box}`,
-})
 /** A swatch of the color picker's Swatches tab. */
 const SWATCH = (hex: string): string =>
   `[data-testid="visual-property-value-picker-popover"] [title="${hex}"]`
@@ -201,6 +226,12 @@ const BYPASS_VALUE =
   '[data-testid="bypass-form-popover"] :text("Apply the bypass value") + *'
 const HSF1_NETWORK = 'src/assets/networks/hsf1-neighborhood.cx2'
 const HSF1_NAME = 'HSF1 neighborhood'
+/** A style tile in the Workspace Styles section of the Styles dialog. */
+const WORKSPACE_STYLE_TILE = '[data-testid^="style-picker-library-"]'
+/** Written by fixtures/make-egfr-images.mjs. */
+const EGFR_IMAGES_NETWORK =
+  'src/features/Manual/screenshots/fixtures/egfr-images.cx2'
+const EGFR_IMAGES_NAME = 'EGFR to ERK'
 
 export const SCREENSHOT_SEQUENCES: readonly ScreenshotSequence[] = [
   {
@@ -735,6 +766,154 @@ export const SCREENSHOT_SEQUENCES: readonly ScreenshotSequence[] = [
       'src/features/Vizmapper/PalettePicker/**',
       'src/features/Vizmapper/VisualPropertyRender/Color.tsx',
       'src/features/Vizmapper/VisualPropertyRender/NodeShape.tsx',
+    ],
+  },
+  {
+    id: 'general-style',
+    title: 'Copy a General Style to Two Networks',
+    viewport: { width: 1280, height: 800 },
+    frames: [
+      {
+        id: 'open-picker',
+        alt: 'The STYLE tab, with the active style name above the NODES tab ringed',
+        step: 1,
+        steps: [
+          { importNetwork: HSF1_NETWORK, expectText: HSF1_NAME },
+          { importNetwork: GAL_NETWORK, expectText: GAL_NAME },
+          { click: { testid: 'network-browser-panel-style-tab' } },
+        ],
+        highlight: [{ testid: 'style-manager-picker-button' }],
+      },
+      {
+        id: 'pick-preset',
+        alt: 'The Styles dialog, with Dark ringed under General Styles',
+        step: 2,
+        steps: [
+          { click: { testid: 'style-manager-picker-button' } },
+          { waitFor: { testid: 'style-picker-dialog' } },
+          { hover: { testid: 'style-picker-preset-preset-dark' } },
+        ],
+        highlight: [{ testid: 'style-picker-preset-preset-dark' }],
+      },
+      {
+        id: 'preset-applied',
+        alt: 'The network drawn with its copy of Dark, now the active style',
+        step: 3,
+        steps: [
+          { click: { testid: 'style-picker-preset-preset-dark' } },
+          { wait: 1000 },
+        ],
+        highlight: [{ testid: 'style-manager-picker-button' }],
+      },
+      {
+        id: 'save-menu',
+        alt: 'The style menu, with Save Style to Workspace ringed',
+        step: 4,
+        steps: [{ click: { testid: 'style-manager-menu-button' } }],
+        highlight: [{ testid: 'style-manager-save-to-library-menu-item' }],
+      },
+      {
+        id: 'save-name',
+        alt: 'The Save Style to Workspace dialog, with Save ringed',
+        step: 5,
+        steps: [
+          { click: { testid: 'style-manager-save-to-library-menu-item' } },
+          { waitFor: { testid: 'style-name-dialog' } },
+        ],
+        highlight: [{ testid: 'style-name-confirm-button' }],
+      },
+      {
+        id: 'second-network',
+        alt: 'The WORKSPACE tab, with the HSF1 neighborhood network ringed',
+        step: 6,
+        steps: [
+          { click: { testid: 'style-name-confirm-button' } },
+          { click: { testid: 'network-browser-panel-workspace-tab' } },
+        ],
+        highlight: [{ text: HSF1_NAME }],
+      },
+      {
+        id: 'pick-workspace-style',
+        alt: 'The Styles dialog of the second network, with Dark ringed under Workspace Styles',
+        step: 7,
+        steps: [
+          { click: { text: HSF1_NAME } },
+          { wait: 1500 },
+          { click: { testid: 'network-browser-panel-style-tab' } },
+          { click: { testid: 'style-manager-picker-button' } },
+          { waitFor: { testid: 'style-picker-section-library' } },
+          { hover: { selector: WORKSPACE_STYLE_TILE } },
+        ],
+        highlight: [{ selector: WORKSPACE_STYLE_TILE }],
+      },
+      {
+        id: 'second-applied',
+        alt: 'The HSF1 neighborhood network drawn with its own copy of Dark',
+        step: 8,
+        steps: [{ click: { selector: WORKSPACE_STYLE_TILE } }, { wait: 1000 }],
+        highlight: [{ testid: 'style-manager-picker-button' }],
+      },
+    ],
+    sources: [
+      'src/features/Vizmapper/StyleManager/**',
+      'src/models/VisualStyleModel/impl/presetVisualStyles.ts',
+    ],
+  },
+  {
+    id: 'node-images',
+    title: 'Images',
+    viewport: { width: 1280, height: 800 },
+    frames: [
+      {
+        id: 'image-column',
+        alt: 'The node table, whose image column holds base64 image data',
+        step: 1,
+        steps: [
+          { importNetwork: EGFR_IMAGES_NETWORK, expectText: EGFR_IMAGES_NAME },
+        ],
+      },
+      {
+        id: 'mapping-box',
+        alt: 'The NODES tab of the STYLE tab, with the Mapping box of Image/Chart 1 ringed',
+        step: 2,
+        steps: [
+          { click: { testid: 'network-browser-panel-style-tab' } },
+          { click: { testid: 'vizmapper-nodes-tab' } },
+          { hover: styleBox('Image/Chart 1', 1) },
+        ],
+        highlight: [styleBox('Image/Chart 1', 1)],
+      },
+      {
+        id: 'passthrough',
+        alt: 'The mapping form of Image/Chart 1: column image, mapping type passthrough',
+        step: 3,
+        steps: [
+          { click: styleBox('Image/Chart 1', 1) },
+          { waitFor: { testid: 'mapping-form-popover' } },
+          { click: { testid: 'mapping-form-column-select' } },
+          { click: { role: 'option', name: 'image' } },
+          { click: { testid: 'mapping-form-type-select' } },
+          { click: { role: 'option', name: 'passthrough' } },
+        ],
+        highlight: [
+          { testid: 'mapping-form-column-select' },
+          { testid: 'mapping-form-type-select' },
+        ],
+      },
+      {
+        id: 'result',
+        alt: 'Each node of the EGFR to ERK chain drawn with its own icon',
+        step: 4,
+        steps: [
+          { click: { testid: 'mapping-form-close-button' } },
+          { wait: 1000 },
+        ],
+      },
+    ],
+    sources: [
+      'src/features/Vizmapper/Forms/MappingForm/**',
+      'src/models/VisualStyleModel/impl/imageSourceImpl.ts',
+      'src/features/Manual/screenshots/fixtures/make-egfr-images.mjs',
     ],
   },
 ]

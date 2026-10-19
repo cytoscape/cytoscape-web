@@ -84,6 +84,8 @@ its column value has reached. Values do not blend between handles.
 - The boxes at the two ends set the value for column values below the first
   threshold and above the last one.
 
+<Screenshot id="continuous-shape" />
+
 ### Opacity
 
 Opacity properties, such as **Opacity**, **Border Opacity** and
@@ -124,12 +126,26 @@ Default box. To remove a chart, open the dialog again and click the red
 
 To give each node its own image, put the images in a String node column:
 either a web address (`https://…`) or the image data itself, as base64 text,
-with or without a `data:` prefix. Then give **Image/Chart 1** a
-**passthrough** mapping on that column. The dialog cannot create a new image
-graphic; it edits only an image the network already has, for example from an
-imported CX2 file. There, choose **URL** to enter a web address, or
-**Upload** to use a PNG, JPEG, SVG, GIF or WebP file of up to 2 MB. An
-uploaded image is stored in the network itself.
+with or without a `data:` prefix. Then map the column onto
+**Image/Chart 1**:
+
+<Steps sequence="node-images">
+
+1. Open the network. Its node table needs the image column; here it is
+   **image**, holding base64 image data.
+2. In the **STYLE** tab, open **NODES** and click the **Mapping** box of
+   **Image/Chart 1**, the last row.
+3. Choose the image column as the **Column** and **passthrough** as the
+   **Mapping Type**.
+4. Click **Close**. Each node shows its own image.
+
+</Steps>
+
+The **Custom Graphics** dialog cannot create a new image graphic. It edits
+only an image the network already has, for example from an imported CX2
+file. There, choose **URL** to enter a web address, or **Upload** to use a
+PNG, JPEG, SVG, GIF or WebP file of up to 2 MB. An uploaded image is stored
+in the network itself.
 
 Cytoscape Desktop does not show images from a CX2 file, because it loads
 images from its own image library. Downloading such a network shows a warning.
@@ -174,6 +190,29 @@ either copy do not change the other. A network always keeps at least one
 style.
 
 Workspace styles live in this browser's local workspace.
+
+### Copy a General Style to Two Networks
+
+<Steps sequence="general-style">
+
+1. Open the **STYLE** tab and click the active style's name, above the
+   **NODES** tab.
+2. In the **Styles** dialog, under **General Styles**, click **Dark**.
+3. The network now uses its own copy of Dark, which is the active style.
+4. To use the same style on other networks, click ⋮ and choose
+   **Save Style to Workspace…**.
+5. Keep the name or change it, then click **Save**.
+6. In the **WORKSPACE** tab, click the second network.
+7. In the **STYLE** tab, click the style name again. Under
+   **Workspace Styles**, click the style you saved.
+8. The second network now uses its own copy of the style. Later edits to it
+   do not change the first network.
+
+</Steps>
+
+Step 7 also works from **Other Networks**, which lists the styles of the
+other networks you have opened in this workspace. Workspace Styles keeps a
+style after you remove the network it came from.
 
 ### Styles in CX2 Files and NDEx
 
