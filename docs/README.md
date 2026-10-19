@@ -117,6 +117,7 @@ Behavior documentation co-located with source code in `src/features/`. Each `*_d
 | AppMenu        | [AppMenu.md](../src/features/ToolBar/AppMenu/AppMenu_docs/AppMenu.md)                                                                                                    |
 | DataMenu       | [DataMenu.md](../src/features/ToolBar/DataMenu/DataMenu_docs/DataMenu.md), [WorkspaceMenuItems.md](../src/features/ToolBar/DataMenu/DataMenu_docs/WorkspaceMenuItems.md) |
 | EditMenu       | [EditMenu.md](../src/features/ToolBar/EditMenu/EditMenu_docs/EditMenu.md)                                                                                                |
+| SelectMenu     | [SelectMenu.md](../src/features/ToolBar/SelectMenu/SelectMenu_docs/SelectMenu.md)                                                                                        |
 | LayoutMenu     | [LayoutMenu.md](../src/features/ToolBar/LayoutMenu/LayoutMenu_docs/LayoutMenu.md)                                                                                        |
 | AnalysisMenu   | [AnalysisMenu.md](../src/features/ToolBar/AnalysisMenu/AnalysisMenu_docs/AnalysisMenu.md)                                                                                |
 | HelpMenu       | [HelpMenu.md](../src/features/ToolBar/HelpMenu/HelpMenu_docs/HelpMenu.md)                                                                                                |

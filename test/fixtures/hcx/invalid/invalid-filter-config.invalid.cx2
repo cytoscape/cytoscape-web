@@ -40,14 +40,6 @@
     ]
   },
   {
-    "status": [
-      {
-        "error": "",
-        "success": true
-      }
-    ]
-  },
-  {
     "attributeDeclarations": [
       {
         "nodes": {
@@ -635,6 +627,14 @@
     "filterWidgets": [
       {
         "invalid": "structure"
+      }
+    ]
+  },
+  {
+    "status": [
+      {
+        "error": "",
+        "success": true
       }
     ]
   }

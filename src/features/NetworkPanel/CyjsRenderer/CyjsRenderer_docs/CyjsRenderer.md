@@ -20,6 +20,7 @@ The feature is split into three main parts:
 - **`CyjsRenderer.tsx`**: React component that owns the Cytoscape.js lifecycle and connects to Zustand stores
 - **`cyjsFactoryUtil.ts`**: Transforms application node/edge data into Cytoscape.js elements
 - **`cyjsRenderUtil.ts`**: Maps visual styles to Cytoscape.js styles and applies view models
+- **`renderGuard.ts`**: Decides when a full render is needed (by topology version) and which style inputs are already applied (#861)
 - **`annotations/`**: Canvas-based annotation renderer layered on top of the Cytoscape viewport
 - **`registerCyExtensions.ts`**: Registers custom Cytoscape.js extensions (e.g., export, layouts)
 
@@ -41,7 +42,10 @@ This separation keeps the React component focused on orchestration while delegat
   - `cy`: Cytoscape Core instance
   - `cyContainer`: DOM ref for the Cytoscape container
   - `isInitialized`: prevents duplicate initialization
-  - `isViewCreated`: avoids redundant style updates during initial render
+  - `renderedRef`: the instance, network id and topology version the last full render drew; until
+    it names the current network there is nothing on screen to update in place
+  - `appliedStyleInputsRef`: the visual style, tables and visual editor properties the elements on
+    screen were last styled from, so `onStyleModelUpdate` skips inputs a render just applied
 
 - **Interaction state**
   - `dragStartPosition`: remembers node positions at the start of a drag (for undo/redo)
@@ -50,15 +54,19 @@ This separation keeps the React component focused on orchestration while delegat
   - `clickSelection`: distinguishes click-based selection from filter-based selection
 
 - **View and style state**
-  - `cyStyle`: Cytoscape style array generated from `VisualStyle`
-  - `renderedId`: last rendered network id, used to detect when a full re-render is needed
   - `nodesMoved`: throttles or prevents unnecessary fit operations after the user changes layout
   - `viewportChangeHandlerRef`: keeps a handle to the viewport listener so it can be temporarily removed during undo/redo
-  - `bgColor`: background color derived from `VisualStyle` (network background)
+  - `bgColor`: network background color, derived from `VisualStyle` on each render and painted
+    behind the annotations
 
 ### Store Integration
 
 `CyjsRenderer` reads from and writes to several global stores:
+
+- **NetworkStore**
+  - `topologyVersions[id]`: bumped by every topology action. Networks are mutated in place, so it
+    is the only value that says their nodes or edges changed; the renderer uses it both to trigger
+    a redraw and to tell whether one is needed
 
 - **ViewModelStore**
   - `getViewModel`, `setViewModel`: network view model (node positions, selections, viewport)
@@ -91,7 +99,10 @@ The core **`renderNetwork(forceFit = true)`** function is responsible for:
 
 1. **Guard conditions**
    - Skip if `cy` is not ready
-   - Skip if the currently rendered network matches the requested network and the node/edge counts are unchanged
+   - Skip if the network is already on screen (`isNetworkOnScreen` in `renderGuard.ts`): the
+     instance was last rendered with this network, at its current topology version. The check is
+     constant-time. Element counts are not used: they miss a replacement of as many elements as
+     were removed.
 
 2. **Reset Cytoscape instance**
    - Clear event listeners
@@ -131,8 +142,30 @@ The core **`renderNetwork(forceFit = true)`** function is responsible for:
    - The three canvases are created once per Cytoscape instance and held in `annotationLayersRef`.
      `cyCanvas()` appends a new canvas on every call, so creating them per render left a frozen
      copy behind each time (issue #675).
-   - Each render calls `setAnnotations`, `setBackgroundColor`, `attach` and `redraw`. `attach` is
-     idempotent and re-registers the redraw handlers that `cy.removeAllListeners()` dropped.
+   - `paintAnnotations` calls `setAnnotations`, `setBackgroundColor`, `attach` and `redraw`. Each
+     full render runs it, and so does `onAnnotationSourcesChange` when the summary or the
+     background color changes while the network is on screen. `attach` is idempotent and
+     re-registers the redraw handlers that `cy.removeAllListeners()` dropped.
+
+10. **Record what is on screen**
+    - Set `renderedRef` and `appliedStyleInputsRef`. From here on, style, table and visual editor
+      changes are applied in place by `onStyleModelUpdate`.
+
+#### When a full render runs
+
+| Trigger                | Effect                   | Redraws when                                          |
+| ---------------------- | ------------------------ | ----------------------------------------------------- |
+| New Cytoscape instance | `onCyJsRendererChange`   | always (the instance is empty)                        |
+| `network` prop changes | `onLoadNewNetwork`       | another network is handed in                          |
+| Topology version bumps | `onTopologyChange`       | nodes or edges were added, removed or replaced        |
+| Table or style changes | `onNetworkDataCompleted` | the network is not on screen yet (late-arriving rows) |
+
+Deletions bump the topology version too, so they redraw in full; `onNodePositionAndNodeDeletion`
+and `onEdgeDeletion` still drop any element whose view is gone. Applying topology changes
+incrementally, instead of redrawing every element, is tracked in #863.
+Because the Cytoscape.js listeners now live until the next full render, they read the view model
+and `createEdge` at event time instead of closing over the values of the render that
+registered them.
 
 ### Selection & Display Modes
 
@@ -183,6 +216,34 @@ When the user drags nodes:
 2. On drag end, the renderer compares original vs final positions
 3. If positions changed, `postEdit` is called with an `UndoCommandType` for node movement
 4. View model updates propagate to stores and can be undone/redone
+
+### Style Re-application (`onStyleModelUpdate`)
+
+When the visual style, the tables or the visual editor properties change, the
+renderer re-applies the style to `getViewModel(id)` (the network's first view)
+and writes the result back with `ViewModelStore.add`. `add` replaces a view only
+when its `viewId` matches and appends one otherwise, so `updateNetworkView`
+(`src/models/VisualStyleModel/impl/computeViewUtil.ts`) carries the input view's
+`viewId` and `type` through. That keeps a network at one node-link view, and
+gives that view the current computed `values` that readers of `getViewModel`
+(e.g. `useNodeGraphicsSync`) rely on.
+
+Before #859 the identity was dropped, and every style or table change appended
+a full copy of the view, persisted to `cyNetworkViews` with the rest. Databases
+written then may still hold those copies; removing them is tracked in #860.
+
+The effect is the only path for these changes once the network is on screen.
+It runs as soon as `renderedRef` names the current network, and skips inputs
+identical to `appliedStyleInputsRef` — the ones the render that put the network
+on screen already applied in the same commit. The stylesheet is rebuilt from the
+current style with `createCyjsDataMapper`.
+
+Before #861 the effect waited on `isViewCreated`, which every full render cleared
+and a 1000 ms timer set again, and every style or table change also caused a
+full render: `renderNetwork`'s guard read `.length` off the `nodeViews` Record,
+which is undefined, so it never matched. Every element was removed and re-added
+on each change, and a change made within a second of the previous one was drawn
+but never written back.
 
 ## Utility Behavior
 
@@ -242,7 +303,11 @@ When the user drags nodes:
 ### Performance Considerations
 
 - Uses **batch operations** (`cy.startBatch` / `cy.endBatch`) when rebuilding graphs
-- Skips expensive full re-renders when node/edge counts and network id haven&apos;t changed
+- Style, table and visual editor changes update the elements on screen in place; a full render
+  (remove and re-add every element) runs only for a new instance, another network, a topology
+  change, or the first render after late-arriving rows (see "When a full render runs")
+- Whether a full render is needed is a constant-time check on `NetworkStore.topologyVersions`,
+  never a walk over the elements
 - Avoids repeated `fit` calls after the user interacts with the network
 - Debouncing is used in several places to limit update frequency (e.g., layout/viewport updates)
 

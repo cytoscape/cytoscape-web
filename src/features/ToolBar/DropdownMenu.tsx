@@ -699,6 +699,8 @@ interface DropdownMenuItemProps {
   onClick?: () => void
   /** Optional test anchor, so specs need not select the item by its label. */
   dataTestId?: string
+  /** Keyboard shortcut shown at the end of the row, e.g. "⌘A". */
+  shortcut?: string
 }
 
 export const DropdownMenuItem: React.FC<DropdownMenuItemProps> = ({
@@ -708,6 +710,7 @@ export const DropdownMenuItem: React.FC<DropdownMenuItemProps> = ({
   disabled = false,
   onClick,
   dataTestId,
+  shortcut,
 }) => {
   const theme = useTheme()
 
@@ -741,6 +744,19 @@ export const DropdownMenuItem: React.FC<DropdownMenuItemProps> = ({
         >
           <Box sx={{ width: 24, height: 24 }}>{icon}</Box>
           <Box>{label}</Box>
+          {shortcut !== undefined && (
+            <Box
+              component="kbd"
+              sx={{
+                marginLeft: 'auto',
+                paddingLeft: 3,
+                fontFamily: 'inherit',
+                color: theme.palette.text.secondary,
+              }}
+            >
+              {shortcut}
+            </Box>
+          )}
         </Box>
       </span>
     </Tooltip>

@@ -82,6 +82,16 @@ export const FilterTab = ({ networkId }: FilterTabProps): JSX.Element => {
     setStatus(undefined)
   }, [networkId, selected?.id])
 
+  // Show All (Select menu) and the subnetwork's filterWidgets filter drop the
+  // record of a filter applied in show mode: the filter no longer hides
+  // anything, so the status line stops reporting its run
+  const isApplied: boolean = useFilterStore((state) =>
+    Object.hasOwn(state.appliedWorkspaceFilters, networkId),
+  )
+  useEffect(() => {
+    if (!isApplied) setStatus(undefined)
+  }, [isApplied])
+
   const apply = (): void => {
     if (selected === undefined) return
     setStatus(formatApplyStatus(applyWorkspaceFilter(networkId, selected.id)))

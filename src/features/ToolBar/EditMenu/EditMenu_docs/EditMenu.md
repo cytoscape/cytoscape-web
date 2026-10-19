@@ -58,6 +58,7 @@ Each menu item is a thin wrapper that invokes the appropriate store actions and 
 
 ## Future Improvements
 
-- Add additional edit operations (duplicate, select all, invert selection, etc.).
+- Add additional edit operations (duplicate, etc.). Selection and visibility
+  operations live in the Select menu (`SelectMenu_docs/SelectMenu.md`).
 - Keyboard shortcuts surfaced alongside menu items.
 - Disabled states that reflect when undo/redo stacks are empty.
