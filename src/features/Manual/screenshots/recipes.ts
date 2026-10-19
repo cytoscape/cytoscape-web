@@ -173,6 +173,9 @@ export interface ScreenshotSequence {
 const JOIN_DIALOG = { role: 'dialog', name: 'Edit Column Definitions' } as const
 /** Network from File's dialog for a table: the same title as JOIN_DIALOG. */
 const CREATE_DIALOG = JOIN_DIALOG
+const MERGE_DIALOG = { role: 'dialog', name: 'Advanced Network Merge' } as const
+const HSF1_NETWORK = 'src/assets/networks/hsf1-neighborhood.cx2'
+const HSF1_NAME = 'HSF1 neighborhood'
 
 export const SCREENSHOT_SEQUENCES: readonly ScreenshotSequence[] = [
   {
@@ -415,6 +418,89 @@ export const SCREENSHOT_SEQUENCES: readonly ScreenshotSequence[] = [
       'src/features/ToolBar/FileUpload.tsx',
       'src/features/TableDataLoader/components/CreateNetworkFromTable/**',
       'src/features/TableDataLoader/components/previewTableParts.tsx',
+    ],
+  },
+  {
+    id: 'merge',
+    title: 'Basic Operations',
+    viewport: { width: 1280, height: 900 },
+    frames: [
+      {
+        id: 'menu',
+        alt: 'Tools → Merge Networks in the menu bar',
+        step: 1,
+        steps: [
+          { importNetwork: GAL_NETWORK, expectText: GAL_NAME },
+          { importNetwork: HSF1_NETWORK, expectText: HSF1_NAME },
+          { click: { testid: 'toolbar-tools-menu-menu-button' } },
+        ],
+        highlight: [{ role: 'menuitem', name: 'Merge Networks' }],
+      },
+      {
+        id: 'merge-type',
+        alt: 'The merge type buttons: Union, Intersection and Difference',
+        step: 2,
+        steps: [
+          { click: { role: 'menuitem', name: 'Merge Networks' } },
+          { waitFor: { testid: 'merge-dialog-union-button' } },
+        ],
+        highlight: [{ role: 'group', name: 'Merge type' }],
+        capture: MERGE_DIALOG,
+      },
+      {
+        id: 'name',
+        alt: 'The Merged Network Name box',
+        step: 3,
+        steps: [],
+        highlight: [{ role: 'textbox', name: 'Merged Network Name:' }],
+        capture: MERGE_DIALOG,
+      },
+      {
+        id: 'add',
+        alt: 'A network selected in Available Networks, and the right arrow',
+        step: 4,
+        steps: [{ click: { role: 'button', name: GAL_NAME } }],
+        highlight: [{ role: 'button', name: 'Add to Networks to Merge' }],
+        capture: MERGE_DIALOG,
+      },
+      {
+        id: 'order',
+        alt: 'Both networks in Networks to Merge, the first marked as the base network, and the up and down arrows',
+        step: 5,
+        steps: [
+          { click: { role: 'button', name: 'Add to Networks to Merge' } },
+          { click: { role: 'button', name: HSF1_NAME } },
+          { click: { role: 'button', name: 'Add to Networks to Merge' } },
+          { click: { role: 'button', name: GAL_NAME } },
+        ],
+        highlight: [
+          { role: 'button', name: 'Move up' },
+          { role: 'button', name: 'Move down' },
+        ],
+        capture: MERGE_DIALOG,
+      },
+      {
+        id: 'merge-button',
+        alt: 'The Merge button',
+        step: 6,
+        steps: [],
+        highlight: [{ testid: 'merge-dialog-merge-button' }],
+        capture: MERGE_DIALOG,
+      },
+      {
+        id: 'result',
+        alt: 'The merged network in the workspace and the network view',
+        step: 7,
+        steps: [
+          { click: { testid: 'merge-dialog-merge-button' } },
+          { waitFor: { text: 'Merged Network' } },
+          { wait: 2000 },
+        ],
+      },
+    ],
+    sources: [
+      'src/features/MergeNetworks/components/MergeDialog.tsx',
+      'src/features/ToolBar/ToolsMenu/MergeNetwork.tsx',
     ],
   },
 ]
