@@ -88,6 +88,10 @@ const runStep = async (page: Page, step: ScreenshotStep): Promise<void> => {
     await expect(locate(page, step.waitFor)).toBeVisible({ timeout: 30_000 })
     return
   }
+  if ('fill' in step) {
+    await locate(page, step.fill).fill(step.text)
+    return
+  }
   if ('wait' in step) {
     await page.waitForTimeout(step.wait)
     return

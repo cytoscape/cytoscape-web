@@ -27,6 +27,8 @@ export type ScreenshotStep =
   /** Set the file of the `<input type="file">` inside `target`. */
   | { readonly upload: string; readonly into: ScreenshotTarget }
   | { readonly press: string }
+  /** Replace the text in a field. */
+  | { readonly fill: ScreenshotTarget; readonly text: string }
   /** Let an animation or layout finish, in milliseconds. */
   | { readonly wait: number }
   /** Select these nodes of the current network, as a click on them does. */
@@ -501,6 +503,78 @@ export const SCREENSHOT_SEQUENCES: readonly ScreenshotSequence[] = [
     sources: [
       'src/features/MergeNetworks/components/MergeDialog.tsx',
       'src/features/ToolBar/ToolsMenu/MergeNetwork.tsx',
+    ],
+  },
+  {
+    id: 'column-filter',
+    title: 'Select Nodes with a Column Filter',
+    viewport: { width: 1280, height: 800 },
+    frames: [
+      {
+        id: 'tab',
+        alt: 'The FILTER tab of the side panel',
+        step: 1,
+        steps: [{ importNetwork: GAL_NETWORK, expectText: GAL_NAME }],
+        highlight: [{ role: 'tab', name: 'Filter' }],
+      },
+      {
+        id: 'add',
+        alt: 'The Add new condition button',
+        step: 2,
+        steps: [
+          { click: { role: 'tab', name: 'Filter' } },
+          { waitFor: { testid: 'filter-condition-root-add' } },
+        ],
+        highlight: [{ testid: 'filter-condition-root-add' }],
+      },
+      {
+        id: 'column-filter',
+        alt: 'The kinds of condition, with Column filter ringed',
+        step: 3,
+        steps: [{ click: { testid: 'filter-condition-root-add' } }],
+        highlight: [{ testid: 'filter-condition-root-add-column' }],
+      },
+      {
+        id: 'column',
+        alt: 'The column list, with Node: Degree ringed',
+        step: 4,
+        steps: [
+          { click: { testid: 'filter-condition-root-add-column' } },
+          { click: { role: 'combobox', name: 'Column' } },
+        ],
+        highlight: [{ role: 'option', name: 'Node: Degree' }],
+      },
+      {
+        id: 'range',
+        alt: 'The range fields and slider of a number column',
+        step: 5,
+        steps: [{ click: { role: 'option', name: 'Node: Degree' } }],
+        highlight: [
+          { role: 'textbox', name: 'Lower bound' },
+          { role: 'textbox', name: 'Upper bound' },
+        ],
+      },
+      {
+        id: 'selected',
+        alt: 'The nodes with degree 3 or more selected, and the select and show choice',
+        step: 6,
+        steps: [
+          { fill: { role: 'textbox', name: 'Lower bound' }, text: '3' },
+          { press: 'Tab' },
+        ],
+        highlight: [{ role: 'radiogroup', name: 'Apply the filter by' }],
+      },
+      {
+        id: 'apply',
+        alt: 'Apply when filter changes, the Apply button and the result line',
+        step: 7,
+        steps: [],
+        highlight: [{ testid: 'filter-apply-panel' }],
+      },
+    ],
+    sources: [
+      'src/features/Filter/FilterTab.tsx',
+      'src/features/Filter/components/**',
     ],
   },
 ]
