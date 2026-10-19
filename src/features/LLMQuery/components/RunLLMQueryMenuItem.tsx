@@ -20,7 +20,8 @@ import {
 import { isHCX } from '../../HierarchyViewer/utils/hierarchyUtil'
 import { BaseMenuItemProps } from '../../ToolBar/BaseMenuItemProps'
 import { DropdownMenuItem } from '../../ToolBar/DropdownMenu'
-import { analyzeSubsystemGeneSet } from '../api/chatgpt'
+import { queryLLM } from '../api/queryLLM'
+import { getWebLLMBlocker } from '../api/webllmSession'
 import { isLLMConfigured, selectApiKey } from '../model/LLMProvider'
 import { useLLMQueryStore } from '../store'
 import { HcxDisabledTooltip } from './HcxDisabledTooltip'
@@ -48,6 +49,7 @@ export const RunLLMQueryMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const LLMBaseUrl = useLLMQueryStore((state) => state.LLMBaseUrl)
   const LLMModel = useLLMQueryStore((state) => state.LLMModel)
   const LLMTemplate = useLLMQueryStore((state) => state.LLMTemplate)
+  const webLLMStatus = useLLMQueryStore((state) => state.webLLMStatus)
 
   const setActiveNetworkBrowserPanelIndex = useUiStateStore(
     (state) => state.setActiveNetworkBrowserPanelIndex,
@@ -123,7 +125,13 @@ export const RunLLMQueryMenuItem = (props: BaseMenuItemProps): ReactElement => {
     customKey: LLMCustomApiKey,
   })
   const llmConfigured = isLLMConfigured(LLMProvider, providerApiKey, LLMBaseUrl)
-  const disabled = !isHCX(summary) || loading || !llmConfigured
+  // The in-browser provider also waits for its model to finish loading
+  const webLLMBlocker =
+    LLMProvider === 'webllm'
+      ? getWebLLMBlocker(webLLMStatus, LLMModel)
+      : undefined
+  const disabled =
+    !isHCX(summary) || loading || !llmConfigured || webLLMBlocker !== undefined
   const runLLMQuery = async (): Promise<void> => {
     setLoading(true)
     setPanelState('left', 'open')
@@ -169,7 +177,8 @@ export const RunLLMQueryMenuItem = (props: BaseMenuItemProps): ReactElement => {
 
     try {
       const message = LLMTemplate.fn(geneNames.join(', '))
-      const LLMResponse = await analyzeSubsystemGeneSet(message, {
+      const LLMResponse = await queryLLM(message, {
+        provider: LLMProvider,
         apiKey: providerApiKey,
         baseUrl: LLMBaseUrl,
         model: LLMModel,
@@ -194,6 +203,8 @@ export const RunLLMQueryMenuItem = (props: BaseMenuItemProps): ReactElement => {
       'Generating response...'
     ) : !llmConfigured ? (
       'Configure an LLM provider (OpenAI API key, or a local Ollama endpoint) in the Analysis -> LLM Query Options menu item to run LLM queries'
+    ) : webLLMBlocker !== undefined ? (
+      webLLMBlocker
     ) : (
       <HcxDisabledTooltip />
     )

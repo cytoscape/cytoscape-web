@@ -8,13 +8,9 @@
 
 import { useAppResourceStore } from '../../data/hooks/stores/AppResourceStore'
 import { useAppStore } from '../../data/hooks/stores/AppStore'
-import { useNetworkSummaryStore } from '../../data/hooks/stores/NetworkSummaryStore'
 import { useSidePanelStore } from '../../data/hooks/stores/SidePanelStore'
 import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
-// A pure predicate, not a component: the one thing this file needs from
-// features/, because only the hierarchy viewer knows what makes a network HCX.
-import { isHCX } from '../../features/HierarchyViewer/utils/hierarchyUtil'
 import {
   listBottomPanelTabs,
   listLeftPanelTabs,
@@ -34,9 +30,7 @@ const PANELS: readonly string[] = [Panel.LEFT, Panel.RIGHT, Panel.BOTTOM]
 const listPanelTabs = (panel: PanelId): PanelTab[] => {
   const { currentNetworkId } = useWorkspaceStore.getState().workspace
   if (panel === Panel.LEFT) {
-    const summary =
-      useNetworkSummaryStore.getState().summaries[currentNetworkId]
-    return listLeftPanelTabs(isHCX(summary))
+    return listLeftPanelTabs()
   }
   if (panel === Panel.BOTTOM) {
     return listBottomPanelTabs()

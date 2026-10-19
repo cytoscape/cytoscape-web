@@ -11,6 +11,7 @@ The `AnalysisMenu` feature adds an **Analysis** entry to the main toolbar that f
 - **LLM Integration**
   - **`RunLLMQueryMenuItem`**: Starts an LLM query based on the current selection/context.
   - **`LLMQueryOptionsMenuItem`**: Opens a dialog to configure LLM model, API key, and prompt templates.
+  - The menu renders `LLMQueryOptionsDialog` once, outside its rows. Whether it is open lives in the LLM query store (`optionsDialogOpen`), so the LLM QUERY panel's **Select LLM Provider** button opens the same dialog.
 
 The menu is intentionally thin: it delegates all domain-specific behavior to the LLMQuery feature and acts as a launcher.
 

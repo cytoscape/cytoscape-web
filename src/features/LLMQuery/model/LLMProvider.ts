@@ -1,6 +1,7 @@
 import { LLMModel, models } from './LLMModel'
+import { getWebLLMModelOptions } from './WebLLMModel'
 
-export type LLMProviderId = 'openai' | 'ollama' | 'custom'
+export type LLMProviderId = 'openai' | 'ollama' | 'custom' | 'webllm'
 
 export interface LLMProvider {
   readonly id: LLMProviderId
@@ -8,6 +9,8 @@ export interface LLMProvider {
   // Base URL of the OpenAI-compatible endpoint; '' means the OpenAI default.
   readonly defaultBaseUrl: string
   readonly requiresApiKey: boolean
+  // Runs in this browser (WebGPU): no endpoint, no key, a fixed model list
+  readonly runsInBrowser: boolean
   // Model names offered as suggestions; any name can still be typed.
   readonly suggestedModels: readonly LLMModel[]
 }
@@ -26,6 +29,7 @@ export const providers: readonly LLMProvider[] = [
     label: 'OpenAI',
     defaultBaseUrl: '',
     requiresApiKey: true,
+    runsInBrowser: false,
     suggestedModels: models,
   },
   {
@@ -33,6 +37,7 @@ export const providers: readonly LLMProvider[] = [
     label: 'Ollama (local)',
     defaultBaseUrl: OLLAMA_DEFAULT_BASE_URL,
     requiresApiKey: false,
+    runsInBrowser: false,
     suggestedModels: ['llama3.1', 'llama3.2', 'qwen2.5', 'mistral', 'gemma3'],
   },
   {
@@ -40,7 +45,17 @@ export const providers: readonly LLMProvider[] = [
     label: 'Custom (OpenAI-compatible)',
     defaultBaseUrl: '',
     requiresApiKey: false,
+    runsInBrowser: false,
     suggestedModels: [],
+  },
+  {
+    id: 'webllm',
+    label: 'WebLLM (in-browser, experimental)',
+    defaultBaseUrl: '',
+    requiresApiKey: false,
+    runsInBrowser: true,
+    // The dialog narrows this to the builds the GPU can run
+    suggestedModels: getWebLLMModelOptions(true).map((m) => m.id),
   },
 ]
 
@@ -48,8 +63,9 @@ export const getLLMProvider = (id: LLMProviderId): LLMProvider =>
   providers.find((p) => p.id === id) ?? providers[0]
 
 /**
- * Whether enough is known to send a query: OpenAI needs a key, every
- * other provider needs an endpoint to talk to.
+ * Whether enough is known to send a query: OpenAI needs a key, an endpoint
+ * provider needs an endpoint to talk to, and the in-browser provider needs
+ * nothing here (whether its model has loaded is a separate gate).
  */
 export const isLLMConfigured = (
   providerId: LLMProviderId,
@@ -57,6 +73,9 @@ export const isLLMConfigured = (
   baseUrl: string,
 ): boolean => {
   const provider = getLLMProvider(providerId)
+  if (provider.runsInBrowser) {
+    return true
+  }
   return provider.requiresApiKey ? apiKey.trim() !== '' : baseUrl.trim() !== ''
 }
 
@@ -71,7 +90,8 @@ export interface LLMApiKeys {
 /**
  * The key that may be sent to a provider's endpoint. Keys are scoped to the
  * provider they were entered for: the OpenAI key goes to OpenAI only, a custom
- * endpoint gets only its own key, and Ollama is never sent one. A blank key
+ * endpoint gets only its own key, and Ollama and the in-browser WebLLM are
+ * never sent one. A blank key
  * never falls back to another provider's key.
  */
 export const selectApiKey = (
@@ -84,6 +104,7 @@ export const selectApiKey = (
     case 'custom':
       return keys.customKey
     case 'ollama':
+    case 'webllm':
       return ''
   }
 }

@@ -26,29 +26,24 @@ export interface RightPanelAppTab {
   readonly resource: RegisteredAppResource
 }
 
-/** Position of the LLM QUERY tab in the left pane, when it is present */
+/** Position of the LLM QUERY tab in the left pane */
 export const LLM_QUERY_TAB_INDEX = 3
 
 /**
- * The left pane's tabs, in strip order. `hasLlmQueryTab` is the caller's
- * call (the tab exists only for a hierarchy network) — models do not know
- * what a hierarchy is.
+ * The left pane's tabs, in strip order. LLM QUERY is always present: it is
+ * where an LLM provider is set up, and it accepts a typed gene list on any
+ * network.
  */
-export const listLeftPanelTabs = (hasLlmQueryTab: boolean): PanelTab[] => {
-  const tabs: PanelTab[] = [
-    { panel: Panel.LEFT, tabId: LeftPanelTabId.WORKSPACE, index: 0 },
-    { panel: Panel.LEFT, tabId: LeftPanelTabId.STYLE, index: 1 },
-    { panel: Panel.LEFT, tabId: LeftPanelTabId.FILTER, index: 2 },
-  ]
-  if (hasLlmQueryTab) {
-    tabs.push({
-      panel: Panel.LEFT,
-      tabId: LeftPanelTabId.LLM_QUERY,
-      index: LLM_QUERY_TAB_INDEX,
-    })
-  }
-  return tabs
-}
+export const listLeftPanelTabs = (): PanelTab[] => [
+  { panel: Panel.LEFT, tabId: LeftPanelTabId.WORKSPACE, index: 0 },
+  { panel: Panel.LEFT, tabId: LeftPanelTabId.STYLE, index: 1 },
+  { panel: Panel.LEFT, tabId: LeftPanelTabId.FILTER, index: 2 },
+  {
+    panel: Panel.LEFT,
+    tabId: LeftPanelTabId.LLM_QUERY,
+    index: LLM_QUERY_TAB_INDEX,
+  },
+]
 
 /** The bottom pane's tabs, in strip order. */
 export const listBottomPanelTabs = (): PanelTab[] => [

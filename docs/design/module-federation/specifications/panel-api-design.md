@@ -50,7 +50,7 @@ in React component state and cannot be reached from the App API today.
 
 | Pane   | Open/closed state                      | Selected tab                                                   | Tab ids                                                                                                                  |
 | ------ | -------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Left   | `ui.panels.left` via `setPanelState`   | `ui.networkBrowserPanelUi.activeTabIndex` in `UiStateStore`    | None. Tabs are numeric indexes, and `LLM QUERY` (index 2) only exists for HCX networks.                                  |
+| Left   | `ui.panels.left` via `setPanelState`   | `ui.networkBrowserPanelUi.activeTabIndex` in `UiStateStore`    | None. Tabs are numeric indexes; `LLM QUERY` is index 3 and always present (it was HCX-only until 2026-10).               |
 | Bottom | `ui.panels.bottom` via `setPanelState` | `ui.tableUi.activeTabIndex` in `UiStateStore`                  | None. Tabs come from the `TableBrowserTab` enum (0/1/2).                                                                 |
 | Right  | `ui.panels.right` via `setPanelState`  | `useState` in `src/features/Workspace/SidePanel/SidePanel.tsx` | String ids of the form `${appId}::right-panel::${id}`, plus one built-in `__builtin__::right-panel::sub-network-viewer`. |
 
@@ -109,7 +109,7 @@ apis.panel.open('right', 'NetworkAnalyzerPanel')
   tells the caller which App's tab won when ids collide.
 - Built-in public ids (`LeftPanelTabId`, `BottomPanelTabId`, `RightPanelTabId`
   in `src/models/UiModel/PanelTab.ts`):
-  - Left: `workspace`, `style`, `llm-query`
+  - Left: `workspace`, `style`, `filter`, `llm-query`
   - Bottom: `nodes`, `edges`, `network`
   - Right: `sub-network-viewer`
 - The pane scopes the id, so built-in ids can stay short, and an App id can
@@ -156,8 +156,8 @@ sequenceDiagram
    get it through the `...CyWebApi` spread in `src/app-api/core/perAppApis.ts`;
    a per-App override (`createPanelApi(appId)`) supplies the tie-break above.
 3. **Tabs that are currently hidden do not count as a match.** A tab can be
-   filtered out (`requires.network` unmet, inactive App, `LLM QUERY` on a
-   non-HCX network).
+   filtered out (`requires.network` unmet, inactive App). `LLM QUERY` used to
+   be HCX-only; it is now always present.
    - `SidePanel` has an effect that resets the selection to the first tab when
      the selected entry disappears. It is kept as it was: the API resolves tabs
      from the same stores, through the same model function, that the strip
@@ -235,12 +235,10 @@ What was built, where it differs from the plan above:
 - **Core** — `src/app-api/core/panelApi.ts`: `createPanelApi(appId?)` and the
   anonymous `panelApi`. It resolves the tab before touching any store, selects
   it, then opens the pane.
-- **`isHCX`** — the left pane's `'llm-query'` tab exists only for a hierarchy
-  network, and that predicate lives in `features/HierarchyViewer/utils/`.
-  `panelApi.ts` imports it: it is a pure function with no React or heavy
-  runtime imports, and models must not know what a hierarchy is. This is the
-  one `features/` import in `core/`, recorded as principle 18 in
-  `src/app-api/AGENTS.md`.
+- **`isHCX`** — no longer used. While the left pane's `'llm-query'` tab was
+  HCX-only, `panelApi.ts` imported this predicate from
+  `features/HierarchyViewer/utils/`. The tab is now always present, so `core/`
+  imports nothing from `features/` for panels.
 - **Hook** — `usePanelApi()` returns the calling app's instance inside
   `AppIdProvider` and the anonymous one outside it, unlike the domain hooks
   that always return the shared core object.

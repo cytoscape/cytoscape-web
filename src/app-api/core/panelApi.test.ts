@@ -22,8 +22,6 @@ import { PanelState } from '../../models/UiModel/PanelState'
 import { AppCodes } from '../types/ApiResult'
 import { createPanelApi, panelApi } from './panelApi'
 
-const HCX_INTERACTION_NETWORK_UUID = 'HCX::interactionNetworkUUID'
-
 const app = (id: string, status: AppStatus = AppStatus.Active): CyApp => ({
   id,
   name: id,
@@ -180,15 +178,11 @@ describe('panelApi.open', () => {
       ).toBe(1)
     })
 
-    it("matches 'llm-query' only while the current network is a hierarchy", () => {
-      expect(panelApi.open('left', 'llm-query').success).toBe(false)
-      expect(panels().left).toBe(PanelState.CLOSED)
-
-      setCurrentNetwork('hcx1', [
-        { predicateString: HCX_INTERACTION_NETWORK_UUID, value: 'uuid' },
-      ])
+    it("matches 'llm-query' on any network, not only a hierarchy", () => {
+      setCurrentNetwork('plain1')
 
       expect(panelApi.open('left', 'llm-query').success).toBe(true)
+      expect(panels().left).toBe(PanelState.OPEN)
       expect(
         useUiStateStore.getState().ui.networkBrowserPanelUi.activeTabIndex,
       ).toBe(3)

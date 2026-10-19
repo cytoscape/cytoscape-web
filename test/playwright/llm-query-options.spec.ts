@@ -148,3 +148,145 @@ test.describe('LLM Query Options Dialog', () => {
     ).not.toBeVisible()
   })
 })
+
+// The WebGPU check runs against a stubbed navigator.gpu so the result does not
+// depend on the CI machine's GPU. Init scripts only apply to later
+// navigations, so each test installs its stub before loading the app.
+test.describe('LLM Query Options Dialog: WebLLM provider', () => {
+  const openDialog = async (page: any) => {
+    await page
+      .locator('[data-testid="toolbar-analysis-menu-menu-button"]')
+      .click()
+    await page.getByText('LLM Query Options...').click()
+    await expect(
+      page.locator('[data-testid="llm-query-options-dialog"]'),
+    ).toBeVisible()
+  }
+
+  const selectWebLLM = async (page: any) => {
+    await page
+      .locator('[data-testid="llm-query-options-provider-select"]')
+      .getByRole('combobox')
+      .click()
+    await page
+      .locator('[data-testid="llm-query-options-provider-webllm"]')
+      .click()
+  }
+
+  const stubGpu = async (page: any, supported: boolean) => {
+    await page.addInitScript((hasGpu: boolean) => {
+      const gpu = hasGpu
+        ? {
+            requestAdapter: async () => ({
+              features: new Set(['shader-f16']),
+              info: { vendor: 'test', description: 'Playwright GPU' },
+            }),
+          }
+        : undefined
+      Object.defineProperty(Navigator.prototype, 'gpu', {
+        configurable: true,
+        get: () => gpu,
+      })
+    }, supported)
+  }
+
+  test('without WebGPU the model selector and Confirm are disabled', async ({
+    page,
+  }) => {
+    await stubGpu(page, false)
+    await gotoAndSeedNetwork(page)
+    await openDialog(page)
+    await selectWebLLM(page)
+
+    await expect(
+      page.locator('[data-testid="llm-query-options-webgpu-unsupported"]'),
+    ).toContainText('does not support WebGPU')
+    await expect(
+      page
+        .locator('[data-testid="llm-query-options-webllm-model-select"]')
+        .getByRole('combobox'),
+    ).toHaveAttribute('aria-disabled', 'true')
+    await expect(
+      page.locator('[data-testid="llm-query-options-confirm-button"]'),
+    ).toBeDisabled()
+    // No endpoint or key for an in-browser model
+    await expect(
+      page.locator('[data-testid="llm-query-options-base-url-input"]'),
+    ).toHaveCount(0)
+    await expect(
+      page.locator('[data-testid="llm-query-options-api-key-input"]'),
+    ).toHaveCount(0)
+
+    await page
+      .locator('[data-testid="llm-query-options-cancel-button"]')
+      .click()
+    await expect(
+      page.locator('[data-testid="llm-query-options-dialog"]'),
+    ).not.toBeVisible()
+  })
+
+  test('with WebGPU the curated models are offered with their sizes', async ({
+    page,
+  }) => {
+    await stubGpu(page, true)
+    await gotoAndSeedNetwork(page)
+    await openDialog(page)
+    await selectWebLLM(page)
+
+    await expect(
+      page.locator('[data-testid="llm-query-options-webgpu-supported"]'),
+    ).toContainText('Playwright GPU')
+    await expect(
+      page.locator('[data-testid="llm-query-options-confirm-button"]'),
+    ).toBeEnabled()
+
+    await page
+      .locator('[data-testid="llm-query-options-webllm-model-select"]')
+      .getByRole('combobox')
+      .click()
+    await expect(
+      page.locator(
+        '[data-testid="llm-query-options-webllm-model-Qwen2.5-3B-Instruct-q4f16_1-MLC"]',
+      ),
+    ).toContainText('1.7 GB download')
+    await page
+      .locator(
+        '[data-testid="llm-query-options-webllm-model-Llama-3.2-3B-Instruct-q4f16_1-MLC"]',
+      )
+      .click()
+    await expect(
+      page.locator('[data-testid="llm-query-options-webllm-status"]'),
+    ).toHaveText('Loads in the background after Confirm')
+  })
+
+  test('a model that cannot be downloaded shows the failure in the LLM Query panel', async ({
+    page,
+  }) => {
+    // Block the model hosts, so Confirm never starts a real download
+    const blocked: string[] = []
+    await page
+      .context()
+      .route(
+        /^https:\/\/(huggingface\.co|raw\.githubusercontent\.com)\//,
+        (route: any) => {
+          blocked.push(route.request().url())
+          return route.abort()
+        },
+      )
+    await stubGpu(page, true)
+    await gotoAndSeedNetwork(page)
+    await openDialog(page)
+    await selectWebLLM(page)
+    await expect(
+      page.locator('[data-testid="llm-query-options-confirm-button"]'),
+    ).toBeEnabled()
+    await page
+      .locator('[data-testid="llm-query-options-confirm-button"]')
+      .click()
+
+    await expect(
+      page.locator('[data-testid="llm-query-webllm-error"]'),
+    ).toBeVisible({ timeout: 30_000 })
+    expect(blocked.some((url) => url.includes('huggingface.co'))).toBe(true)
+  })
+})

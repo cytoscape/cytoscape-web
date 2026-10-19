@@ -9,13 +9,27 @@ import {
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
+import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { listLLMModels } from '../api/chatgpt'
+import { getWebGPUSupport, NO_WEBGPU_REASON } from '../api/webgpu'
+import { startWebLLMModelLoad, stopWebLLM } from '../api/webllmSession'
 import { OLLAMA_DEFAULT_BASE_URL } from '../model/LLMProvider'
 import { useLLMQueryStore } from '../store'
 import { LLMQueryOptionsDialog } from './LLMQueryOptionsDialog'
+import { LLM_QUERY_TAB_INDEX } from '@/models/UiModel/impl/panelTabs'
 
 vi.mock('../api/chatgpt', () => ({
   listLLMModels: vi.fn(),
+}))
+
+vi.mock('../api/webgpu', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../api/webgpu')>()),
+  getWebGPUSupport: vi.fn(),
+}))
+
+vi.mock('../api/webllmSession', () => ({
+  startWebLLMModelLoad: vi.fn(),
+  stopWebLLM: vi.fn(),
 }))
 
 const selectProvider = (id: string): void => {
@@ -35,7 +49,17 @@ describe('LLMQueryOptionsDialog', () => {
       state.setLLMCustomApiKey('')
     })
     vi.mocked(listLLMModels).mockReset()
-    act(() => useMessageStore.getState().resetMessages())
+    vi.mocked(getWebGPUSupport).mockReset().mockResolvedValue({
+      supported: true,
+      shaderF16: true,
+      adapterName: 'Test GPU',
+    })
+    vi.mocked(startWebLLMModelLoad).mockReset()
+    vi.mocked(stopWebLLM).mockReset()
+    act(() => {
+      useMessageStore.getState().resetMessages()
+      useLLMQueryStore.getState().setWebLLMStatus({ state: 'idle' })
+    })
   })
 
   it('hides the endpoint field for OpenAI', () => {
@@ -301,4 +325,155 @@ describe('LLMQueryOptionsDialog', () => {
       expect(useMessageStore.getState().messages).toEqual([])
     },
   )
+
+  describe('WebLLM (in-browser)', () => {
+    const webLLMSelect = () =>
+      screen.getByTestId('llm-query-options-webllm-model-select')
+    const confirmButton = () =>
+      screen.getByTestId('llm-query-options-confirm-button')
+
+    it('blocks the model and Confirm when WebGPU is unsupported', async () => {
+      vi.mocked(getWebGPUSupport).mockResolvedValue({
+        supported: false,
+        reason: NO_WEBGPU_REASON,
+      })
+      render(<LLMQueryOptionsDialog open={true} handleClose={() => {}} />)
+
+      selectProvider('webllm')
+      expect(
+        screen.getByTestId('llm-query-options-webgpu-checking'),
+      ).toBeTruthy()
+
+      const warning = await screen.findByTestId(
+        'llm-query-options-webgpu-unsupported',
+      )
+      expect(warning.textContent).toContain('does not support WebGPU')
+      expect(
+        within(webLLMSelect())
+          .getByRole('combobox')
+          .getAttribute('aria-disabled'),
+      ).toBe('true')
+      expect(confirmButton()).toHaveProperty('disabled', true)
+      // Cancel stays the way out
+      expect(
+        screen.getByTestId('llm-query-options-cancel-button'),
+      ).toHaveProperty('disabled', false)
+    })
+
+    it('hides the endpoint, key and model listing controls', async () => {
+      render(<LLMQueryOptionsDialog open={true} handleClose={() => {}} />)
+
+      selectProvider('webllm')
+      await screen.findByTestId('llm-query-options-webgpu-supported')
+
+      expect(
+        screen.queryByTestId('llm-query-options-base-url-input'),
+      ).toBeNull()
+      expect(screen.queryByTestId('llm-query-options-api-key-input')).toBeNull()
+      expect(
+        screen.queryByTestId('llm-query-options-refresh-models-button'),
+      ).toBeNull()
+      expect(screen.queryByTestId('llm-query-options-model-input')).toBeNull()
+    })
+
+    it('offers the f16 builds and starts the load in the background on Confirm', async () => {
+      act(() => {
+        useUiStateStore.getState().setPanelState('left', 'closed')
+        useUiStateStore.getState().setActiveNetworkBrowserPanelIndex(0)
+      })
+      const handleClose = vi.fn()
+      render(<LLMQueryOptionsDialog open={true} handleClose={handleClose} />)
+
+      selectProvider('webllm')
+      await screen.findByTestId('llm-query-options-webgpu-supported')
+      await waitFor(() =>
+        expect(confirmButton()).toHaveProperty('disabled', false),
+      )
+
+      fireEvent.mouseDown(within(webLLMSelect()).getByRole('combobox'))
+      expect(
+        screen.getByTestId(
+          'llm-query-options-webllm-model-Qwen2.5-3B-Instruct-q4f16_1-MLC',
+        ).textContent,
+      ).toContain('1.7 GB download')
+      expect(
+        screen.queryByTestId(
+          'llm-query-options-webllm-model-Qwen2.5-3B-Instruct-q4f32_1-MLC',
+        ),
+      ).toBeNull()
+      fireEvent.click(
+        screen.getByTestId(
+          'llm-query-options-webllm-model-Llama-3.2-3B-Instruct-q4f16_1-MLC',
+        ),
+      )
+      fireEvent.click(confirmButton())
+
+      const state = useLLMQueryStore.getState()
+      expect(state.LLMProvider).toBe('webllm')
+      expect(state.LLMModel).toBe('Llama-3.2-3B-Instruct-q4f16_1-MLC')
+      expect(state.LLMBaseUrl).toBe('')
+      expect(startWebLLMModelLoad).toHaveBeenCalledWith(
+        'Llama-3.2-3B-Instruct-q4f16_1-MLC',
+      )
+      expect(stopWebLLM).not.toHaveBeenCalled()
+      // The LLM Query panel opens to show the progress
+      expect(useUiStateStore.getState().ui.panels.left).toBe('open')
+      expect(
+        useUiStateStore.getState().ui.networkBrowserPanelUi.activeTabIndex,
+      ).toBe(LLM_QUERY_TAB_INDEX)
+      expect(handleClose).toHaveBeenCalled()
+    })
+
+    it('picks an f32 build on a GPU without shader-f16', async () => {
+      vi.mocked(getWebGPUSupport).mockResolvedValue({
+        supported: true,
+        shaderF16: false,
+        adapterName: 'Old GPU',
+      })
+      render(<LLMQueryOptionsDialog open={true} handleClose={() => {}} />)
+
+      selectProvider('webllm')
+      const notice = await screen.findByTestId(
+        'llm-query-options-webgpu-supported',
+      )
+      expect(notice.textContent).toContain('does not support 16-bit shaders')
+      await waitFor(() =>
+        expect(confirmButton()).toHaveProperty('disabled', false),
+      )
+      fireEvent.click(confirmButton())
+
+      expect(startWebLLMModelLoad).toHaveBeenCalledWith(
+        'Qwen2.5-3B-Instruct-q4f32_1-MLC',
+      )
+    })
+
+    it('shows the load state of the stored model on reopen', async () => {
+      act(() => {
+        const state = useLLMQueryStore.getState()
+        state.setLLMProvider('webllm')
+        state.setLLMModel('Qwen2.5-3B-Instruct-q4f16_1-MLC')
+        state.setWebLLMStatus({
+          state: 'loading',
+          modelId: 'Qwen2.5-3B-Instruct-q4f16_1-MLC',
+          progress: 0.37,
+          text: '',
+        })
+      })
+      render(<LLMQueryOptionsDialog open={true} handleClose={() => {}} />)
+
+      const status = await screen.findByTestId(
+        'llm-query-options-webllm-status',
+      )
+      expect(status.textContent).toBe('Loading: 37%')
+    })
+
+    it('unloads the in-browser model when another provider is confirmed', () => {
+      render(<LLMQueryOptionsDialog open={true} handleClose={() => {}} />)
+
+      fireEvent.click(confirmButton())
+
+      expect(stopWebLLM).toHaveBeenCalled()
+      expect(startWebLLMModelLoad).not.toHaveBeenCalled()
+    })
+  })
 })

@@ -41,9 +41,9 @@ export interface PanelApi {
    * first one in tab order — which is always what an anonymous
    * `window.CyWebApi` caller gets.
    *
-   * A tab the pane is not showing right now (its app is disabled, its
-   * `requires.network` is unmet, 'llm-query' on a non-hierarchy network) does
-   * not match.
+   * A tab the pane is not showing right now (its app is disabled, or its
+   * `requires.network` is unmet) does not match. The built-in 'llm-query' tab
+   * is always shown.
    *
    * @returns `INVALID_INPUT` for an unknown `panel` or an empty `tabId`;
    * `RESOURCE_NOT_FOUND` when `panel` shows no tab with that id, in which

@@ -178,7 +178,7 @@ src/app-api/
     the unpublished beta.4 record shape (`type: 'integer'`, `range`) by name so an app built
     against it cannot register with silently wrong keys.
 
-18. **`panel.open` resolves tabs through the model the UI renders from** —
+19. **`panel.open` resolves tabs through the model the UI renders from** —
     `core/panelApi.ts` never keeps its own idea of which tabs exist. The left and
     bottom strips and the right pane's app tabs are listed by
     `src/models/UiModel/impl/panelTabs.ts`, which `SidePanel/TabContents.tsx` also
@@ -187,10 +187,9 @@ src/app-api/
     selection lives in the non-persisted `SidePanelStore` because `SidePanel` is
     unmounted while the pane is closed — the API selects first, then opens. The
     domain is per-app (`createPanelApi(appId)` in `buildPerAppApis`) only for the
-    duplicate-id tie-break; it registers nothing and needs no cleanup. It imports
-    `isHCX` from `features/HierarchyViewer/utils/` — a pure predicate, the one
-    sanctioned `features/` import in `core/` — to know whether the left pane's
-    `'llm-query'` tab exists. A new built-in tab needs an id in
+    duplicate-id tie-break; it registers nothing and needs no cleanup. The left
+    pane's tabs, `'llm-query'` included, are always present, so it needs nothing
+    from `features/`. A new built-in tab needs an id in
     `models/UiModel/PanelTab.ts` (public contract) and an entry in `panelTabs.ts`.
 
 ## Two-Layer Pattern

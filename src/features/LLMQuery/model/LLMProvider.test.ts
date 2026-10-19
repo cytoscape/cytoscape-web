@@ -113,4 +113,25 @@ describe('getEndpointError', () => {
     expect(getEndpointError('not a url', '')).toBeDefined()
     expect(getEndpointError('ftp://host/v1', '')).toBeDefined()
   })
+
+  it('offers an in-browser WebLLM provider that needs no endpoint or key', () => {
+    const webllm = getLLMProvider('webllm')
+    expect(webllm.runsInBrowser).toBe(true)
+    expect(webllm.requiresApiKey).toBe(false)
+    expect(webllm.defaultBaseUrl).toBe('')
+    expect(webllm.suggestedModels.length).toBeGreaterThan(0)
+    expect(isLLMConfigured('webllm', '', '')).toBe(true)
+  })
+
+  it('never sends any stored key to the in-browser provider', () => {
+    expect(
+      selectApiKey('webllm', { openAiKey: 'sk-openai', customKey: 'custom' }),
+    ).toBe('')
+  })
+
+  it('keeps only the in-browser provider out of the network', () => {
+    expect(providers.filter((p) => p.runsInBrowser).map((p) => p.id)).toEqual([
+      'webllm',
+    ])
+  })
 })

@@ -47,4 +47,15 @@ describe('LLMQueryStore', () => {
     expect(result.current.LLMApiKey).toBe('sk-openai')
     expect(result.current.LLMCustomApiKey).toBe('custom-key')
   })
+
+  it('starts with the options dialog closed and toggles it', () => {
+    const { result } = renderHook(() => useLLMQueryStore())
+    expect(result.current.optionsDialogOpen).toBe(false)
+
+    act(() => result.current.setOptionsDialogOpen(true))
+    expect(result.current.optionsDialogOpen).toBe(true)
+
+    act(() => result.current.setOptionsDialogOpen(false))
+    expect(result.current.optionsDialogOpen).toBe(false)
+  })
 })

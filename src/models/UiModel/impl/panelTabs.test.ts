@@ -29,16 +29,8 @@ const panel = (
 ): RegisteredAppResource => ({ id, appId, slot: 'right-panel', ...overrides })
 
 describe('listLeftPanelTabs', () => {
-  it('lists workspace, style and filter, in strip order', () => {
-    expect(listLeftPanelTabs(false).map((t) => [t.tabId, t.index])).toEqual([
-      ['workspace', 0],
-      ['style', 1],
-      ['filter', 2],
-    ])
-  })
-
-  it('adds llm-query only for a hierarchy network', () => {
-    expect(listLeftPanelTabs(true).map((t) => [t.tabId, t.index])).toEqual([
+  it('lists workspace, style, filter and llm-query, in strip order', () => {
+    expect(listLeftPanelTabs().map((t) => [t.tabId, t.index])).toEqual([
       ['workspace', 0],
       ['style', 1],
       ['filter', 2],

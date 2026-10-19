@@ -2,6 +2,7 @@ import ContentCopy from '@mui/icons-material/ContentCopy'
 import Preview from '@mui/icons-material/Preview'
 import Refresh from '@mui/icons-material/Refresh'
 import {
+  Alert,
   Autocomplete,
   Box,
   Button,
@@ -23,8 +24,11 @@ import { useEffect, useRef, useState } from 'react'
 
 import { CyDialog } from '@/components/CyDialog'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
+import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { listLLMModels } from '../api/chatgpt'
+import { getWebGPUSupport, WebGPUSupport } from '../api/webgpu'
+import { startWebLLMModelLoad, stopWebLLM } from '../api/webllmSession'
 import { LLMModel } from '../model/LLMModel'
 import {
   getEndpointError,
@@ -34,7 +38,31 @@ import {
   selectApiKey,
 } from '../model/LLMProvider'
 import { LLMTemplate, templates } from '../model/LLMTemplate'
+import {
+  formatModelSize,
+  getWebLLMModelOptions,
+  WebLLMStatus,
+} from '../model/WebLLMModel'
 import { useLLMQueryStore } from '../store'
+import { LLM_QUERY_TAB_INDEX } from '@/models/UiModel/impl/panelTabs'
+
+// What the dialog says about the selected in-browser model's load state
+const describeWebLLMStatus = (
+  status: WebLLMStatus,
+  modelId: LLMModel,
+): string | undefined => {
+  if (status.state === 'idle' || status.modelId !== modelId) {
+    return undefined
+  }
+  switch (status.state) {
+    case 'loading':
+      return `Loading: ${Math.floor(status.progress * 100)}%`
+    case 'ready':
+      return 'Loaded and ready'
+    case 'error':
+      return `Failed to load: ${status.message}`
+  }
+}
 
 interface LLMQueryOptionsDialogProps {
   open: boolean
@@ -95,6 +123,11 @@ const LLMQueryOptionsDialogContent = (
   const LLMCustomApiKey = useLLMQueryStore((state) => state.LLMCustomApiKey)
   const LLMTemplate = useLLMQueryStore((state) => state.LLMTemplate)
   const setLLMTemplate = useLLMQueryStore((state) => state.setLLMTemplate)
+  const webLLMStatus = useLLMQueryStore((state) => state.webLLMStatus)
+  const setPanelState = useUiStateStore((state) => state.setPanelState)
+  const setActiveNetworkBrowserPanelIndex = useUiStateStore(
+    (state) => state.setActiveNetworkBrowserPanelIndex,
+  )
 
   const [localProvider, setLocalProvider] = useState<LLMProviderId>(LLMProvider)
   const [localBaseUrl, setLocalBaseUrl] = useState<string>(LLMBaseUrl)
@@ -104,6 +137,8 @@ const LLMQueryOptionsDialogContent = (
     useState<LLMTemplate>(LLMTemplate)
   const [fetchedModels, setFetchedModels] = useState<LLMModel[]>([])
   const [fetchingModels, setFetchingModels] = useState(false)
+  // undefined while the WebGPU check has not answered yet
+  const [webGPU, setWebGPU] = useState<WebGPUSupport | undefined>(undefined)
 
   // Bumped whenever the provider or endpoint changes, or the dialog closes, so
   // a model listing requested earlier is dropped when it comes back.
@@ -123,23 +158,53 @@ const LLMQueryOptionsDialogContent = (
   }, [open])
 
   const provider = getLLMProvider(localProvider)
+  const isWebLLM = provider.runsInBrowser
+  const usesEndpoint = localProvider === 'ollama' || localProvider === 'custom'
+  const usesApiKey = localProvider === 'openai' || localProvider === 'custom'
+
+  // The in-browser provider needs WebGPU; the check runs once per session
+  // and its answer also decides which model builds this GPU can run.
+  useEffect(() => {
+    if (!isWebLLM) {
+      return
+    }
+    let current = true
+    void getWebGPUSupport().then((support) => {
+      if (!current) {
+        return
+      }
+      setWebGPU(support)
+      const options = support.supported
+        ? getWebLLMModelOptions(support.shaderF16)
+        : []
+      setLocalLLMModel((model) =>
+        options.some((m) => m.id === model) ? model : (options[0]?.id ?? ''),
+      )
+    })
+    return () => {
+      current = false
+    }
+  }, [isWebLLM])
+
+  const webLLMOptions =
+    webGPU?.supported === true ? getWebLLMModelOptions(webGPU.shaderF16) : []
+  const webLLMModelValid = webLLMOptions.some((m) => m.id === localLLMModel)
+
   // Keys are provider-scoped: a key typed here belongs to the selected
-  // provider, a blank field keeps that provider's stored key, and Ollama is
-  // never sent one. The OpenAI key must not reach any other endpoint.
+  // provider, a blank field keeps that provider's stored key, and Ollama and
+  // WebLLM are never sent one. The OpenAI key must not reach any other endpoint.
   const typedApiKey = localLLMApiKey.trim()
-  const effectiveApiKey =
-    localProvider === 'ollama'
-      ? ''
-      : typedApiKey !== ''
-        ? typedApiKey
-        : selectApiKey(localProvider, {
-            openAiKey: LLMApiKey,
-            customKey: LLMCustomApiKey,
-          })
-  const endpointError =
-    localProvider === 'openai'
-      ? undefined
-      : getEndpointError(localBaseUrl, effectiveApiKey)
+  const effectiveApiKey = !usesApiKey
+    ? ''
+    : typedApiKey !== ''
+      ? typedApiKey
+      : selectApiKey(localProvider, {
+          openAiKey: LLMApiKey,
+          customKey: LLMCustomApiKey,
+        })
+  const endpointError = usesEndpoint
+    ? getEndpointError(localBaseUrl, effectiveApiKey)
+    : undefined
   const modelOptions = Array.from(
     new Set([...fetchedModels, ...provider.suggestedModels]),
   )
@@ -257,7 +322,7 @@ const LLMQueryOptionsDialogContent = (
             ))}
           </Select>
         </FormControl>
-        {localProvider !== 'openai' && (
+        {usesEndpoint && (
           <FormControl sx={{ mb: 2 }} fullWidth>
             <TextField
               data-testid="llm-query-options-base-url-input"
@@ -273,55 +338,117 @@ const LLMQueryOptionsDialogContent = (
             </FormHelperText>
           </FormControl>
         )}
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
-          <Autocomplete
-            data-testid="llm-query-options-model-select"
-            freeSolo
-            fullWidth
-            size="small"
-            options={modelOptions}
-            // Only the typed text is controlled: the model name is whatever
-            // the field shows, whether picked from the list or typed.
-            inputValue={localLLMModel}
-            onInputChange={(_e, value) => setLocalLLMModel(value)}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="LLM Model"
-                inputProps={{
-                  ...params.inputProps,
-                  'data-testid': 'llm-query-options-model-input',
-                }}
-              />
+        {isWebLLM && (
+          <Box sx={{ mb: 2 }}>
+            {webGPU === undefined ? (
+              <Alert
+                data-testid="llm-query-options-webgpu-checking"
+                severity="info"
+                icon={<CircularProgress size={20} />}
+              >
+                Checking whether this browser can run models on the GPU...
+              </Alert>
+            ) : !webGPU.supported ? (
+              <Alert
+                data-testid="llm-query-options-webgpu-unsupported"
+                severity="warning"
+              >
+                {webGPU.reason}
+              </Alert>
+            ) : (
+              <Alert
+                data-testid="llm-query-options-webgpu-supported"
+                severity="info"
+              >
+                {`Experimental. The model runs on this computer's GPU (${webGPU.adapterName}), so prompts are not sent to any server. It is downloaded from Hugging Face the first time and then cached by the browser. Small in-browser models are less accurate than hosted ones.`}
+                {!webGPU.shaderF16 &&
+                  ' This GPU does not support 16-bit shaders, so builds that need more GPU memory are offered.'}
+              </Alert>
             )}
-          />
-          {localProvider !== 'openai' && (
-            <Tooltip title="List the models available at the endpoint">
-              <span>
-                <IconButton
-                  data-testid="llm-query-options-refresh-models-button"
-                  aria-label="refresh models"
-                  sx={{ ml: 1 }}
-                  disabled={
-                    fetchingModels ||
-                    localBaseUrl.trim() === '' ||
-                    endpointError !== undefined
-                  }
-                  onClick={() => {
-                    void handleRefreshModels()
-                  }}
+          </Box>
+        )}
+        {isWebLLM ? (
+          <FormControl
+            sx={{ mb: 2 }}
+            fullWidth
+            disabled={webGPU?.supported !== true}
+          >
+            <InputLabel>LLM Model</InputLabel>
+            <Select
+              data-testid="llm-query-options-webllm-model-select"
+              size="small"
+              label="LLM Model"
+              value={webLLMModelValid ? localLLMModel : ''}
+              onChange={(e) => setLocalLLMModel(e.target.value)}
+            >
+              {webLLMOptions.map((m) => (
+                <MenuItem
+                  key={m.id}
+                  value={m.id}
+                  data-testid={`llm-query-options-webllm-model-${m.id}`}
                 >
-                  {fetchingModels ? (
-                    <CircularProgress size={20} />
-                  ) : (
-                    <Refresh />
-                  )}
-                </IconButton>
-              </span>
-            </Tooltip>
-          )}
-        </Box>
-        {localProvider !== 'ollama' && (
+                  {`${m.label} (${formatModelSize(m.downloadMB)} download, ~${formatModelSize(m.vramMB)} GPU memory)`}
+                </MenuItem>
+              ))}
+            </Select>
+            {webLLMModelValid && (
+              <FormHelperText data-testid="llm-query-options-webllm-status">
+                {describeWebLLMStatus(webLLMStatus, localLLMModel) ??
+                  'Loads in the background after Confirm'}
+              </FormHelperText>
+            )}
+          </FormControl>
+        ) : (
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
+            <Autocomplete
+              data-testid="llm-query-options-model-select"
+              freeSolo
+              fullWidth
+              size="small"
+              options={modelOptions}
+              // Only the typed text is controlled: the model name is whatever
+              // the field shows, whether picked from the list or typed.
+              inputValue={localLLMModel}
+              onInputChange={(_e, value) => setLocalLLMModel(value)}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="LLM Model"
+                  inputProps={{
+                    ...params.inputProps,
+                    'data-testid': 'llm-query-options-model-input',
+                  }}
+                />
+              )}
+            />
+            {usesEndpoint && (
+              <Tooltip title="List the models available at the endpoint">
+                <span>
+                  <IconButton
+                    data-testid="llm-query-options-refresh-models-button"
+                    aria-label="refresh models"
+                    sx={{ ml: 1 }}
+                    disabled={
+                      fetchingModels ||
+                      localBaseUrl.trim() === '' ||
+                      endpointError !== undefined
+                    }
+                    onClick={() => {
+                      void handleRefreshModels()
+                    }}
+                  >
+                    {fetchingModels ? (
+                      <CircularProgress size={20} />
+                    ) : (
+                      <Refresh />
+                    )}
+                  </IconButton>
+                </span>
+              </Tooltip>
+            )}
+          </Box>
+        )}
+        {usesApiKey && (
           <Tooltip title={apiKeyTooltip}>
             <TextField
               data-testid="llm-query-options-api-key-input"
@@ -409,7 +536,11 @@ const LLMQueryOptionsDialogContent = (
         <Button
           data-testid="llm-query-options-confirm-button"
           variant="contained"
-          disabled={localLLMModel.trim() === '' || endpointError !== undefined}
+          disabled={
+            localLLMModel.trim() === '' ||
+            endpointError !== undefined ||
+            (isWebLLM && !webLLMModelValid)
+          }
           onClick={() => {
             setLLMProvider(localProvider)
             setLLMBaseUrl(localBaseUrl.trim())
@@ -421,6 +552,15 @@ const LLMQueryOptionsDialogContent = (
               } else if (localProvider === 'custom') {
                 setLLMCustomApiKey(typedApiKey)
               }
+            }
+            if (isWebLLM) {
+              // Loads in the background; the LLM Query panel shows progress
+              void startWebLLMModelLoad(localLLMModel)
+              setPanelState('left', 'open')
+              setActiveNetworkBrowserPanelIndex(LLM_QUERY_TAB_INDEX)
+            } else {
+              // Frees the GPU memory an in-browser model may still hold
+              stopWebLLM()
             }
             handleClose()
           }}

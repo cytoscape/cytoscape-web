@@ -14,16 +14,13 @@ import {
 import { lazy, Suspense, useEffect, useState } from 'react'
 
 import llmLogo from '../../../assets/openai.svg'
-import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { IdType } from '../../../models/IdType'
-import { NetworkSummary } from '../../../models/NetworkSummaryModel'
 import { Ui } from '../../../models/UiModel'
 import { LLM_QUERY_TAB_INDEX } from '../../../models/UiModel/impl/panelTabs'
 import { Panel } from '../../../models/UiModel/Panel'
 import { PanelState } from '../../../models/UiModel/PanelState'
-import { isHCX } from '../../HierarchyViewer/utils/hierarchyUtil'
 import { NetworkSearchBar } from '../../NetworkSearch'
 import { prefetchOnIdle } from '@/utils/idlePrefetch'
 import { Summaries as SummaryList } from '../../SummaryPanel'
@@ -92,10 +89,6 @@ export const NetworkBrowserPanel = ({
     }
   }, [activeNetworkViewId, currentNetworkId])
 
-  const summaries: Record<IdType, NetworkSummary> = useNetworkSummaryStore(
-    (state) => state.summaries,
-  )
-
   const currentTabIndex = useUiStateStore(
     (state) => state.ui.networkBrowserPanelUi.activeTabIndex,
   )
@@ -110,10 +103,6 @@ export const NetworkBrowserPanel = ({
   // Warm the STYLE tab's chunk during idle time so the first click doesn't
   // stall on a network fetch.
   useEffect(() => prefetchOnIdle(loadVizmapper), [])
-  const summary = summaries[currentNetworkId]
-
-  const showLLMQueryPanel = isHCX(summary)
-
   return (
     <Box
       data-testid="network-browser-panel"
@@ -189,21 +178,19 @@ export const NetworkBrowserPanel = ({
               iconPosition="start"
               label="FILTER"
             />
-            {showLLMQueryPanel && (
-              <Tab
-                data-testid="network-browser-panel-llm-query-tab"
-                icon={
-                  <img
-                    height="25"
-                    width="25"
-                    style={{ fill: 'gray' }}
-                    src={llmLogo}
-                  />
-                }
-                iconPosition="start"
-                label="LLM QUERY"
-              />
-            )}
+            <Tab
+              data-testid="network-browser-panel-llm-query-tab"
+              icon={
+                <img
+                  height="25"
+                  width="25"
+                  style={{ fill: 'gray' }}
+                  src={llmLogo}
+                />
+              }
+              iconPosition="start"
+              label="LLM QUERY"
+            />
           </Tabs>
           {panels.left === PanelState.OPEN ? (
             <Tooltip title="Close panel">
