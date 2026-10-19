@@ -57,6 +57,26 @@ to NDEx.
 A workspace can be saved to NDEx and opened again later from the **Data**
 menu. See [Creating and Saving Networks](creating-networks).
 
+### Working in Several Browser Tabs
+
+You can open Cytoscape Web in several tabs of the same browser. They share
+one workspace: a network you open, edit, restyle, select in or remove in one
+tab changes in the others too. Filters and undo history are shared as well.
+
+Each tab keeps its own:
+
+- current network, so two tabs can show two different networks;
+- open panels and their tabs;
+- zoom and pan.
+
+Edit a network in one tab at a time. When two tabs change the same network
+at once, one tab's change is lost without a warning.
+
+If a tab stops receiving changes from the others, it shows a message that
+asks you to reload it. Reload it before you edit there; otherwise its edits
+can overwrite the other tabs' work. Resetting the workspace in one tab
+reloads the others.
+
 ### Network Size Limits
 
 Web browsers cannot draw very large networks, so Cytoscape Web limits what

@@ -132,6 +132,7 @@ export const MANUAL_PAGES: readonly ManualPage[] = [
       'src/features/Workspace/NetworkBrowserPanel/**',
       'src/features/SummaryPanel/NetworkPropertyPanel.tsx',
       'src/features/LayoutTools/**',
+      'src/features/SyncTabs.tsx',
       'src/assets/config.json',
     ],
     load: () => import('./content/workspace-panels.mdx'),
@@ -186,7 +187,11 @@ export const MANUAL_PAGES: readonly ManualPage[] = [
     title: 'Styles',
     legacyName: 'Styles',
     group: 'Working with Networks',
-    sources: ['src/features/Vizmapper/**', 'src/models/VisualStyleModel/**'],
+    sources: [
+      'src/features/Vizmapper/**',
+      'src/models/VisualStyleModel/**',
+      'src/models/CxModel/impl/converters/visualStyleSetConverter.ts',
+    ],
     load: () => import('./content/styles.mdx'),
   },
   {
