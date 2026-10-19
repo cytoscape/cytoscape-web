@@ -58,9 +58,12 @@ const READABLE_TYPOGRAPHY: SxProps<Theme> = {
   fontSize: '1.0625rem',
   lineHeight: 1.7,
   color: 'text.primary',
-  '& > *:not(table):not([data-testid="manual-live-demo"])': {
-    maxWidth: '68ch',
-  },
+  // Tables, demos and step widgets take the page width; text keeps the
+  // measure.
+  '& > *:not(table):not([data-testid="manual-live-demo"]):not([data-testid="manual-steps"])':
+    {
+      maxWidth: '68ch',
+    },
   '& h1': {
     fontSize: '2.125rem',
     lineHeight: 1.2,

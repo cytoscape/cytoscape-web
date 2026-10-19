@@ -39,7 +39,7 @@ ManualApp            route element: app bar, page list, page
 │       ├── LiveDemo → LiveDemoBody   editor parts on bundled fixtures (hidden)
 │       │   └── demo/                 Layout, App API and Link side panels
 │       ├── DemoOnly / WithoutDemo    text shown only with / without the demos
-│       ├── Steps                     a numbered list paired with a step sequence
+│       ├── Steps                     a numbered list shown step by step beside its images
 │       ├── VisualPropertyTable       generated from getDefaultVisualStyle()
 │       ├── BrowserStorageView        read-only counts of what the browser stores
 │       └── Note                      callout
@@ -71,14 +71,16 @@ ManualApp            route element: app bar, page list, page
   page.
 - **Text:** a 68-character measure, 17px, 1.7 line height, more space above
   headings than below, bold at weight 600.
-- **Pinned column:** on `lg` screens and up, the page's demo or step
-  sequence is pinned in a right-hand column while the text scrolls
-  (`DemoSlot`). A demo leaves a pointer to it in the text.
+- **Demo:** on `lg` screens and up, the page's demo is pinned in a
+  right-hand column while the text scrolls (`DemoSlot`); the text keeps a
+  pointer to it.
   In the column the demo fills the height and its table becomes a tab.
   **Expand** enlarges the column over the text (same element, so the demo
   keeps its state); **Shrink** restores it.
-- **Page list beside the pinned column:** below 1600px the list folds into
-  the menu button, so the column gets the width. Pages without one keep it.
+- **Page list beside a pinned demo:** below 1600px the list folds into the
+  menu button, so the demo gets the width. Pages without a demo keep it.
+- **Wide blocks:** tables, demos and `Steps` take the page width; text keeps
+  the 68-character measure.
 - **Moved anchors:** when a page is split, `movedAnchors` maps its old
   anchors to the page that has them now, so `quick-tour#data` opens
   `menus#data`. `content.test.ts` checks every moved anchor exists.
@@ -119,17 +121,16 @@ ManualApp            route element: app bar, page list, page
 
 ### Steps
 
-- `<Steps sequence="import-table">` wraps one numbered list. Each frame of
-  the sequence names the list item it illustrates (`step`, 1-based). An item
-  without a frame shows the previous one; items before the first frame show
-  the first.
-- In the pinned column: the frame of the item in view (the last item whose
-  top has passed the middle of the viewport), the item's position ("Step 6 of
-  13"), previous and next arrows, and **Expand**. The current item is marked
-  in the text. Clicking an item or an arrow chooses it until the reader
-  scrolls.
-- Without the column (below `lg`): each frame sits under its item.
-- One `Steps` per page: the column shows one sequence.
+- `<Steps sequence="import-table">` wraps one numbered list and shows it
+  one step at a time: the step's text and position ("Step 6 of 13") beside
+  its image, **Back** and **Next**, and a numbered button per step. The arrow
+  keys move too. Below `md` the image sits under the text.
+- Each frame of the sequence names the list item it illustrates (`step`,
+  1-based). An item without a frame shows the previous one; items before the
+  first frame show the first.
+- The image box keeps the widest frame's aspect, so the widget does not
+  change height between steps. Clicking the image opens it full size.
+- One `Steps` per page (`content.test.ts`).
 
 ### BrowserStorageView
 
@@ -268,7 +269,7 @@ current globs list at least one page for 30.
    receives compiled components only.
 4. **Generated tables over hand-written lists** where the code holds the
    data. A test fails when the code and the manual's text disagree.
-5. **Step sequences next to the text, demos optional.** A page's single demo
-   fits one section of the page. A sequence shows the state for each step of
-   a procedure, and the recipe that drives the capture is the same data that
-   keeps it current.
+5. **Step sequences in the section they illustrate, demos optional.** A
+   page's single demo fits one section of the page. A sequence sits in its
+   section and shows the state for each step of a procedure, and the recipe
+   that drives the capture is the same data that keeps it current.

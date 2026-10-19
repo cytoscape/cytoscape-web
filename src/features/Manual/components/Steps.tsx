@@ -1,19 +1,14 @@
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
-import CloseFullscreenIcon from '@mui/icons-material/CloseFullscreen'
-import OpenInFullIcon from '@mui/icons-material/OpenInFull'
-import { Alert, Box, IconButton, Tooltip, Typography } from '@mui/material'
+import { Alert, Box, Button, Typography } from '@mui/material'
 import {
   Children,
-  cloneElement,
   isValidElement,
+  type KeyboardEvent,
   type ReactElement,
   type ReactNode,
-  useCallback,
-  useEffect,
   useState,
 } from 'react'
-import { createPortal } from 'react-dom'
 
 import { resolveManualAsset } from '../manualSlug'
 import {
@@ -22,24 +17,11 @@ import {
   type SequenceFrame,
   sequenceFramePath,
 } from '../screenshots/recipes'
-import { useDemoSlot } from './DemoSlot'
 
-/** Events that mean the reader moved the page themselves. */
-const READER_SCROLL_EVENTS = ['wheel', 'touchmove', 'keydown'] as const
+/** The widest frame aspect: the image box keeps it, so steps do not jump. */
+const IMAGE_ASPECT = '1280 / 1100'
 
-/**
- * A step is current once its top passes this share of the viewport height.
- * The middle: the arrows center the step they choose.
- */
-const READING_LINE = 0.5
-
-const frameSrc = (sequence: ScreenshotSequence, frame: SequenceFrame): string =>
-  resolveManualAsset(
-    sequenceFramePath(sequence.id, frame.id),
-    import.meta.env.BASE_URL,
-  )
-
-/** The frame shown for list item `step` (1-based; 0 is before the list). */
+/** The frame shown for list item `step` (1-based). */
 const frameFor = (
   sequence: ScreenshotSequence,
   step: number,
@@ -48,201 +30,36 @@ const frameFor = (
   return shown[shown.length - 1] ?? sequence.frames[0]
 }
 
-/**
- * The list item the reader is on: the last one whose top has passed the
- * reading line, or 0 while the list is still below it. Recomputed on scroll
- * and resize.
- */
-const useStepInView = (list: HTMLElement | null, enabled: boolean): number => {
-  const [step, setStep] = useState(0)
-  useEffect(() => {
-    if (list === null || !enabled) return
-    let frame = 0
-    const update = (): void => {
-      frame = 0
-      const line = window.innerHeight * READING_LINE
-      let current = 0
-      for (const item of list.querySelectorAll<HTMLElement>(
-        'li[data-manual-step]',
-      )) {
-        if (item.getBoundingClientRect().top > line) break
-        current = Number(item.dataset.manualStep)
+/** The `<li>` contents of the numbered list among `children`. */
+const listItems = (children: ReactNode): ReactNode[] => {
+  const items: ReactNode[] = []
+  Children.forEach(children, (child) => {
+    if (!isValidElement<{ children?: ReactNode }>(child)) return
+    if (child.type !== 'ol') return
+    Children.forEach(child.props.children, (item) => {
+      if (
+        isValidElement<{ children?: ReactNode }>(item) &&
+        item.type === 'li'
+      ) {
+        items.push(item.props.children)
       }
-      setStep(current)
-    }
-    const schedule = (): void => {
-      if (frame === 0) frame = window.requestAnimationFrame(update)
-    }
-    update()
-    window.addEventListener('scroll', schedule, { passive: true })
-    window.addEventListener('resize', schedule)
-    return () => {
-      window.removeEventListener('scroll', schedule)
-      window.removeEventListener('resize', schedule)
-      if (frame !== 0) window.cancelAnimationFrame(frame)
-    }
-  }, [list, enabled])
-  return step
+    })
+  })
+  return items
 }
 
-const FrameImage = ({
-  sequence,
-  frame,
-  lazy,
-  hidden = false,
-  onClick,
-}: {
-  sequence: ScreenshotSequence
-  frame: SequenceFrame
-  lazy: boolean
-  hidden?: boolean
-  onClick?: () => void
-}): ReactElement => (
-  <Box
-    component="img"
-    src={frameSrc(sequence, frame)}
-    alt={frame.alt}
-    loading={lazy ? 'lazy' : 'eager'}
-    data-testid="manual-steps-frame"
-    data-frame={frame.id}
-    hidden={hidden}
-    onClick={onClick}
-    sx={{
-      display: hidden ? 'none' : 'block',
-      maxWidth: '100%',
-      maxHeight: '100%',
-      height: 'auto',
-      objectFit: 'contain',
-      border: 1,
-      borderColor: 'divider',
-      borderRadius: 1,
-      cursor: onClick === undefined ? undefined : 'zoom-in',
-    }}
-  />
-)
-
-/** The pinned column: the frame of the current step, with step controls. */
-const StepsPanel = ({
-  sequence,
-  step,
-  stepCount,
-  onStep,
-}: {
-  sequence: ScreenshotSequence
-  step: number
-  stepCount: number
-  onStep: (step: number) => void
-}): ReactElement => {
-  const { expanded, setExpanded } = useDemoSlot()
-  const current = frameFor(sequence, step)
-  return (
-    <Box
-      data-testid="manual-steps-panel"
-      data-step={step}
-      sx={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 1,
-        p: 1.5,
-        bgcolor: 'background.paper',
-        border: 1,
-        borderColor: 'divider',
-        borderRadius: 1,
-      }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-        <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography variant="subtitle2" noWrap>
-            {sequence.title}
-          </Typography>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            data-testid="manual-steps-counter"
-          >
-            {step === 0
-              ? `${stepCount} steps, starting below`
-              : `Step ${step} of ${stepCount}`}
-          </Typography>
-        </Box>
-        <Tooltip title="Previous step">
-          <span>
-            <IconButton
-              size="small"
-              aria-label="Previous step"
-              data-testid="manual-steps-previous"
-              disabled={step <= 1}
-              onClick={() => onStep(step - 1)}
-            >
-              <ChevronLeftIcon fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
-        <Tooltip title="Next step">
-          <span>
-            <IconButton
-              size="small"
-              aria-label="Next step"
-              data-testid="manual-steps-next"
-              disabled={step >= stepCount}
-              onClick={() => onStep(step + 1)}
-            >
-              <ChevronRightIcon fontSize="small" />
-            </IconButton>
-          </span>
-        </Tooltip>
-        <Tooltip title={expanded ? 'Shrink' : 'Expand'}>
-          <IconButton
-            size="small"
-            aria-label={expanded ? 'Shrink' : 'Expand'}
-            data-testid="manual-steps-expand"
-            onClick={() => setExpanded(!expanded)}
-          >
-            {expanded ? (
-              <CloseFullscreenIcon fontSize="small" />
-            ) : (
-              <OpenInFullIcon fontSize="small" />
-            )}
-          </IconButton>
-        </Tooltip>
-      </Box>
-      <Box
-        sx={{
-          flex: 1,
-          minHeight: 0,
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'center',
-        }}
-      >
-        {/* Every frame is in the page so the next one is already loaded. */}
-        {sequence.frames.map((frame) => (
-          <FrameImage
-            key={frame.id}
-            sequence={sequence}
-            frame={frame}
-            lazy={false}
-            hidden={frame.id !== current.id}
-            onClick={() => setExpanded(!expanded)}
-          />
-        ))}
-      </Box>
-      <Typography variant="body2" color="text.secondary">
-        {current.alt}
-      </Typography>
-    </Box>
+const frameSrc = (sequence: ScreenshotSequence, frame: SequenceFrame): string =>
+  resolveManualAsset(
+    sequenceFramePath(sequence.id, frame.id),
+    import.meta.env.BASE_URL,
   )
-}
 
 /**
- * A numbered procedure in a page, paired with the images of a screenshot
- * sequence (recipes.ts). Each image belongs to the list item its frame names
- * and to the items after it, up to the next frame.
- *
- * On wide screens the images show in the page's pinned column (DemoSlot): the
- * column follows the step the reader has scrolled to, and clicking a step or
- * the arrows changes it. Otherwise each image sits under its step.
+ * A numbered procedure in a page, shown one step at a time: the step's text
+ * beside the image of a screenshot sequence (recipes.ts), with Back and Next
+ * buttons and a button per step. Each image belongs to the list item its
+ * frame names and to the items after it, up to the next frame. Below `md`
+ * the image sits under the text.
  *
  *     <Steps sequence="import-table">
  *
@@ -259,114 +76,177 @@ export const Steps = ({
   children: ReactNode
 }): ReactElement => {
   const sequence = findScreenshotSequence(sequenceId)
-  const { target, register } = useDemoSlot()
-  useEffect(register, [register])
-  const [list, setList] = useState<HTMLElement | null>(null)
-  const pinned = target !== null
-  const inView = useStepInView(list, pinned)
-
-  // A step the reader chose (click, arrows) holds until they scroll.
-  const [chosen, setChosen] = useState<number>()
-  useEffect(() => {
-    if (chosen === undefined) return
-    const release = (): void => setChosen(undefined)
-    for (const event of READER_SCROLL_EVENTS) {
-      window.addEventListener(event, release, { passive: true })
-    }
-    return () => {
-      for (const event of READER_SCROLL_EVENTS) {
-        window.removeEventListener(event, release)
-      }
-    }
-  }, [chosen])
-  const step = chosen ?? inView
-
-  const choose = useCallback(
-    (next: number): void => {
-      setChosen(next)
-      list
-        ?.querySelector(`li[data-manual-step="${next}"]`)
-        ?.scrollIntoView({ block: 'center', behavior: 'smooth' })
-    },
-    [list],
-  )
+  const items = listItems(children)
+  const [step, setStep] = useState(1)
 
   if (sequence === undefined) {
     return <Alert severity="warning">Unknown step sequence: {sequenceId}</Alert>
   }
 
-  let stepCount = 0
-  const withFrames = Children.map(children, (child) => {
-    if (!isValidElement<{ children?: ReactNode }>(child) || child.type !== 'ol')
-      return child
-    return cloneElement(
-      child,
-      {},
-      Children.map(child.props.children, (item) => {
-        if (
-          !isValidElement<{ children?: ReactNode }>(item) ||
-          item.type !== 'li'
-        )
-          return item
-        stepCount += 1
-        const n = stepCount
-        const frame = pinned
-          ? undefined
-          : sequence.frames.find((f) => f.step === n)
-        return cloneElement(
-          item,
-          {
-            'data-manual-step': n,
-            'data-active': pinned && n === step ? 'true' : undefined,
-            onClick: pinned ? () => setChosen(n) : undefined,
-          } as Record<string, unknown>,
-          item.props.children,
-          frame === undefined ? null : (
-            <Box sx={{ my: 1.5 }}>
-              <FrameImage sequence={sequence} frame={frame} lazy />
-            </Box>
-          ),
-        )
-      }),
-    )
-  })
+  const count = items.length
+  const go = (next: number): void => setStep(Math.min(count, Math.max(1, next)))
+  const current = frameFor(sequence, step)
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLElement>): void => {
+    if (event.key === 'ArrowRight') go(step + 1)
+    else if (event.key === 'ArrowLeft') go(step - 1)
+  }
 
   return (
     <Box
-      ref={setList}
+      component="section"
+      aria-label={`${sequence.title}, step by step`}
       data-testid="manual-steps"
       data-sequence={sequence.id}
-      sx={
-        pinned
-          ? {
-              '& li[data-manual-step]': {
-                cursor: 'pointer',
-                borderRadius: 1,
-                px: 1,
-                py: 0.25,
-                transition: 'background-color 120ms',
-              },
-              '& li[data-active="true"]': {
-                bgcolor: 'action.selected',
-                boxShadow: (theme) =>
-                  `inset 3px 0 0 ${theme.palette.primary.main}`,
-              },
-            }
-          : undefined
-      }
+      data-step={step}
+      onKeyDown={handleKeyDown}
+      sx={{
+        my: 3,
+        p: { xs: 1.5, md: 2 },
+        border: 1,
+        borderColor: 'divider',
+        borderRadius: 1,
+        bgcolor: 'background.paper',
+      }}
     >
-      {withFrames}
-      {target === null
-        ? null
-        : createPortal(
-            <StepsPanel
-              sequence={sequence}
-              step={step}
-              stepCount={stepCount}
-              onStep={choose}
-            />,
-            target,
-          )}
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: 'minmax(0, 1fr)',
+            md: 'minmax(16rem, 2fr) minmax(0, 3fr)',
+          },
+          gap: { xs: 1.5, md: 3 },
+          alignItems: 'start',
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          <Typography
+            variant="overline"
+            color="text.secondary"
+            data-testid="manual-steps-counter"
+            aria-live="polite"
+            sx={{ lineHeight: 1.5 }}
+          >
+            Step {step} of {count}
+          </Typography>
+          <Box
+            data-testid="manual-steps-text"
+            sx={{ '& > :last-child': { mb: 0 }, minHeight: { md: '8rem' } }}
+          >
+            {items[step - 1]}
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<ChevronLeftIcon />}
+              disabled={step <= 1}
+              onClick={() => go(step - 1)}
+              data-testid="manual-steps-previous"
+            >
+              Back
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              endIcon={<ChevronRightIcon />}
+              disabled={step >= count}
+              onClick={() => go(step + 1)}
+              data-testid="manual-steps-next"
+            >
+              Next
+            </Button>
+          </Box>
+        </Box>
+
+        <Box component="figure" sx={{ m: 0 }}>
+          <Box
+            sx={{
+              aspectRatio: IMAGE_ASPECT,
+              maxWidth: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: 'action.hover',
+              borderRadius: 1,
+              overflow: 'hidden',
+            }}
+          >
+            {/* Every frame is in the page, so the next one is already loaded. */}
+            {sequence.frames.map((frame) => (
+              <Box
+                key={frame.id}
+                component="a"
+                href={frameSrc(sequence, frame)}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Open the full-size image"
+                hidden={frame.id !== current.id}
+                sx={{
+                  display: frame.id === current.id ? 'flex' : 'none',
+                  width: '100%',
+                  height: '100%',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Box
+                  component="img"
+                  src={frameSrc(sequence, frame)}
+                  alt={frame.alt}
+                  data-testid="manual-steps-frame"
+                  data-frame={frame.id}
+                  sx={{
+                    display: 'block',
+                    maxWidth: '100%',
+                    maxHeight: '100%',
+                    objectFit: 'contain',
+                  }}
+                />
+              </Box>
+            ))}
+          </Box>
+          <Box
+            component="figcaption"
+            sx={{ mt: 0.75, fontSize: '0.875rem', color: 'text.secondary' }}
+          >
+            {current.alt}
+          </Box>
+        </Box>
+      </Box>
+
+      <Box
+        role="group"
+        aria-label="Go to step"
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 0.5,
+          mt: 2,
+          pt: 1.5,
+          borderTop: 1,
+          borderColor: 'divider',
+        }}
+      >
+        {items.map((_item, index) => {
+          const n = index + 1
+          return (
+            <Button
+              key={n}
+              size="small"
+              variant={n === step ? 'contained' : 'text'}
+              aria-label={`Step ${n}`}
+              aria-current={n === step ? 'step' : undefined}
+              data-testid={`manual-steps-go-${n}`}
+              onClick={() => go(n)}
+              sx={{ minWidth: 32, px: 0 }}
+            >
+              {n}
+            </Button>
+          )
+        })}
+      </Box>
     </Box>
   )
 }

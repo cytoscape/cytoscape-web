@@ -1,7 +1,6 @@
 import { type Page } from '@playwright/test'
 
 import { LIVE_DEMOS_ENABLED } from '../../src/features/Manual/components/liveDemoSwitch'
-import { SCREENSHOT_SEQUENCES } from '../../src/features/Manual/screenshots/recipes'
 import { expect, gotoAndSeedNetwork, test } from './fixtures'
 
 /**
@@ -463,91 +462,67 @@ test.describe('manual', () => {
     ).toBeVisible()
   })
 
-  test('shows step images under their steps on a narrow screen', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 400, height: 800 })
+  test('the step widget pairs each step with its image', async ({ page }) => {
     await page.goto('/manual/node-and-edge-column-data')
     const steps = page.locator('[data-testid="manual-steps"]')
-    await expect(steps).toBeVisible({ timeout: 30_000 })
-    const sequence = SCREENSHOT_SEQUENCES.find((q) => q.id === 'import-table')
+    await expect(steps).toHaveAttribute('data-step', '1', { timeout: 30_000 })
+    const shown = steps.locator('[data-testid="manual-steps-frame"]:visible')
+    await expect(shown).toHaveCount(1)
+    await expect(shown).toHaveAttribute('data-frame', 'table-button')
+    await shown.scrollIntoViewIfNeeded()
+    await expect
+      .poll(() =>
+        shown.evaluate((img) => (img as HTMLImageElement).naturalWidth),
+      )
+      .toBeGreaterThan(0)
+
+    // Step 1 has no image of its own and shows the first.
+    await steps.locator('[data-testid="manual-steps-next"]').click()
+    await expect(steps).toHaveAttribute('data-step', '2')
+    await expect(shown).toHaveAttribute('data-frame', 'table-button')
+
+    await steps.locator('[data-testid="manual-steps-go-6"]').click()
+    await expect(shown).toHaveAttribute('data-frame', 'network-key')
     await expect(
-      steps.locator('li [data-testid="manual-steps-frame"]'),
-    ).toHaveCount(sequence?.frames.length ?? -1)
+      steps.locator('[data-testid="manual-steps-text"]'),
+    ).toContainText('Key Column for Network')
+
+    await steps.locator('[data-testid="manual-steps-previous"]').click()
+    await expect(steps).toHaveAttribute('data-step', '5')
+    await expect(shown).toHaveAttribute('data-frame', 'import-as')
     await expect(
-      page.locator('[data-testid="manual-steps-panel"]'),
-    ).toHaveCount(0)
+      steps.locator('[data-testid="manual-steps-counter"]'),
+    ).toHaveText(
+      `Step 5 of ${await steps.locator('[aria-label^="Step "]').count()}`,
+    )
+  })
+
+  test('the step widget puts the image beside the text, or under it on a narrow screen', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.goto('/manual/node-and-edge-column-data')
+    const steps = page.locator('[data-testid="manual-steps"]')
+    const text = steps.locator('[data-testid="manual-steps-text"]')
+    const image = steps.locator('[data-testid="manual-steps-frame"]:visible')
+    await expect(image).toBeVisible({ timeout: 30_000 })
+    await steps.scrollIntoViewIfNeeded()
+    const wideText = await text.boundingBox()
+    const wideImage = await image.boundingBox()
+    expect(wideImage!.x).toBeGreaterThan(wideText!.x + wideText!.width - 1)
+
+    await page.setViewportSize({ width: 400, height: 800 })
+    await expect
+      .poll(async () => {
+        const t = await text.boundingBox()
+        const i = await image.boundingBox()
+        return i!.y >= t!.y + t!.height
+      })
+      .toBe(true)
   })
 
   test.describe('page layout', () => {
     test.use({ viewport: { width: 1440, height: 900 } })
-
-    test('pins the step images beside the text and folds the page list', async ({
-      page,
-    }) => {
-      await page.goto('/manual/node-and-edge-column-data')
-      const column = page.locator('[data-testid="manual-demo-column"]')
-      await expect(
-        column.locator('[data-testid="manual-steps-panel"]'),
-      ).toBeVisible({ timeout: 30_000 })
-      // Below 1600px the page list folds into a menu to give the column room.
-      await expect(page.locator('[data-testid="manual-app"]')).toHaveAttribute(
-        'data-nav',
-        'menu',
-      )
-      await page.evaluate(() => window.scrollTo(0, 2000))
-      await expect(column).toBeInViewport()
-    })
-
-    test('the step images follow the step in view', async ({ page }) => {
-      await page.goto('/manual/node-and-edge-column-data')
-      const panel = page.locator('[data-testid="manual-steps-panel"]')
-      await expect(panel).toBeVisible({ timeout: 30_000 })
-      await expect(panel).toHaveAttribute('data-step', '0')
-
-      await page
-        .locator('li[data-manual-step="6"]')
-        .evaluate((li) => li.scrollIntoView({ block: 'center' }))
-      await expect(panel).toHaveAttribute('data-step', '6')
-      const shown = panel.locator('[data-testid="manual-steps-frame"]:visible')
-      await expect(shown).toHaveAttribute('data-frame', 'network-key')
-      await expect
-        .poll(() =>
-          shown.evaluate((img) => (img as HTMLImageElement).naturalWidth),
-        )
-        .toBeGreaterThan(0)
-      await expect(page.locator('li[data-manual-step="6"]')).toHaveAttribute(
-        'data-active',
-        'true',
-      )
-
-      await page.locator('[data-testid="manual-steps-next"]').click()
-      await expect(panel).toHaveAttribute('data-step', '7')
-      await expect(shown).toHaveAttribute('data-frame', 'case-sensitive')
-
-      // A click on a step shows its image.
-      await page.locator('li[data-manual-step="3"]').click()
-      await expect(panel).toHaveAttribute('data-step', '3')
-      await expect(shown).toHaveAttribute('data-frame', 'upload')
-    })
-
-    test('Expand enlarges the step images and Shrink restores them', async ({
-      page,
-    }) => {
-      await page.goto('/manual/node-and-edge-column-data')
-      const column = page.locator('[data-testid="manual-demo-column"]')
-      await expect(
-        column.locator('[data-testid="manual-steps-panel"]'),
-      ).toBeVisible({ timeout: 30_000 })
-      const before = (await column.boundingBox())?.width ?? 0
-      await page.locator('[data-testid="manual-steps-expand"]').click()
-      await expect(column).toHaveAttribute('data-expanded', 'true')
-      expect((await column.boundingBox())?.width ?? 0).toBeGreaterThan(
-        before * 1.5,
-      )
-      await page.locator('[data-testid="manual-steps-expand"]').click()
-      await expect(column).toHaveAttribute('data-expanded', 'false')
-    })
 
     test('keeps the page list beside a page without a demo', async ({
       page,
