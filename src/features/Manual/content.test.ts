@@ -63,6 +63,17 @@ const linksOf = (source: string): { image: boolean; target: string }[] =>
     (m) => ({ image: m[1] === '!', target: m[2] }),
   )
 
+/**
+ * Images not captured by a recipe, with the reason no recipe can take them.
+ * Every other image comes from `screenshots/recipes.ts`, so it is current.
+ */
+const HAND_TAKEN_IMAGES: Record<string, string> = {
+  'manual-assets/Creating_networks/my_workspaces.jpg':
+    'needs an NDEx account with saved workspaces',
+  'manual-assets/Quick_Tour/ndex_login.jpg':
+    "NDEx's sign-in page, not part of Cytoscape Web",
+}
+
 describe('manual content', () => {
   it('has exactly one content file per registered page', () => {
     const files = readdirSync(CONTENT)
@@ -244,6 +255,18 @@ describe('manual content', () => {
         (pattern) => globSync(pattern, { cwd: ROOT }).length === 0,
       )
       expect(stale).toEqual([])
+    },
+  )
+
+  it.each(MANUAL_PAGES.map((p) => p.slug))(
+    '%s uses no hand-taken image outside the allowed list',
+    (slug) => {
+      // A new image of the app needs a recipe: <Screenshot id="…" />.
+      const unlisted = linksOf(read(slug))
+        .filter((l) => l.image && !/^[a-z]+:/i.test(l.target))
+        .map((l) => l.target)
+        .filter((target) => !(target in HAND_TAKEN_IMAGES))
+      expect(unlisted).toEqual([])
     },
   )
 

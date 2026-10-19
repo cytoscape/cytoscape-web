@@ -88,6 +88,41 @@ const runStep = async (page: Page, step: ScreenshotStep): Promise<void> => {
     await expect(locate(page, step.waitFor)).toBeVisible({ timeout: 30_000 })
     return
   }
+  if ('selectNodes' in step) {
+    await page.evaluate(async (nodeIds) => {
+      type Result<T> = { success: boolean; data?: T }
+      const api = (
+        window as unknown as {
+          CyWebApi: {
+            workspace: {
+              getCurrentNetworkId: () => Result<{ networkId: string }>
+            }
+            selection: {
+              exclusiveSelect: (
+                networkId: string,
+                nodeIds: string[],
+                edgeIds: string[],
+              ) => Result<unknown>
+            }
+          }
+        }
+      ).CyWebApi
+      const current = api.workspace.getCurrentNetworkId()
+      if (!current.success || current.data === undefined) {
+        throw new Error('No current network to select in')
+      }
+      const result = api.selection.exclusiveSelect(
+        current.data.networkId,
+        [...nodeIds],
+        [],
+      )
+      if (!result.success) throw new Error('Selection failed')
+    }, step.selectNodes)
+    // What the selection opens may load data over the network and lay it out.
+    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(3000)
+    return
+  }
   await page.keyboard.press(step.press)
 }
 

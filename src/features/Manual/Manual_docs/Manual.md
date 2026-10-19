@@ -215,10 +215,12 @@ frame names a list item the page's list does not have, or `sources` match
 nothing. The drift check lists a screenshot or sequence for recapture when
 its `sources` change; recapturing any frame of a sequence clears it.
 
-Five images remain hand-taken, because no recipe can reach them: the NDEx
-sign-in page and My Workspaces (need an NDEx account), the Sub Network
-Viewer with a subsystem selected, a column-editor popover, and the browser's
-reload button.
+Two images remain hand-taken: the NDEx sign-in page (NDEx's page, not the
+app's) and My Workspaces (needs an NDEx account). `HAND_TAKEN_IMAGES` in
+`content.test.ts` lists them with the reason; a page that uses any other
+image outside `generated/` fails the test. The `sub-network-viewer` recipe
+loads its interactions from `idekerlab.ndexbio.org`, so capturing it needs
+the network.
 
 ## Manual Drift Check
 

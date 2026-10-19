@@ -27,6 +27,8 @@ export type ScreenshotStep =
   /** Set the file of the `<input type="file">` inside `target`. */
   | { readonly upload: string; readonly into: ScreenshotTarget }
   | { readonly press: string }
+  /** Select these nodes of the current network, as a click on them does. */
+  | { readonly selectNodes: readonly string[] }
 
 export interface ScreenshotRecipe {
   readonly id: string
@@ -46,6 +48,8 @@ export interface ScreenshotRecipe {
 const DATA_MENU = { testid: 'toolbar-data-menu-menu-button' } as const
 const GAL_NETWORK = 'src/assets/networks/gal-filtered-chart.cx2'
 const GAL_NAME = 'galFiltered chart_1'
+const U2OS_CELL_MAP =
+  'src/features/Manual/screenshots/fixtures/u2os-cell-map.hcx.cx2'
 
 export const SCREENSHOT_RECIPES: readonly ScreenshotRecipe[] = [
   {
@@ -107,6 +111,28 @@ export const SCREENSHOT_RECIPES: readonly ScreenshotRecipe[] = [
     ],
   },
   {
+    id: 'create-network-column-editor',
+    alt: 'The Meaning and Data Type options of a column, opened from its header',
+    viewport: { width: 1280, height: 800 },
+    steps: [
+      { click: DATA_MENU },
+      { click: { role: 'menuitem', name: 'Import' } },
+      { click: { role: 'menuitem', name: 'Network from File...' } },
+      {
+        upload: 'test/fixtures/tables/table-data-from-cy-tutorial.csv',
+        into: { testid: 'file-upload-dropzone' },
+      },
+      { waitFor: { testid: 'create-network-from-table-modal' } },
+      { click: { role: 'button', name: 'Edit column target' } },
+    ],
+    // The popover opens inside the dialog's bounds.
+    capture: { role: 'dialog', name: 'Edit Column Definitions' },
+    sources: [
+      'src/features/TableDataLoader/components/CreateNetworkFromTable/**',
+      'src/features/TableDataLoader/components/previewTableParts.tsx',
+    ],
+  },
+  {
     id: 'cell-view',
     alt: 'The U-2 OS cell map in Cell View: cell components drawn as nested circles',
     viewport: { width: 1280, height: 800 },
@@ -116,8 +142,7 @@ export const SCREENSHOT_RECIPES: readonly ScreenshotRecipe[] = [
         // test fixture renamed without its "DEV+TEST" suffix): a real
         // 276-system hierarchy with one interaction type, so Cell View is
         // offered.
-        importNetwork:
-          'src/features/Manual/screenshots/fixtures/u2os-cell-map.hcx.cx2',
+        importNetwork: U2OS_CELL_MAP,
         expectText: 'U-2 OS Multi-scale Integrated Cell Map',
       },
       // The Sub Network Viewer opens empty ("Please select a subsystem");
@@ -128,6 +153,28 @@ export const SCREENSHOT_RECIPES: readonly ScreenshotRecipe[] = [
     ],
     sources: [
       'src/features/HierarchyViewer/components/CirclePackingLayout/**',
+      'src/features/HierarchyViewer/components/MainPanel.tsx',
+    ],
+  },
+  {
+    id: 'sub-network-viewer',
+    alt: 'The Sub Network Viewer showing the interactions of the Cytochrome complex, selected in Cell View',
+    viewport: { width: 1400, height: 800 },
+    steps: [
+      {
+        importNetwork: U2OS_CELL_MAP,
+        expectText: 'U-2 OS Multi-scale Integrated Cell Map',
+      },
+      { click: { role: 'tab', name: 'Cell View' } },
+      { waitFor: { testid: 'circle-packing-svg' } },
+      // Cytochrome complex, 16 proteins. Its interactions load from the
+      // network the hierarchy names (idekerlab.ndexbio.org), so the capture
+      // needs the network.
+      { selectNodes: ['45756'] },
+      { waitFor: { testid: 'subnetwork-panel' } },
+    ],
+    sources: [
+      'src/features/HierarchyViewer/components/SubNetworkPanel.tsx',
       'src/features/HierarchyViewer/components/MainPanel.tsx',
     ],
   },
