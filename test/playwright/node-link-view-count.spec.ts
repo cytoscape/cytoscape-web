@@ -201,7 +201,10 @@ test.describe('Node-link view write-back (#859, #861)', () => {
 
     // Each change commits before the next starts (two frames apart), so each
     // reaches the renderer as a separate update, the way edits from the UI do.
-    const elapsedMs = await page.evaluate(
+    // The old bug lost a change made within a second of the previous one, so
+    // each gap must stay under a second. The total may not: WebKit in CI
+    // takes 350–470 ms per change, over a second for all three.
+    const gapsMs = await page.evaluate(
       async ([id, n]) => {
         const api = (window as unknown as DebugGlobals).CyWebApi
         const nextFrames = (): Promise<void> =>
@@ -213,16 +216,17 @@ test.describe('Node-link view write-back (#859, #861)', () => {
           () => api.visualStyle.setDefault(id, 'nodeBorderWidth', 7),
           () => api.table.setValue(id, 'node', n, 'name', 'burst'),
         ]
-        const start = performance.now()
+        const appliedAt: number[] = []
         for (const apply of changes) {
+          appliedAt.push(performance.now())
           if (!apply().success) throw new Error('change rejected')
           await nextFrames()
         }
-        return performance.now() - start
+        return appliedAt.slice(1).map((t, i) => t - appliedAt[i])
       },
       [networkId, nodeId] as const,
     )
-    expect(elapsedMs).toBeLessThan(1_000)
+    for (const gap of gapsMs) expect(gap).toBeLessThan(1_000)
 
     await expect
       .poll(
