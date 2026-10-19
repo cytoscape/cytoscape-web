@@ -399,8 +399,11 @@ function MappingFormContent(props: {
                     key={c.name}
                     value={c.name}
                   >
+                    {/* describeChild: the tooltip describes the option; the
+                        column name stays its accessible name. */}
                     <Tooltip
                       arrow
+                      describeChild
                       title={`Data type: ${c.type}`}
                       placement="right"
                     >
@@ -429,6 +432,7 @@ function MappingFormContent(props: {
                   return (
                     <Tooltip
                       arrow
+                      describeChild
                       key={c.name}
                       title={invalidColumnTooltipStr}
                       placement="right"
@@ -482,6 +486,7 @@ function MappingFormContent(props: {
                   return (
                     <Tooltip
                       arrow
+                      describeChild
                       placement="right"
                       key={mappingFnType}
                       title={invalidMappingTooltipStr}
