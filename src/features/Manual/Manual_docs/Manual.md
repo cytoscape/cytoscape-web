@@ -232,7 +232,8 @@ shows, unless it is inside an open menu, which would close.
 | --- | --- |
 | Capture one or more | `node scripts/capture-manual-screenshots.mjs cell-view import-table` (recipe or sequence ids; builds the app and serves it on port 5502; `MANUAL_SCREENSHOT_URL` uses a running server) |
 | Capture all | `node scripts/capture-manual-screenshots.mjs` |
-| Capture for commit | the **Manual Screenshots** workflow (Actions tab, on your branch, "commit" checked). It runs in the same Linux Playwright image as CI, so images do not change with the machine that took them. A PR that changes a recipe runs it and uploads the images as an artifact. |
+| Capture for commit | the **Manual Screenshots** workflow (Actions tab, on your branch, "commit" checked). It runs in the same Linux Playwright image as CI, so images do not change with the machine that took them. |
+| Recapture for a release | automatic. A pull request into `master` runs the workflow on every image. If any changed, it opens a pull request with the images into the release PR's head branch, and comments on the release PR. Merge that pull request first. It starts no CI by itself: close and reopen it to run CI. |
 | Add an image | add a recipe, put `<Screenshot id="…" />` on a page, capture |
 
 `content.test.ts` fails when a page names an unknown screenshot, sequence or
