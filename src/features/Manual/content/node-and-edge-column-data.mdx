@@ -12,6 +12,8 @@ Column data can drive how the network looks. A mapping turns a column's
 values into colors, sizes, shapes or labels. See
 [How Mappings Work](styles#how-mappings-work) on the Styles page.
 
+<DemoOnly>
+
 <LiveDemo
   panels={['renderer', 'table']}
   caption="Live demo — the real table on a 10-node yeast network. Changes stay in this tab and never touch your workspace."
@@ -23,6 +25,8 @@ Try the table on the demo network:
 - Click **Insert new column** to add a column, or select a column header to
   sort, rename or delete it.
 - Switch to the **Edges** tab to see the edge table.
+
+</DemoOnly>
 
 <a id="table_panel" />
 
@@ -199,6 +203,8 @@ row can hold the column names.
 
 ### Basic Operation
 
+<Steps sequence="import-table">
+
 1. Open the network you want to add data to. See
    [Creating Networks](creating-networks).
 2. Choose **Data → Import → Table from File...**, or click the
@@ -209,36 +215,32 @@ row can hold the column names.
    the dialog. If the file has parsing errors, a dialog lists them and asks
    whether to continue.
 4. The **Edit Column Definitions** dialog opens with a preview of the file.
-
-<Screenshot id="join-table-to-network" />
-
 5. Under **Import data as**, choose **Node table columns** or **Edge table
    columns**.
 6. Under **Key Column for Network**, choose the network column to match
    against. Only String, Integer and Long integer columns are listed.
 7. Leave **Case sensitive key values** on to require an exact match. Turn it
    off to treat `YHR051W` and `yhr051w` as the same key.
-8. Click the header of the file's key column. Under **Meaning**, click the
-   key button. Exactly one column can be the key, and it must be a String,
-   Integer or Long integer column.
+8. Click the header of the file's key column.
+9. Under **Meaning**, click the key button. Exactly one column can be the
+   key, and it must be a String, Integer or Long integer column.
+10. For each other column, choose its Meaning:
+    - **Attribute** — import the column. This is the default.
+    - **Not imported** — skip the column.
 
-![The Meaning and Data Type options of a file column](manual-assets/Node_Edge_Column_Data/DataColumnKey.jpg)
-
-9. For each other column, choose its Meaning:
-   - **Attribute** — import the column. This is the default.
-   - **Not imported** — skip the column.
-
-   **Select All** marks every column as an attribute; **Select None** marks
-   every column as not imported. Both reset the data types to String.
-10. Check each column's **Data Type**. Cytoscape Web guesses the type from
+    **Select All** marks every column as an attribute; **Select None** marks
+    every column as not imported. Both reset the data types to String.
+11. Check each column's **Data Type**. Cytoscape Web guesses the type from
     the values. Click a header to change it. For a list type, set the **List
     Delimiter** that separates the items within a cell (default `|`).
-11. Check the preview. Rows that match a node or edge are shown in bold;
+12. Check the preview. Rows that match a node or edge are shown in bold;
     rows that match nothing are dimmed. Values that do not fit their
     column's data type are shown in red, and the column header shows a
     warning icon. A message reports how many rows will be joined, for example
     **120 / 150 rows will be joined to the table**.
-12. Click **Confirm**.
+13. Click **Confirm**.
+
+</Steps>
 
 Confirm stays disabled until one column is the key and every imported
 value fits its data type. Hover over it to see why.

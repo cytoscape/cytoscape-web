@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 
 import { useDemoSlot } from './DemoSlot'
 import type { LiveDemoProps } from './LiveDemoBody'
+import { LIVE_DEMOS_ENABLED } from './liveDemoSwitch'
 
 // The demo pulls in the renderer and the Style panel. Loaded only when a page
 // that uses it renders.
@@ -21,8 +22,13 @@ export const LIVE_DEMO_HEIGHT = 520
  *
  * In the `split` layout the demo renders in the page's pinned column (see
  * DemoSlot) and the text keeps a pointer to it.
+ *
+ * Renders nothing while LIVE_DEMOS_ENABLED is false.
  */
-export const LiveDemo = (props: LiveDemoProps): ReactElement => {
+export const LiveDemo = (props: LiveDemoProps): ReactElement | null =>
+  LIVE_DEMOS_ENABLED ? <ShownLiveDemo {...props} /> : null
+
+const ShownLiveDemo = (props: LiveDemoProps): ReactElement => {
   const { target, register } = useDemoSlot()
   useEffect(register, [register])
 

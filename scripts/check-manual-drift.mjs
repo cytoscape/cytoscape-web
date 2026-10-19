@@ -24,9 +24,12 @@ import { appendFileSync, readFileSync } from 'node:fs'
 // Plain imports of TypeScript files: Node 24 strips the types. Both files
 // have no relative imports, which is what makes this work.
 const { MANUAL_PAGES } = await import('../src/features/Manual/pages.ts')
-const { SCREENSHOT_RECIPES, screenshotPath } = await import(
-  '../src/features/Manual/screenshots/recipes.ts'
-)
+const {
+  SCREENSHOT_RECIPES,
+  SCREENSHOT_SEQUENCES,
+  screenshotPath,
+  sequenceFramePath,
+} = await import('../src/features/Manual/screenshots/recipes.ts')
 const { describeFinding, findManualDrift, parseReviewedTrailers } =
   await import('../src/features/Manual/drift.ts')
 
@@ -52,18 +55,31 @@ const reviewed = parseReviewedTrailers(
 const knownSlugs = new Set(MANUAL_PAGES.map((page) => page.slug))
 const unknown = [...reviewed.slugs].filter((slug) => !knownSlugs.has(slug))
 
-// Which pages show each screenshot: `<Screenshot id="…" />` in their MDX.
-const screenshots = SCREENSHOT_RECIPES.map((recipe) => ({
-  id: recipe.id,
-  file: `public/${screenshotPath(recipe.id)}`,
-  sources: recipe.sources,
-  pages: MANUAL_PAGES.filter((page) =>
+// Which pages show each screenshot or sequence: `<Screenshot id="…" />` or
+// `<Steps sequence="…">` in their MDX.
+const pagesWith = (marker) =>
+  MANUAL_PAGES.filter((page) =>
     readFileSync(
       `src/features/Manual/content/${page.slug}.mdx`,
       'utf8',
-    ).includes(`<Screenshot id="${recipe.id}"`),
-  ).map((page) => page.slug),
-}))
+    ).includes(marker),
+  ).map((page) => page.slug)
+const screenshots = [
+  ...SCREENSHOT_RECIPES.map((recipe) => ({
+    id: recipe.id,
+    files: [`public/${screenshotPath(recipe.id)}`],
+    sources: recipe.sources,
+    pages: pagesWith(`<Screenshot id="${recipe.id}"`),
+  })),
+  ...SCREENSHOT_SEQUENCES.map((sequence) => ({
+    id: sequence.id,
+    files: sequence.frames.map(
+      (frame) => `public/${sequenceFramePath(sequence.id, frame.id)}`,
+    ),
+    sources: sequence.sources,
+    pages: pagesWith(`<Steps sequence="${sequence.id}"`),
+  })),
+]
 
 const findings = findManualDrift({
   changedFiles,

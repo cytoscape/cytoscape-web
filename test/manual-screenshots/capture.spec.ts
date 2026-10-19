@@ -4,15 +4,18 @@ import { expect, type Locator, type Page } from '@playwright/test'
 
 import {
   SCREENSHOT_RECIPES,
+  SCREENSHOT_SEQUENCES,
   type ScreenshotStep,
   type ScreenshotTarget,
   screenshotPath,
+  sequenceFramePath,
 } from '../../src/features/Manual/screenshots/recipes'
 import { gotoAndWaitReady, test } from '../playwright/fixtures'
 
 /**
  * Captures the manual's screenshots from the running app (one test per
- * recipe in src/features/Manual/screenshots/recipes.ts). Not part of the e2e
+ * recipe, and one per step sequence, in
+ * src/features/Manual/screenshots/recipes.ts). Not part of the e2e
  * suite: run it with `node scripts/capture-manual-screenshots.mjs [id…]`.
  *
  * Every capture uses the same conditions so a rerun changes an image only
@@ -32,10 +35,16 @@ const locate = (page: Page, target: ScreenshotTarget): Locator => {
   if ('testid' in target) {
     return page.locator(`[data-testid="${target.testid}"]`).first()
   }
+  if ('label' in target) {
+    return page.getByLabel(target.label, { exact: true }).first()
+  }
   if ('role' in target) {
     return page
       .getByRole(target.role as Parameters<Page['getByRole']>[0], {
         name: target.name,
+        // An open list or popover marks the dialog under it aria-hidden; a
+        // capture still crops to that dialog.
+        includeHidden: true,
       })
       .first()
   }
@@ -82,6 +91,59 @@ const runStep = async (page: Page, step: ScreenshotStep): Promise<void> => {
   await page.keyboard.press(step.press)
 }
 
+const HIGHLIGHT_ID = 'manual-capture-highlight'
+
+/**
+ * Draws a ring around the union of `targets` for the next capture. A fixed
+ * overlay above every dialog and popover; it never takes pointer events.
+ */
+const drawHighlight = async (
+  page: Page,
+  targets: readonly ScreenshotTarget[],
+): Promise<void> => {
+  const boxes = []
+  for (const target of targets) {
+    const box = await locate(page, target).boundingBox()
+    if (box === null) throw new Error(`No box for ${JSON.stringify(target)}`)
+    boxes.push(box)
+  }
+  const left = Math.min(...boxes.map((b) => b.x))
+  const top = Math.min(...boxes.map((b) => b.y))
+  const right = Math.max(...boxes.map((b) => b.x + b.width))
+  const bottom = Math.max(...boxes.map((b) => b.y + b.height))
+  await page.evaluate(
+    ({ id, rect }) => {
+      const ring = document.createElement('div')
+      ring.id = id
+      const pad = 5
+      Object.assign(ring.style, {
+        position: 'fixed',
+        left: `${rect.left - pad}px`,
+        top: `${rect.top - pad}px`,
+        width: `${rect.right - rect.left + 2 * pad}px`,
+        height: `${rect.bottom - rect.top + 2 * pad}px`,
+        border: '3px solid #e8590c',
+        borderRadius: '6px',
+        boxShadow: '0 0 0 2px #ffffff, 0 0 12px 2px rgba(232, 89, 12, 0.45)',
+        boxSizing: 'border-box',
+        pointerEvents: 'none',
+        zIndex: '2147483647',
+      })
+      document.body.appendChild(ring)
+    },
+    { id: HIGHLIGHT_ID, rect: { left, top, right, bottom } },
+  )
+}
+
+const clearHighlight = async (page: Page): Promise<void> => {
+  await page.evaluate(
+    (id) => document.getElementById(id)?.remove(),
+    HIGHLIGHT_ID,
+  )
+}
+
+const CAPTURE_OPTIONS = { animations: 'disabled', caret: 'hide' } as const
+
 test.use({
   colorScheme: 'light',
   contextOptions: { reducedMotion: 'reduce' },
@@ -107,15 +169,51 @@ for (const recipe of SCREENSHOT_RECIPES) {
     await page.waitForTimeout(500)
 
     const file = path.join(OUT_DIR, screenshotPath(recipe.id))
-    const options = {
-      path: file,
-      animations: 'disabled',
-      caret: 'hide',
-    } as const
+    const options = { ...CAPTURE_OPTIONS, path: file }
     if (recipe.capture === undefined) {
       await page.screenshot(options)
     } else {
       await locate(page, recipe.capture).screenshot(options)
+    }
+  })
+}
+
+for (const sequence of SCREENSHOT_SEQUENCES) {
+  test(sequence.id, async ({ page, context, baseURL }) => {
+    await page.setViewportSize(sequence.viewport)
+    await context.addCookies([
+      {
+        name: COOKIE_NAME,
+        value: 'true',
+        url: baseURL ?? 'http://localhost',
+      },
+    ])
+    await gotoAndWaitReady(page)
+
+    for (const frame of sequence.frames) {
+      for (const step of frame.steps) {
+        await runStep(page, step)
+      }
+      await page.waitForTimeout(500)
+      // A focus ring left by the last click or key is not part of the step.
+      await page.evaluate(() => {
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur()
+        }
+      })
+      if (frame.highlight !== undefined) {
+        await drawHighlight(page, frame.highlight)
+      }
+      const options = {
+        ...CAPTURE_OPTIONS,
+        path: path.join(OUT_DIR, sequenceFramePath(sequence.id, frame.id)),
+      }
+      if (frame.capture === undefined) {
+        await page.screenshot(options)
+      } else {
+        await locate(page, frame.capture).screenshot(options)
+      }
+      await clearHighlight(page)
     }
   })
 }

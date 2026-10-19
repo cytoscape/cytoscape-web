@@ -8,7 +8,12 @@ import { describe, expect, it } from 'vitest'
 
 import { UI_ICON_NAMES } from './components/uiIconNames'
 import { slugifyHeading } from './manualSlug'
-import { SCREENSHOT_RECIPES, screenshotPath } from './screenshots/recipes'
+import {
+  SCREENSHOT_RECIPES,
+  SCREENSHOT_SEQUENCES,
+  screenshotPath,
+  sequenceFramePath,
+} from './screenshots/recipes'
 import { MANUAL_PAGES } from './pages'
 
 // Checks the manual's content against itself and the repository: every page
@@ -41,6 +46,17 @@ const anchorsOf = (source: string): Set<string> => {
 /** `[text](target)` and `![alt](target)`, excluding code. */
 const screenshotsOf = (source: string): string[] =>
   Array.from(prose(source).matchAll(/<Screenshot\s+id="([^"]+)"/g), (m) => m[1])
+
+/** `<Steps sequence="…">` blocks: the sequence id and its list's item count. */
+const stepBlocksOf = (source: string): { sequence: string; items: number }[] =>
+  Array.from(
+    prose(source).matchAll(/<Steps\s+sequence="([^"]+)">([\s\S]*?)<\/Steps>/g),
+    (m) => ({
+      sequence: m[1],
+      // Top-level items only: nested lists are indented.
+      items: (m[2].match(/^\d+\.\s/gm) ?? []).length,
+    }),
+  )
 
 const linksOf = (source: string): { image: boolean; target: string }[] =>
   Array.from(prose(source).matchAll(/(!?)\[[^\]]*\]\(([^)\s]+)\)/g)).map(
@@ -177,6 +193,60 @@ describe('manual content', () => {
     },
   )
 
+  it.each(MANUAL_PAGES.map((p) => p.slug))(
+    '%s uses only step sequences that exist, at most one',
+    (slug) => {
+      // The page's pinned column shows one sequence.
+      const blocks = stepBlocksOf(read(slug))
+      expect(blocks.length).toBeLessThanOrEqual(1)
+      const known = new Set(SCREENSHOT_SEQUENCES.map((q) => q.id))
+      expect(
+        blocks.map((b) => b.sequence).filter((id) => !known.has(id)),
+      ).toEqual([])
+    },
+  )
+
+  it.each(SCREENSHOT_SEQUENCES.map((q) => q.id))(
+    'sequence %s is captured and fits the list it illustrates',
+    (id) => {
+      const sequence = SCREENSHOT_SEQUENCES.find((q) => q.id === id)
+      if (sequence === undefined) throw new Error(id)
+      // Missing file: run `node scripts/capture-manual-screenshots.mjs <id>`.
+      const missing = sequence.frames
+        .map((frame) => sequenceFramePath(id, frame.id))
+        .filter((file) => !existsSync(path.join(PUBLIC, file)))
+      expect(missing).toEqual([])
+
+      const uses = MANUAL_PAGES.flatMap((page) =>
+        stepBlocksOf(read(page.slug))
+          .filter((b) => b.sequence === id)
+          .map((b) => ({ slug: page.slug, items: b.items })),
+      )
+      expect(uses).toHaveLength(1)
+      const [{ slug, items }] = uses
+      // Frames name list items in order, each within the list.
+      const steps = sequence.frames.map((frame) => frame.step)
+      expect(steps).toEqual([...steps].sort((a, b) => a - b))
+      expect(new Set(steps).size).toBe(steps.length)
+      expect(Math.min(...steps)).toBeGreaterThanOrEqual(1)
+      expect(Math.max(...steps)).toBeLessThanOrEqual(items)
+      // The title names the section the list is in.
+      expect(anchorsOf(read(slug)).has(slugifyHeading(sequence.title))).toBe(
+        true,
+      )
+    },
+  )
+
+  it.each(SCREENSHOT_SEQUENCES.map((q) => [q.id, q.sources] as const))(
+    'sequence %s names sources that exist',
+    (_id, sources) => {
+      const stale = sources.filter(
+        (pattern) => globSync(pattern, { cwd: ROOT }).length === 0,
+      )
+      expect(stale).toEqual([])
+    },
+  )
+
   it('every image in public/manual-assets is used by a page', () => {
     const used = new Set([
       ...MANUAL_PAGES.flatMap((p) =>
@@ -185,6 +255,9 @@ describe('manual content', () => {
           .map((l) => l.target),
       ),
       ...SCREENSHOT_RECIPES.map((r) => screenshotPath(r.id)),
+      ...SCREENSHOT_SEQUENCES.flatMap((q) =>
+        q.frames.map((frame) => sequenceFramePath(q.id, frame.id)),
+      ),
     ])
     const unused = globSync('manual-assets/**/*.{jpg,png,gif,svg}', {
       cwd: PUBLIC,

@@ -122,7 +122,7 @@ describe('findManualDrift', () => {
   it('asks for a recapture when a screenshot subject changes', () => {
     const shot = {
       id: 'merge-dialog',
-      file: 'public/manual-assets/generated/merge-dialog.png',
+      files: ['public/manual-assets/generated/merge-dialog.png'],
       pages: ['merge'],
       sources: ['src/features/MergeNetworks/components/**'],
     }

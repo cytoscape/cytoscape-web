@@ -3,6 +3,9 @@
 // runs them; `<Screenshot id="…" />` in a page shows the result from
 // `public/manual-assets/generated/<id>.png`.
 //
+// Step sequences are recipes with one image per step of a procedure:
+// `<Steps sequence="…">` pairs them with a numbered list in a page.
+//
 // Data only and no relative imports: the capture spec, the drift check
 // (scripts/check-manual-drift.mjs, via Node's TypeScript support) and the app
 // all read this file.
@@ -12,6 +15,8 @@ export type ScreenshotTarget =
   | { readonly testid: string }
   | { readonly role: string; readonly name: string }
   | { readonly text: string }
+  /** An element whose `aria-label` is exactly `label`. */
+  | { readonly label: string }
 
 export type ScreenshotStep =
   /** Data → Import → Network from File..., then upload `file` (repo path). */
@@ -102,25 +107,6 @@ export const SCREENSHOT_RECIPES: readonly ScreenshotRecipe[] = [
     ],
   },
   {
-    id: 'join-table-to-network',
-    alt: 'The Edit Column Definitions window for a table file added to a network',
-    viewport: { width: 1280, height: 800 },
-    steps: [
-      { importNetwork: GAL_NETWORK, expectText: GAL_NAME },
-      { click: { testid: 'import-table-button' } },
-      {
-        upload: 'src/features/Manual/screenshots/fixtures/gal-annotations.csv',
-        into: { testid: 'join-table-upload-dropzone' },
-      },
-      { waitFor: { text: 'Edit Column Definitions' } },
-    ],
-    capture: { role: 'dialog', name: 'Edit Column Definitions' },
-    sources: [
-      'src/features/TableDataLoader/components/JoinTableToNetwork/**',
-      'src/features/TableDataLoader/components/previewTableParts.tsx',
-    ],
-  },
-  {
     id: 'cell-view',
     alt: 'The U-2 OS cell map in Cell View: cell components drawn as nested circles',
     viewport: { width: 1280, height: 800 },
@@ -146,6 +132,176 @@ export const SCREENSHOT_RECIPES: readonly ScreenshotRecipe[] = [
     ],
   },
 ]
+
+/** One image of a sequence, taken after its steps run. */
+export interface SequenceFrame {
+  readonly id: string
+  /** Alt text, also shown under the image. */
+  readonly alt: string
+  /** The list item (1-based) this image illustrates, and the ones after it up
+   * to the next frame. */
+  readonly step: number
+  /** Run before the capture, after the previous frame's steps. */
+  readonly steps: readonly ScreenshotStep[]
+  /** Elements to ring: what the reader acts on in this step. */
+  readonly highlight?: readonly ScreenshotTarget[]
+  /** The element to crop to; the whole viewport when absent. */
+  readonly capture?: ScreenshotTarget
+}
+
+/**
+ * Images of a procedure, captured in one run of the app: each frame continues
+ * from the state the previous one left.
+ */
+export interface ScreenshotSequence {
+  readonly id: string
+  /** The page section the sequence illustrates, shown above the images. */
+  readonly title: string
+  readonly viewport: { readonly width: number; readonly height: number }
+  readonly frames: readonly SequenceFrame[]
+  /** As ScreenshotRecipe.sources. */
+  readonly sources: readonly string[]
+}
+
+const JOIN_DIALOG = { role: 'dialog', name: 'Edit Column Definitions' } as const
+
+export const SCREENSHOT_SEQUENCES: readonly ScreenshotSequence[] = [
+  {
+    id: 'import-table',
+    title: 'Import Data Table Files',
+    // The import dialog is at least 1000px tall; the viewport fits it.
+    viewport: { width: 1280, height: 1100 },
+    frames: [
+      {
+        id: 'table-button',
+        alt: 'The Import table from file button in the table toolbar',
+        step: 2,
+        steps: [{ importNetwork: GAL_NETWORK, expectText: GAL_NAME }],
+        highlight: [{ testid: 'import-table-button' }],
+      },
+      {
+        id: 'upload',
+        alt: 'The Upload Tabular Data File window',
+        step: 3,
+        steps: [
+          { click: { testid: 'import-table-button' } },
+          { waitFor: { testid: 'join-table-upload-dropzone' } },
+        ],
+        highlight: [{ testid: 'join-table-upload-browse-button' }],
+        capture: { role: 'dialog', name: 'Upload Tabular Data File' },
+      },
+      {
+        id: 'column-definitions',
+        alt: 'The Edit Column Definitions window with a preview of the file',
+        step: 4,
+        steps: [
+          {
+            upload:
+              'src/features/Manual/screenshots/fixtures/gal-annotations.csv',
+            into: { testid: 'join-table-upload-dropzone' },
+          },
+          { waitFor: JOIN_DIALOG },
+        ],
+        capture: JOIN_DIALOG,
+      },
+      {
+        id: 'import-as',
+        alt: 'The Import data as choice: node or edge table columns',
+        step: 5,
+        steps: [],
+        highlight: [
+          { role: 'button', name: 'Node table columns' },
+          { role: 'button', name: 'Edge table columns' },
+        ],
+        capture: JOIN_DIALOG,
+      },
+      {
+        id: 'network-key',
+        alt: 'The Key Column for Network list, open',
+        step: 6,
+        steps: [
+          { click: { role: 'combobox', name: 'Key column for network' } },
+        ],
+        highlight: [{ role: 'option', name: 'name' }],
+        // The list and popovers open inside the dialog's bounds.
+        capture: JOIN_DIALOG,
+      },
+      {
+        id: 'case-sensitive',
+        alt: 'The Case sensitive key values checkbox',
+        step: 7,
+        steps: [
+          { click: { role: 'option', name: 'name' } },
+          { waitFor: JOIN_DIALOG },
+        ],
+        highlight: [{ text: 'Case sensitive key values' }],
+        capture: JOIN_DIALOG,
+      },
+      {
+        id: 'key-header',
+        alt: 'The header of the file column name',
+        step: 8,
+        steps: [],
+        highlight: [{ role: 'button', name: 'Edit column name' }],
+        capture: JOIN_DIALOG,
+      },
+      {
+        id: 'key-meaning',
+        alt: 'The Meaning buttons of a file column, with the key button ringed',
+        step: 9,
+        steps: [{ click: { role: 'button', name: 'Edit column name' } }],
+        highlight: [{ label: 'Key' }],
+        // The list and popovers open inside the dialog's bounds.
+        capture: JOIN_DIALOG,
+      },
+      {
+        id: 'other-columns',
+        alt: 'The Meaning and Data Type options of another file column',
+        step: 10,
+        steps: [
+          { click: { label: 'Key' } },
+          { press: 'Escape' },
+          { click: { role: 'button', name: 'Edit column localization' } },
+        ],
+        highlight: [{ label: 'Attribute' }, { label: 'Not imported' }],
+        // The list and popovers open inside the dialog's bounds.
+        capture: JOIN_DIALOG,
+      },
+      {
+        id: 'preview',
+        alt: 'The preview, with the rows that match the network in bold',
+        step: 12,
+        steps: [{ press: 'Escape' }],
+        highlight: [{ text: 'rows will be joined to the table' }],
+        capture: JOIN_DIALOG,
+      },
+      {
+        id: 'confirm',
+        alt: 'The Confirm button',
+        step: 13,
+        steps: [],
+        highlight: [{ testid: 'table-column-append-confirm-button' }],
+        capture: JOIN_DIALOG,
+      },
+    ],
+    sources: [
+      'src/features/TableDataLoader/components/JoinTableToNetwork/**',
+      'src/features/TableDataLoader/components/previewTableParts.tsx',
+      'src/features/TableBrowser/components/TableToolbar.tsx',
+    ],
+  },
+]
+
+export const findScreenshotSequence = (
+  id: string,
+): ScreenshotSequence | undefined =>
+  SCREENSHOT_SEQUENCES.find((sequence) => sequence.id === id)
+
+/** Where a sequence frame is published, relative to `public/`. */
+export const sequenceFramePath = (
+  sequenceId: string,
+  frameId: string,
+): string => `manual-assets/generated/${sequenceId}/${frameId}.png`
 
 export const findScreenshotRecipe = (
   id: string,

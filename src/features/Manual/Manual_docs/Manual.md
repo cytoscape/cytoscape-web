@@ -7,8 +7,13 @@ tab. It replaces the Read the Docs manual (`web-manual.cytoscape.org`), which
 redirects here (#658, #660).
 
 The manual ships with the app, so it always describes the running version.
-Pages can embed working parts of the editor (`LiveDemo`) and tables generated
-from the code (`VisualPropertyTable`) instead of screenshots.
+Pages can embed working parts of the editor (`LiveDemo`), image sequences
+captured from the app for a procedure (`Steps`), and tables generated from
+the code (`VisualPropertyTable`).
+
+The live demos are hidden while step sequences are tried in their place:
+`LIVE_DEMOS_ENABLED` in `components/liveDemoSwitch.ts` is `false`. The demo
+code and every `<LiveDemo>` stay; setting it to `true` brings them back.
 
 ## Architecture
 
@@ -27,12 +32,14 @@ from the code (`VisualPropertyTable`) instead of screenshots.
 
 ```
 ManualApp            route element: app bar, page list, page
-├── PageList         grouped sidebar, nesting the current page's sections; a menu drawer below md, and below 1600px when a demo is pinned
+├── PageList         grouped sidebar, nesting the current page's sections; a menu drawer below md, and below 1600px when the column is pinned
 ├── PageFooter       previous / next page
 ├── ManualPage       lazy-loads one MDX page; owns all content typography
 │   └── <page>.mdx   rendered with mdxComponents
-│       ├── LiveDemo → LiveDemoBody   editor parts on bundled fixtures
+│       ├── LiveDemo → LiveDemoBody   editor parts on bundled fixtures (hidden)
 │       │   └── demo/                 Layout, App API and Link side panels
+│       ├── DemoOnly / WithoutDemo    text shown only with / without the demos
+│       ├── Steps                     a numbered list paired with a step sequence
 │       ├── VisualPropertyTable       generated from getDefaultVisualStyle()
 │       ├── BrowserStorageView        read-only counts of what the browser stores
 │       └── Note                      callout
@@ -64,13 +71,14 @@ ManualApp            route element: app bar, page list, page
   page.
 - **Text:** a 68-character measure, 17px, 1.7 line height, more space above
   headings than below, bold at weight 600.
-- **Demo:** on `lg` screens and up, the page's demo is pinned in a
-  right-hand column while the text scrolls; the text keeps a pointer to it.
+- **Pinned column:** on `lg` screens and up, the page's demo or step
+  sequence is pinned in a right-hand column while the text scrolls
+  (`DemoSlot`). A demo leaves a pointer to it in the text.
   In the column the demo fills the height and its table becomes a tab.
   **Expand** enlarges the column over the text (same element, so the demo
   keeps its state); **Shrink** restores it.
-- **Page list beside a pinned demo:** below 1600px the list folds into the
-  menu button, so the demo gets the width. Pages without a demo keep it.
+- **Page list beside the pinned column:** below 1600px the list folds into
+  the menu button, so the column gets the width. Pages without one keep it.
 - **Moved anchors:** when a page is split, `movedAnchors` maps its old
   anchors to the page that has them now, so `quick-tour#data` opens
   `menus#data`. `content.test.ts` checks every moved anchor exists.
@@ -108,6 +116,20 @@ ManualApp            route element: app bar, page list, page
 - Editor parts that navigate (Merge opens its result with
   `navigateToNetwork`) stay in the manual: `navigateToNetwork` does nothing
   in a manual tab (`src/data/hooks/navigation/urlManager.ts`).
+
+### Steps
+
+- `<Steps sequence="import-table">` wraps one numbered list. Each frame of
+  the sequence names the list item it illustrates (`step`, 1-based). An item
+  without a frame shows the previous one; items before the first frame show
+  the first.
+- In the pinned column: the frame of the item in view (the last item whose
+  top has passed the middle of the viewport), the item's position ("Step 6 of
+  13"), previous and next arrows, and **Expand**. The current item is marked
+  in the text. Clicking an item or an arrow chooses it until the reader
+  scrolls.
+- Without the column (below `lg`): each frame sits under its item.
+- One `Steps` per page: the column shows one sequence.
 
 ### BrowserStorageView
 
@@ -147,6 +169,8 @@ Rules for content:
 | Image | `![Alt text](manual-assets/<Folder>/<file>.jpg)` — files live in `public/manual-assets/`, resolved against the base URL |
 | Callout | `<Note>…</Note>`, `<Note severity="warning">…</Note>` |
 | Working demo | `<LiveDemo />` (props: `fixtures`, `panels`, `actions`, `height`, `caption`) |
+| Text about the demo | `<DemoOnly>…</DemoOnly>`; text in its place while demos are hidden: `<WithoutDemo>…</WithoutDemo>` |
+| Procedure with an image per step | `<Steps sequence="import-table">` around a numbered list (sequence in `screenshots/recipes.ts`) |
 | Visual property list | `<VisualPropertyTable group="node" />` |
 | App icon in text | `<UiIcon name="fit" label="Fit button" />` |
 | Screenshot of the app | `<Screenshot id="app-overview" />` (recipe in `screenshots/recipes.ts`) |
@@ -169,24 +193,31 @@ Images of the app come from the app, not from a camera.
 - **Screenshots** — `<Screenshot id="cell-view" />` shows
   `public/manual-assets/generated/<id>.png`, captured by a recipe in
   `screenshots/recipes.ts`: a fixed viewport, steps that drive the app
-  (import a network, click by `data-testid` or role), and the element to
-  crop to.
+  (import a network, click by `data-testid`, role, text or `aria-label`), and
+  the element to crop to.
+- **Step sequences** — `SCREENSHOT_SEQUENCES` in the same file. One run of
+  the app captures every frame in order; each frame continues from the state
+  the previous one left. A frame lists the steps that reach its state, the
+  elements to ring (`highlight`: what the reader acts on), and the crop.
+  Images: `public/manual-assets/generated/<sequence>/<frame>.png`.
 
 | Task | How |
 | --- | --- |
-| Capture one or more | `node scripts/capture-manual-screenshots.mjs cell-view layout-tools` (builds the app and serves it on port 5502; `MANUAL_SCREENSHOT_URL` uses a running server) |
+| Capture one or more | `node scripts/capture-manual-screenshots.mjs cell-view import-table` (recipe or sequence ids; builds the app and serves it on port 5502; `MANUAL_SCREENSHOT_URL` uses a running server) |
 | Capture all | `node scripts/capture-manual-screenshots.mjs` |
 | Capture for commit | the **Manual Screenshots** workflow (Actions tab, on your branch, "commit" checked). It runs in the same Linux Playwright image as CI, so images do not change with the machine that took them. A PR that changes a recipe runs it and uploads the images as an artifact. |
 | Add an image | add a recipe, put `<Screenshot id="…" />` on a page, capture |
 
-`content.test.ts` fails when a page names an unknown screenshot or icon, a
-recipe has no image or no page, or a recipe's `sources` match nothing. The
-drift check lists a screenshot for recapture when its `sources` change.
+`content.test.ts` fails when a page names an unknown screenshot, sequence or
+icon, a recipe or frame has no image, a recipe or sequence has no page, a
+frame names a list item the page's list does not have, or `sources` match
+nothing. The drift check lists a screenshot or sequence for recapture when
+its `sources` change; recapturing any frame of a sequence clears it.
 
-Six images remain hand-taken, because no recipe can reach them: the NDEx
+Five images remain hand-taken, because no recipe can reach them: the NDEx
 sign-in page and My Workspaces (need an NDEx account), the Sub Network
-Viewer with a subsystem selected, two column-editor popovers, and the
-browser's reload button.
+Viewer with a subsystem selected, a column-editor popover, and the browser's
+reload button.
 
 ## Manual Drift Check
 
@@ -237,3 +268,7 @@ current globs list at least one page for 30.
    receives compiled components only.
 4. **Generated tables over hand-written lists** where the code holds the
    data. A test fails when the code and the manual's text disagree.
+5. **Step sequences next to the text, demos optional.** A page's single demo
+   fits one section of the page. A sequence shows the state for each step of
+   a procedure, and the recipe that drives the capture is the same data that
+   keeps it current.

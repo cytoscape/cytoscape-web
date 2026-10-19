@@ -84,11 +84,14 @@ const IGNORED = [
 const matchesAny = (file: string, globs: readonly string[]): boolean =>
   globs.some((glob) => matchesGlob(file, glob))
 
-/** A captured screenshot, the pages that show it, and what it depicts. */
+/**
+ * A captured screenshot or step sequence, the pages that show it, and what
+ * it depicts.
+ */
 export interface DriftScreenshot {
   readonly id: string
-  /** The image file, from the repo root. */
-  readonly file: string
+  /** The image files, from the repo root: one, or a sequence's frames. */
+  readonly files: readonly string[]
   readonly pages: readonly string[]
   readonly sources: readonly string[]
 }
@@ -149,7 +152,7 @@ export const findManualDrift = (input: {
     const staleShots = screenshots.filter(
       (shot) =>
         shot.pages.includes(page.slug) &&
-        !changed.has(shot.file) &&
+        !shot.files.some((file) => changed.has(file)) &&
         relevant.some((f) => matchesAny(f, shot.sources)),
     )
     const shotTriggers = staleShots.flatMap((shot) =>
