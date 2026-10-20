@@ -5,6 +5,10 @@ import {
   applyWorkspaceFilter,
   setWorkspaceFilterDisplayModeAndApply,
 } from '@/data/filter/applyWorkspaceFilter'
+import {
+  cancelAutoApply,
+  scheduleAutoApply,
+} from '@/data/filter/pendingAutoApply'
 import { useFilterStore } from '@/data/hooks/stores/FilterStore'
 import { useNetworkStore } from '@/data/hooks/stores/NetworkStore'
 import { useTableStore } from '@/data/hooks/stores/TableStore'
@@ -92,21 +96,12 @@ export const FilterTab = ({ networkId }: FilterTabProps): JSX.Element => {
     if (!isApplied) setStatus(undefined)
   }, [isApplied])
 
-  // The pending run of "Apply when filter changes", if any. Applying at once
-  // (Apply, the select/show radio) applies the edit it waits for, so it
-  // cancels it: firing later would re-apply the filter over whatever came
-  // in between, such as Show All (Select menu).
-  const autoApplyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined,
-  )
-  const cancelAutoApply = (): void => {
-    clearTimeout(autoApplyTimer.current)
-    autoApplyTimer.current = undefined
-  }
-
+  // Applying at once (Apply, the select/show radio) applies the edit a
+  // pending "Apply when filter changes" run waits for, so it cancels that
+  // run, as Show All (Select menu) does: see data/filter/pendingAutoApply
   const apply = (): void => {
     if (selected === undefined) return
-    cancelAutoApply()
+    cancelAutoApply(networkId)
     setStatus(formatApplyStatus(applyWorkspaceFilter(networkId, selected.id)))
   }
 
@@ -136,11 +131,13 @@ export const FilterTab = ({ networkId }: FilterTabProps): JSX.Element => {
       return
     }
     const filterId = selected.id
-    autoApplyTimer.current = setTimeout(() => {
-      autoApplyTimer.current = undefined
-      setStatus(formatApplyStatus(applyWorkspaceFilter(networkId, filterId)))
-    }, AUTO_APPLY_DELAY_MS)
-    return cancelAutoApply
+    scheduleAutoApply(
+      networkId,
+      () =>
+        setStatus(formatApplyStatus(applyWorkspaceFilter(networkId, filterId))),
+      AUTO_APPLY_DELAY_MS,
+    )
+    return () => cancelAutoApply(networkId)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs on what the user changed; autoApply is read, not a trigger
   }, [networkId, selected?.id, selected?.root])
 
@@ -217,7 +214,7 @@ export const FilterTab = ({ networkId }: FilterTabProps): JSX.Element => {
         }
         disabled={context === undefined}
         onDisplayModeChange={(displayMode) => {
-          cancelAutoApply()
+          cancelAutoApply(networkId)
           setStatus(
             formatApplyStatus(
               setWorkspaceFilterDisplayModeAndApply(

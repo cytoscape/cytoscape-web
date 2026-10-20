@@ -310,6 +310,29 @@ describe('FilterTab', () => {
     expect(useFilterStore.getState().appliedWorkspaceFilters).toEqual({})
   })
 
+  it('does not apply an edit after Show All came in between', () => {
+    useFilterStore.setState({
+      workspaceFilters: {
+        f1: { ...nameContains('a'), displayMode: DisplayMode.SHOW_HIDE },
+      },
+      selectedWorkspaceFilterId: 'f1',
+    })
+    render(<FilterTab networkId={NET} />)
+
+    fireEvent.change(screen.getByTestId('filter-condition-0-text'), {
+      target: { value: 'alpha' },
+    })
+    act(() => {
+      showAll(NET)
+    })
+    act(() => {
+      vi.advanceTimersByTime(AUTO_APPLY_DELAY_MS)
+    })
+
+    expect(nodeVisibilityBypass()).toEqual({})
+    expect(useFilterStore.getState().appliedWorkspaceFilters).toEqual({})
+  })
+
   it('warns about a condition on a column the network does not have', () => {
     useFilterStore.setState({
       workspaceFilters: {

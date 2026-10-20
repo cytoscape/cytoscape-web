@@ -233,7 +233,9 @@ the `filterWidgets` filter applies its own. No workspace filter is changed.
 and edge visibility bypass of the network, whoever wrote it. It drops the
 network's record when the applied filter is in show mode (a select-mode record
 stays) and switches the subnetwork's `filterWidgets` filter off, so neither
-claims to hide anything afterwards. Select › Hide Selected Nodes and Edges adds
+claims to hide anything afterwards. It also cancels the network's pending
+"Apply when filter changes" run, so an edit made just before cannot hide
+elements again after it. Select › Hide Selected Nodes and Edges adds
 `none` bypasses to those of an applied show filter; re-applying the filter
 rewrites them, which shows the hand-hidden elements that pass, as in Cytoscape
 Desktop. See `src/features/ToolBar/SelectMenu/SelectMenu_docs/SelectMenu.md`.
