@@ -5,6 +5,10 @@ import {
   applyWorkspaceFilter,
   setWorkspaceFilterDisplayModeAndApply,
 } from '@/data/filter/applyWorkspaceFilter'
+import {
+  cancelAutoApply,
+  scheduleAutoApply,
+} from '@/data/filter/pendingAutoApply'
 import { useFilterStore } from '@/data/hooks/stores/FilterStore'
 import { useNetworkStore } from '@/data/hooks/stores/NetworkStore'
 import { useTableStore } from '@/data/hooks/stores/TableStore'
@@ -92,8 +96,12 @@ export const FilterTab = ({ networkId }: FilterTabProps): JSX.Element => {
     if (!isApplied) setStatus(undefined)
   }, [isApplied])
 
+  // Applying at once (Apply, the select/show radio) applies the edit a
+  // pending "Apply when filter changes" run waits for, so it cancels that
+  // run, as Show All (Select menu) does: see data/filter/pendingAutoApply
   const apply = (): void => {
     if (selected === undefined) return
+    cancelAutoApply(networkId)
     setStatus(formatApplyStatus(applyWorkspaceFilter(networkId, selected.id)))
   }
 
@@ -123,10 +131,13 @@ export const FilterTab = ({ networkId }: FilterTabProps): JSX.Element => {
       return
     }
     const filterId = selected.id
-    const timer = setTimeout(() => {
-      setStatus(formatApplyStatus(applyWorkspaceFilter(networkId, filterId)))
-    }, AUTO_APPLY_DELAY_MS)
-    return () => clearTimeout(timer)
+    scheduleAutoApply(
+      networkId,
+      () =>
+        setStatus(formatApplyStatus(applyWorkspaceFilter(networkId, filterId))),
+      AUTO_APPLY_DELAY_MS,
+    )
+    return () => cancelAutoApply(networkId)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs on what the user changed; autoApply is read, not a trigger
   }, [networkId, selected?.id, selected?.root])
 
@@ -202,7 +213,8 @@ export const FilterTab = ({ networkId }: FilterTabProps): JSX.Element => {
               : status
         }
         disabled={context === undefined}
-        onDisplayModeChange={(displayMode) =>
+        onDisplayModeChange={(displayMode) => {
+          cancelAutoApply(networkId)
           setStatus(
             formatApplyStatus(
               setWorkspaceFilterDisplayModeAndApply(
@@ -212,7 +224,7 @@ export const FilterTab = ({ networkId }: FilterTabProps): JSX.Element => {
               ),
             ),
           )
-        }
+        }}
         onAutoApplyChange={(next) => setAutoApply(networkId, next)}
         onApply={apply}
       />
