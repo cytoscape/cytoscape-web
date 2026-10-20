@@ -40,7 +40,10 @@ lazily.
   none, and the last filter cannot be removed.
 - "Apply when filter changes" re-applies 300 ms after the conditions change or
   another filter is picked. Opening the tab or switching networks applies
-  nothing. Changing select / show always applies at once.
+  nothing. Changing select / show always applies at once. Applying at once
+  (Apply, or select / show) cancels a pending re-apply: it has just applied
+  that edit, and the timer firing later would re-apply the filter over what
+  came next, such as Select ▸ Show All.
 - Conditions are moved and grouped by dragging their handle (`DragIndicator`
   icon), as in Cytoscape Desktop: into a gap to move, onto a group or a
   topology condition to add at its end, onto another condition to group the

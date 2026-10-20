@@ -92,8 +92,21 @@ export const FilterTab = ({ networkId }: FilterTabProps): JSX.Element => {
     if (!isApplied) setStatus(undefined)
   }, [isApplied])
 
+  // The pending run of "Apply when filter changes", if any. Applying at once
+  // (Apply, the select/show radio) applies the edit it waits for, so it
+  // cancels it: firing later would re-apply the filter over whatever came
+  // in between, such as Show All (Select menu).
+  const autoApplyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  )
+  const cancelAutoApply = (): void => {
+    clearTimeout(autoApplyTimer.current)
+    autoApplyTimer.current = undefined
+  }
+
   const apply = (): void => {
     if (selected === undefined) return
+    cancelAutoApply()
     setStatus(formatApplyStatus(applyWorkspaceFilter(networkId, selected.id)))
   }
 
@@ -123,10 +136,11 @@ export const FilterTab = ({ networkId }: FilterTabProps): JSX.Element => {
       return
     }
     const filterId = selected.id
-    const timer = setTimeout(() => {
+    autoApplyTimer.current = setTimeout(() => {
+      autoApplyTimer.current = undefined
       setStatus(formatApplyStatus(applyWorkspaceFilter(networkId, filterId)))
     }, AUTO_APPLY_DELAY_MS)
-    return () => clearTimeout(timer)
+    return cancelAutoApply
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs on what the user changed; autoApply is read, not a trigger
   }, [networkId, selected?.id, selected?.root])
 
@@ -202,7 +216,8 @@ export const FilterTab = ({ networkId }: FilterTabProps): JSX.Element => {
               : status
         }
         disabled={context === undefined}
-        onDisplayModeChange={(displayMode) =>
+        onDisplayModeChange={(displayMode) => {
+          cancelAutoApply()
           setStatus(
             formatApplyStatus(
               setWorkspaceFilterDisplayModeAndApply(
@@ -212,7 +227,7 @@ export const FilterTab = ({ networkId }: FilterTabProps): JSX.Element => {
               ),
             ),
           )
-        }
+        }}
         onAutoApplyChange={(next) => setAutoApply(networkId, next)}
         onApply={apply}
       />

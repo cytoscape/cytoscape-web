@@ -13,6 +13,7 @@
 
 ## Coding Patterns
 
+- [2026-10-20] A debounced "apply on change" timer must be cancelled by every path that applies at once. The FILTER tab's 300 ms auto-apply outlived the select/show radio's immediate apply and re-hid nodes after Select ▸ Show All (Firefox e2e flake in `select-menu.spec.ts`, 5 of 6 runs; Playwright's Firefox clicks land inside the window). Keep the pending timer in a ref and clear it in Apply and in the display-mode handler (`FilterTab.tsx`).
 - [2026-10-16] To detect that a network's nodes or edges changed, select `NetworkStore.topologyVersions.get(id)`, which every topology action bumps. Never use the `Network` object's identity (networks are mutated in place, so it never changes) or element counts (a replacement of as many elements as were removed leaves them equal). CyjsRenderer's full-render guard and trigger use the version (#861).
 - [2026-10-16] `ViewModelStore.viewModels[networkId]` is a `NetworkView[]` (primary view first), never a single view. Type store-state snapshots with the store's real type, not `any`, and build test fixtures from real constructors (`ViewModelFn.createViewModel`) or real stores, so a wrong shape cannot agree with the code under test (#857; history in the archive).
 - [2026-10-13] dnd-kit nested drop targets: never refuse a drop by passing `disabled` to `useDroppable`. A disabled droppable leaves collision detection, so the pointer falls through to the target it is nested in (a filter condition released over its own row was appended to its enclosing group). Keep every target registered, mask its highlight, and make the drop a no-op in the handler (`ConditionDnd.tsx` + `canDropCondition`). Keyboard drags have no pointer: apply the same innermost-target rule at the dragged card's center rather than `closestCenter`, which can pick an enclosing group.
@@ -106,6 +107,7 @@
 
 ## Agent Workflow
 
+- [2026-10-20] A worktree's `node_modules` can be stale, missing a package that then resolves from the main checkout's `node_modules` with its own React ("Invalid hook call" in every test of `FilterTab.spec.tsx`, from `@dnd-kit/core`). If one spec fails wholesale, `node -e "console.log(require.resolve('<pkg>'))"` the imports it pulls in, then `npm ci` in the worktree. `npm ci` also kills a `vite preview` serving from it, and another session may claim the port: check `lsof -a -p <pid> -d cwd` before trusting a run.
 - [2026-10-16] CodeRabbit posts a fresh review on every push, often minutes after the checks finish. Before saying a PR's review is settled, list the reviews (`gh pr view <N> --json reviews`) and read every body newer than the last one you answered: findings outside the diff range live only in the review body, not as inline comments.
 
 - [2026-10-13] Before pushing to a PR's branch, check the PR is still open (`gh pr view <N> --json state`). A commit pushed to an already-merged PR's branch reaches nothing, and has to be moved to a new branch and PR (the FILTER tab's drag-and-drop commit landed on merged #814's branch and became #821).
