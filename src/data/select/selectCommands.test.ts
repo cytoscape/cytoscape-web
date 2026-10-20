@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DisplayMode } from '../../models/FilterModel/DisplayMode'
 import type { FilterConfig } from '../../models/FilterModel/FilterConfig'
@@ -13,6 +13,7 @@ import {
   NodeVisualPropertyName,
 } from '../../models/VisualStyleModel/VisualPropertyName'
 import { VisibilityType } from '../../models/VisualStyleModel/VisualPropertyValue/VisibilityType'
+import { cancelAutoApply, scheduleAutoApply } from '../filter/pendingAutoApply'
 import { useFilterStore } from '../hooks/stores/FilterStore'
 import { useNetworkStore } from '../hooks/stores/NetworkStore'
 import { useTableStore } from '../hooks/stores/TableStore'
@@ -279,6 +280,25 @@ describe('selectCommands', () => {
       expect(useFilterStore.getState().appliedWorkspaceFilters).toEqual({
         other: { filterId: 'f', displayMode: DisplayMode.SHOW_HIDE },
       })
+    })
+
+    it('cancels the pending FILTER tab auto-apply of the network only', () => {
+      vi.useFakeTimers()
+      try {
+        const runHere = vi.fn()
+        const runOther = vi.fn()
+        scheduleAutoApply(NET, runHere, 300)
+        scheduleAutoApply('other', runOther, 300)
+
+        showAll(NET)
+        vi.advanceTimersByTime(300)
+
+        expect(runHere).not.toHaveBeenCalled()
+        expect(runOther).toHaveBeenCalledTimes(1)
+      } finally {
+        cancelAutoApply('other')
+        vi.useRealTimers()
+      }
     })
 
     it('keeps the record of a filter applied in select mode', () => {

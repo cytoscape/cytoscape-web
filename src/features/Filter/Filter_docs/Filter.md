@@ -40,7 +40,11 @@ lazily.
   none, and the last filter cannot be removed.
 - "Apply when filter changes" re-applies 300 ms after the conditions change or
   another filter is picked. Opening the tab or switching networks applies
-  nothing. Changing select / show always applies at once.
+  nothing. Changing select / show always applies at once. The pending
+  re-apply is kept per network in `src/data/filter/pendingAutoApply.ts` and
+  cancelled by Apply and select / show, which have just applied that edit,
+  and by Select ▸ Show All, so the timer never re-applies the filter over
+  what came after the edit.
 - Conditions are moved and grouped by dragging their handle (`DragIndicator`
   icon), as in Cytoscape Desktop: into a gap to move, onto a group or a
   topology condition to add at its end, onto another condition to group the

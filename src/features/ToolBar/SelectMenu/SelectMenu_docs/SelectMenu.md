@@ -77,7 +77,9 @@ As in Cytoscape Desktop (`HideUtils` in cytoscape-impl):
   something it no longer hides:
   - a FILTER tab filter applied in show mode: its `appliedWorkspaceFilters`
     record is dropped, and the FILTER tab's status line stops reporting its
-    run (a record in select mode stays, since it hides nothing);
+    run (a record in select mode stays, since it hides nothing). A pending
+    "Apply when filter changes" run of the network is cancelled, so an edit
+    made just before Show All cannot hide elements again 300 ms later;
   - the subnetwork's `filterWidgets` filter: it is switched off, as applying
     a FILTER tab filter does.
 

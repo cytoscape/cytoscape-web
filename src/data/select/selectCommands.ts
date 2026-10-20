@@ -9,6 +9,7 @@ import {
 } from '../../models/VisualStyleModel/VisualPropertyName'
 import { VisibilityType } from '../../models/VisualStyleModel/VisualPropertyValue/VisibilityType'
 import { switchOffSubnetworkFilter } from '../filter/applyWorkspaceFilter'
+import { cancelAutoApply } from '../filter/pendingAutoApply'
 import { useFilterStore } from '../hooks/stores/FilterStore'
 import { useNetworkStore } from '../hooks/stores/NetworkStore'
 import { useViewModelStore } from '../hooks/stores/ViewModelStore'
@@ -179,12 +180,16 @@ export const hideSelected = (networkId: IdType): boolean => {
  * claims to hide something it no longer hides:
  * - a FILTER tab filter applied in show mode: its record in
  *   `appliedWorkspaceFilters` is dropped (a select-mode record stays, since
- *   it hides nothing);
+ *   it hides nothing), and a pending "Apply when filter changes" run is
+ *   cancelled, so an edit made just before cannot hide elements again after
+ *   Show All;
  * - the subnetwork's `filterWidgets` filter: it is switched off.
  */
 export const showAll = (networkId: IdType): boolean => {
   const { visualStyles, setBypassMap } = useVisualStyleStore.getState()
   if (!Object.hasOwn(visualStyles, networkId)) return false
+
+  cancelAutoApply(networkId)
 
   const style = visualStyles[networkId]
   const hadBypass = [
