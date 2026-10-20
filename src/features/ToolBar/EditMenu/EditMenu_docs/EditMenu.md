@@ -62,6 +62,7 @@ Each menu item is a thin wrapper that invokes the appropriate store actions and 
 - They act on the same network as the rows: the active network view, else the current network.
 - They act unless a text field has the focus (it keeps its own undo), a dialog, popover or other MUI modal is open, or the focus is inside an open menu. Unlike Ctrl/⌘+A, a focused button or the table browser does not block them: choosing a row hands the focus back to the Edit button, and Delete Selected Nodes followed by Ctrl/⌘+Z must still undo.
 - With nothing to undo or redo they do nothing and leave the key to the browser; otherwise they prevent its default action.
+- While an edge is being drawn ("Create Edge from this Node"; see `isEdgeCreationActive` below) they still prevent the default action but change nothing: an undo or redo could remove the source node, for example by undoing its creation.
 - The focus is followed into open shadow roots, so a text field inside an app's web component keeps its own undo. An app widget that handles one of these keys itself calls `preventDefault()`, and the shortcut skips any event whose default was prevented (see "Host Keyboard Shortcuts" in `src/app-api/api_docs/Api.md`).
 - Each row names its shortcuts for assistive technology with `aria-keyshortcuts` (`keyShortcuts` on the menu item model): all the forms that work, not only the one shown.
 

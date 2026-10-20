@@ -230,6 +230,21 @@ describe('useUndoRedoShortcuts', () => {
     expect(redoLastEdit).not.toHaveBeenCalled()
   })
 
+  it('takes the key but changes nothing while a renderer is drawing an edge', () => {
+    renderHook(() => useUndoRedoShortcuts())
+    document.body.innerHTML =
+      '<div data-testid="cyjs-renderer" data-edge-creation="true"></div>'
+
+    expect(press({ key: 'z', ctrlKey: true }).defaultPrevented).toBe(true)
+    expect(press({ key: 'y', ctrlKey: true }).defaultPrevented).toBe(true)
+    expect(undoLastEdit).not.toHaveBeenCalled()
+    expect(redoLastEdit).not.toHaveBeenCalled()
+
+    document.body.innerHTML = '<div data-testid="cyjs-renderer"></div>'
+    press({ key: 'z', ctrlKey: true })
+    expect(undoLastEdit).toHaveBeenCalledTimes(1)
+  })
+
   it('does nothing in a text field', () => {
     renderHook(() => useUndoRedoShortcuts())
     document.body.innerHTML = '<input id="field" />'

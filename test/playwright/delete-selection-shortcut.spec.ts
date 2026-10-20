@@ -182,4 +182,57 @@ test.describe('Delete selection shortcut', () => {
       .poll(() => counts(page, networkId))
       .toEqual({ nodes: 3, edges: 1 })
   })
+  test('Undo and Redo wait while an edge is being drawn', async ({ page }) => {
+    await gotoAndWaitReady(page)
+    const networkId = await seedNetwork(page)
+    await expect.poll(() => drawn(page)).toEqual({ nodes: 4, edges: 3 })
+
+    // An edit to undo: delete alpha and gamma - delta, then undo it so the
+    // redo stack has an entry too
+    await page
+      .locator('[data-testid="cyjs-renderer"]')
+      .first()
+      .click({ position: { x: 5, y: 5 } })
+    expect(await selectAlphaAndGammaDelta(page, networkId)).toBe(true)
+    await page.keyboard.press('Delete')
+    await page.keyboard.press('ControlOrMeta+z')
+    await expect
+      .poll(() => counts(page, networkId))
+      .toEqual({ nodes: 4, edges: 3 })
+
+    // Right-click beta ▸ Create Edge from this Node
+    const beta = await nodeScreenPosition(page, networkId, 'beta')
+    expect(beta).not.toBeNull()
+    await page.mouse.click(beta!.x, beta!.y, { button: 'right' })
+    await page
+      .getByRole('menuitem', { name: 'Create Edge from this Node' })
+      .click()
+    await expect(page.locator('[role="menu"]')).toHaveCount(0)
+    const renderer = page.locator('[data-testid="cyjs-renderer"]').first()
+    await expect(renderer).toHaveAttribute('data-edge-creation', 'true')
+
+    // Redo (both forms) and Undo change nothing
+    await page.keyboard.press('ControlOrMeta+Shift+z')
+    await page.keyboard.press('Control+y')
+    expect(await counts(page, networkId)).toEqual({ nodes: 4, edges: 3 })
+
+    // Esc leaves the mode, and Redo works again
+    await page.keyboard.press('Escape')
+    await expect(renderer).not.toHaveAttribute('data-edge-creation', /.*/)
+    await page.keyboard.press('ControlOrMeta+Shift+z')
+    await expect
+      .poll(() => counts(page, networkId))
+      .toEqual({ nodes: 3, edges: 1 })
+
+    // Back into the mode: now Undo changes nothing
+    const gamma = await nodeScreenPosition(page, networkId, 'gamma')
+    await page.mouse.click(gamma!.x, gamma!.y, { button: 'right' })
+    await page
+      .getByRole('menuitem', { name: 'Create Edge from this Node' })
+      .click()
+    await expect(page.locator('[role="menu"]')).toHaveCount(0)
+    await expect(renderer).toHaveAttribute('data-edge-creation', 'true')
+    await page.keyboard.press('ControlOrMeta+z')
+    expect(await counts(page, networkId)).toEqual({ nodes: 3, edges: 1 })
+  })
 })

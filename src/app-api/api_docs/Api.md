@@ -3065,12 +3065,12 @@ open; returns `APP7` when called without an id and the app has no dialog open.
 App components share the page's keyboard with the host, which listens on
 `window` (bubbling phase) for these shortcuts:
 
-| Shortcut                  | Runs                                              | Acts while                                                                      |
-| ------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Ctrl+Z, ⌘Z                | Edit ▸ Undo                                       | no text field has the focus and no dialog, popover or menu has the keyboard     |
-| Ctrl+Shift+Z, ⌘⇧Z, Ctrl+Y | Edit ▸ Redo                                       | the same as Undo                                                                |
-| Ctrl+A, ⌘A                | Select ▸ Select All                               | the network canvas has the keyboard: nothing focused, or the focus is inside it |
-| Delete, Backspace         | delete the selected nodes and edges (no menu row) | the canvas has the keyboard, as for Select All, and no modal is open            |
+| Shortcut                  | Runs                                              | Acts while                                                                                           |
+| ------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Ctrl+Z, ⌘Z                | Edit ▸ Undo                                       | no text field has the focus, no dialog, popover or menu has the keyboard, and no edge is being drawn |
+| Ctrl+Shift+Z, ⌘⇧Z, Ctrl+Y | Edit ▸ Redo                                       | the same as Undo                                                                                     |
+| Ctrl+A, ⌘A                | Select ▸ Select All                               | the network canvas has the keyboard: nothing focused, or the focus is inside it                      |
+| Delete, Backspace         | delete the selected nodes and edges (no menu row) | the canvas has the keyboard, as for Select All, no modal is open, and no edge is being drawn         |
 
 A text field is an `<input>` that takes text, a `<textarea>` or a
 `contenteditable` element, including one inside an **open** shadow root. A

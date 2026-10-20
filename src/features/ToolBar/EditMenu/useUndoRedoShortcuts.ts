@@ -6,6 +6,7 @@ import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { useUndoStack } from '../../../data/hooks/useUndoStack'
 import { logUi } from '../../../debug'
 import { IdType } from '../../../models'
+import { isEdgeCreationActive } from '../../NetworkPanel/CyjsRenderer/edgeCreationMode'
 import { isApplePlatform } from '../SelectMenu/useSelectAllShortcut'
 
 /** The Undo shortcut as the menu shows it */
@@ -136,7 +137,8 @@ const stackLength = (stack: 'undoStack' | 'redoStack'): number =>
 
 /**
  * Ctrl/⌘+Z runs Edit ▸ Undo; Ctrl/⌘+Shift+Z and Ctrl+Y run Edit ▸ Redo, on
- * the same network as the menu rows
+ * the same network as the menu rows. They change nothing while an edge is
+ * being drawn ("Create Edge from this Node").
  */
 export const useUndoRedoShortcuts = (): void => {
   const { undoLastEdit, redoLastEdit } = useUndoStack()
@@ -155,6 +157,9 @@ export const useUndoRedoShortcuts = (): void => {
       // Nothing to do: leave the key to the browser
       if (stackLength(undo ? 'undoStack' : 'redoStack') === 0) return
       event.preventDefault()
+      // An edge is being drawn from a node, which an undo or redo could
+      // remove (it may have created the node). Take the key, change nothing.
+      if (isEdgeCreationActive()) return
       if (undo) {
         commandsRef.current.undoLastEdit()
       } else {
