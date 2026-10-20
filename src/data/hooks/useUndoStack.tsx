@@ -1,5 +1,9 @@
 import { useCallback, useContext } from 'react'
 
+import {
+  buildEdgeStoreActions,
+  buildNodeStoreActions,
+} from '../../app-api/core/elementApi'
 import { markNetworkModified } from '../../app-api/core/undo'
 import { AppConfigContext } from '../../AppConfigContext'
 import { logHistory } from '../../debug'
@@ -192,6 +196,55 @@ export const useUndoStack = () => {
   )
 
   const undoLastEdit = useCallback(() => {
+    // Undo of DELETE_NODES, and of DELETE_ELEMENTS, whose undo params have
+    // the same shape (every deleted edge, not only those of the nodes)
+    const restoreDeletedNodes = (params: any[]): void => {
+      const networkId: IdType = params[0]
+      const nodeIds: IdType[] = params[1]
+      const deletedEdges: Edge[] = params[2]
+      const deletedNodeViewModels: NodeView[] = params[3]
+      const deletedEdgeViewModels: EdgeView[] = params[4]
+      const deletedNodeRows: Map<IdType, Record<string, ValueType>> = params[5]
+      const deletedEdgeRows: Map<IdType, Record<string, ValueType>> = params[6]
+      const deletedBypasses: Map<
+        VisualPropertyName,
+        Map<IdType, any>
+      > = params[7] || new Map()
+
+      // 1. Add back the deleted nodes and connected edges
+      addNodesAndEdges(networkId, nodeIds, deletedEdges)
+
+      // 2. Restore table rows
+      if (deletedNodeRows.size > 0) {
+        editRows(networkId, TableType.NODE, deletedNodeRows)
+      }
+      if (deletedEdgeRows.size > 0) {
+        editRows(networkId, TableType.EDGE, deletedEdgeRows)
+      }
+
+      // 3. Restore view models
+      if (deletedNodeViewModels.length > 0) {
+        addNodeViews(networkId, deletedNodeViewModels)
+      }
+      if (deletedEdgeViewModels.length > 0) {
+        addEdgeViews(networkId, deletedEdgeViewModels)
+      }
+
+      // 4. Restore visual style bypasses
+      deletedBypasses.forEach((bypassMap, vpName) => {
+        setBypassMap(networkId, vpName, bypassMap)
+      })
+
+      // 5. Restore network summary counts (get network after restoration)
+      const network = useNetworkStore.getState().networks.get(networkId)
+      if (network) {
+        updateNetworkSummary(networkId, {
+          nodeCount: network.nodes.length,
+          edgeCount: network.edges.length,
+        })
+      }
+    }
+
     const commandMap = {
       [UndoCommandType.SET_NETWORK_SUMMARY]: (params: any[]) => {
         updateNetworkSummary(params[0], params[1])
@@ -270,58 +323,8 @@ export const useUndoStack = () => {
           })
         }
       },
-      [UndoCommandType.DELETE_NODES]: (params: any[]) => {
-        const networkId: IdType = params[0]
-        const nodeIds: IdType[] = params[1]
-        const deletedEdges: Edge[] = params[2]
-        const deletedNodeViewModels: NodeView[] = params[3]
-        const deletedEdgeViewModels: EdgeView[] = params[4]
-        const deletedNodeRows: Map<
-          IdType,
-          Record<string, ValueType>
-        > = params[5]
-        const deletedEdgeRows: Map<
-          IdType,
-          Record<string, ValueType>
-        > = params[6]
-        const deletedBypasses: Map<
-          VisualPropertyName,
-          Map<IdType, any>
-        > = params[7] || new Map()
-
-        // 1. Add back the deleted nodes and connected edges
-        addNodesAndEdges(networkId, nodeIds, deletedEdges)
-
-        // 2. Restore table rows
-        if (deletedNodeRows.size > 0) {
-          editRows(networkId, TableType.NODE, deletedNodeRows)
-        }
-        if (deletedEdgeRows.size > 0) {
-          editRows(networkId, TableType.EDGE, deletedEdgeRows)
-        }
-
-        // 3. Restore view models
-        if (deletedNodeViewModels.length > 0) {
-          addNodeViews(networkId, deletedNodeViewModels)
-        }
-        if (deletedEdgeViewModels.length > 0) {
-          addEdgeViews(networkId, deletedEdgeViewModels)
-        }
-
-        // 4. Restore visual style bypasses
-        deletedBypasses.forEach((bypassMap, vpName) => {
-          setBypassMap(networkId, vpName, bypassMap)
-        })
-
-        // 5. Restore network summary counts (get network after restoration)
-        const network = useNetworkStore.getState().networks.get(networkId)
-        if (network) {
-          updateNetworkSummary(networkId, {
-            nodeCount: network.nodes.length,
-            edgeCount: network.edges.length,
-          })
-        }
-      },
+      [UndoCommandType.DELETE_NODES]: restoreDeletedNodes,
+      [UndoCommandType.DELETE_ELEMENTS]: restoreDeletedNodes,
       [UndoCommandType.CREATE_NODES]: (params: any[]) => {
         // Undo node creation by deleting the created nodes
         const networkId: IdType = params[0]
@@ -666,6 +669,29 @@ export const useUndoStack = () => {
 
         // Use the pure function to delete nodes
         deleteNodesCore(networkId, nodeIds, network, storeActions)
+      },
+      [UndoCommandType.DELETE_ELEMENTS]: (params: any[]) => {
+        // Redo: the selected edges, then the nodes (with their other edges)
+        const networkId: IdType = params[0]
+        const nodeIds: IdType[] = params[1]
+        const edgeIds: IdType[] = params[2]
+
+        const network = useNetworkStore.getState().networks.get(networkId)
+        if (!network) {
+          throw new Error(`Network ${networkId} not found`)
+        }
+
+        if (edgeIds.length > 0) {
+          deleteEdgesCore(networkId, edgeIds, network, buildEdgeStoreActions())
+        }
+        if (nodeIds.length > 0) {
+          deleteNodesCore(
+            networkId,
+            nodeIds,
+            useNetworkStore.getState().networks.get(networkId) ?? network,
+            buildNodeStoreActions(),
+          )
+        }
       },
       [UndoCommandType.CREATE_NODES]: (params: any[]) => {
         // Redo node creation

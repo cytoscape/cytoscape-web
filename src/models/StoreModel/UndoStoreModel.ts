@@ -24,6 +24,11 @@ export const UndoCommandType = {
   APPLY_LAYOUT: 'APPLY_LAYOUT',
   DELETE_NODES: 'DELETE_NODES',
   DELETE_EDGES: 'DELETE_EDGES',
+  // Selected nodes and edges deleted together (the Delete key): one undo
+  // entry. Undo params are DELETE_NODES's, with every deleted edge (the
+  // selected ones and those of the deleted nodes); redo params are
+  // [networkId, nodeIds, edgeIds].
+  DELETE_ELEMENTS: 'DELETE_ELEMENTS',
   CREATE_NODES: 'CREATE_NODES',
   CREATE_EDGES: 'CREATE_EDGES',
   // Batch variants created via the app API: one undo entry covers many

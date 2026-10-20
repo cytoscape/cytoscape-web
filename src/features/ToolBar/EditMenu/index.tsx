@@ -13,6 +13,7 @@ import { DeleteSelectedEdgesMenuItem } from './DeleteSelectedEdgesMenuItem'
 import { DeleteSelectedNodesMenuItem } from './DeleteSelectedNodesMenuItem'
 import { RedoMenuItem } from './RedoMenuItem'
 import { UndoMenuItem } from './UndoMenuItem'
+import { useDeleteSelectionShortcut } from './useDeleteSelectionShortcut'
 import {
   REDO_KEY_SHORTCUTS,
   UNDO_KEY_SHORTCUTS,
@@ -22,6 +23,7 @@ import {
 export const EditMenu = () => {
   const { open, setOpen } = useMenuBarMenu('edit-menu')
   useUndoRedoShortcuts()
+  useDeleteSelectionShortcut()
 
   const hasNoNetworks =
     useWorkspaceStore((state) => state.workspace.networkIds).length === 0

@@ -22,6 +22,7 @@ These operations are context-aware and integrate closely with the network, view 
 
 - **Keyboard Shortcuts**
   - `useUndoRedoShortcuts.ts`: the Undo and Redo shortcuts, installed by `EditMenu`, and the labels the two rows show.
+  - `useDeleteSelectionShortcut.ts`: Delete and Backspace, installed by `EditMenu`. The command is `src/data/edit/deleteSelection.ts`.
 
 Each menu item is a thin wrapper that invokes the appropriate store actions and records undo/redo commands.
 
@@ -47,6 +48,13 @@ Each menu item is a thin wrapper that invokes the appropriate store actions and 
   - `UndoMenuItem` triggers `undo()`; `RedoMenuItem` triggers `redo()`.
   - These operations affect both network structure and view model (node positions, selection state) depending on the original command.
 
+### Delete and Backspace
+
+- Delete or Backspace (the Mac keyboard's "delete" key), with no modifier, deletes the selected nodes and edges of the current network; the edges of a deleted node go with it. It has no menu row: the rows above delete only nodes or only edges.
+- It records ONE undo entry, `DELETE_ELEMENTS` (e.g. "Delete 1 Node and 1 Edge"), so one Undo brings back everything it deleted. Its undo params have the shape of `DELETE_NODES`'s, holding every deleted edge, so both share one restore in `useUndoStack`; its redo deletes the selected edges, then the nodes. The selection is cleared.
+- It acts only while the network canvas has the keyboard (as Ctrl/⌘+A: nothing focused, or the focus inside a network renderer) and no modal is open, so a text field, the table browser (where Delete clears cells), a menu, a dialog and the canvas context menu keep the key. It does nothing while a Hierarchy Viewer subnetwork view is active, like Delete Selected Nodes.
+- With nothing selected it does nothing and leaves the key to the browser. A held key's repeats are ignored.
+
 ### Undo and Redo Shortcuts
 
 - Ctrl+Z or ⌘Z runs Undo. Ctrl+Shift+Z, ⌘⇧Z or Ctrl+Y runs Redo. Every form works on every platform (platform detection is unreliable, see `isApplePlatform`); the rows show the platform's usual form: `⌘Z` and `⇧⌘Z` on macOS, `Ctrl+Z` and `Ctrl+Y` elsewhere. Ctrl+Y is Cytoscape Desktop's Redo on every OS. ⌘Y is not a shortcut: on macOS it is the browser's History.
@@ -71,7 +79,8 @@ Each menu item is a thin wrapper that invokes the appropriate store actions and 
 ## Testing
 
 - `useUndoRedoShortcuts.test.ts` — the key matching, the labels, where the shortcuts act, the target stack.
-- `test/playwright/undo-redo.spec.ts` — the menu rows and the shortcuts, end to end.
+- `useDeleteSelectionShortcut.test.ts`, `src/data/edit/deleteSelection.test.tsx` — the Delete key: where it acts, and the command with its one-step undo and redo.
+- `test/playwright/undo-redo.spec.ts`, `test/playwright/delete-selection-shortcut.spec.ts` — the menu rows and the shortcuts, end to end.
 
 ## Future Improvements
 

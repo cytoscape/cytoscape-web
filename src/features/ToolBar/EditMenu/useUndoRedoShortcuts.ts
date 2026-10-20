@@ -63,6 +63,13 @@ const NON_TEXT_INPUT_TYPES = new Set([
   'submit',
 ])
 
+/**
+ * Whether an MUI modal is open: a dialog (CyDialog), a popover, a drawer or
+ * a context menu. Edits from the keyboard wait until it closes.
+ */
+export const isModalOpen = (doc: Document = document): boolean =>
+  doc.querySelector('.MuiModal-root:not(.MuiModal-hidden)') !== null
+
 /** The focused element, looking inside open shadow roots (web components) */
 const deepActiveElement = (doc: Document): Element | null => {
   let active = doc.activeElement
@@ -97,10 +104,7 @@ const closestComposed = (element: Element, selector: string): boolean => {
  * `preventDefault()`, which this shortcut respects.
  */
 export const canUndoFromKeyboard = (doc: Document = document): boolean => {
-  // Any open MUI modal (CyDialog, Popover, Drawer) keeps the shortcut out
-  if (doc.querySelector('.MuiModal-root:not(.MuiModal-hidden)') !== null) {
-    return false
-  }
+  if (isModalOpen(doc)) return false
   const active = deepActiveElement(doc)
   if (!(active instanceof HTMLElement)) return true
   if (active.isContentEditable || active instanceof HTMLTextAreaElement) {
