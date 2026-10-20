@@ -15,10 +15,16 @@ import NetworkFn from '../../models/NetworkModel'
 import TableFn from '../../models/TableModel'
 import { NetworkView } from '../../models/ViewModel'
 import ViewModelFn from '../../models/ViewModel'
+import { createVisualStyle } from '../../models/VisualStyleModel/impl/visualStyleFnImpl'
+import {
+  EdgeVisualPropertyName,
+  NodeVisualPropertyName,
+} from '../../models/VisualStyleModel/VisualPropertyName'
 import { useNetworkStore } from './stores/NetworkStore'
 import { useTableStore } from './stores/TableStore'
 import { useUndoStore } from './stores/UndoStore'
 import { useViewModelStore } from './stores/ViewModelStore'
+import { useVisualStyleStore } from './stores/VisualStyleStore'
 import { useWorkspaceStore } from './stores/WorkspaceStore'
 import { useDeleteEdges } from './useDeleteEdges'
 import { useDeleteNodes } from './useDeleteNodes'
@@ -160,6 +166,88 @@ describe('undo of node and edge deletion (#857)', () => {
     ).toHaveLength(2)
     views().forEach((view) => {
       expect(Object.keys(view.edgeViews).sort()).toEqual(['e1', 'e2'])
+    })
+  })
+
+  // Undo restores the deleted elements' bypasses into the visual property's
+  // bypass map; it must not replace that map and drop the bypasses of the
+  // elements that were never deleted.
+  describe('keeps the bypasses of elements that were not deleted', () => {
+    const bypassOf = (vp: NodeVisualPropertyName | EdgeVisualPropertyName) =>
+      Object.fromEntries(
+        useVisualStyleStore.getState().visualStyles[NETWORK_ID][vp].bypassMap,
+      )
+
+    beforeEach(() => {
+      act(() => {
+        const store = useVisualStyleStore.getState()
+        store.deleteAll()
+        store.add(NETWORK_ID, createVisualStyle())
+      })
+    })
+
+    it('when a node deletion is undone', () => {
+      act(() => {
+        const { setBypass } = useVisualStyleStore.getState()
+        setBypass(
+          NETWORK_ID,
+          NodeVisualPropertyName.NodeBackgroundColor,
+          ['n1'],
+          '#f00',
+        )
+        setBypass(
+          NETWORK_ID,
+          NodeVisualPropertyName.NodeBackgroundColor,
+          ['n3'],
+          '#00f',
+        )
+      })
+      const { result: deleteHook } = renderHook(() => useDeleteNodes())
+      const { result: undoHook } = renderHook(() => useUndoStack())
+
+      act(() => {
+        deleteHook.current.deleteNodes(NETWORK_ID, ['n1'])
+      })
+      act(() => {
+        undoHook.current.undoLastEdit()
+      })
+
+      expect(bypassOf(NodeVisualPropertyName.NodeBackgroundColor)).toEqual({
+        n1: '#f00',
+        n3: '#00f',
+      })
+    })
+
+    it('when an edge deletion is undone', () => {
+      act(() => {
+        const { setBypass } = useVisualStyleStore.getState()
+        setBypass(
+          NETWORK_ID,
+          EdgeVisualPropertyName.EdgeLineColor,
+          ['e1'],
+          '#0f0',
+        )
+        setBypass(
+          NETWORK_ID,
+          EdgeVisualPropertyName.EdgeLineColor,
+          ['e2'],
+          '#ff0',
+        )
+      })
+      const { result: deleteHook } = renderHook(() => useDeleteEdges())
+      const { result: undoHook } = renderHook(() => useUndoStack())
+
+      act(() => {
+        deleteHook.current.deleteEdges(NETWORK_ID, ['e1'])
+      })
+      act(() => {
+        undoHook.current.undoLastEdit()
+      })
+
+      expect(bypassOf(EdgeVisualPropertyName.EdgeLineColor)).toEqual({
+        e1: '#0f0',
+        e2: '#ff0',
+      })
     })
   })
 })

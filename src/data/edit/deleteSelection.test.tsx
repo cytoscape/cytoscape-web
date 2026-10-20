@@ -233,6 +233,35 @@ describe('deleteSelectedElements', () => {
     ).toEqual(['e1', 'e3'])
   })
 
+  it('keeps the bypasses of elements it did not delete when undone', () => {
+    const { result: undo } = renderHook(() => useUndoStack())
+    act(() => {
+      const { setBypass } = useVisualStyleStore.getState()
+      // n1 is deleted, n4 stays; e1 goes with n1, e2 stays
+      setBypass(NET, NodeVisualPropertyName.NodeBackgroundColor, ['n1'], '#f00')
+      setBypass(NET, NodeVisualPropertyName.NodeBackgroundColor, ['n4'], '#00f')
+      setBypass(NET, EdgeVisualPropertyName.EdgeLineColor, ['e1'], '#0f0')
+      setBypass(NET, EdgeVisualPropertyName.EdgeLineColor, ['e2'], '#ff0')
+    })
+    const bypass = (vp: NodeVisualPropertyName | EdgeVisualPropertyName) =>
+      useVisualStyleStore.getState().visualStyles[NET][vp].bypassMap
+
+    select(['n1'], [])
+    act(() => {
+      deleteSelectedElements(NET)
+    })
+    act(() => {
+      undo.current.undoLastEdit()
+    })
+
+    expect(
+      Object.fromEntries(bypass(NodeVisualPropertyName.NodeBackgroundColor)),
+    ).toEqual({ n1: '#f00', n4: '#00f' })
+    expect(
+      Object.fromEntries(bypass(EdgeVisualPropertyName.EdgeLineColor)),
+    ).toEqual({ e1: '#0f0', e2: '#ff0' })
+  })
+
   it('does nothing without a selection, a network or a view', () => {
     let deleted = true
     act(() => {

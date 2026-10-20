@@ -196,6 +196,22 @@ export const useUndoStack = () => {
   )
 
   const undoLastEdit = useCallback(() => {
+    // Put the bypasses of deleted elements back INTO each visual property's
+    // bypass map. setBypassMap replaces the whole map, so passing it only the
+    // restored entries dropped the bypasses of every element that was never
+    // deleted.
+    const restoreBypasses = (
+      networkId: IdType,
+      deletedBypasses: Map<VisualPropertyName, Map<IdType, any>>,
+    ): void => {
+      deletedBypasses.forEach((restored, vpName) => {
+        const current =
+          useVisualStyleStore.getState().visualStyles[networkId]?.[vpName]
+            ?.bypassMap ?? new Map()
+        setBypassMap(networkId, vpName, new Map([...current, ...restored]))
+      })
+    }
+
     // Undo of DELETE_NODES, and of DELETE_ELEMENTS, whose undo params have
     // the same shape (every deleted edge, not only those of the nodes)
     const restoreDeletedNodes = (params: any[]): void => {
@@ -231,9 +247,7 @@ export const useUndoStack = () => {
       }
 
       // 4. Restore visual style bypasses
-      deletedBypasses.forEach((bypassMap, vpName) => {
-        setBypassMap(networkId, vpName, bypassMap)
-      })
+      restoreBypasses(networkId, deletedBypasses)
 
       // 5. Restore network summary counts (get network after restoration)
       const network = useNetworkStore.getState().networks.get(networkId)
@@ -310,9 +324,7 @@ export const useUndoStack = () => {
         }
 
         // 4. Restore visual style bypasses
-        deletedBypasses.forEach((bypassMap, vpName) => {
-          setBypassMap(networkId, vpName, bypassMap)
-        })
+        restoreBypasses(networkId, deletedBypasses)
 
         // 5. Restore network summary counts (get network after restoration)
         const network = useNetworkStore.getState().networks.get(networkId)
