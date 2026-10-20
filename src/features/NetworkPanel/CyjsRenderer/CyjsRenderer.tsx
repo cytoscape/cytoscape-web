@@ -55,6 +55,7 @@ import {
   EDGE_CREATION_MODE_OFF,
   EDGE_CREATION_ATTR,
   EdgeCreationModeState,
+  isEdgeCreationSourceGone,
   isEdgeCreationTarget,
   resolveEdgeCreationTap,
 } from './edgeCreationMode'
@@ -324,6 +325,23 @@ const CyjsRenderer = ({
   const topologyVersion: number | undefined = useNetworkStore((state) =>
     state.topologyVersions.get(id),
   )
+
+  // Leave edge creation mode once its source node is gone, whatever removed
+  // it (a menu, an undo, an app). Keyed on the topology version, which every
+  // node or edge change bumps.
+  useEffect(() => {
+    const isGone = isEdgeCreationSourceGone(edgeCreationMode, (nodeId) =>
+      (useNetworkStore.getState().networks.get(id)?.nodes ?? []).some(
+        (node) => node.id === nodeId,
+      ),
+    )
+    if (isGone) {
+      logUi.info(
+        '[CyjsRenderer] Edge creation mode ended: its source node is gone',
+      )
+      setEdgeCreationMode(EDGE_CREATION_MODE_OFF)
+    }
+  }, [edgeCreationMode, id, topologyVersion])
 
   // Renderer function and viewport state
   const setRendererFunction = useRendererFunctionStore(

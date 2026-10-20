@@ -3,14 +3,17 @@ import type { Page } from '@playwright/test'
 import { expect, gotoAndWaitReady, test } from './fixtures'
 
 // Delete and Backspace on the canvas delete the selected nodes and edges as
-// ONE undo step, and a text field keeps both keys. Unit tests cover the
-// command (src/data/edit/deleteSelection.test.tsx) and where the shortcut
-// acts; this covers the wiring between the keyboard, the stores, the undo
-// stack and the renderer. See src/features/ToolBar/EditMenu/.
+// ONE undo step, and a text field keeps both keys. While an edge is being
+// drawn ("Create Edge from this Node") the editing shortcuts change nothing,
+// and the mode ends when its source node is deleted some other way. Unit
+// tests cover the command (src/data/edit/deleteSelection.test.tsx) and where
+// the shortcuts act; this covers the wiring between the keyboard, the stores,
+// the undo stack and the renderer. See src/features/ToolBar/EditMenu/ and
+// src/features/NetworkPanel/CyjsRenderer/edgeCreationMode.ts.
 
 type ApiWindow = { CyWebApi?: any }
 
-// alpha - beta - gamma - delta
+// alpha - beta - gamma - delta, laid out left to right
 const seedNetwork = async (page: Page): Promise<string> => {
   const networkId = await page.evaluate(() => {
     const api = (window as unknown as ApiWindow).CyWebApi
@@ -23,7 +26,17 @@ const seedNetwork = async (page: Page): Promise<string> => {
       ],
       addToWorkspace: true,
     })
-    return api.workspace.getCurrentNetworkId().data.networkId as string
+    const id = api.workspace.getCurrentNetworkId().data.networkId as string
+    // Apart, so a right-click lands on the node it aims at (an edge list
+    // network starts with every node at the origin)
+    const positions: Record<string, [number, number]> = {}
+    api.element
+      .getNodeIds(id)
+      .data.nodeIds.forEach((nodeId: string, i: number) => {
+        positions[nodeId] = [i * 150, (i % 2) * 100]
+      })
+    api.viewport.updateNodePositions(id, positions)
+    return id
   })
   expect(networkId).toBeTruthy()
   return networkId
@@ -234,5 +247,70 @@ test.describe('Delete selection shortcut', () => {
     await expect(renderer).toHaveAttribute('data-edge-creation', 'true')
     await page.keyboard.press('ControlOrMeta+z')
     expect(await counts(page, networkId)).toEqual({ nodes: 3, edges: 1 })
+  })
+  test('edge creation ends when its source node is deleted', async ({
+    page,
+  }) => {
+    await gotoAndWaitReady(page)
+    const networkId = await seedNetwork(page)
+    await expect.poll(() => drawn(page)).toEqual({ nodes: 4, edges: 3 })
+    const renderer = page.locator('[data-testid="cyjs-renderer"]').first()
+
+    const startEdgeFrom = async (name: string): Promise<string> => {
+      const position = await nodeScreenPosition(page, networkId, name)
+      expect(position).not.toBeNull()
+      await page.mouse.click(position!.x, position!.y, { button: 'right' })
+      await page
+        .getByRole('menuitem', { name: 'Create Edge from this Node' })
+        .click()
+      await expect(page.locator('[role="menu"]')).toHaveCount(0)
+      await expect(renderer).toHaveAttribute('data-edge-creation', 'true')
+      await expect(page.getByText('Edge creation mode')).toBeVisible()
+      return page.evaluate(
+        ({ id, wanted }) => {
+          const api = (window as unknown as ApiWindow).CyWebApi
+          const rows: { id: string; name: string }[] = api.table.getTable(
+            id,
+            'node',
+          ).data.rows
+          return String(rows.find((row) => row.name === wanted)!.id)
+        },
+        { id: networkId, wanted: name },
+      )
+    }
+
+    // An app deletes the source node
+    const alpha = await startEdgeFrom('alpha')
+    const deleted = await page.evaluate(
+      ({ id, node }) =>
+        (window as unknown as ApiWindow).CyWebApi.element.deleteNodes(id, [
+          node,
+        ]),
+      { id: networkId, node: alpha },
+    )
+    expect(deleted.success).toBe(true)
+    await expect(renderer).not.toHaveAttribute('data-edge-creation', /.*/)
+    await expect(page.getByText('Edge creation mode')).toBeHidden()
+
+    // Edit ▸ Delete Selected Nodes deletes it; opening the menu does not
+    // end the mode by itself
+    const beta = await startEdgeFrom('beta')
+    await page.evaluate(
+      ({ id, node }) =>
+        (window as unknown as ApiWindow).CyWebApi.selection.exclusiveSelect(
+          id,
+          [node],
+          [],
+        ),
+      { id: networkId, node: beta },
+    )
+    await page.locator('[data-testid="toolbar-edit-menu-menu-button"]').click()
+    await expect(renderer).toHaveAttribute('data-edge-creation', 'true')
+    await page.getByRole('menuitem', { name: /^Delete Selected Nodes/ }).click()
+    await expect
+      .poll(() => counts(page, networkId))
+      .toEqual({ nodes: 2, edges: 1 })
+    await expect(renderer).not.toHaveAttribute('data-edge-creation', /.*/)
+    await expect(page.getByText('Edge creation mode')).toBeHidden()
   })
 })
