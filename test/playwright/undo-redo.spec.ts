@@ -159,6 +159,14 @@ test.describe('Undo and Redo', () => {
     await expect(
       page.getByRole('menuitem', { name: /^Redo/ }).locator('kbd'),
     ).toHaveText(/^(⇧⌘Z|Ctrl\+Y)$/)
+    // ...and name every form for assistive technology
+    await expect(
+      page.getByRole('menuitem', { name: /^Undo - / }),
+    ).toHaveAttribute('aria-keyshortcuts', 'Control+Z Meta+Z')
+    await expect(page.getByRole('menuitem', { name: /^Redo/ })).toHaveAttribute(
+      'aria-keyshortcuts',
+      'Control+Shift+Z Meta+Shift+Z Control+Y',
+    )
   })
 
   test('undoing the deletion of every node redraws them at their original positions', async ({

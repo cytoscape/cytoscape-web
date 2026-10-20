@@ -20,6 +20,9 @@ export const isApplePlatform = (): boolean => {
   )
 }
 
+/** The Select All row's shortcuts in `aria-keyshortcuts` form */
+export const SELECT_ALL_KEY_SHORTCUTS = 'Control+A Meta+A'
+
 /** The Select All shortcut as the menu shows it */
 export const selectAllShortcutLabel = (): string =>
   isApplePlatform() ? '⌘A' : 'Ctrl+A'

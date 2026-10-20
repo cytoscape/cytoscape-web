@@ -106,6 +106,7 @@ bypass.
   or the focus is inside a network renderer. A text field, the table
   browser, an open menu or a dialog keeps its own Ctrl/⌘+A.
 - When it acts, it prevents the browser from selecting the page's text.
+- The row names both forms for assistive technology (`aria-keyshortcuts="Control+A Meta+A"`, the menu item model's `keyShortcuts`).
 
 ## Testing
 

@@ -233,6 +233,7 @@ function MenuLevel({
               role="menuitem"
               tabIndex={item.disabled === true ? -1 : 0}
               aria-disabled={item.disabled === true ? true : undefined}
+              aria-keyshortcuts={item.keyShortcuts}
               onMouseEnter={() => setOpenSubmenu(null)}
               onKeyDown={(event: React.KeyboardEvent<HTMLElement>) => {
                 if (
@@ -277,6 +278,7 @@ function MenuLevel({
             tabIndex={item.disabled === true ? -1 : 0}
             aria-disabled={item.disabled === true ? true : undefined}
             aria-haspopup={hasChildren ? 'menu' : undefined}
+            aria-keyshortcuts={item.keyShortcuts}
             style={item.style}
             sx={{
               display: 'flex',

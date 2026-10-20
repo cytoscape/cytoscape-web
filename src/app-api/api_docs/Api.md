@@ -3060,6 +3060,39 @@ Closes a dialog. With no argument, closes this app's most recently opened
 dialog that is still open — the common case. Idempotent for an id that is not
 open; returns `APP7` when called without an id and the app has no dialog open.
 
+## Host Keyboard Shortcuts
+
+App components share the page's keyboard with the host, which listens on
+`window` (bubbling phase) for these shortcuts:
+
+| Shortcut                  | Runs                | Acts while                                                                      |
+| ------------------------- | ------------------- | ------------------------------------------------------------------------------- |
+| Ctrl+Z, ⌘Z                | Edit ▸ Undo         | no text field has the focus and no dialog, popover or menu has the keyboard     |
+| Ctrl+Shift+Z, ⌘⇧Z, Ctrl+Y | Edit ▸ Redo         | the same as Undo                                                                |
+| Ctrl+A, ⌘A                | Select ▸ Select All | the network canvas has the keyboard: nothing focused, or the focus is inside it |
+
+A text field is an `<input>` that takes text, a `<textarea>` or a
+`contenteditable` element, including one inside an **open** shadow root. A
+dialog opened with `apis.dialog.open` or `'modal-launcher'` is a modal, so
+Undo and Redo never act while one is open.
+
+**An app that gives one of these keys its own meaning must call
+`event.preventDefault()`** in a `keydown` handler on its own element (it runs
+before the host's `window` listener); the host skips any event whose default
+was prevented. Text fields need nothing. This matters for a widget that is not
+a text field but has its own undo (a drawing canvas, a graph editor), and for
+any text field inside a **closed** shadow root, where the host cannot see the
+focus.
+
+```typescript
+const onKeyDown = (event: React.KeyboardEvent): void => {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+    event.preventDefault() // the host's Undo now leaves this key alone
+    myEditor.undo()
+  }
+}
+```
+
 ## App Lifecycle
 
 ### `AppContext`

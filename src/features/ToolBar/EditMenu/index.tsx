@@ -13,7 +13,11 @@ import { DeleteSelectedEdgesMenuItem } from './DeleteSelectedEdgesMenuItem'
 import { DeleteSelectedNodesMenuItem } from './DeleteSelectedNodesMenuItem'
 import { RedoMenuItem } from './RedoMenuItem'
 import { UndoMenuItem } from './UndoMenuItem'
-import { useUndoRedoShortcuts } from './useUndoRedoShortcuts'
+import {
+  REDO_KEY_SHORTCUTS,
+  UNDO_KEY_SHORTCUTS,
+  useUndoRedoShortcuts,
+} from './useUndoRedoShortcuts'
 
 export const EditMenu = () => {
   const { open, setOpen } = useMenuBarMenu('edit-menu')
@@ -54,9 +58,11 @@ export const EditMenu = () => {
     },
     {
       template: <UndoMenuItem onClick={handleClose} />,
+      keyShortcuts: UNDO_KEY_SHORTCUTS,
     },
     {
       template: <RedoMenuItem onClick={handleClose} />,
+      keyShortcuts: REDO_KEY_SHORTCUTS,
     },
   ]
   const menuItems = appendServiceMenuItems(builtInItems, serviceMenuItems)

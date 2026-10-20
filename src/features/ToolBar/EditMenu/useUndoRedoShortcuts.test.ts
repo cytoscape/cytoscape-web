@@ -131,6 +131,39 @@ describe('canUndoFromKeyboard', () => {
     })
   })
 
+  describe('inside a web component (open shadow root)', () => {
+    // An app's widget: <div id="host"> with `inner` in its shadow root
+    const focusInShadow = (inner: string, outer = ''): void => {
+      document.body.innerHTML = outer || '<div id="host"></div>'
+      const root = document
+        .getElementById('host')!
+        .attachShadow({ mode: 'open' })
+      root.innerHTML = inner
+      root.getElementById('x')!.focus()
+    }
+
+    it('is false in a text field, which the document sees as the host', () => {
+      focusInShadow('<input id="x" />')
+      expect(document.activeElement?.id).toBe('host')
+      expect(canUndoFromKeyboard()).toBe(false)
+      focusInShadow('<textarea id="x"></textarea>')
+      expect(canUndoFromKeyboard()).toBe(false)
+    })
+
+    it('is false when the component sits in a dialog', () => {
+      focusInShadow(
+        '<button id="x">b</button>',
+        '<div role="dialog"><div id="host"></div></div>',
+      )
+      expect(canUndoFromKeyboard()).toBe(false)
+    })
+
+    it('is true on a button', () => {
+      focusInShadow('<button id="x">b</button>')
+      expect(canUndoFromKeyboard()).toBe(true)
+    })
+  })
+
   it('is false while a modal is open, wherever the focus is', () => {
     document.body.innerHTML = '<div class="MuiModal-root"></div>'
     expect(canUndoFromKeyboard()).toBe(false)

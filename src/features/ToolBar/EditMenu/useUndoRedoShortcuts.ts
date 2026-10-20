@@ -16,6 +16,12 @@ export const undoShortcutLabel = (): string =>
 export const redoShortcutLabel = (): string =>
   isApplePlatform() ? '⇧⌘Z' : 'Ctrl+Y'
 
+/** The Undo row's shortcuts in `aria-keyshortcuts` form */
+export const UNDO_KEY_SHORTCUTS = 'Control+Z Meta+Z'
+
+/** The Redo row's shortcuts in `aria-keyshortcuts` form */
+export const REDO_KEY_SHORTCUTS = 'Control+Shift+Z Meta+Shift+Z Control+Y'
+
 const isKey = (event: KeyboardEvent, key: string): boolean =>
   event.key.toLowerCase() === key
 
@@ -57,6 +63,26 @@ const NON_TEXT_INPUT_TYPES = new Set([
   'submit',
 ])
 
+/** The focused element, looking inside open shadow roots (web components) */
+const deepActiveElement = (doc: Document): Element | null => {
+  let active = doc.activeElement
+  while (active?.shadowRoot?.activeElement != null) {
+    active = active.shadowRoot.activeElement
+  }
+  return active
+}
+
+/** Whether the element or an ancestor matches, across shadow roots */
+const closestComposed = (element: Element, selector: string): boolean => {
+  let node: Element | null = element
+  while (node !== null) {
+    if (node.closest(selector) !== null) return true
+    const root = node.getRootNode()
+    node = root instanceof ShadowRoot ? root.host : null
+  }
+  return false
+}
+
 /**
  * Whether Undo and Redo may act on the network: the focus is not in a text
  * field (which keeps its own undo), and no dialog, popover or open menu has
@@ -64,13 +90,18 @@ const NON_TEXT_INPUT_TYPES = new Set([
  * focused button or the table browser does not block them: choosing a menu
  * row hands the focus back to the menu's button, and Delete Selected Nodes
  * followed by Ctrl/⌘+Z must still undo.
+ *
+ * The focus is followed into open shadow roots, so a text field inside an
+ * app's web component keeps its undo. A closed shadow root cannot be looked
+ * into; an app widget there that handles Ctrl/⌘+Z must call
+ * `preventDefault()`, which this shortcut respects.
  */
 export const canUndoFromKeyboard = (doc: Document = document): boolean => {
   // Any open MUI modal (CyDialog, Popover, Drawer) keeps the shortcut out
   if (doc.querySelector('.MuiModal-root:not(.MuiModal-hidden)') !== null) {
     return false
   }
-  const active = doc.activeElement
+  const active = deepActiveElement(doc)
   if (!(active instanceof HTMLElement)) return true
   if (active.isContentEditable || active instanceof HTMLTextAreaElement) {
     return false
@@ -81,10 +112,9 @@ export const canUndoFromKeyboard = (doc: Document = document): boolean => {
   ) {
     return false
   }
-  return (
-    active.closest(
-      '[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]',
-    ) === null
+  return !closestComposed(
+    active,
+    '[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]',
   )
 }
 
