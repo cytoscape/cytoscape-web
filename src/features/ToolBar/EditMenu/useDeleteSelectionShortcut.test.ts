@@ -24,14 +24,13 @@ describe('isDeleteSelectionShortcut', () => {
     expect(isDeleteSelectionShortcut(keydown({ key: 'Backspace' }))).toBe(true)
   })
 
-  it('rejects other keys, modifiers and repeats', () => {
+  it('rejects other keys and modifiers', () => {
     const cases: KeyboardEventInit[] = [
       { key: 'd' },
       { key: 'Delete', ctrlKey: true },
       { key: 'Backspace', metaKey: true },
       { key: 'Delete', altKey: true },
       { key: 'Delete', shiftKey: true },
-      { key: 'Delete', repeat: true },
     ]
     cases.forEach((init) =>
       expect(isDeleteSelectionShortcut(keydown(init))).toBe(false),
@@ -76,10 +75,20 @@ describe('useDeleteSelectionShortcut', () => {
     expect(deleteSelectedElements).toHaveBeenCalledTimes(2)
   })
 
-  it('leaves the key to the browser when nothing was deleted', () => {
+  it('takes the key even when nothing was deleted, so Backspace never means Back', () => {
     deleteSelectedElements.mockReturnValue(false)
     renderHook(() => useDeleteSelectionShortcut())
-    expect(press().defaultPrevented).toBe(false)
+    expect(press({ key: 'Backspace' }).defaultPrevented).toBe(true)
+  })
+
+  it("takes a held key's repeats without deleting again", () => {
+    renderHook(() => useDeleteSelectionShortcut())
+    press()
+    expect(press({ key: 'Delete', repeat: true }).defaultPrevented).toBe(true)
+    expect(press({ key: 'Backspace', repeat: true }).defaultPrevented).toBe(
+      true,
+    )
+    expect(deleteSelectedElements).toHaveBeenCalledTimes(1)
   })
 
   it('acts while the current network is the active view, not a subnetwork', () => {
@@ -93,7 +102,7 @@ describe('useDeleteSelectionShortcut', () => {
     useUiStateStore.setState((state) => {
       state.ui.activeNetworkView = `${NET}_subsystem`
     })
-    expect(press().defaultPrevented).toBe(false)
+    press()
     expect(deleteSelectedElements).toHaveBeenCalledTimes(1)
   })
 
@@ -113,6 +122,18 @@ describe('useDeleteSelectionShortcut', () => {
     document.body.innerHTML = '<div class="MuiModal-root"></div>'
     expect(press().defaultPrevented).toBe(false)
     expect(deleteSelectedElements).not.toHaveBeenCalled()
+  })
+
+  it('deletes nothing while a renderer is drawing an edge', () => {
+    renderHook(() => useDeleteSelectionShortcut())
+    document.body.innerHTML =
+      '<div data-testid="cyjs-renderer" data-edge-creation="true"></div>'
+    expect(press({ key: 'Backspace' }).defaultPrevented).toBe(true)
+    expect(deleteSelectedElements).not.toHaveBeenCalled()
+
+    document.body.innerHTML = '<div data-testid="cyjs-renderer"></div>'
+    press()
+    expect(deleteSelectedElements).toHaveBeenCalledTimes(1)
   })
 
   it('acts while the focus is inside the network renderer', () => {

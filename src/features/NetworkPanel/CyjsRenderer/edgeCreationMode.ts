@@ -28,6 +28,18 @@ export const EDGE_CREATION_MODE_OFF: EdgeCreationModeState = {
 }
 
 /**
+ * Set to "true" on a renderer's container while its edge creation mode is
+ * active, so keyboard edits made elsewhere can wait for the edge: the Delete
+ * shortcut would otherwise delete the source node and leave the mode waiting
+ * for an edge it can no longer create.
+ */
+export const EDGE_CREATION_ATTR = 'data-edge-creation'
+
+/** Whether any renderer in the document is drawing an edge */
+export const isEdgeCreationActive = (doc: Document = document): boolean =>
+  doc.querySelector(`[${EDGE_CREATION_ATTR}="true"]`) !== null
+
+/**
  * Endpoints of the edge a tap resolved to.
  */
 export interface EdgeCreationEndpoints {

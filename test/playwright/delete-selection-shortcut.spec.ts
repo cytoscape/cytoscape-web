@@ -61,6 +61,39 @@ const drawn = (page: Page) =>
         : { nodes: cy.nodes().length, edges: cy.edges().length }
     })
 
+/** Nodes and edges in the network, read from the stores through the API */
+const counts = (page: Page, networkId: string) =>
+  page.evaluate((id) => {
+    const api = (window as unknown as ApiWindow).CyWebApi
+    return {
+      nodes: api.element.getNodeIds(id).data.nodeIds.length as number,
+      edges: api.element.getEdgeIds(id).data.edgeIds.length as number,
+    }
+  }, networkId)
+
+/** Screen position of the node named `name`, after fitting the view */
+const nodeScreenPosition = (page: Page, networkId: string, name: string) =>
+  page.evaluate(
+    ({ id, wanted }) => {
+      const api = (window as unknown as ApiWindow).CyWebApi
+      const rows: { id: string; name: string }[] = api.table.getTable(
+        id,
+        'node',
+      ).data.rows
+      const nodeId = String(rows.find((row) => row.name === wanted)!.id)
+      const container = document.querySelector(
+        '[data-testid="cyjs-renderer"]',
+      ) as HTMLElement & { _cyreg?: { cy?: any } }
+      const cy = container._cyreg?.cy
+      if (cy === undefined) return null
+      cy.fit(undefined, 100)
+      const rendered = cy.getElementById(nodeId).renderedPosition()
+      const rect = container.getBoundingClientRect()
+      return { x: rect.left + rendered.x, y: rect.top + rendered.y }
+    },
+    { id: networkId, wanted: name },
+  )
+
 test.describe('Delete selection shortcut', () => {
   test('Delete removes the selected nodes and edges; one undo restores them', async ({
     page,
@@ -82,6 +115,13 @@ test.describe('Delete selection shortcut', () => {
 
     await page.keyboard.press('ControlOrMeta+z')
     await expect.poll(() => drawn(page)).toEqual({ nodes: 4, edges: 3 })
+
+    // Nothing is selected now: Backspace deletes nothing, and never means
+    // Back (an engine that still maps it would leave the page)
+    const url = page.url()
+    await page.keyboard.press('Backspace')
+    expect(await counts(page, networkId)).toEqual({ nodes: 4, edges: 3 })
+    expect(page.url()).toBe(url)
 
     // Backspace does the same, and redo deletes the same elements again
     expect(await selectAlphaAndGammaDelta(page, networkId)).toBe(true)
@@ -109,5 +149,37 @@ test.describe('Delete selection shortcut', () => {
     await search.press('Delete')
     await expect(search).toHaveValue('lph')
     expect(await drawn(page)).toEqual({ nodes: 4, edges: 3 })
+  })
+  test('Delete waits while an edge is being drawn', async ({ page }) => {
+    await gotoAndWaitReady(page)
+    const networkId = await seedNetwork(page)
+    await expect.poll(() => drawn(page)).toEqual({ nodes: 4, edges: 3 })
+
+    // Right-click alpha ▸ Create Edge from this Node
+    const alpha = await nodeScreenPosition(page, networkId, 'alpha')
+    expect(alpha).not.toBeNull()
+    await page.mouse.click(alpha!.x, alpha!.y, { button: 'right' })
+    await page
+      .getByRole('menuitem', { name: 'Create Edge from this Node' })
+      .click()
+    await expect(page.getByText('Edge creation mode')).toBeVisible()
+    await expect(page.locator('[role="menu"]')).toHaveCount(0)
+    const renderer = page.locator('[data-testid="cyjs-renderer"]').first()
+    await expect(renderer).toHaveAttribute('data-edge-creation', 'true')
+
+    // The keydown handlers run before press() resolves, so the stores
+    // already show whether anything was deleted
+    expect(await selectAlphaAndGammaDelta(page, networkId)).toBe(true)
+    await page.keyboard.press('Delete')
+    await page.keyboard.press('Backspace')
+    expect(await counts(page, networkId)).toEqual({ nodes: 4, edges: 3 })
+
+    // Esc leaves the mode, and Delete works again
+    await page.keyboard.press('Escape')
+    await expect(renderer).not.toHaveAttribute('data-edge-creation', /.*/)
+    await page.keyboard.press('Delete')
+    await expect
+      .poll(() => counts(page, networkId))
+      .toEqual({ nodes: 3, edges: 1 })
   })
 })

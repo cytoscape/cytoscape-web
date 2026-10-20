@@ -53,6 +53,7 @@ import { addCyElements } from './cyjsFactoryUtil'
 import { applyViewModel, createCyjsDataMapper } from './cyjsRenderUtil'
 import {
   EDGE_CREATION_MODE_OFF,
+  EDGE_CREATION_ATTR,
   EdgeCreationModeState,
   isEdgeCreationTarget,
   resolveEdgeCreationTap,
@@ -1586,6 +1587,9 @@ const CyjsRenderer = ({
       ) : null}
       <Box
         data-testid="cyjs-renderer"
+        {...{
+          [EDGE_CREATION_ATTR]: edgeCreationMode.active ? 'true' : undefined,
+        }}
         sx={{
           width: '100%',
           height: '100%',

@@ -52,8 +52,9 @@ Each menu item is a thin wrapper that invokes the appropriate store actions and 
 
 - Delete or Backspace (the Mac keyboard's "delete" key), with no modifier, deletes the selected nodes and edges of the current network; the edges of a deleted node go with it. It has no menu row: the rows above delete only nodes or only edges.
 - It records ONE undo entry, `DELETE_ELEMENTS` (e.g. "Delete 1 Node and 1 Edge"), so one Undo brings back everything it deleted. Its undo params have the shape of `DELETE_NODES`'s, holding every deleted edge, so both share one restore in `useUndoStack`; its redo deletes the selected edges, then the nodes. The selection is cleared.
-- It acts only while the network canvas has the keyboard (as Ctrl/⌘+A: nothing focused, or the focus inside a network renderer) and no modal is open, so a text field, the table browser (where Delete clears cells), a menu, a dialog and the canvas context menu keep the key. It does nothing while a Hierarchy Viewer subnetwork view is active, like Delete Selected Nodes.
-- With nothing selected it does nothing and leaves the key to the browser. A held key's repeats are ignored.
+- It acts only while the network canvas has the keyboard (as Ctrl/⌘+A: nothing focused, or the focus inside a network renderer) and no modal is open, so a text field, the table browser (where Delete clears cells), a menu, a dialog and the canvas context menu keep the key.
+- While the canvas has the key, the shortcut always prevents its default action, even when it deletes nothing: an engine that still maps Backspace to Back (Playwright's WebKit does) would otherwise leave the page.
+- It deletes nothing with nothing selected, for a held key's repeats (one press, one deletion), while a Hierarchy Viewer subnetwork view is active (like Delete Selected Nodes), or while an edge is being drawn ("Create Edge from this Node"), whose source node it would otherwise delete. The renderer marks its container with `data-edge-creation="true"` during that mode (`EDGE_CREATION_ATTR` and `isEdgeCreationActive` in `NetworkPanel/CyjsRenderer/edgeCreationMode.ts`).
 
 ### Undo and Redo Shortcuts
 

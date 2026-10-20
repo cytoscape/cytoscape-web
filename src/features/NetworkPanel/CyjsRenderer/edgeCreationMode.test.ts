@@ -2,7 +2,9 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  EDGE_CREATION_ATTR,
   EDGE_CREATION_MODE_OFF,
+  isEdgeCreationActive,
   isEdgeCreationTarget,
   resolveEdgeCreationTap,
 } from './edgeCreationMode'
@@ -52,5 +54,22 @@ describe('isEdgeCreationTarget', () => {
     expect(
       isEdgeCreationTarget({ active: true, sourceNodeId: 'n1' }, 'n1'),
     ).toBe(true)
+  })
+})
+
+describe('isEdgeCreationActive', () => {
+  // A document that has one element, matching `selector` or not
+  const docWith = (attribute: string | null): Document =>
+    ({
+      querySelector: (selector: string) =>
+        attribute !== null && selector === `[${attribute}="true"]` ? {} : null,
+    }) as unknown as Document
+
+  it('is true while a renderer container carries the attribute', () => {
+    expect(isEdgeCreationActive(docWith(EDGE_CREATION_ATTR))).toBe(true)
+  })
+
+  it('is false otherwise', () => {
+    expect(isEdgeCreationActive(docWith(null))).toBe(false)
   })
 })
