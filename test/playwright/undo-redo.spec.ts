@@ -122,6 +122,53 @@ test.describe('Undo and Redo', () => {
     await expect.poll(() => getNodeCount(page), { timeout: 10000 }).toBe(1)
   })
 
+  test('Ctrl/⌘+Z undoes, and Ctrl/⌘+Shift+Z and Ctrl+Y redo', async ({
+    page,
+  }) => {
+    await gotoAndSeedNetwork(page)
+    const selected = await page.evaluate(() => {
+      const api = (window as unknown as CyWebApiWindow).CyWebApi
+      const current = api?.workspace.getCurrentNetworkId()
+      if (!current?.success || current.data === undefined) return false
+      const { networkId } = current.data
+      const firstNode = api?.element.getNodeIds(networkId)?.data?.nodeIds[0]
+      if (firstNode === undefined) return false
+      return api?.selection.exclusiveSelect(networkId, [firstNode], [])?.success
+    })
+    expect(selected).toBe(true)
+
+    // The menu hands the focus back to its Edit button; the keys still work
+    await clickEditMenuItem(page, /^Delete Selected Nodes/)
+    await expect.poll(() => getNodeCount(page), { timeout: 10000 }).toBe(1)
+
+    await page.keyboard.press('ControlOrMeta+z')
+    await expect.poll(() => getNodeCount(page), { timeout: 10000 }).toBe(2)
+    await page.keyboard.press('ControlOrMeta+Shift+z')
+    await expect.poll(() => getNodeCount(page), { timeout: 10000 }).toBe(1)
+    await page.keyboard.press('ControlOrMeta+z')
+    await expect.poll(() => getNodeCount(page), { timeout: 10000 }).toBe(2)
+    // Cytoscape Desktop's Redo, on every platform
+    await page.keyboard.press('Control+y')
+    await expect.poll(() => getNodeCount(page), { timeout: 10000 }).toBe(1)
+
+    // The rows show the shortcuts
+    await page.locator('[data-testid="toolbar-edit-menu-menu-button"]').click()
+    await expect(
+      page.getByRole('menuitem', { name: /^Undo - / }).locator('kbd'),
+    ).toHaveText(/^(⌘Z|Ctrl\+Z)$/)
+    await expect(
+      page.getByRole('menuitem', { name: /^Redo/ }).locator('kbd'),
+    ).toHaveText(/^(⇧⌘Z|Ctrl\+Y)$/)
+    // ...and name every form for assistive technology
+    await expect(
+      page.getByRole('menuitem', { name: /^Undo - / }),
+    ).toHaveAttribute('aria-keyshortcuts', 'Control+Z Meta+Z')
+    await expect(page.getByRole('menuitem', { name: /^Redo/ })).toHaveAttribute(
+      'aria-keyshortcuts',
+      'Control+Shift+Z Meta+Shift+Z Control+Y',
+    )
+  })
+
   test('undoing the deletion of every node redraws them at their original positions', async ({
     page,
   }) => {

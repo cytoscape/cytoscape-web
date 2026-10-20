@@ -19,6 +19,7 @@ import {
   ShowAllMenuItem,
 } from './SelectMenuItems'
 import {
+  SELECT_ALL_KEY_SHORTCUTS,
   selectAllShortcutLabel,
   useSelectAllShortcut,
 } from './useSelectAllShortcut'
@@ -92,6 +93,7 @@ export const SelectMenu = () => {
           onClick={handleClose}
         />
       ),
+      keyShortcuts: SELECT_ALL_KEY_SHORTCUTS,
     },
     {
       template: (

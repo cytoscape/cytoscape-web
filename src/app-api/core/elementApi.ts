@@ -350,7 +350,7 @@ function maxNumericEdgeId(network: { edges: Array<{ id: IdType }> }): number {
  * Build NodeOperationStoreActions from current store state.
  * Called at execution time, not at module load, so state is always fresh.
  */
-function buildNodeStoreActions(): NodeOperationStoreActions {
+export function buildNodeStoreActions(): NodeOperationStoreActions {
   const networkState = useNetworkStore.getState()
   const tableState = useTableStore.getState()
   const viewModelState = useViewModelStore.getState()
@@ -375,7 +375,7 @@ function buildNodeStoreActions(): NodeOperationStoreActions {
 /**
  * Build EdgeOperationStoreActions from current store state.
  */
-function buildEdgeStoreActions(): EdgeOperationStoreActions {
+export function buildEdgeStoreActions(): EdgeOperationStoreActions {
   const networkState = useNetworkStore.getState()
   const tableState = useTableStore.getState()
   const viewModelState = useViewModelStore.getState()

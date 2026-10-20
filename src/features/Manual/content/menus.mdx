@@ -45,14 +45,20 @@ The **Edit** menu changes the network itself:
 | Create Node | Add a node near the top left of the view. |
 | Create Edge | Connect two selected nodes. Select at least two nodes first; if more are selected, the first two in the selection are used. |
 | Delete Selected Nodes, Delete Selected Edges | Delete the selected nodes or edges. |
-| Undo, Redo | The item names the change it will undo or redo, for example **Undo - Apply layout**. |
+| Undo, Redo | The item names the change it will undo or redo, for example **Undo - Apply layout**. Shortcuts: **Ctrl+Z** (**Cmd+Z** on a Mac) to undo; **Ctrl+Y** or **Ctrl+Shift+Z** (**Cmd+Shift+Z** on a Mac) to redo. They do not act while you type in a text field, while a dialog is open, or while you are creating an edge from a node. |
 
 You can also right-click in the network view. On empty space, Create Node
 adds a node where you clicked. On a node, **Create Edge from this
 Node** starts an edge: click a second node to finish it, or press Esc to
-cancel.
+cancel. If that node is deleted in the meantime, creating the edge is
+cancelled.
 
 Nodes and edges cannot be created in a hierarchy network.
+
+To delete the selected nodes and edges together, click the network view and
+press **Delete** or **Backspace**. The edges of a deleted node go with it, and
+one **Undo** brings everything back. The keys do nothing while you are
+creating an edge from a node.
 
 Undo keeps the last 20 changes for each network. It covers edits such as
 layouts, table edits, style changes and node or edge changes. Some actions

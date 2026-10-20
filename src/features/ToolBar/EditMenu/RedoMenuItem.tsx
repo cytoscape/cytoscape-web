@@ -8,6 +8,7 @@ import { useUndoStack } from '../../../data/hooks/useUndoStack'
 import { IdType } from '../../../models'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
+import { redoShortcutLabel } from './useUndoRedoShortcuts'
 
 export const RedoMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const { redoLastEdit } = useUndoStack()
@@ -42,6 +43,7 @@ export const RedoMenuItem = (props: BaseMenuItemProps): ReactElement => {
     <DropdownMenuItem
       label={disabled ? 'Redo' : `Redo - ${description}`}
       icon={<RedoIcon />}
+      shortcut={redoShortcutLabel()}
       disabled={disabled}
       onClick={handleRedo}
     />
