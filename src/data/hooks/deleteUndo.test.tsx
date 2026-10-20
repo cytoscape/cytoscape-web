@@ -172,7 +172,7 @@ describe('undo of node and edge deletion (#857)', () => {
   // Undo restores the deleted elements' bypasses into the visual property's
   // bypass map; it must not replace that map and drop the bypasses of the
   // elements that were never deleted.
-  describe('keeps the bypasses of elements that were not deleted', () => {
+  describe('bypasses through undo and redo', () => {
     const bypassOf = (vp: NodeVisualPropertyName | EdgeVisualPropertyName) =>
       Object.fromEntries(
         useVisualStyleStore.getState().visualStyles[NETWORK_ID][vp].bypassMap,
@@ -186,7 +186,7 @@ describe('undo of node and edge deletion (#857)', () => {
       })
     })
 
-    it('when a node deletion is undone', () => {
+    it('of a node deletion: undo keeps the others, redo drops the node again', () => {
       act(() => {
         const { setBypass } = useVisualStyleStore.getState()
         setBypass(
@@ -216,9 +216,17 @@ describe('undo of node and edge deletion (#857)', () => {
         n1: '#f00',
         n3: '#00f',
       })
+
+      // Redo drops the deleted node's bypass again, and only that one
+      act(() => {
+        undoHook.current.redoLastEdit()
+      })
+      expect(bypassOf(NodeVisualPropertyName.NodeBackgroundColor)).toEqual({
+        n3: '#00f',
+      })
     })
 
-    it('when an edge deletion is undone', () => {
+    it('of an edge deletion: undo keeps the others, redo drops the edge again', () => {
       act(() => {
         const { setBypass } = useVisualStyleStore.getState()
         setBypass(
@@ -246,6 +254,13 @@ describe('undo of node and edge deletion (#857)', () => {
 
       expect(bypassOf(EdgeVisualPropertyName.EdgeLineColor)).toEqual({
         e1: '#0f0',
+        e2: '#ff0',
+      })
+
+      act(() => {
+        undoHook.current.redoLastEdit()
+      })
+      expect(bypassOf(EdgeVisualPropertyName.EdgeLineColor)).toEqual({
         e2: '#ff0',
       })
     })

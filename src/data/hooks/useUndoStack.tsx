@@ -587,6 +587,21 @@ export const useUndoStack = () => {
   ])
 
   const redoLastEdit = useCallback(() => {
+    // Redo deletes through the delete cores, which leave style bypasses
+    // alone. Drop those of every deleted element, as the first deletion did:
+    // a node created later can reuse a deleted id (useCreateNode takes the
+    // highest id + 1) and would inherit the deleted node's bypasses.
+    const deleteBypassesOf = (networkId: IdType, ids: IdType[]): void => {
+      const visualStyle = useVisualStyleStore.getState().visualStyles[networkId]
+      if (visualStyle === undefined || ids.length === 0) return
+      Object.keys(visualStyle).forEach((vpName) => {
+        const bypassMap = visualStyle[vpName as VisualPropertyName]?.bypassMap
+        if (bypassMap !== undefined && ids.some((id) => bypassMap.has(id))) {
+          deleteBypass(networkId, vpName as VisualPropertyName, ids)
+        }
+      })
+    }
+
     const commandMap = {
       [UndoCommandType.SET_NETWORK_SUMMARY]: (params: any[]) => {
         updateNetworkSummary(params[0], params[1])
@@ -652,6 +667,7 @@ export const useUndoStack = () => {
 
         // Use the pure function to delete edges
         deleteEdgesCore(networkId, edgeIds, network, storeActions)
+        deleteBypassesOf(networkId, edgeIds)
       },
       [UndoCommandType.DELETE_NODES]: (params: any[]) => {
         // Redo node deletion
@@ -680,7 +696,16 @@ export const useUndoStack = () => {
         }
 
         // Use the pure function to delete nodes
-        deleteNodesCore(networkId, nodeIds, network, storeActions)
+        const { deletedEdges } = deleteNodesCore(
+          networkId,
+          nodeIds,
+          network,
+          storeActions,
+        )
+        deleteBypassesOf(networkId, [
+          ...nodeIds,
+          ...deletedEdges.map((edge) => edge.id),
+        ])
       },
       [UndoCommandType.DELETE_ELEMENTS]: (params: any[]) => {
         // Redo: the selected edges, then the nodes (with their other edges)
@@ -693,17 +718,20 @@ export const useUndoStack = () => {
           throw new Error(`Network ${networkId} not found`)
         }
 
+        const deletedIds = [...edgeIds]
         if (edgeIds.length > 0) {
           deleteEdgesCore(networkId, edgeIds, network, buildEdgeStoreActions())
         }
         if (nodeIds.length > 0) {
-          deleteNodesCore(
+          const { deletedEdges } = deleteNodesCore(
             networkId,
             nodeIds,
             useNetworkStore.getState().networks.get(networkId) ?? network,
             buildNodeStoreActions(),
           )
+          deletedIds.push(...nodeIds, ...deletedEdges.map((edge) => edge.id))
         }
+        deleteBypassesOf(networkId, deletedIds)
       },
       [UndoCommandType.CREATE_NODES]: (params: any[]) => {
         // Redo node creation

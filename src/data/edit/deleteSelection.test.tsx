@@ -233,7 +233,7 @@ describe('deleteSelectedElements', () => {
     ).toEqual(['e1', 'e3'])
   })
 
-  it('keeps the bypasses of elements it did not delete when undone', () => {
+  it('keeps the bypasses of elements it did not delete, through undo and redo', () => {
     const { result: undo } = renderHook(() => useUndoStack())
     act(() => {
       const { setBypass } = useVisualStyleStore.getState()
@@ -260,6 +260,49 @@ describe('deleteSelectedElements', () => {
     expect(
       Object.fromEntries(bypass(EdgeVisualPropertyName.EdgeLineColor)),
     ).toEqual({ e1: '#0f0', e2: '#ff0' })
+
+    // Redo drops the deleted elements' bypasses again, as the deletion did:
+    // a node created later can reuse a deleted id and would inherit them
+    act(() => {
+      undo.current.redoLastEdit()
+    })
+    expect(
+      Object.fromEntries(bypass(NodeVisualPropertyName.NodeBackgroundColor)),
+    ).toEqual({ n4: '#00f' })
+    expect(
+      Object.fromEntries(bypass(EdgeVisualPropertyName.EdgeLineColor)),
+    ).toEqual({ e2: '#ff0' })
+  })
+
+  it('drops the bypasses of a selected edge on redo, and keeps the others', () => {
+    const { result: undo } = renderHook(() => useUndoStack())
+    act(() => {
+      useVisualStyleStore
+        .getState()
+        .setBypass(
+          NET,
+          EdgeVisualPropertyName.EdgeLineColor,
+          ['e2', 'e3'],
+          '#0f0',
+        )
+    })
+    select([], ['e3'])
+    act(() => {
+      deleteSelectedElements(NET)
+    })
+    act(() => {
+      undo.current.undoLastEdit()
+    })
+    act(() => {
+      undo.current.redoLastEdit()
+    })
+    expect(
+      Object.fromEntries(
+        useVisualStyleStore.getState().visualStyles[NET][
+          EdgeVisualPropertyName.EdgeLineColor
+        ].bypassMap,
+      ),
+    ).toEqual({ e2: '#0f0' })
   })
 
   it('does nothing without a selection, a network or a view', () => {
