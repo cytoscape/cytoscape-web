@@ -18,6 +18,8 @@
 
 `WorkspaceEditor` renders the right pane, and its open button, only while `usePanelEntries()` has an entry. A non-hierarchy network with no app panels therefore shows neither; the stored `ui.panels.right` state is not changed, so the pane comes back as it was once a tab exists.
 
+`useHierarchyViewerManager` opens the pane on switching to a hierarchy. On switching away from one it closes the pane only while the Sub Network Viewer is the selected tab (or nothing was selected yet, which shows the viewer). When an app tab is selected, that tab is still there on the next network, so the pane stays open (#881).
+
 ### Network Activation
 
 When the "Sub Network Viewer" tab is clicked, the component activates the appropriate network view. The tab is matched by its resource id: it is not at index 0 when it is absent, and clicking the first app tab must not activate anything.
