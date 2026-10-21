@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 
-import { expect, gotoAndWaitReady, test } from './fixtures'
+import { expect, gotoAndWaitReady, installFixtureApp, test } from './fixtures'
 
 // The Panel API (`panel.open(panel, tabId?)`), end to end against the real
 // bundle and a real federated remote.
@@ -13,8 +13,6 @@ import { expect, gotoAndWaitReady, test } from './fixtures'
 // The app tab ('appdata') and the menu item that opens it live in the fixture
 // remote (test/fixtures/remote-app/AppConfig.tsx).
 
-const FIXTURE_MANIFEST_URL = 'http://localhost:4191/manifest.json'
-
 type ApiWindow = { CyWebApi?: any }
 
 const sidePanelTabs = '[data-testid="side-panel-tabs"]'
@@ -23,37 +21,16 @@ const openButton = '[data-testid="side-panel-open-button"]'
 const selectedRightTab = (page: Page) =>
   page.locator(`${sidePanelTabs} [role="tab"][aria-selected="true"]`)
 
-/** Register and activate the fixture remote. Same path as remote-app-load. */
-const installFixtureApp = async (page: Page): Promise<void> => {
-  const appsMenuButton = page.locator(
-    '[data-testid="toolbar-apps-menu-menu-button"]',
-  )
-  await expect(appsMenuButton).toBeEnabled({ timeout: 15_000 })
-  await appsMenuButton.click()
-  await page.getByRole('menuitem', { name: 'Manage Apps...' }).click()
-  await expect(page.locator('[data-testid="app-settings-dialog"]')).toBeVisible(
-    { timeout: 15_000 },
-  )
-  await page.getByTestId('app-settings-advanced-button').click()
-  await page.getByLabel('Custom manifest URL').fill(FIXTURE_MANIFEST_URL)
-  await page.getByRole('button', { name: 'Apply' }).click()
-
-  const toggle = page.locator('[data-testid="app-toggle-testRemoteApp"]')
-  await expect(toggle).toBeVisible({ timeout: 15_000 })
-  await toggle.click()
-  await expect(page.locator('[data-testid="remote-app-marker"]')).toBeVisible({
-    timeout: 15_000,
-  })
-  // By testid: `{ name: 'Close' }` also matches the side panel's "Close panel".
-  await page.locator('[data-testid="app-settings-dialog-close-button"]').click()
-  await expect(page.locator('[data-testid="app-settings-dialog"]')).toBeHidden()
-}
-
 test.describe('Panel API', () => {
   test('an Apps menu action opens the closed side panel on the app tab', async ({
     page,
   }) => {
     await gotoAndWaitReady(page, '/')
+    // No hierarchy, so no Sub Network Viewer, and no app panel yet: the right
+    // pane has no tab, and neither it nor its open button is shown (#877).
+    // The editor renders the button, so wait for it before checking.
+    await expect(page.getByTestId('workspace-editor')).toBeVisible()
+    await expect(page.locator(openButton)).toHaveCount(0)
     await installFixtureApp(page)
 
     // The right pane is closed: the side panel is not mounted at all.
@@ -84,13 +61,25 @@ test.describe('Panel API', () => {
     if ((await page.locator(openButton).count()) > 0) {
       await page.locator(openButton).click()
     }
-    await expect(selectedRightTab(page)).toHaveText('Sub Network Viewer')
+    // Not a hierarchy: the app's tab is the only one, and the built-in viewer
+    // is neither shown nor matched (#877).
+    await expect(selectedRightTab(page)).toHaveText('App Data')
+    await expect(
+      page.locator(`${sidePanelTabs} [role="tab"]`, {
+        hasText: 'Sub Network Viewer',
+      }),
+    ).toHaveCount(0)
 
     const open = (panel: string, tabId?: string) =>
       page.evaluate(
         ([p, t]) => (window as unknown as ApiWindow).CyWebApi.panel.open(p, t),
         [panel, tabId] as const,
       )
+
+    expect(await open('right', 'sub-network-viewer')).toMatchObject({
+      success: false,
+      error: { code: 'APP7' },
+    })
 
     expect(await open('right', 'appdata')).toEqual({
       success: true,

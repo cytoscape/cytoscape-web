@@ -190,8 +190,9 @@ src/app-api/
     duplicate-id tie-break; it registers nothing and needs no cleanup. It imports
     `isHCX` from `features/HierarchyViewer/utils/` — a pure predicate, the one
     sanctioned `features/` import in `core/` — to know whether the left pane's
-    `'llm-query'` tab exists. A new built-in tab needs an id in
-    `models/UiModel/PanelTab.ts` (public contract) and an entry in `panelTabs.ts`.
+    `'llm-query'` tab and the right pane's `'sub-network-viewer'` tab exist. A
+    new built-in tab needs an id in `models/UiModel/PanelTab.ts` (public
+    contract) and an entry in `panelTabs.ts`.
 
 ## Two-Layer Pattern
 

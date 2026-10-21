@@ -22,6 +22,7 @@ export const BottomPanelTabId = {
 } as const
 
 export const RightPanelTabId = {
+  /** Only present while the current network is a hierarchy (HCX). */
   SUB_NETWORK_VIEWER: 'sub-network-viewer',
 } as const
 
