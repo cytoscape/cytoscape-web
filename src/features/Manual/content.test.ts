@@ -194,6 +194,19 @@ describe('manual content', () => {
     },
   )
 
+  it.each(SCREENSHOT_RECIPES.map((r) => [r.id, r] as const))(
+    'screenshot %s crops inside its viewport, to one element or one region',
+    (_id, recipe) => {
+      if (recipe.clip === undefined) return
+      expect(recipe.capture).toBeUndefined()
+      const { x, y, width, height } = recipe.clip
+      expect(x).toBeGreaterThanOrEqual(0)
+      expect(y).toBeGreaterThanOrEqual(0)
+      expect(x + width).toBeLessThanOrEqual(recipe.viewport.width)
+      expect(y + height).toBeLessThanOrEqual(recipe.viewport.height)
+    },
+  )
+
   it.each(SCREENSHOT_RECIPES.map((r) => [r.id, r.sources] as const))(
     'screenshot %s names sources that exist',
     (_id, sources) => {

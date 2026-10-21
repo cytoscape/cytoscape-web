@@ -48,6 +48,18 @@ export interface ScreenshotRecipe {
   /** The element to crop to; the whole viewport when absent. */
   readonly capture?: ScreenshotTarget
   /**
+   * A region of the viewport to crop to, in pixels from its top-left corner:
+   * an element together with what surrounds it. Not with `capture`.
+   */
+  readonly clip?: {
+    readonly x: number
+    readonly y: number
+    readonly width: number
+    readonly height: number
+  }
+  /** Elements to ring, as in a sequence frame. */
+  readonly highlight?: readonly ScreenshotTarget[]
+  /**
    * Source paths the image shows, as globs. The manual drift check lists the
    * image for a new capture when one of them changes.
    */
@@ -70,6 +82,15 @@ const styleBox = (property: string, box: 0 | 1 | 2): ScreenshotTarget => ({
 
 export const SCREENSHOT_RECIPES: readonly ScreenshotRecipe[] = [
   {
+    id: 'welcome-screen',
+    alt: 'The Welcome to Cytoscape Web screen of an empty workspace, with its four buttons',
+    viewport: { width: 1280, height: 800 },
+    steps: [{ waitFor: { testid: 'empty-workspace-open-samples' } }],
+    // The panel fills the network area; crop to the centred card.
+    capture: { selector: '[data-testid="empty-workspace-panel"] > div' },
+    sources: ['src/features/NetworkPanel/EmptyWorkspacePanel.tsx'],
+  },
+  {
     id: 'app-overview',
     alt: 'Cytoscape Web with a network loaded: menu bar, side panel, network view and table panel',
     viewport: { width: 1280, height: 800 },
@@ -79,6 +100,20 @@ export const SCREENSHOT_RECIPES: readonly ScreenshotRecipe[] = [
       'src/features/ToolBar/MenuBar.tsx',
       'src/features/Workspace/NetworkBrowserPanel/**',
       'src/features/TableBrowser/components/TableToolbar.tsx',
+    ],
+  },
+  {
+    id: 'side-panel',
+    alt: 'The top-left of the window with the side panel ringed: the menu bar above it, the network view to its right and the table panel below',
+    viewport: { width: 1280, height: 800 },
+    steps: [{ importNetwork: GAL_NETWORK, expectText: GAL_NAME }],
+    highlight: [{ testid: 'workspace-editor-left-panel-open' }],
+    // Some of the window around the panel, so the reader sees where it sits.
+    // Ends below the table panel's tabs and left of the network's labels.
+    clip: { x: 0, y: 0, width: 650, height: 660 },
+    sources: [
+      'src/features/Workspace/WorkspaceEditor.tsx',
+      'src/features/Workspace/NetworkBrowserPanel/**',
     ],
   },
   {

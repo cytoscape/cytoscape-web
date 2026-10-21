@@ -195,7 +195,10 @@ Images of the app come from the app, not from a camera.
   `public/manual-assets/generated/<id>.png`, captured by a recipe in
   `screenshots/recipes.ts`: a fixed viewport, steps that drive the app
   (import a network, click by `data-testid`, role, text or `aria-label`), and
-  the element to crop to.
+  the element to crop to. A recipe can instead crop to a region of the
+  viewport (`clip`), to show an element with what surrounds it, and ring
+  elements (`highlight`) as a sequence frame does. Rings stay inside the
+  viewport, so a target at the window's edge keeps all four sides.
 - **Step sequences** — `SCREENSHOT_SEQUENCES` in the same file. One run of
   the app captures every frame in order; each frame continues from the state
   the previous one left. A frame lists the steps that reach its state, the
