@@ -702,7 +702,11 @@ interface ViewportApi {
     nodeIds: IdType[],
   ): ApiResult<{ positions: PositionRecord }>
 
-  updateNodePositions(networkId: IdType, positions: PositionRecord): ApiResult
+  updateNodePositions(
+    networkId: IdType,
+    positions: PositionRecord,
+    options?: { recordUndo?: boolean },
+  ): ApiResult
 }
 
 const useViewportApi: () => ViewportApi // React hook — returns viewportApi from core/
@@ -1946,8 +1950,9 @@ entry with pre-layout and post-layout position maps:
 
 **`fit()` returns `Promise<ApiResult>`** because `cy.fit()` may involve animation in future implementations. Currently synchronous but wrapped in Promise for API stability.
 
-**Undo behavior:** `updateNodePositions` does not record undo. Position updates via the
-viewport API are not undoable (unlike `applyLayout`).
+**Undo behavior:** `updateNodePositions` records no undo entry by default. With
+`{ recordUndo: true }` it records one `MOVE_NODES` entry holding the nodes that
+move (#874); see `src/app-api/api_docs/Api.md`.
 
 ---
 

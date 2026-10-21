@@ -27,6 +27,7 @@ import {
 } from '../../models/CyNetworkModel'
 import { DEFAULT_RENDERER_ID } from '../../models/RendererModel/impl/defaultRenderer'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
+import ViewModelFn from '../../models/ViewModel'
 import { VisualPropertyName } from '../../models/VisualStyleModel/VisualPropertyName'
 import { useNetworkStore } from './stores/NetworkStore'
 import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
@@ -37,15 +38,6 @@ import { useUndoStore } from './stores/UndoStore'
 import { useViewModelStore } from './stores/ViewModelStore'
 import { useVisualStyleStore } from './stores/VisualStyleStore'
 import { useWorkspaceStore } from './stores/WorkspaceStore'
-
-// Each index is read explicitly: every() skips the holes of a sparse array,
-// so [, 0] would pass and write an undefined coordinate.
-const isPosition = (value: unknown): value is [number, number, number?] =>
-  Array.isArray(value) &&
-  (value.length === 2 || value.length === 3) &&
-  Number.isFinite(value[0]) &&
-  Number.isFinite(value[1]) &&
-  (value.length === 2 || Number.isFinite(value[2]))
 
 export const useUndoStack = () => {
   const updateNetworkSummary = useNetworkSummaryStore((state) => state.update)
@@ -159,7 +151,7 @@ export const useUndoStack = () => {
       if (
         typeof networkId !== 'string' ||
         !(positions instanceof Map) ||
-        ![...positions.values()].every(isPosition)
+        ![...positions.values()].every(ViewModelFn.isNodePosition)
       ) {
         throw new Error('Malformed MOVE_NODES params')
       }

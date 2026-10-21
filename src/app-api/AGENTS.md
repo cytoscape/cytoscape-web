@@ -132,7 +132,7 @@ src/app-api/
     enabled. `corePostEdit` calls it, so a mutator that records undo gets it for free.
     A mutator that records none must call it explicitly — `tableApi.createColumn`,
     `importTableFromTsv`, all of `visualStyleApi`, and `viewportApi.updateNodePositions`
-    do. Mark on the `networkId` the caller passed, never on `currentNetworkId`: networks
+    without `recordUndo` (or when nothing moves) do. Mark on the `networkId` the caller passed, never on `currentNetworkId`: networks
     stay resident in the stores after a switch, so app writes routinely target one that is
     not on screen. Do NOT mark when the write changed nothing — a rejected write, an empty
     edit list, a `deleteBypass` for an element that had none. A spurious flag shows the
@@ -178,7 +178,7 @@ src/app-api/
     the unpublished beta.4 record shape (`type: 'integer'`, `range`) by name so an app built
     against it cannot register with silently wrong keys.
 
-18. **`panel.open` resolves tabs through the model the UI renders from** —
+19. **`panel.open` resolves tabs through the model the UI renders from** —
     `core/panelApi.ts` never keeps its own idea of which tabs exist. The left and
     bottom strips and the right pane's app tabs are listed by
     `src/models/UiModel/impl/panelTabs.ts`, which `SidePanel/TabContents.tsx` also
