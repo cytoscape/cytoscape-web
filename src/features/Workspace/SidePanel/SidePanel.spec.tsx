@@ -164,6 +164,24 @@ describe('SidePanel', () => {
       expect(selectedTabLabel()).toBe('Sub Network Viewer')
     })
 
+    it('records a click on the first tab while it stands in for the viewer', () => {
+      useSidePanelStore.getState().setSelectedTabId(SUB_NETWORK_VIEWER)
+      render(<SidePanel />)
+
+      // Shown selected already, so MUI fires no onChange for this click.
+      fireEvent.click(screen.getByRole('tab', { name: 'P1 title' }))
+
+      expect(useSidePanelStore.getState().selectedTabId).toBe(
+        'app1::right-panel::P1',
+      )
+
+      act(() => {
+        setCurrentNetwork('hcx1', true)
+      })
+
+      expect(selectedTabLabel()).toBe('P1 title')
+    })
+
     it('does not activate a network view when the first app tab is clicked', () => {
       useUiStateStore.getState().setActiveNetworkView('')
       render(<SidePanel />)

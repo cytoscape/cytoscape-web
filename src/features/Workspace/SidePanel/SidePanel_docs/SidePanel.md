@@ -11,7 +11,7 @@
 - Displays one tab per entry from `usePanelEntries()` (`TabContents.tsx`): the built-in "Sub Network Viewer", then the registered `'right-panel'` app resources
 - The "Sub Network Viewer" is listed only while the current network is a hierarchy (`isHCX` on its summary). Other networks have nothing to show in it, so it is left out rather than taking the first slot (#877). The App API resolves the same tabs through `listRightPanelTabs` in `src/models/UiModel/impl/panelTabs.ts`
 - Uses MUI `Tabs` component with scrollable variant for tab navigation
-- The selection is a resource id in `SidePanelStore.selectedTabId`, not an index, because the panel is unmounted while the pane is closed and `panel.open` selects before opening. A selected tab that disappears is replaced by the first tab, except the Sub Network Viewer: it is only hidden, so its selection is kept and comes back with the next hierarchy, while the strip shows the first tab
+- The selection is a resource id in `SidePanelStore.selectedTabId`, not an index, because the panel is unmounted while the pane is closed and `panel.open` selects before opening. A selected tab that disappears is replaced by the first tab, except the Sub Network Viewer: it is only hidden, so its selection is kept and comes back with the next hierarchy, while the strip shows the first tab. A click on that first tab is recorded by its `onClick`, since MUI fires no `onChange` for the tab it already shows selected
 - Tab contents are rendered by `renderPanelContents()`
 
 ### When the pane is shown

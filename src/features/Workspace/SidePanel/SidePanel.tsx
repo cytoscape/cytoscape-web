@@ -166,8 +166,13 @@ export const SidePanel = (): JSX.Element => {
             <Tab
               key={entry.resourceId}
               label={entry.label}
-              // onChange does not fire for the tab already selected
-              onClick={() => activateSubNetworkView(index)}
+              // onChange does not fire for the tab shown selected. That tab
+              // may only stand in for a hidden Sub Network Viewer selection,
+              // so record the click too.
+              onClick={() => {
+                setSelectedResourceId(entry.resourceId)
+                activateSubNetworkView(index)
+              }}
             />
           ))}
         </Tabs>
