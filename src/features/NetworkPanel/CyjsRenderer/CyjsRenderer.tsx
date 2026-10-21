@@ -5,7 +5,6 @@ import Cytoscape, {
   EdgeSingular,
   EventObject,
   NodeSingular,
-  Position,
   SingularElementArgument,
 } from 'cytoscape'
 import type { DebouncedFunc } from 'lodash'
@@ -58,6 +57,7 @@ import {
   resolveEdgeCreationTap,
 } from './edgeCreationMode'
 import { ContextMenuState, NetworkContextMenu } from './NetworkContextMenu'
+import { listenForNodeDrags } from './nodeDragUndo'
 import { applyNodeGraphics, resetNodeGraphics } from './nodeGraphicsApply'
 import { registerCyExtensions } from './registerCyExtensions'
 import {
@@ -107,11 +107,6 @@ const CyjsRenderer = ({
   // ============================================================================
   //                            CyjsRenderer Local State
   // ============================================================================
-
-  // Stores the drag start position of the node when the user starts dragging
-  const dragStartPosition = useRef<Map<IdType, { x: number; y: number }>>(
-    new Map(),
-  )
 
   // Hover state
   const [hoveredElement, setHoveredElement] = useState<IdType | undefined>(
@@ -299,11 +294,9 @@ const CyjsRenderer = ({
     useViewModelStore((state) => state.getViewModel)
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
   const toggleSelected = useViewModelStore((state) => state.toggleSelected)
-  const setNodePosition: (
-    networkId: IdType,
-    nodeId: IdType,
-    position: [number, number],
-  ) => void = useViewModelStore((state) => state.setNodePosition)
+  const updateNodePositions = useViewModelStore(
+    (state) => state.updateNodePositions,
+  )
 
   // Visual style store actions and selectors
   const setVisualStyle = useVisualStyleStore((state) => state.add)
@@ -800,72 +793,30 @@ const CyjsRenderer = ({
 
     // --- Node Dragging ---
 
-    // Record the node's position when dragging starts
-    cy.on('grab', 'node', (e: EventObject): void => {
-      const targetNode = e.target
-
-      // Only proceed if the target is a node (safety check)
-      if (typeof targetNode.isNode !== 'function' || !targetNode.isNode())
-        return
-
-      const nodeId: IdType = targetNode.data('id')
-      const position = targetNode.position()
-      // Read the store: this listener outlives the render that registered it.
-      const nodeView: NodeView | undefined = getViewModel(id)?.nodeViews[nodeId]
-      if (nodeView !== undefined) {
-        dragStartPosition.current.set(nodeId, { ...position })
-      }
-    })
-
-    // Handle node position update and undo/redo when dragging ends
-    cy.on('dragfree', 'node', (e: EventObject): void => {
-      // Set flag to avoid unnecessary fit
-      setNodesMoved(true)
-
-      // Get the Cytoscape.js node object and its ID
-      const targetNode: NodeSingular = e.target as NodeSingular
-      const nodeId: IdType = targetNode.data('id')
-
-      // Get the new position from Cytoscape.js
-      const position: Position = targetNode.position()
-
-      // Get the original position recorded at drag start
-      const startPos: { x: number; y: number } | undefined =
-        dragStartPosition.current.get(nodeId)
-
-      // Determine the undo position (original position)
-      let undoPosition: [number, number]
-      if (startPos !== undefined) {
-        undoPosition = [startPos.x, startPos.y]
-      } else {
-        logUi.warn(
-          `[${CyjsRenderer.name}]:[cy.on('dragfree', 'node')]: The start position of the node ${nodeId} is undefined. This should not happen.`,
+    // One drag is one undo entry, however many nodes it moved (#870)
+    listenForNodeDrags(
+      cy,
+      ({ from, to }): void => {
+        // Set flag to avoid unnecessary fit
+        setNodesMoved(true)
+        updateNodePositions(id, to)
+        postEdit(
+          UndoCommandType.MOVE_NODES,
+          `Move Nodes`,
+          [id, from],
+          [id, to],
+          id,
         )
-        // Fallback to the current position in the view model
-        const nodeView: NodeView | undefined =
-          getViewModel(id)?.nodeViews[nodeId]
-        if (nodeView !== undefined) {
-          undoPosition = [nodeView.x, nodeView.y]
-        } else {
-          // Fallback to (0, 0) if the node view is also undefined
-          undoPosition = [0, 0]
-        }
-      }
-
-      // Remove the cached original position
-      dragStartPosition.current.delete(nodeId)
-
-      // Update the view model with the new position
-      setNodePosition(id, nodeId, [position.x, position.y])
-
-      // Record the undo action for node movement
-      postEdit(
-        UndoCommandType.MOVE_NODES,
-        `Move Nodes`,
-        [id, nodeId, undoPosition],
-        [id, nodeId, [position.x, position.y]],
-      )
-    })
+      },
+      {
+        // Read the store: this listener outlives the render that registered it.
+        positionBeforeDrag: (nodeId) => {
+          const nodeView: NodeView | undefined =
+            getViewModel(id)?.nodeViews[nodeId]
+          return nodeView === undefined ? undefined : [nodeView.x, nodeView.y]
+        },
+      },
+    )
 
     // --- Hover Effects ---
 

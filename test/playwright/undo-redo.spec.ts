@@ -10,6 +10,9 @@ import { expect, gotoAndSeedNetwork, test } from './fixtures'
 // #857: a count is not enough — undo used to restore the topology without the
 // node and edge views, so the nodes came back invisible and without positions.
 // The second test reads what the renderer actually draws.
+//
+// #870: dragging a selection recorded one undo entry per node, so one undo
+// put back only one of them. The last test drags two nodes with the mouse.
 
 type CyWebApiWindow = {
   CyWebApi?: {
@@ -37,6 +40,7 @@ type CyWebApiWindow = {
         networkId: string,
         positions: Record<string, [number, number]>,
       ) => { success: boolean }
+      fit: (networkId: string) => Promise<{ success: boolean }>
     }
   }
 }
@@ -88,6 +92,23 @@ const getRendered = async (page: Page): Promise<Rendered | null> =>
       hiddenCount: cy.elements().filter((ele: any) => !ele.visible()).length,
     }
   })
+
+/** Where a node is drawn, in page coordinates, so the mouse can grab it. */
+const getNodePagePosition = async (
+  page: Page,
+  nodeId: string,
+): Promise<{ x: number; y: number }> => {
+  const renderer = page.getByTestId('cyjs-renderer')
+  const box = await renderer.boundingBox()
+  if (box === null) throw new Error('The renderer is not visible')
+  const rendered = await renderer.evaluate((container, id) => {
+    const cy = (container as HTMLElement & { _cyreg?: { cy?: any } })._cyreg?.cy
+    const position = cy?.getElementById(id).renderedPosition()
+    return position === undefined ? null : { x: position.x, y: position.y }
+  }, nodeId)
+  if (rendered === null) throw new Error(`Node ${nodeId} is not drawn`)
+  return { x: box.x + rendered.x, y: box.y + rendered.y }
+}
 
 test.describe('Undo and Redo', () => {
   test('node deletion is undone and redone through the Edit menu', async ({
@@ -168,5 +189,76 @@ test.describe('Undo and Redo', () => {
     await expect
       .poll(() => getRendered(page), { timeout: 10000 })
       .toEqual({ nodes: expected, edgeCount: 1, hiddenCount: 0 })
+  })
+
+  test('one undo moves every node of a multi-node drag back (#870)', async ({
+    page,
+  }) => {
+    await gotoAndSeedNetwork(page)
+
+    // Apart, so the drag grabs one node and must carry the other along
+    const before = await page.evaluate(async () => {
+      const api = (window as unknown as CyWebApiWindow).CyWebApi
+      const current = api?.workspace.getCurrentNetworkId()
+      if (!current?.success || current.data === undefined) return null
+      const { networkId } = current.data
+      const nodeIds = api?.element.getNodeIds(networkId)?.data?.nodeIds ?? []
+      const positions: Record<string, [number, number]> = {}
+      nodeIds.forEach((id, i) => {
+        positions[id] = [200 * i, 100 * i]
+      })
+      api?.viewport.updateNodePositions(networkId, positions)
+      await api?.viewport.fit(networkId)
+      return positions
+    })
+    expect(before).not.toBeNull()
+    const nodeIds = Object.keys(before!)
+    expect(nodeIds).toHaveLength(2)
+    await expect
+      .poll(async () => (await getRendered(page))?.nodes, { timeout: 10000 })
+      .toEqual(before)
+
+    const selected = await page.evaluate((ids) => {
+      const api = (window as unknown as CyWebApiWindow).CyWebApi
+      const current = api?.workspace.getCurrentNetworkId()
+      if (!current?.success || current.data === undefined) return false
+      return api?.selection.exclusiveSelect(current.data.networkId, ids, [])
+        ?.success
+    }, nodeIds)
+    expect(selected).toBe(true)
+
+    // Grabbing one selected node drags the whole selection
+    const start = await getNodePagePosition(page, nodeIds[0])
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    await page.mouse.move(start.x + 60, start.y + 40, { steps: 10 })
+    await page.mouse.up()
+
+    await expect
+      .poll(
+        async () => {
+          const { nodes } = (await getRendered(page))!
+          return nodeIds.every(
+            (id) =>
+              nodes[id][0] !== before![id][0] ||
+              nodes[id][1] !== before![id][1],
+          )
+        },
+        { timeout: 10000 },
+      )
+      .toBe(true)
+    const after = (await getRendered(page))!.nodes
+
+    // One undo puts both back...
+    await page.keyboard.press('ControlOrMeta+z')
+    await expect
+      .poll(async () => (await getRendered(page))?.nodes, { timeout: 10000 })
+      .toEqual(before)
+
+    // ...and one redo moves both forward again
+    await page.keyboard.press('ControlOrMeta+Shift+z')
+    await expect
+      .poll(async () => (await getRendered(page))?.nodes, { timeout: 10000 })
+      .toEqual(after)
   })
 })
