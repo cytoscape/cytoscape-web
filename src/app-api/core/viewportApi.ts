@@ -6,14 +6,26 @@ import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { useRendererFunctionStore } from '../../data/hooks/stores/RendererFunctionStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { IdType } from '../../models/IdType'
+import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
+import ViewModelFn, { NodeView } from '../../models/ViewModel'
 import { AppCodes, ApiResult, fail, ok } from '../types/ApiResult'
-import { markNetworkModified } from './undo'
+import { corePostEdit, markNetworkModified } from './undo'
 import { validateNodesExist } from './validation'
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
 /** JSON-serializable position map: nodeId → [x, y, z?] */
 export type PositionRecord = Record<IdType, [number, number, number?]>
+
+export interface UpdateNodePositionsOptions {
+  /**
+   * Record the move as one undo entry, so the user can undo it with Edit ▸
+   * Undo (Ctrl/⌘+Z), as they can a drag or a layout. Off by default: an app
+   * that animates nodes or moves them in steps would otherwise fill the undo
+   * stack and push out the user's own edits. Only `true` turns it on.
+   */
+  recordUndo?: boolean
+}
 
 export interface ViewportApi {
   fit(networkId: IdType): Promise<ApiResult>
@@ -28,8 +40,27 @@ export interface ViewportApi {
     nodeIds?: IdType[],
   ): ApiResult<{ positions: PositionRecord; missing: IdType[] }>
 
-  updateNodePositions(networkId: IdType, positions: PositionRecord): ApiResult
+  /**
+   * Move nodes. All or nothing: fails without moving any node when a key is
+   * not a node in the network or a value is not `[x, y]` / `[x, y, z]` of
+   * finite numbers. Records no undo entry unless `options.recordUndo` is
+   * `true`; the entry then holds only the nodes that move.
+   */
+  updateNodePositions(
+    networkId: IdType,
+    positions: PositionRecord,
+    options?: UpdateNodePositionsOptions,
+  ): ApiResult
 }
+
+/** Whether a node view is already at `position` (z only when given). */
+const isAt = (
+  nodeView: NodeView,
+  position: [number, number, number?],
+): boolean =>
+  nodeView.x === position[0] &&
+  nodeView.y === position[1] &&
+  (position[2] === undefined || nodeView.z === position[2])
 
 // ── Core implementation ──────────────────────────────────────────────────────
 
@@ -90,33 +121,81 @@ export const viewportApi: ViewportApi = {
     }
   },
 
-  updateNodePositions(networkId, positions): ApiResult {
+  updateNodePositions(networkId, positions, options): ApiResult {
     try {
       const viewModel = useViewModelStore.getState().getViewModel(networkId)
       if (viewModel === undefined) {
         return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
-      // An empty record moves no node. Checked after the network lookup, so a
-      // bogus networkId still reports NETWORK_NOT_FOUND rather than silently
-      // succeeding.
-      const nodeIds = Object.keys(positions)
-      if (nodeIds.length === 0) {
+      // App input is untyped at runtime. Checked after the network lookup, so
+      // a bogus networkId still reports NETWORK_NOT_FOUND.
+      if (
+        positions === null ||
+        typeof positions !== 'object' ||
+        Array.isArray(positions)
+      ) {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          'positions must be an object of node id to [x, y] or [x, y, z]',
+        )
+      }
+      // An empty record moves no node.
+      const entries = Object.entries(positions)
+      if (entries.length === 0) {
         return ok()
       }
 
-      const missingNodes = validateNodesExist(networkId, nodeIds)
+      const invalid = entries.find(
+        ([, position]) => !ViewModelFn.isNodePosition(position),
+      )
+      if (invalid !== undefined) {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          `position of node "${invalid[0]}" must be [x, y] or [x, y, z] of finite numbers`,
+        )
+      }
+
+      const missingNodes = validateNodesExist(
+        networkId,
+        entries.map(([nodeId]) => nodeId),
+      )
       if (missingNodes) return missingNodes
 
-      // Convert PositionRecord (JSON-serializable) to Map required by store
-      const positionMap = new Map<IdType, [number, number, number?]>(
-        Object.entries(positions) as Array<[IdType, [number, number, number?]]>,
-      )
+      const positionMap = new Map<IdType, [number, number, number?]>(entries)
+
+      // Snapshot before the write. Only nodes that move go in the entry, and a
+      // node without a view has no position to put back. An app that adds a z
+      // to a node without one cannot have it removed by undo: the store only
+      // writes z, never clears it.
+      const undoPositions = new Map<IdType, [number, number, number?]>()
+      const redoPositions = new Map<IdType, [number, number, number?]>()
+      if (options?.recordUndo === true) {
+        for (const [nodeId, position] of positionMap) {
+          const nodeView: NodeView | undefined = viewModel.nodeViews[nodeId]
+          if (nodeView === undefined || isAt(nodeView, position)) continue
+          undoPositions.set(
+            nodeId,
+            nodeView.z === undefined
+              ? [nodeView.x, nodeView.y]
+              : [nodeView.x, nodeView.y, nodeView.z],
+          )
+          redoPositions.set(nodeId, position)
+        }
+      }
+
       useViewModelStore.getState().updateNodePositions(networkId, positionMap)
-      // No undo entry: app repositions have never been undoable. MOVE_NODES
-      // takes a batch since #870, so recording one is possible, but it would
-      // change App API behaviour. layoutApi's own moves already go through
-      // corePostEdit, which marks the network itself.
-      markNetworkModified(networkId)
+      if (redoPositions.size > 0) {
+        // Marks the network modified too
+        corePostEdit(
+          networkId,
+          UndoCommandType.MOVE_NODES,
+          'Move Nodes',
+          [networkId, undoPositions],
+          [networkId, redoPositions],
+        )
+      } else {
+        markNetworkModified(networkId)
+      }
       return ok()
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))

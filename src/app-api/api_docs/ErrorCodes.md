@@ -418,8 +418,10 @@ so this code cannot yet be decomposed into the specific CX2 rule that failed.
 A residual bucket for caller errors that don't correspond to a CX2 validation
 requirement: empty required strings (`name`, `label`, column names before the
 FK1/A8 checks apply), empty required arrays (`edgeList`, `nodeIds`,
-`elementIds`), an unrecognized visual property or mapping type name, or a
-TSV import with too few lines or a missing key column. The message describes
+`elementIds`), an unrecognized visual property or mapping type name, a
+TSV import with too few lines or a missing key column, or an
+`updateNodePositions` record that is not an object or has a value that is not
+`[x, y]` / `[x, y, z]` of finite numbers. The message describes
 the specific problem; the code itself is intentionally coarse — inventing a
 bespoke code for each one-off "caller passed garbage" case would add ceremony
 without adding information external callers can act on differently.

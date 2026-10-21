@@ -13,6 +13,8 @@ import { expect, gotoAndSeedNetwork, test } from './fixtures'
 //
 // #870: dragging a selection recorded one undo entry per node, so one undo
 // put back only one of them. The last test drags two nodes with the mouse.
+//
+// #874: an app move made with { recordUndo: true } is undone by one Ctrl/⌘+Z.
 
 type CyWebApiWindow = {
   CyWebApi?: {
@@ -39,6 +41,7 @@ type CyWebApiWindow = {
       updateNodePositions: (
         networkId: string,
         positions: Record<string, [number, number]>,
+        options?: { recordUndo?: boolean },
       ) => { success: boolean }
       fit: (networkId: string) => Promise<{ success: boolean }>
     }
@@ -303,6 +306,60 @@ test.describe('Undo and Redo', () => {
       .toEqual(before)
 
     // ...and one redo moves both forward again
+    await page.keyboard.press('ControlOrMeta+Shift+z')
+    await expect
+      .poll(async () => (await getRendered(page))?.nodes, { timeout: 10000 })
+      .toEqual(after)
+  })
+
+  test('one undo reverts an app move made with recordUndo (#874)', async ({
+    page,
+  }) => {
+    await gotoAndSeedNetwork(page)
+
+    // Known start positions, recorded without undo
+    const before = await page.evaluate(async () => {
+      const api = (window as unknown as CyWebApiWindow).CyWebApi
+      const current = api?.workspace.getCurrentNetworkId()
+      if (!current?.success || current.data === undefined) return null
+      const { networkId } = current.data
+      const nodeIds = api?.element.getNodeIds(networkId)?.data?.nodeIds ?? []
+      const positions: Record<string, [number, number]> = {}
+      nodeIds.forEach((id, i) => {
+        positions[id] = [200 * i, 100 * i]
+      })
+      api?.viewport.updateNodePositions(networkId, positions)
+      await api?.viewport.fit(networkId)
+      return positions
+    })
+    expect(before).not.toBeNull()
+    await expect
+      .poll(async () => (await getRendered(page))?.nodes, { timeout: 10000 })
+      .toEqual(before)
+
+    const after = Object.fromEntries(
+      Object.entries(before!).map(([id, [x, y]]) => [id, [x + 50, y - 30]]),
+    ) as Record<string, [number, number]>
+    const moved = await page.evaluate((positions) => {
+      const api = (window as unknown as CyWebApiWindow).CyWebApi
+      const current = api?.workspace.getCurrentNetworkId()
+      if (!current?.success || current.data === undefined) return false
+      return api?.viewport.updateNodePositions(
+        current.data.networkId,
+        positions,
+        { recordUndo: true },
+      ).success
+    }, after)
+    expect(moved).toBe(true)
+    await expect
+      .poll(async () => (await getRendered(page))?.nodes, { timeout: 10000 })
+      .toEqual(after)
+
+    await page.keyboard.press('ControlOrMeta+z')
+    await expect
+      .poll(async () => (await getRendered(page))?.nodes, { timeout: 10000 })
+      .toEqual(before)
+
     await page.keyboard.press('ControlOrMeta+Shift+z')
     await expect
       .poll(async () => (await getRendered(page))?.nodes, { timeout: 10000 })
