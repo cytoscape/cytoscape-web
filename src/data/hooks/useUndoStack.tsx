@@ -38,10 +38,14 @@ import { useViewModelStore } from './stores/ViewModelStore'
 import { useVisualStyleStore } from './stores/VisualStyleStore'
 import { useWorkspaceStore } from './stores/WorkspaceStore'
 
+// Each index is read explicitly: every() skips the holes of a sparse array,
+// so [, 0] would pass and write an undefined coordinate.
 const isPosition = (value: unknown): value is [number, number, number?] =>
   Array.isArray(value) &&
   (value.length === 2 || value.length === 3) &&
-  value.every((coordinate) => Number.isFinite(coordinate))
+  Number.isFinite(value[0]) &&
+  Number.isFinite(value[1]) &&
+  (value.length === 2 || Number.isFinite(value[2]))
 
 export const useUndoStack = () => {
   const updateNetworkSummary = useNetworkSummaryStore((state) => state.update)

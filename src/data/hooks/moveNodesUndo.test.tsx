@@ -157,6 +157,15 @@ describe('undo of a node drag (#870)', () => {
   it.each([
     ['a non-numeric position', [NETWORK_ID, new Map([['n1', ['x', 0]]])]],
     ['a non-finite position', [NETWORK_ID, new Map([['n1', [NaN, 0]]])]],
+    // every() skips holes, so these must be checked index by index
+    // oxlint-disable-next-line no-sparse-arrays -- the hole is the case
+    ['a sparse position', [NETWORK_ID, new Map([['n1', [, 0]]])]],
+    [
+      'undefined coordinates',
+      [NETWORK_ID, new Map([['n1', Array.from({ length: 2 })]])],
+    ],
+    // oxlint-disable-next-line no-sparse-arrays -- the hole is the case
+    ['a sparse z', [NETWORK_ID, new Map([['n1', [0, 0, ,]]])]],
     ['neither a map nor a node id', [NETWORK_ID, { n1: [0, 0] }]],
     ['a legacy entry without a position', [NETWORK_ID, 'n1', 'oops']],
   ])(
