@@ -466,18 +466,48 @@ test.describe('Hierarchy network view tabs', () => {
 test.describe('Right panel on leaving a hierarchy (#881)', () => {
   const sidePanel = '[data-testid="side-panel"]'
   const openButton = '[data-testid="side-panel-open-button"]'
-  const selectedRightTab = (page: Page) =>
-    page.locator(
-      '[data-testid="side-panel-tabs"] [role="tab"][aria-selected="true"]',
+  const viewerTab = (page: Page) =>
+    page.getByTestId(
+      'side-panel-tab-button-__builtin__::right-panel::sub-network-viewer',
     )
-  const workspaceItem = (page: Page, name: string) =>
-    page
-      .locator('[data-testid="workspace-editor-left-panel-open"]')
-      .getByText(name)
-      .first()
+  const appDataTab = (page: Page) =>
+    page.getByTestId(
+      'side-panel-tab-button-testRemoteApp::right-panel::appdata',
+    )
+  const workspaceItem = (page: Page, networkId: string) =>
+    page.getByTestId(`workspace-network-${networkId}`)
 
-  /** A hierarchy and a regular network, the fixture app, the hierarchy current. */
-  const openHierarchyWithAppTab = async (page: Page): Promise<void> => {
+  /** The workspace network named `name`. */
+  const networkIdByName = (page: Page, name: string): Promise<string> =>
+    page.evaluate((networkName) => {
+      type Result<T> = { success: boolean; data: T }
+      const api = (
+        window as unknown as {
+          CyWebApi: {
+            workspace: {
+              getNetworkIds: () => Result<{ networkIds: string[] }>
+              getNetworkSummary: (id: string) => Result<{ name: string }>
+            }
+          }
+        }
+      ).CyWebApi.workspace
+      // Not by position: the workspace lists the newest network first.
+      return (
+        api
+          .getNetworkIds()
+          .data.networkIds.find(
+            (id) => api.getNetworkSummary(id).data.name === networkName,
+          ) ?? ''
+      )
+    }, name)
+
+  /**
+   * A hierarchy and a regular network, the fixture app, the hierarchy
+   * current. Returns the two network ids.
+   */
+  const openHierarchyWithAppTab = async (
+    page: Page,
+  ): Promise<{ hierarchyId: string; regularId: string }> => {
     await importNetworkFile(page, TREE_HCX, 'Test Network 15 nodes')
     await installFixtureApp(page)
     await importAnotherNetworkFile(
@@ -486,31 +516,33 @@ test.describe('Right panel on leaving a hierarchy (#881)', () => {
       'Test Network 20 nodes',
       2,
     )
-    await workspaceItem(page, 'Test Network 15 nodes').click()
-    await expect(selectedRightTab(page)).toHaveText('Sub Network Viewer', {
+    const hierarchyId = await networkIdByName(page, 'Test Network 15 nodes')
+    const regularId = await networkIdByName(page, 'Test Network 20 nodes')
+    await workspaceItem(page, hierarchyId).click()
+    await expect(viewerTab(page)).toHaveAttribute('aria-selected', 'true', {
       timeout: 15000,
     })
+    return { hierarchyId, regularId }
   }
 
   test('stays open on the app tab the user selected', async ({ page }) => {
-    await openHierarchyWithAppTab(page)
-    await page.getByRole('tab', { name: 'App Data' }).click()
-    await expect(selectedRightTab(page)).toHaveText('App Data')
+    const { regularId } = await openHierarchyWithAppTab(page)
+    await appDataTab(page).click()
+    await expect(appDataTab(page)).toHaveAttribute('aria-selected', 'true')
 
-    await workspaceItem(page, 'Test Network 20 nodes').click()
+    await workspaceItem(page, regularId).click()
 
     // The viewer's tab is gone, the panel is not.
-    await expect(
-      page.getByRole('tab', { name: 'Sub Network Viewer' }),
-    ).toHaveCount(0)
+    await expect(viewerTab(page)).toHaveCount(0)
     await expect(page.locator(sidePanel)).toBeVisible()
-    await expect(selectedRightTab(page)).toHaveText('App Data')
+    await expect(appDataTab(page)).toHaveAttribute('aria-selected', 'true')
+    await expect(appDataTab(page)).toHaveText('App Data')
   })
 
   test('closes with the Sub Network Viewer selected', async ({ page }) => {
-    await openHierarchyWithAppTab(page)
+    const { regularId } = await openHierarchyWithAppTab(page)
 
-    await workspaceItem(page, 'Test Network 20 nodes').click()
+    await workspaceItem(page, regularId).click()
 
     // Closed, but the app tab is still there to open it on.
     await expect(page.locator(sidePanel)).toHaveCount(0)

@@ -165,6 +165,7 @@ export const SidePanel = (): JSX.Element => {
           {entries.map((entry, index) => (
             <Tab
               key={entry.resourceId}
+              data-testid={`side-panel-tab-button-${entry.resourceId}`}
               label={entry.label}
               // onChange does not fire for the tab shown selected. That tab
               // may only stand in for a hidden Sub Network Viewer selection,

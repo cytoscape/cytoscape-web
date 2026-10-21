@@ -503,6 +503,7 @@ export const NetworkPropertyPanel = ({
   return (
     <>
       <Box
+        data-testid={`workspace-network-${id}`}
         sx={{
           backgroundColor: (theme) =>
             currentNetworkId === id
