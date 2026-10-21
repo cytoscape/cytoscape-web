@@ -4,6 +4,7 @@ import {
   expect,
   getWorkspaceNetworkCount,
   gotoAndWaitReady,
+  installFixtureApp,
   test,
 } from './fixtures'
 import type { Page } from '@playwright/test'
@@ -456,5 +457,63 @@ test.describe('Hierarchy network view tabs', () => {
     await treeViewTab.click()
     await expect(treeView).toBeVisible({ timeout: 15000 })
     expect(await settledCamera()).toEqual(before)
+  })
+})
+
+// Leaving a hierarchy closes the right panel only when the Sub Network Viewer
+// is the selected tab. An app tab the user chose is still there on the next
+// network, so the panel stays open on it (#881).
+test.describe('Right panel on leaving a hierarchy (#881)', () => {
+  const sidePanel = '[data-testid="side-panel"]'
+  const openButton = '[data-testid="side-panel-open-button"]'
+  const selectedRightTab = (page: Page) =>
+    page.locator(
+      '[data-testid="side-panel-tabs"] [role="tab"][aria-selected="true"]',
+    )
+  const workspaceItem = (page: Page, name: string) =>
+    page
+      .locator('[data-testid="workspace-editor-left-panel-open"]')
+      .getByText(name)
+      .first()
+
+  /** A hierarchy and a regular network, the fixture app, the hierarchy current. */
+  const openHierarchyWithAppTab = async (page: Page): Promise<void> => {
+    await importNetworkFile(page, TREE_HCX, 'Test Network 15 nodes')
+    await installFixtureApp(page)
+    await importAnotherNetworkFile(
+      page,
+      REGULAR_CX2,
+      'Test Network 20 nodes',
+      2,
+    )
+    await workspaceItem(page, 'Test Network 15 nodes').click()
+    await expect(selectedRightTab(page)).toHaveText('Sub Network Viewer', {
+      timeout: 15000,
+    })
+  }
+
+  test('stays open on the app tab the user selected', async ({ page }) => {
+    await openHierarchyWithAppTab(page)
+    await page.getByRole('tab', { name: 'App Data' }).click()
+    await expect(selectedRightTab(page)).toHaveText('App Data')
+
+    await workspaceItem(page, 'Test Network 20 nodes').click()
+
+    // The viewer's tab is gone, the panel is not.
+    await expect(
+      page.getByRole('tab', { name: 'Sub Network Viewer' }),
+    ).toHaveCount(0)
+    await expect(page.locator(sidePanel)).toBeVisible()
+    await expect(selectedRightTab(page)).toHaveText('App Data')
+  })
+
+  test('closes with the Sub Network Viewer selected', async ({ page }) => {
+    await openHierarchyWithAppTab(page)
+
+    await workspaceItem(page, 'Test Network 20 nodes').click()
+
+    // Closed, but the app tab is still there to open it on.
+    await expect(page.locator(sidePanel)).toHaveCount(0)
+    await expect(page.locator(openButton)).toBeVisible()
   })
 })

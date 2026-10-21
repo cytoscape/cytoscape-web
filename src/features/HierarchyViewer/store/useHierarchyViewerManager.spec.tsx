@@ -3,10 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useRendererStore } from '../../../data/hooks/stores/RendererStore'
+import { useSidePanelStore } from '../../../data/hooks/stores/SidePanelStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { createNetworkSummary } from '../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { HcxMetaTag } from '../model/HcxMetaTag'
+import { BUILTIN_SUB_NETWORK_RESOURCE_ID } from '../../../models/UiModel/impl/panelTabs'
 import { Panel } from '../../../models/UiModel/Panel'
 import { PanelState } from '../../../models/UiModel/PanelState'
 import { useHierarchyViewerManager } from './useHierarchyViewerManager'
@@ -114,7 +116,9 @@ describe('useHierarchyViewerManager (CW-466)', () => {
 // The right panel follows `enablePopup` only when it CHANGES: switching to a
 // hierarchy opens the panel, switching away closes it. Mounting must not
 // close it, or `?right=open` (and a restored open panel) is undone on every
-// boot with a regular network.
+// boot with a regular network. Leaving a hierarchy closes it only when the
+// Sub Network Viewer is the selected tab: an app tab the user chose is still
+// there on the next network (#881).
 describe('useHierarchyViewerManager right panel', () => {
   const regularSummary = createNetworkSummary({
     networkId: 'net1',
@@ -124,7 +128,18 @@ describe('useHierarchyViewerManager right panel', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    useSidePanelStore.setState({ selectedTabId: null })
   })
+
+  /** Enter a hierarchy, then leave it. */
+  const enterAndLeaveHierarchy = (): void => {
+    const uiStoreState = setupStores(regularSummary)
+    const { rerender } = renderHook(() => useHierarchyViewerManager())
+    uiStoreState.ui = { ...uiStoreState.ui, enablePopup: true }
+    rerender()
+    uiStoreState.ui = { ...uiStoreState.ui, enablePopup: false }
+    rerender()
+  }
 
   it('leaves the right panel alone when it mounts', () => {
     setupStores(regularSummary)
@@ -152,5 +167,28 @@ describe('useHierarchyViewerManager right panel', () => {
       PanelState.CLOSED,
     )
     expect(setPanelStateMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('closes the right panel on leaving a hierarchy with the Sub Network Viewer selected', () => {
+    useSidePanelStore.setState({
+      selectedTabId: BUILTIN_SUB_NETWORK_RESOURCE_ID,
+    })
+
+    enterAndLeaveHierarchy()
+
+    expect(setPanelStateMock).toHaveBeenLastCalledWith(
+      Panel.RIGHT,
+      PanelState.CLOSED,
+    )
+  })
+
+  it('keeps the right panel open on leaving a hierarchy with an app tab selected', () => {
+    useSidePanelStore.setState({ selectedTabId: 'mcode::right-panel::results' })
+
+    enterAndLeaveHierarchy()
+
+    // Only the open on entering the hierarchy.
+    expect(setPanelStateMock).toHaveBeenCalledTimes(1)
+    expect(setPanelStateMock).toHaveBeenCalledWith(Panel.RIGHT, PanelState.OPEN)
   })
 })

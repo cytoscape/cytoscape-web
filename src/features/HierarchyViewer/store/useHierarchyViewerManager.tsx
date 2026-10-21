@@ -10,12 +10,14 @@ import {
 } from '../../../data/db'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useRendererStore } from '../../../data/hooks/stores/RendererStore'
+import { useSidePanelStore } from '../../../data/hooks/stores/SidePanelStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { logDb } from '../../../debug'
 import { IdType } from '../../../models/IdType'
 import { NetworkSummary } from '../../../models/NetworkSummaryModel'
 import { DEFAULT_RENDERER_ID } from '../../../models/RendererModel/impl/defaultRenderer'
+import { BUILTIN_SUB_NETWORK_RESOURCE_ID } from '../../../models/UiModel/impl/panelTabs'
 import { Panel } from '../../../models/UiModel/Panel'
 import { PanelState } from '../../../models/UiModel/PanelState'
 import { isHCX } from '../utils/hierarchyUtil'
@@ -148,6 +150,11 @@ export const useHierarchyViewerManager = (): void => {
   // boot with a regular network (`enablePopup` starts false), undoing
   // `?right=open` and a restored open panel some time after boot had opened
   // it — a race e2e specs that need the panel kept losing.
+  //
+  // Leaving a hierarchy closes the panel only while the Sub Network Viewer is
+  // the selected tab (or none was chosen yet, which shows the viewer): it is
+  // the tab that goes away. An app tab the user picked is still there on the
+  // next network, so closing the panel would only make them reopen it (#881).
   const lastEnablePopupRef = useRef(uiState.enablePopup)
   useEffect(() => {
     const showPanel: boolean = uiState.enablePopup
@@ -155,6 +162,16 @@ export const useHierarchyViewerManager = (): void => {
       return
     }
     lastEnablePopupRef.current = showPanel
-    setPanelState(Panel.RIGHT, showPanel ? PanelState.OPEN : PanelState.CLOSED)
+    if (showPanel) {
+      setPanelState(Panel.RIGHT, PanelState.OPEN)
+      return
+    }
+    const { selectedTabId } = useSidePanelStore.getState()
+    if (
+      selectedTabId === null ||
+      selectedTabId === BUILTIN_SUB_NETWORK_RESOURCE_ID
+    ) {
+      setPanelState(Panel.RIGHT, PanelState.CLOSED)
+    }
   }, [uiState.enablePopup, setPanelState])
 }
