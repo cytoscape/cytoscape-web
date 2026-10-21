@@ -48,7 +48,6 @@ This separation keeps the React component focused on orchestration while delegat
     screen were last styled from, so `onStyleModelUpdate` skips inputs a render just applied
 
 - **Interaction state**
-  - `dragStartPosition`: remembers node positions at the start of a drag (for undo/redo)
   - `hoveredElement`, `lastHoveredElement`: track hover state for nodes/edges
   - `subSelectedEdges`: reserved for future show/hide mode implementation
   - `clickSelection`: distinguishes click-based selection from filter-based selection
@@ -210,12 +209,25 @@ The `SHOW_HIDE` display mode was removed from the UI and renderer implementation
 
 ### Undo/Redo for Node Movement
 
-When the user drags nodes:
+A drag is one undo entry, however many nodes it moves (#870).
+`listenForNodeDrags` (`nodeDragUndo.ts`) does the grouping:
 
-1. `dragStartPosition` records initial positions by node id
-2. On drag end, the renderer compares original vs final positions
-3. If positions changed, `postEdit` is called with an `UndoCommandType` for node movement
-4. View model updates propagate to stores and can be undone/redone
+1. `grab` records each grabbed node's start position. Dragging a selection
+   grabs every selected node, one `grab` event each.
+2. Cytoscape.js then emits `dragfree` on each dragged node in turn,
+   synchronously. The listener collects them and reports the drag once, in a
+   microtask that runs after the last one. `dragfreeon` fires once per drag,
+   but before the per-node `dragfree` events, so it cannot end the batch.
+3. Nodes that end where they started are left out; a drag that moved none
+   records nothing. A node whose `grab` the listener missed (a re-render
+   re-registered the listeners mid-drag) takes its start from the view model,
+   which a drag does not touch until it ends.
+4. The renderer writes all end positions with one `updateNodePositions` call
+   and posts one `MOVE_NODES` edit, `[networkId, Map<nodeId, [x, y]>]` for
+   undo and for redo.
+
+`MOVE_NODES` edits persisted before #870 hold one node each,
+`[networkId, nodeId, [x, y]]`; `useUndoStack` still replays them.
 
 ### Style Re-application (`onStyleModelUpdate`)
 

@@ -112,8 +112,9 @@ export const viewportApi: ViewportApi = {
         Object.entries(positions) as Array<[IdType, [number, number, number?]]>,
       )
       useViewModelStore.getState().updateNodePositions(networkId, positionMap)
-      // No undo entry: MOVE_NODES is per-node and a batch reposition has no
-      // matching command. layoutApi's own moves already go through
+      // No undo entry: app repositions have never been undoable. MOVE_NODES
+      // takes a batch since #870, so recording one is possible, but it would
+      // change App API behaviour. layoutApi's own moves already go through
       // corePostEdit, which marks the network itself.
       markNetworkModified(networkId)
       return ok()
