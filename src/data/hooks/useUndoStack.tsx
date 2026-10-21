@@ -38,13 +38,21 @@ import { useViewModelStore } from './stores/ViewModelStore'
 import { useVisualStyleStore } from './stores/VisualStyleStore'
 import { useWorkspaceStore } from './stores/WorkspaceStore'
 
+// Each index is read explicitly: every() skips the holes of a sparse array,
+// so [, 0] would pass and write an undefined coordinate.
+const isPosition = (value: unknown): value is [number, number, number?] =>
+  Array.isArray(value) &&
+  (value.length === 2 || value.length === 3) &&
+  Number.isFinite(value[0]) &&
+  Number.isFinite(value[1]) &&
+  (value.length === 2 || Number.isFinite(value[2]))
+
 export const useUndoStack = () => {
   const updateNetworkSummary = useNetworkSummaryStore((state) => state.update)
   const setCellValue = useTableStore((state) => state.setValue)
   const setUndoStack = useUndoStore((state) => state.setUndoStack)
   const setRedoStack = useUndoStore((state) => state.setRedoStack)
   const setDefault = useVisualStyleStore((state) => state.setDefault)
-  const setNodePosition = useViewModelStore((state) => state.setNodePosition)
   const updateNodePositions = useViewModelStore(
     (state) => state.updateNodePositions,
   )
@@ -132,6 +140,32 @@ export const useUndoStack = () => {
       throw new Error(`Cannot switch network ${networkId} to style ${styleId}`)
     },
     [switchStyle],
+  )
+
+  /**
+   * Replay a node move. Params are `[networkId, Map<nodeId, position>]`, one
+   * entry for every node a drag moved (#870). Stacks persisted before #870
+   * hold one edit per node, `[networkId, nodeId, position]`; those still
+   * replay. Persisted params come back from IndexedDB unchecked, so a
+   * malformed edit throws, and the command runner discards it.
+   */
+  const replayMoveNodes = useCallback(
+    (params: any[]) => {
+      const [networkId, positionsOrNodeId, legacyPosition] = params
+      const positions: unknown =
+        typeof positionsOrNodeId === 'string'
+          ? new Map([[positionsOrNodeId, legacyPosition]])
+          : positionsOrNodeId
+      if (
+        typeof networkId !== 'string' ||
+        !(positions instanceof Map) ||
+        ![...positions.values()].every(isPosition)
+      ) {
+        throw new Error('Malformed MOVE_NODES params')
+      }
+      updateNodePositions(networkId, positions)
+    },
+    [updateNodePositions],
   )
 
   const postEdit = useCallback(
@@ -443,10 +477,7 @@ export const useUndoStack = () => {
       },
 
       [UndoCommandType.MOVE_NODES]: (params: any[]) => {
-        const networkId: IdType = params[0]
-        const nodeId: IdType = params[1]
-        const nodePositions: [number, number] = params[2]
-        setNodePosition(networkId, nodeId, nodePositions)
+        replayMoveNodes(params)
       },
       [UndoCommandType.MOVE_EDGES]: (params: any[]) => {
         useNetworkStore
@@ -558,7 +589,7 @@ export const useUndoStack = () => {
     setDefault,
     setUndoStack,
     setRedoStack,
-    setNodePosition,
+    replayMoveNodes,
     updateNodePositions,
     setMapping,
     setDiscreteMappingValue,
@@ -858,10 +889,7 @@ export const useUndoStack = () => {
         }
       },
       [UndoCommandType.MOVE_NODES]: (params: any[]) => {
-        const networkId: IdType = params[0]
-        const nodeId: IdType = params[1]
-        const nodePositions: [number, number] = params[2]
-        setNodePosition(networkId, nodeId, nodePositions)
+        replayMoveNodes(params)
       },
       [UndoCommandType.MOVE_EDGES]: (params: any[]) => {
         useNetworkStore
@@ -983,7 +1011,7 @@ export const useUndoStack = () => {
     setDefault,
     setUndoStack,
     setRedoStack,
-    setNodePosition,
+    replayMoveNodes,
     updateNodePositions,
     createMapping,
     setMapping,
