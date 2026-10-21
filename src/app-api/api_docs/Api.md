@@ -1487,11 +1487,11 @@ interface OpenPanelResult {
 }
 ```
 
-| Pane       | Holds                                        | Tab ids                                                                                                            |
-| ---------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `'left'`   | Workspace / Style / Filter (network browser) | `'workspace'`, `'style'`, `'filter'`, `'llm-query'` (only while the current network is a hierarchy)                |
-| `'right'`  | Side panel — `'right-panel'` app tabs        | `'sub-network-viewer'`, plus the `id` each app tab was registered with (`registerPanel` or a resource declaration) |
-| `'bottom'` | Table browser                                | `'nodes'`, `'edges'`, `'network'`                                                                                  |
+| Pane       | Holds                                        | Tab ids                                                                                                                                                            |
+| ---------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `'left'`   | Workspace / Style / Filter (network browser) | `'workspace'`, `'style'`, `'filter'`, `'llm-query'` (only while the current network is a hierarchy)                                                                |
+| `'right'`  | Side panel — `'right-panel'` app tabs        | `'sub-network-viewer'` (only while the current network is a hierarchy), plus the `id` each app tab was registered with (`registerPanel` or a resource declaration) |
+| `'bottom'` | Table browser                                | `'nodes'`, `'edges'`, `'network'`                                                                                                                                  |
 
 The built-in ids are exported as the `LeftPanelTabId`, `RightPanelTabId` and
 `BottomPanelTabId` constants from `cyweb/ApiTypes`.
@@ -1506,8 +1506,12 @@ is searched — a tab with the same id in another pane is ignored — and a call
 never touches the other panes.
 
 A tab the pane is not showing right now does not match: an app tab whose app is
-disabled or whose `requires.network` is unmet, or `'llm-query'` on a network
-that is not a hierarchy.
+disabled or whose `requires.network` is unmet, or `'llm-query'` and
+`'sub-network-viewer'` on a network that is not a hierarchy.
+
+The right pane is shown only while it has a tab. On a network that is not a
+hierarchy and with no app tab, `open('right')` succeeds and records the pane
+as open, but nothing appears until an app registers a tab.
 
 Selecting a tab does only that. In particular, selecting
 `'sub-network-viewer'` does not activate a network view the way a click on the

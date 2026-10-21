@@ -14,6 +14,16 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
   that animates nodes does not fill the undo stack. New type:
   `UpdateNodePositionsOptions`.
 
+### Changed
+
+- **The right pane's `'sub-network-viewer'` tab exists only for a hierarchy**
+  (#877), like the left pane's `'llm-query'`. On any other network,
+  `panel.open('right', 'sub-network-viewer')` fails with `RESOURCE_NOT_FOUND`
+  and leaves the pane as it was, and an app's first right-panel tab is the
+  first tab in the strip. The right pane is shown only while it has a tab, so
+  `panel.open('right')` on a non-hierarchy with no app panels opens nothing
+  visible until a tab is registered.
+
 ### Fixed
 
 - **`viewport.updateNodePositions` validates positions** (#874). A value that

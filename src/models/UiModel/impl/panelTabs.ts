@@ -91,17 +91,26 @@ export const listRightPanelAppTabs = (
   })
 }
 
-/** The right pane's tabs, in strip order: the built-in viewer, then apps. */
+/**
+ * The right pane's tabs, in strip order: the built-in viewer, then apps.
+ * `hasSubNetworkViewer` is the caller's call (the viewer exists only for a
+ * hierarchy network), as for the left pane's LLM QUERY tab.
+ */
 export const listRightPanelTabs = (
+  hasSubNetworkViewer: boolean,
   apps: Record<string, CyApp>,
   resources: readonly RegisteredAppResource[],
   currentNetworkId: IdType,
 ): PanelTab[] => [
-  {
-    panel: Panel.RIGHT,
-    tabId: RightPanelTabId.SUB_NETWORK_VIEWER,
-    resourceId: BUILTIN_SUB_NETWORK_RESOURCE_ID,
-  },
+  ...(hasSubNetworkViewer
+    ? [
+        {
+          panel: Panel.RIGHT,
+          tabId: RightPanelTabId.SUB_NETWORK_VIEWER,
+          resourceId: BUILTIN_SUB_NETWORK_RESOURCE_ID,
+        },
+      ]
+    : []),
   ...listRightPanelAppTabs(apps, resources, currentNetworkId).map(
     (tab): PanelTab => ({
       panel: Panel.RIGHT,

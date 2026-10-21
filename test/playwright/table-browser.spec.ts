@@ -1,5 +1,9 @@
 import { test, expect } from './fixtures'
-import { gotoAndSeedNetwork, gotoAndWaitReady } from './fixtures'
+import {
+  gotoAndSeedNetwork,
+  gotoAndWaitReady,
+  installFixtureApp,
+} from './fixtures'
 
 test.describe('Table Browser', () => {
   test.describe('1. Basic Rendering & Tabs', () => {
@@ -163,6 +167,9 @@ test.describe('Table Browser', () => {
       // window-wide — its last columns stuck behind the panel, unreachable
       // by horizontal scrolling.
       await gotoAndSeedNetwork(page)
+      // The seeded network is not a hierarchy, so the right pane has a tab
+      // (and an open button) only once an app registers a panel (#877).
+      await installFixtureApp(page)
 
       const nodeEditor = page.locator(
         '[data-testid="table-browser-node-editor"]',

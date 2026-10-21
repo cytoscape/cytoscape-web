@@ -6,6 +6,7 @@ import { useSidePanelStore } from '../../../data/hooks/stores/SidePanelStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { IdType } from '../../../models/IdType'
+import { BUILTIN_SUB_NETWORK_RESOURCE_ID } from '../../../models/UiModel/impl/panelTabs'
 import { isSubnetwork } from '../../HierarchyViewer/utils/hierarchyUtil'
 import { renderPanelContents, usePanelEntries } from './TabContents'
 
@@ -52,9 +53,13 @@ export const SidePanel = (): JSX.Element => {
     resolvedIndex = 0
   }
 
-  // Keep selectedResourceId in sync when it was null or the entry was removed
+  // Keep selectedResourceId in sync when it was null or the entry was removed.
+  // The Sub Network Viewer is only hidden while the network is not a
+  // hierarchy, so a selection of it is kept for the next hierarchy; the strip
+  // shows the first tab meanwhile.
   useEffect(() => {
     if (entries.length === 0) return
+    if (selectedResourceId === BUILTIN_SUB_NETWORK_RESOURCE_ID) return
     const currentEntry = entries.find(
       (e) => e.resourceId === selectedResourceId,
     )
@@ -62,6 +67,16 @@ export const SidePanel = (): JSX.Element => {
       setSelectedResourceId(entries[0]?.resourceId ?? null)
     }
   }, [entries, selectedResourceId, setSelectedResourceId])
+
+  // Clicking the Sub Network Viewer tab activates its network view. It is not
+  // always at index 0: the tab is absent for a non-hierarchy network.
+  const activateSubNetworkView = (index: number): void => {
+    if (entries[index]?.resourceId !== BUILTIN_SUB_NETWORK_RESOURCE_ID) return
+    const networkIdToActivate = getNetworkIdToActivate()
+    if (networkIdToActivate) {
+      setActiveNetworkView(networkIdToActivate)
+    }
+  }
 
   // Helper to find the network ID to activate when clicking Sub Network Viewer tab
   const getNetworkIdToActivate = (): IdType | null => {
@@ -98,13 +113,7 @@ export const SidePanel = (): JSX.Element => {
     if (entry) {
       setSelectedResourceId(entry.resourceId)
     }
-    // When clicking the "Sub Network Viewer" tab (index 0), activate the network view
-    if (newValue === 0) {
-      const networkIdToActivate = getNetworkIdToActivate()
-      if (networkIdToActivate) {
-        setActiveNetworkView(networkIdToActivate)
-      }
-    }
+    activateSubNetworkView(newValue)
   }
 
   const tabContents = renderPanelContents(entries, resolvedIndex)
@@ -157,13 +166,12 @@ export const SidePanel = (): JSX.Element => {
             <Tab
               key={entry.resourceId}
               label={entry.label}
+              // onChange does not fire for the tab shown selected. That tab
+              // may only stand in for a hidden Sub Network Viewer selection,
+              // so record the click too.
               onClick={() => {
-                if (index === 0) {
-                  const networkIdToActivate = getNetworkIdToActivate()
-                  if (networkIdToActivate) {
-                    setActiveNetworkView(networkIdToActivate)
-                  }
-                }
+                setSelectedResourceId(entry.resourceId)
+                activateSubNetworkView(index)
               }}
             />
           ))}

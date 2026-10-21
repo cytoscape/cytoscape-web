@@ -119,7 +119,12 @@ describe('listRightPanelAppTabs', () => {
 
 describe('listRightPanelTabs', () => {
   it('puts the built-in viewer first', () => {
-    const tabs = listRightPanelTabs({ a: app('a') }, [panel('a', 'P1')], 'net1')
+    const tabs = listRightPanelTabs(
+      true,
+      { a: app('a') },
+      [panel('a', 'P1')],
+      'net1',
+    )
 
     expect(tabs).toEqual([
       {
@@ -134,6 +139,21 @@ describe('listRightPanelTabs', () => {
         resourceId: 'a::right-panel::P1',
       },
     ])
+  })
+
+  it('leaves the built-in viewer out when the network is not a hierarchy', () => {
+    const tabs = listRightPanelTabs(
+      false,
+      { a: app('a') },
+      [panel('a', 'P1')],
+      'net1',
+    )
+
+    expect(tabs.map((t) => t.tabId)).toEqual(['P1'])
+  })
+
+  it('has no tabs for a non-hierarchy without app panels', () => {
+    expect(listRightPanelTabs(false, { a: app('a') }, [], 'net1')).toEqual([])
   })
 })
 

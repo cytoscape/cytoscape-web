@@ -3,13 +3,19 @@
 // The selected tab lives in SidePanelStore, not in the component: the side
 // panel is unmounted while the right pane is closed, and the App API
 // (`panel.open`) selects a tab before opening it.
+//
+// The built-in Sub Network Viewer tab exists only while the current network
+// is a hierarchy (#877).
 
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAppResourceStore } from '@/data/hooks/stores/AppResourceStore'
 import { useAppStore } from '@/data/hooks/stores/AppStore'
+import { useNetworkSummaryStore } from '@/data/hooks/stores/NetworkSummaryStore'
 import { useSidePanelStore } from '@/data/hooks/stores/SidePanelStore'
+import { useUiStateStore } from '@/data/hooks/stores/UiStateStore'
+import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
 import { AppStatus } from '@/models/AppModel/AppStatus'
 import type { RegisteredAppResource } from '@/models/AppModel/RegisteredAppResource'
 
@@ -43,6 +49,27 @@ const panel = (appId: string, id: string): RegisteredAppResource => ({
 const selectedTabLabel = (): string | null =>
   screen.getByRole('tab', { selected: true }).textContent
 
+const tabLabels = (): (string | null)[] =>
+  screen.getAllByRole('tab').map((tab) => tab.textContent)
+
+const SUB_NETWORK_VIEWER = '__builtin__::right-panel::sub-network-viewer'
+
+/** Make `networkId` current; a hierarchy carries the HCX metadata. */
+const setCurrentNetwork = (networkId: string, hierarchy: boolean): void => {
+  useWorkspaceStore.setState((state) => ({
+    workspace: { ...state.workspace, currentNetworkId: networkId },
+  }))
+  useNetworkSummaryStore.setState({
+    summaries: {
+      [networkId]: {
+        properties: hierarchy
+          ? [{ predicateString: 'HCX::interactionNetworkUUID', value: 'u' }]
+          : [],
+      },
+    },
+  } as never)
+}
+
 describe('SidePanel', () => {
   beforeEach(() => {
     useSidePanelStore.setState({ selectedTabId: null })
@@ -52,6 +79,7 @@ describe('SidePanel', () => {
     useAppResourceStore.setState({
       resources: [panel('app1', 'P1'), panel('app1', 'P2')],
     })
+    setCurrentNetwork('hcx1', true)
   })
 
   it('selects the first tab when nothing was selected', () => {
@@ -105,5 +133,62 @@ describe('SidePanel', () => {
     expect(useSidePanelStore.getState().selectedTabId).toBe(
       '__builtin__::right-panel::sub-network-viewer',
     )
+  })
+
+  describe('for a network that is not a hierarchy', () => {
+    beforeEach(() => {
+      setCurrentNetwork('net1', false)
+    })
+
+    it('shows no Sub Network Viewer tab', () => {
+      render(<SidePanel />)
+
+      expect(tabLabels()).toEqual(['P1 title', 'P2 title'])
+      expect(selectedTabLabel()).toBe('P1 title')
+    })
+
+    it('keeps a selected Sub Network Viewer for the next hierarchy', () => {
+      useSidePanelStore.getState().setSelectedTabId(SUB_NETWORK_VIEWER)
+      render(<SidePanel />)
+
+      expect(selectedTabLabel()).toBe('P1 title')
+      expect(useSidePanelStore.getState().selectedTabId).toBe(
+        SUB_NETWORK_VIEWER,
+      )
+
+      act(() => {
+        setCurrentNetwork('hcx1', true)
+      })
+
+      expect(tabLabels()[0]).toBe('Sub Network Viewer')
+      expect(selectedTabLabel()).toBe('Sub Network Viewer')
+    })
+
+    it('records a click on the first tab while it stands in for the viewer', () => {
+      useSidePanelStore.getState().setSelectedTabId(SUB_NETWORK_VIEWER)
+      render(<SidePanel />)
+
+      // Shown selected already, so MUI fires no onChange for this click.
+      fireEvent.click(screen.getByRole('tab', { name: 'P1 title' }))
+
+      expect(useSidePanelStore.getState().selectedTabId).toBe(
+        'app1::right-panel::P1',
+      )
+
+      act(() => {
+        setCurrentNetwork('hcx1', true)
+      })
+
+      expect(selectedTabLabel()).toBe('P1 title')
+    })
+
+    it('does not activate a network view when the first app tab is clicked', () => {
+      useUiStateStore.getState().setActiveNetworkView('')
+      render(<SidePanel />)
+
+      fireEvent.click(screen.getByRole('tab', { name: 'P1 title' }))
+
+      expect(useUiStateStore.getState().ui.activeNetworkView).toBe('')
+    })
   })
 })
