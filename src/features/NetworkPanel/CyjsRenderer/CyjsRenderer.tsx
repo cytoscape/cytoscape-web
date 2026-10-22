@@ -67,7 +67,6 @@ import {
   RenderedNetwork,
   StyleInputs,
 } from './renderGuard'
-import { syncCySelection } from './syncCySelection'
 import {
   panReferenceSize,
   setPanReferenceSize,
