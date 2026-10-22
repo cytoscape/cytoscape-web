@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 
 import { useAppResourceStore } from '../../../data/hooks/stores/AppResourceStore'
 import { useAppStore } from '../../../data/hooks/stores/AppStore'
+import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { CyApp } from '../../../models/AppModel'
 import {
@@ -11,6 +12,7 @@ import {
 import { AppIdProvider } from '../.././../app-api/AppIdContext'
 import { buildPerAppApis } from '../../../app-api/core/perAppApis'
 import { PluginErrorBoundary } from '../../AppManager/PluginErrorBoundary'
+import { isHCX } from '../../HierarchyViewer/utils/hierarchyUtil'
 // Lazy, directly from MainPanel (not the barrel): the hierarchy viewer pulls
 // d3-hierarchy/-selection/-zoom and react-query, which would otherwise ship
 // with the eager workspace chunk.
@@ -35,14 +37,19 @@ export interface PanelEntry {
  * Build an ordered, visibility-filtered array of panel entries from the
  * 'right-panel' resources in AppResourceStore.
  *
- * Returns entries ready for rendering, including the built-in Sub Network
- * Viewer at the front.
+ * Returns entries ready for rendering, with the built-in Sub Network Viewer
+ * at the front while the current network is a hierarchy. Other networks have
+ * nothing to show in it, so it is left out rather than taking the first slot
+ * (#877).
  */
 export function usePanelEntries(): PanelEntry[] {
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
   const runtimeResources = useAppResourceStore((state) => state.resources)
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
+  )
+  const isHierarchy = useNetworkSummaryStore((state) =>
+    isHCX(state.summaries[currentNetworkId]),
   )
 
   // Identity, visibility and order come from the model, which the App API's
@@ -60,6 +67,10 @@ export function usePanelEntries(): PanelEntry[] {
       errorFallback: resource.errorFallback,
     }),
   )
+
+  if (!isHierarchy) {
+    return appPanels
+  }
 
   // Prepend built-in Sub Network Viewer
   return [

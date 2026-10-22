@@ -59,7 +59,11 @@ export type {
   ImportTableFromTsvOptions,
   TableApi,
 } from '../core/tableApi'
-export type { PositionRecord, ViewportApi } from '../core/viewportApi'
+export type {
+  PositionRecord,
+  UpdateNodePositionsOptions,
+  ViewportApi,
+} from '../core/viewportApi'
 export type {
   ApplyVisualStyleOptions,
   CreateContinuousMappingOptions,

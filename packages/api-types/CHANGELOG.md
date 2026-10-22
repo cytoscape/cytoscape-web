@@ -2,6 +2,36 @@
 
 All notable changes to `@cytoscape-web/api-types` are documented here.
 
+## 1.0.0-beta.6 (unpublished)
+
+### Added
+
+- **`viewport.updateNodePositions(networkId, positions, { recordUndo: true })`**
+  (#874) records the move as one undo entry, so the user can put every node
+  back with a single Edit ▸ Undo, as after a drag or a layout. The entry holds
+  only the nodes that move, and undo does not refit the viewport. Off by
+  default: without the option the call records nothing, as before, so an app
+  that animates nodes does not fill the undo stack. New type:
+  `UpdateNodePositionsOptions`.
+
+### Changed
+
+- **The right pane's `'sub-network-viewer'` tab exists only for a hierarchy**
+  (#877), like the left pane's `'llm-query'`. On any other network,
+  `panel.open('right', 'sub-network-viewer')` fails with `RESOURCE_NOT_FOUND`
+  and leaves the pane as it was, and an app's first right-panel tab is the
+  first tab in the strip. The right pane is shown only while it has a tab, so
+  `panel.open('right')` on a non-hierarchy with no app panels opens nothing
+  visible until a tab is registered.
+
+### Fixed
+
+- **`viewport.updateNodePositions` validates positions** (#874). A value that
+  is not `[x, y]` or `[x, y, z]` of finite numbers (`['10', 20]`, `[NaN, 0]`,
+  `[1]`) was written into the view as it was. The call now fails with `APP9`
+  and moves no node; a record that is not an object fails the same way
+  instead of with `APP3`.
+
 ## 1.0.0-beta.5 (2026-10-05)
 
 > **Host compatibility.** This release documents the App API as implemented by
