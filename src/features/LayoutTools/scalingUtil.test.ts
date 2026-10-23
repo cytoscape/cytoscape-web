@@ -329,6 +329,46 @@ describe('inferSliderState (#896)', () => {
     ).toEqual(state)
   })
 
+  it('reads a layout under one unit across', () => {
+    // Every node half a unit from the anchor (0.5, 0.5)
+    const compact = new Map<IdType, Position>([
+      ['a', [0, 0]],
+      ['b', [1, 1]],
+    ])
+    const compactAnchor = getCenter(compact)
+    for (const state of [
+      { scalingType: 'both', value: 1 },
+      { scalingType: 'width', value: -9 },
+      { scalingType: 'height', value: 9 },
+    ] as SliderState[]) {
+      expect(
+        inferSliderState(
+          scaled(state, compact, compactAnchor),
+          compact,
+          compactAnchor,
+          BOTH_AT_1,
+        ),
+      ).toEqual(state)
+    }
+  })
+
+  it('reads the value from z when no node is off the anchor in x or y', () => {
+    const stacked = new Map<IdType, Position>([
+      ['a', [0, 0, 5]],
+      ['b', [0, 0, 10]],
+    ])
+    const stackedAnchor = getCenter(stacked)
+    const state: SliderState = { scalingType: 'both', value: 1 }
+    expect(
+      inferSliderState(
+        scaled(state, stacked, stackedAnchor),
+        stacked,
+        stackedAnchor,
+        BOTH_AT_1,
+      ),
+    ).toEqual(state)
+  })
+
   it('reads no nodes as x1.0', () => {
     const current: SliderState = { scalingType: 'width', value: 9 }
     expect(inferSliderState({}, new Map(), [0, 0], current)).toEqual({

@@ -61,10 +61,12 @@ const center = (record: Record<IdType, [number, number]>): [number, number] => {
   ]
 }
 
-const seed = (): void => {
+const seed = (
+  original: Record<IdType, [number, number, number?]> = ORIGINAL,
+): void => {
   const network = NetworkFn.createNetworkFromLists(
     NETWORK_ID,
-    Object.keys(ORIGINAL).map((id) => ({ id })),
+    Object.keys(original).map((id) => ({ id })),
     [],
   )
   const view = ViewModelFn.createViewModel(network, NETWORK_ID)
@@ -72,7 +74,7 @@ const seed = (): void => {
     useViewModelStore.getState().add(NETWORK_ID, view)
     useViewModelStore
       .getState()
-      .updateNodePositions(NETWORK_ID, new Map(Object.entries(ORIGINAL)))
+      .updateNodePositions(NETWORK_ID, new Map(Object.entries(original)))
   })
 }
 
@@ -440,6 +442,53 @@ describe('Scaling after undo and redo (#896)', () => {
     expect(sliderValue()).toBe('0')
     commit(0)
     expect(positions()).toEqual(Object.fromEntries(layout))
+  })
+
+  it('reads the value back for a layout under one unit across', () => {
+    act(() => {
+      useViewModelStore.getState().delete(NETWORK_ID)
+    })
+    // Centered at (0.5, 0.5): every node is half a unit from the anchor
+    const compact: Record<IdType, [number, number]> = {
+      n1: [0, 0],
+      n2: [1, 1],
+    }
+    seed(compact)
+    render(<Scaling networkId={NETWORK_ID} />)
+
+    commit(1) // x2
+    commit(9) // x10
+    replay(1, 'undo')
+
+    expect(sliderValue()).toBe('1')
+    commit(0)
+    expect(positions()).toEqual(compact)
+  })
+
+  it('reads the value back from z when every node shares x and y', () => {
+    act(() => {
+      useViewModelStore.getState().delete(NETWORK_ID)
+    })
+    const stacked: Record<IdType, [number, number, number]> = {
+      n1: [0, 0, 5],
+      n2: [0, 0, 10],
+    }
+    seed(stacked)
+    render(<Scaling networkId={NETWORK_ID} />)
+    const zs = (): number[] =>
+      ['n1', 'n2'].map(
+        (id) =>
+          useViewModelStore.getState().getViewModel(NETWORK_ID)!.nodeViews[id]
+            .z as number,
+      )
+
+    commit(1) // x2
+    commit(9) // x10
+    replay(1, 'undo')
+
+    expect(sliderValue()).toBe('1')
+    commit(0)
+    expect(zs()).toEqual([5, 10])
   })
 
   it('keeps two mounted sliders on one network in step', () => {

@@ -194,9 +194,10 @@ export const scalePosition = (
 ]
 
 /**
- * A node closer to the anchor than this on an axis, in coordinate units, is
- * not used to read that axis' factor: dividing by a tiny distance would
- * magnify rounding error.
+ * Distance from the anchor, in coordinate units, at which a node is a good
+ * enough sample of an axis' factor. Once one node this far away has been
+ * seen on both x and y, the search for samples stops: in a typical layout
+ * that is the first node or two.
  */
 const MIN_SPAN = 1
 
@@ -298,9 +299,17 @@ export const inferSliderState = (
     return current
   }
 
-  // Read each axis' factor off one node far enough from the anchor
+  // Read each axis' factor off the node farthest from the anchor on it.
+  // The factor is only a guess, checked against every node below, so any
+  // nonzero distance will do: a layout under one unit across still has one
+  // (#900 review). z has no anchor and scales by the slider's factor in
+  // every mode, so it stands in when no node is off the anchor in x or y.
+  let spanX = 0
+  let spanY = 0
+  let spanZ = 0
   let factorX: number | undefined
   let factorY: number | undefined
+  let factorZ: number | undefined
   for (const nodeId of nodeIds) {
     const original = originals.get(nodeId)
     if (original === undefined) {
@@ -309,13 +318,21 @@ export const inferSliderState = (
     const nv = nodeViews[nodeId]
     const dx = original[0] - anchor[0]
     const dy = original[1] - anchor[1]
-    if (factorX === undefined && Math.abs(dx) >= MIN_SPAN) {
+    const dz = original[2] ?? 0
+    if (Math.abs(dx) > spanX) {
+      spanX = Math.abs(dx)
       factorX = (nv.x - anchor[0]) / dx
     }
-    if (factorY === undefined && Math.abs(dy) >= MIN_SPAN) {
+    if (Math.abs(dy) > spanY) {
+      spanY = Math.abs(dy)
       factorY = (nv.y - anchor[1]) / dy
     }
-    if (factorX !== undefined && factorY !== undefined) {
+    if (Math.abs(dz) > spanZ) {
+      spanZ = Math.abs(dz)
+      factorZ = (nv.z ?? 0) / dz
+    }
+    // Good samples on x and y: z is not needed
+    if (spanX >= MIN_SPAN && spanY >= MIN_SPAN) {
       break
     }
   }
@@ -329,10 +346,11 @@ export const inferSliderState = (
   }
   const valueX = valueOf(factorX)
   const valueY = valueOf(factorY)
+  const valueZ = valueOf(factorZ)
   const valueFor: Record<ScalingType, number | undefined> = {
-    both: valueX ?? valueY,
-    width: valueX,
-    height: valueY,
+    both: valueX ?? valueY ?? valueZ,
+    width: valueX ?? valueZ,
+    height: valueY ?? valueZ,
   }
 
   const types: ScalingType[] = [
