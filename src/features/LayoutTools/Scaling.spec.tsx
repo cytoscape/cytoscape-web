@@ -181,6 +181,24 @@ describe('Scaling (#890)', () => {
     expect(positions().n2).toEqual(ORIGINAL.n2)
   })
 
+  it('scales about the remaining nodes after a node is deleted', () => {
+    render(<Scaling networkId={NETWORK_ID} />)
+    commit(9)
+
+    // n2 sets the far corner of the bounding box
+    act(() => {
+      useViewModelStore.getState().deleteObjects(NETWORK_ID, ['n2'])
+    })
+    commit(0)
+    commit(-9)
+
+    // n1 (400, 200) and n3 (450, 350) are centered at (425, 275)
+    const [cx, cy] = center(positions())
+    expect(cx).toBeCloseTo(425)
+    expect(cy).toBeCloseTo(275)
+    expect(Object.keys(positions()).sort()).toEqual(['n1', 'n3'])
+  })
+
   it('labels the value with enough precision to tell x0.99 from x1.0', () => {
     const { container } = render(<Scaling networkId={NETWORK_ID} />)
     const label = (): string | null | undefined =>

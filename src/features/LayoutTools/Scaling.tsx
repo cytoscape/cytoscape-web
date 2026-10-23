@@ -131,6 +131,13 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
   useEffect(() => {
     if (initRef.current && networkView !== undefined) {
       const { nodeViews } = networkView
+      // Forget deleted nodes, so neither the anchor nor the next scale
+      // counts them
+      for (const nodeId of originalPositions.keys()) {
+        if (nodeViews[nodeId] === undefined) {
+          originalPositions.delete(nodeId)
+        }
+      }
       // If external components change the node positions after initialization,
       // update the original positions used for scaling
       const factors = scaleFactors(scalingType, calcScale(sliderValue))

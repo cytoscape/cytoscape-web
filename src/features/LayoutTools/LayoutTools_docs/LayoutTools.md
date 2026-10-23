@@ -75,7 +75,7 @@ The core component that provides scaling functionality for node positions.
   - Width: Scales only X coordinates
   - Height: Scales only Y coordinates
   - Both: Scales both X and Y coordinates
-- **Position Tracking**: Maintains original positions and adjusts them when external changes occur. A node the slider placed is recognized by recomputing its scaled position exactly, so it keeps its original position; a node moved by something else gets the original position it stands for at the current scale, about the same anchor. The anchor stays fixed while the slider is off x1.0, and follows the layout's center at x1.0
+- **Position Tracking**: Maintains original positions and adjusts them when external changes occur. A node the slider placed is recognized by recomputing its scaled position exactly, so it keeps its original position; a node moved by something else gets the original position it stands for at the current scale, about the same anchor. The anchor stays fixed while the slider is off x1.0, and follows the layout's center at x1.0. Deleted nodes are dropped from the original positions, so neither the anchor nor the next scale counts them
 - **Undo Support**: All scaling operations are undoable
 - **Nothing to Scale**: When the network has no nodes, or its view is not loaded yet, the Width/Height/Both radios, the slider and the reset button are disabled. `applyScaling` also returns before raising the layout store's `isRunning` flag when it has no original positions (they can lag the view by a render), so it never records an empty undo entry or leaves "Applying layout..." on screen (#880)
 - **Reset Function**: Restores positions to current state and resets slider to center
