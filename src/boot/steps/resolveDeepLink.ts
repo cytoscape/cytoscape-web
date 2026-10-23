@@ -1,4 +1,5 @@
 import { fetchNdexSummaries } from '@/data/external-api/ndex'
+import { ACCESS_KEY_QUERY_KEY } from '@/data/external-api/ndex/accessKeys'
 import { useCredentialStore } from '@/data/hooks/stores/CredentialStore'
 import { logStartup } from '@/debug'
 import type { AppShellBootContext, WorkspaceDraft } from './appShellBootContext'
@@ -46,6 +47,10 @@ const withTimeout = async <T>(
  *
  * This is the one boot path that genuinely waits on the SSO check — a
  * deep-linked network can be private, so it needs the gated token.
+ *
+ * A private network can also be opened without a login through an NDEx share
+ * link, `?accesskey=<key>`. The key goes on the summary fetch here; bootstrap
+ * has already remembered it for the editor's fetches (`accessKeys.ts`).
  */
 export const resolveDeepLink = async (
   ctx: AppShellBootContext,
@@ -65,12 +70,14 @@ export const resolveDeepLink = async (
     return
   }
 
+  const accessKey = ctx.search.get(ACCESS_KEY_QUERY_KEY) || undefined
+
   let summary
   try {
     const token = await useCredentialStore.getState().getToken()
     summary = (
       await withTimeout(
-        fetchNdexSummaries(networkIdParam, token),
+        fetchNdexSummaries(networkIdParam, token, undefined, accessKey),
         DEEP_LINK_TIMEOUT_MS,
         `NDEx did not respond within ${DEEP_LINK_TIMEOUT_MS / 1000}s`,
       )

@@ -120,15 +120,19 @@ const StyledListSubheader = styled(ListSubheader)(({ theme }) => ({
 }))
 
 const ArrowButton = ({
+  label,
   disabled,
   children,
   onClick,
 }: {
+  /** The accessible name: the button shows only an arrow. */
+  label: string
   disabled: boolean
   children: React.ReactNode
   onClick: () => void
 }) => (
   <Button
+    aria-label={label}
     variant="contained"
     onClick={onClick}
     disabled={disabled}
@@ -671,26 +675,23 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
             value={mergeOpType}
             exclusive
             onChange={handleMergeTypeChange}
-            aria-label="text alignment"
+            aria-label="Merge type"
           >
             <StyledToggleButton
               data-testid="merge-dialog-union-button"
               value={MergeType.union}
-              aria-label="left aligned"
             >
               <UnionIcon /> Union
             </StyledToggleButton>
             <StyledToggleButton
               data-testid="merge-dialog-intersection-button"
               value={MergeType.intersection}
-              aria-label="centered"
             >
               <IntersectionIcon /> Intersection
             </StyledToggleButton>
             <StyledToggleButton
               data-testid="merge-dialog-difference-button"
               value={MergeType.difference}
-              aria-label="right aligned"
             >
               <DifferenceIcon /> Difference
             </StyledToggleButton>
@@ -843,12 +844,14 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
             m={1}
           >
             <ArrowButton
+              label="Add to Networks to Merge"
               disabled={selectedAvailable.length === 0}
               onClick={handleAddNetwork}
             >
               <ArrowForwardIcon fontSize="small" />
             </ArrowButton>
             <ArrowButton
+              label="Remove from Networks to Merge"
               disabled={selectedToMerge.length === 0}
               onClick={handleRemoveNetwork}
             >
@@ -922,12 +925,14 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
             m={1}
           >
             <ArrowButton
+              label="Move up"
               disabled={selectedToMerge.length === 0}
               onClick={handleMoveUp}
             >
               <ArrowUpwardIcon fontSize="small" />
             </ArrowButton>
             <ArrowButton
+              label="Move down"
               disabled={selectedToMerge.length === 0}
               onClick={handleMoveDown}
             >
@@ -1051,24 +1056,15 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
                   value={tableView}
                   exclusive
                   onChange={handleTableViewChange}
-                  aria-label="text alignment"
+                  aria-label="Matching table"
                 >
-                  <StyledToggleButton
-                    value={TableView.node}
-                    aria-label="left aligned"
-                  >
+                  <StyledToggleButton value={TableView.node}>
                     Node
                   </StyledToggleButton>
-                  <StyledToggleButton
-                    value={TableView.edge}
-                    aria-label="centered"
-                  >
+                  <StyledToggleButton value={TableView.edge}>
                     Edge
                   </StyledToggleButton>
-                  <StyledToggleButton
-                    value={TableView.network}
-                    aria-label="right aligned"
-                  >
+                  <StyledToggleButton value={TableView.network}>
                     Network
                   </StyledToggleButton>
                 </ToggleButtonGroup>

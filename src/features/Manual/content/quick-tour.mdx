@@ -1,0 +1,83 @@
+# Quick Tour
+
+<a id="quick_tour_of_cytoscape_web" />
+
+This page introduces the main areas of the Cytoscape Web screen, with links
+to more detail on each.
+
+The first time you open Cytoscape Web, a welcome dialog explains the main
+ideas: workspace, networks, styles, tables and hierarchies. Choose
+**Take the tour** for a guided walk through the interface, or **Explore on my
+own** to close it. You can start the tour again at any time from
+**Help → Take a tour**.
+
+When your workspace is empty, the network area shows **Welcome to Cytoscape
+Web** with four buttons: **Open Sample Networks**, **Import from file**,
+**Load from NDEx** and **Take a tour**. Open Sample Networks loads a set of
+example networks from NDEx, so you can try every feature right away.
+
+<Screenshot id="welcome-screen" />
+
+When a network is loaded, Cytoscape Web looks similar to this:
+
+<Screenshot id="app-overview" />
+
+The screen has four areas:
+
+| Area | What it is for |
+| --- | --- |
+| Menu bar, across the top | The menus and, at the right, the search box, the light/dark mode button and the sign-in button. See [Menus and Toolbar](menus). |
+| Side panel, on the left | The tabs **WORKSPACE**, **STYLE** and **FILTER**. WORKSPACE lists the networks in your workspace. Only one of them is shown at a time: the *current* network. See [Workspace and Side Panel](workspace-panels). |
+| Network view, in the middle | Draws the current network. See [Network View](network-view). |
+| Table panel, at the bottom | Shows the data columns of the nodes, edges and network. See [Node and Edge Column Data](node-and-edge-column-data). |
+
+Drag the borders between areas to resize them. The side panel and the table
+panel each have a **Close panel** button. It hides the panel and gives the
+network view more room.
+
+A second panel on the right holds the
+**[Sub Network Viewer](network-view#cell_view)** and panels added by apps.
+Open it with the arrow button (**Open panel**) at the top right of the
+window.
+
+<a id="tables" />
+
+## Tables
+
+<a id="table_panel" />
+
+### Table Panel
+
+The table panel shows and edits the network's data in three tabs: **Nodes**,
+**Edges** and **Network**. Each column is an attribute of the nodes or edges,
+such as a gene name or an expression value. When nodes are selected, the
+Nodes table lists only those, and the tab shows how many, for example
+Nodes (12). The Edges table works the same way.
+
+Above the columns,
+<UiIcon name="insert-column" label="Insert new column button" />
+**Insert new column** adds a column, and
+<UiIcon name="import-table" label="Import table button" />
+**Import table from file...** adds columns from a table file. For editing
+cells, sorting, list values, the right-click menu and importing tables, see
+[Node and Edge Column Data](node-and-edge-column-data).
+
+<DemoOnly>
+
+## Try It
+
+<LiveDemo panels={['renderer', 'toolbar', 'style', 'table']} />
+
+Click a node to select it: the table below lists only its row. Change a
+property in the **STYLE** tab and watch the network view update. Changes
+stay in this tab and never touch your workspace.
+
+</DemoOnly>
+
+## Where to Go Next
+
+- [Creating and Saving Networks](creating-networks) — open, import and save
+  networks.
+- [Styles](styles) — change how nodes and edges look.
+- [Filters](filters) — find nodes and edges by their data.
+- [Menus and Toolbar](menus) — what each menu item does.

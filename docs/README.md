@@ -80,6 +80,7 @@ Behavior documentation co-located with source code in `src/features/`. Each `*_d
 | PopupPanel          | [PopupPanel.md](../src/features/PopupPanel/PopupPanel_docs/PopupPanel.md)                                     |
 | Login               | [Login.md](../src/features/Login/Login_docs/Login.md)                                                         |
 | FeatureAvailability | [FeatureAvailability.md](../src/features/FeatureAvailability/FeatureAvailability_docs/FeatureAvailability.md) |
+| Manual              | [Manual.md](../src/features/Manual/Manual_docs/Manual.md)                                                     |
 
 ### Network Visualization
 

@@ -89,6 +89,7 @@ URL-as-state pattern with React Router. Search parameters are consumed on initia
 /:workspaceId/networks                  → Workspace with no network
 /:workspaceId/networks/:networkId       → Network viewer
 /error                                  → Error page
+/manual/*                               → In-app user manual (no AppShell; sandbox DB)
 ```
 
 See `docs/specifications/ROUTING_SPECIFICATION.md` for full navigation rules and search parameter behavior.

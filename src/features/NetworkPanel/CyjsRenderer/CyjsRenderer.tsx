@@ -5,14 +5,20 @@ import Cytoscape, {
   EdgeSingular,
   EventObject,
   NodeSingular,
-  Position,
   SingularElementArgument,
 } from 'cytoscape'
 import type { DebouncedFunc } from 'lodash'
 import debounce from 'lodash/debounce'
-import { ReactElement, useEffect, useRef, useState } from 'react'
+import {
+  ReactElement,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 
 import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
+import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useRendererFunctionStore } from '../../../data/hooks/stores/RendererFunctionStore'
 import { useRendererStore } from '../../../data/hooks/stores/RendererStore'
@@ -51,8 +57,16 @@ import {
   resolveEdgeCreationTap,
 } from './edgeCreationMode'
 import { ContextMenuState, NetworkContextMenu } from './NetworkContextMenu'
+import { listenForNodeDrags } from './nodeDragUndo'
 import { applyNodeGraphics, resetNodeGraphics } from './nodeGraphicsApply'
 import { registerCyExtensions } from './registerCyExtensions'
+import {
+  isNetworkOnScreen,
+  isSameStyleInputs,
+  isShowing,
+  RenderedNetwork,
+  StyleInputs,
+} from './renderGuard'
 import {
   panReferenceSize,
   setPanReferenceSize,
@@ -93,11 +107,6 @@ const CyjsRenderer = ({
   //                            CyjsRenderer Local State
   // ============================================================================
 
-  // Stores the drag start position of the node when the user starts dragging
-  const dragStartPosition = useRef<Map<IdType, { x: number; y: number }>>(
-    new Map(),
-  )
-
   // Hover state
   const [hoveredElement, setHoveredElement] = useState<IdType | undefined>(
     undefined,
@@ -123,12 +132,13 @@ const CyjsRenderer = ({
   // ref instead.
   const cyInstance = useRef<Core | null>(null)
 
-  // Used to avoid unnecessary style updates during initialization
-  const isViewCreated = useRef(false)
+  // The network the instance shows, set when renderNetwork completes. Until it
+  // names the current network, there is nothing on screen to update in place.
+  const renderedRef = useRef<RenderedNetwork | null>(null)
 
-  // Cytoscape style and rendered network id
-  const [cyStyle, setCyStyle] = useState<any[]>([])
-  const [renderedId, setRenderedId] = useState<string>('')
+  // What the elements on screen were last styled from, so onStyleModelUpdate
+  // skips inputs renderNetwork already applied in the same commit.
+  const appliedStyleInputsRef = useRef<StyleInputs | null>(null)
 
   // Avoid unnecessary re-rendering / fit
   const [nodesMoved, setNodesMoved] = useState<boolean>(false)
@@ -248,6 +258,15 @@ const CyjsRenderer = ({
   // Creation hooks
   const { createNode } = useCreateNode()
   const { createEdge } = useCreateEdge()
+  // The Cytoscape.js listeners live until the next full render, which style and
+  // table changes no longer cause (#861): call the latest createEdge, not the
+  // one from the render that registered them. Updated in a layout effect, not
+  // during render, so it only ever holds a committed render's callback and is
+  // current before the next user event.
+  const createEdgeRef = useRef(createEdge)
+  useLayoutEffect(() => {
+    createEdgeRef.current = createEdge
+  }, [createEdge])
 
   // ============================================================================
   //                            Application Store State
@@ -274,11 +293,9 @@ const CyjsRenderer = ({
     useViewModelStore((state) => state.getViewModel)
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
   const toggleSelected = useViewModelStore((state) => state.toggleSelected)
-  const setNodePosition: (
-    networkId: IdType,
-    nodeId: IdType,
-    position: [number, number],
-  ) => void = useViewModelStore((state) => state.setNodePosition)
+  const updateNodePositions = useViewModelStore(
+    (state) => state.updateNodePositions,
+  )
 
   // Visual style store actions and selectors
   const setVisualStyle = useVisualStyleStore((state) => state.add)
@@ -292,6 +309,12 @@ const CyjsRenderer = ({
   // Table and summary stores
   const tables = useTableStore((state) => state.tables)
   const summaries = useNetworkSummaryStore((state) => state.summaries)
+
+  // Bumped by every topology action. Networks are mutated in place, so this is
+  // the only value that says their nodes or edges changed (#861).
+  const topologyVersion: number | undefined = useNetworkStore((state) =>
+    state.topologyVersions.get(id),
+  )
 
   // Renderer function and viewport state
   const setRendererFunction = useRendererFunctionStore(
@@ -312,15 +335,11 @@ const CyjsRenderer = ({
   const networkView: NetworkView | undefined = getViewModel(id)
   const vs: VisualStyle = visualStyles[id]
 
-  // Background color state
-  const [bgColor, setBgColor] = useState<string>('#FFFFFF')
-  useEffect(() => {
-    if (vs?.networkBackgroundColor !== undefined) {
-      setBgColor(vs.networkBackgroundColor.defaultValue as string)
-    } else {
-      setBgColor('#FFFFFF')
-    }
-  }, [vs, isRunning])
+  // Painted behind the annotations. Derived rather than held in state, which
+  // lagged one render behind the style and painted the previous color.
+  const bgColor: string =
+    (vs?.networkBackgroundColor?.defaultValue as string | undefined) ??
+    '#FFFFFF'
 
   const table = tables[id]
   const summary = summaries[id]
@@ -337,6 +356,46 @@ const CyjsRenderer = ({
     Record<IdType, ResolvedNodeGraphics> | undefined
   >(nodeGraphics)
   nodeGraphicsRef.current = nodeGraphics
+
+  /**
+   * Paints the network's CX annotations, and the background behind them, on
+   * the canvases created with the Cytoscape instance.
+   *
+   * Runs on every full render and whenever the summary or the background color
+   * changes, since style changes no longer redraw the network.
+   * `cy.removeAllListeners()` in renderNetwork drops the canvases' redraw
+   * handlers, so they are re-attached here; `attach()` is idempotent.
+   */
+  const paintAnnotations = (): void => {
+    const annotationLayers = annotationLayersRef.current
+    if (annotationLayers === null) {
+      return
+    }
+
+    // Extract CX annotations from the network summary
+    const annotations = (summary?.properties ?? []).filter(
+      (p) => p.predicateString === CX_ANNOTATIONS_KEY,
+    )
+
+    // Prepare CX format for annotation rendering
+    const niceCXForCyAnnotationRendering = {
+      networkAttributes: {
+        elements: annotations.map((a) => {
+          return {
+            n: CX_ANNOTATIONS_KEY,
+            v: !Array.isArray(a.value) ? [a.value] : a.value,
+          }
+        }),
+      },
+    }
+
+    annotationLayers.setAnnotations(niceCXForCyAnnotationRendering)
+    annotationLayers.setBackgroundColor(
+      annotations.length > 0 ? bgColor : undefined,
+    )
+    annotationLayers.attach()
+    annotationLayers.redraw()
+  }
 
   /**
    * Renders the Cytoscape.js network visualization based on the current network data, view, and visual style.
@@ -359,19 +418,19 @@ const CyjsRenderer = ({
    * @param {boolean} [forceFit=true] - If true, fits the network to the viewport if no saved viewport is found.
    *                                    If false, only restores the saved viewport or leaves the view unchanged.
    *
-   * The function is idempotent: if the network and view have not changed, it will return early and do nothing.
+   * The function is idempotent: it returns early when the instance already shows this network at
+   * its current topology version. Style, table and visual editor changes never need it:
+   * onStyleModelUpdate applies them to the elements on screen (#861).
    */
   const renderNetwork = (forceFit: boolean = true): void => {
-    // Early exit if Cytoscape instance is not ready or the network/view has not changed
+    // Early exit if Cytoscape instance is not ready or the network is already on screen
     if (
       network === undefined ||
       cy === null ||
       // `cy` state can hold an instance the mount effect's cleanup already
       // destroyed (React StrictMode re-runs effects before setCy lands).
       cy.destroyed() ||
-      (renderedId === id &&
-        cy.nodes().length === networkView?.nodeViews.length &&
-        cy.edges().length === networkView?.edgeViews.length)
+      isNetworkOnScreen(renderedRef.current, cy, id, topologyVersion)
     ) {
       return
     }
@@ -390,8 +449,9 @@ const CyjsRenderer = ({
       return
     }
 
-    // Mark the view as not yet created to avoid unnecessary style updates during initialization
-    isViewCreated.current = false
+    // Nothing is on screen until this render completes.
+    renderedRef.current = null
+    appliedStyleInputsRef.current = null
 
     // Save the outgoing network's camera before the instance shows another one.
     flushPendingViewportSave()
@@ -424,9 +484,8 @@ const CyjsRenderer = ({
     // Apply transformations and visual editor property overrides via view model
     applyViewModel(cy, updatedNetworkView, visualEditorProperties)
 
-    // Generate and set the Cytoscape.js style
+    // Generate the Cytoscape.js style
     const newStyle = createCyjsDataMapper(vs)
-    setCyStyle(newStyle)
 
     // Restore selection state for nodes and edges
     const selectedNodes = networkView?.selectedNodes ?? []
@@ -530,7 +589,7 @@ const CyjsRenderer = ({
       setEdgeCreationMode(EDGE_CREATION_MODE_OFF)
 
       // Create edge directly with default empty attributes
-      createEdge(id, sourceNodeId, targetNodeId, { attributes: {} })
+      createEdgeRef.current(id, sourceNodeId, targetNodeId, { attributes: {} })
     }
     cy.on('tap', 'node', edgeCreationTapHandler)
 
@@ -733,70 +792,30 @@ const CyjsRenderer = ({
 
     // --- Node Dragging ---
 
-    // Record the node's position when dragging starts
-    cy.on('grab', 'node', (e: EventObject): void => {
-      const targetNode = e.target
-
-      // Only proceed if the target is a node (safety check)
-      if (typeof targetNode.isNode !== 'function' || !targetNode.isNode())
-        return
-
-      const nodeId: IdType = targetNode.data('id')
-      const position = targetNode.position()
-      const nodeView: NodeView | undefined = networkView?.nodeViews[nodeId]
-      if (nodeView !== undefined) {
-        dragStartPosition.current.set(nodeId, { ...position })
-      }
-    })
-
-    // Handle node position update and undo/redo when dragging ends
-    cy.on('dragfree', 'node', (e: EventObject): void => {
-      // Set flag to avoid unnecessary fit
-      setNodesMoved(true)
-
-      // Get the Cytoscape.js node object and its ID
-      const targetNode: NodeSingular = e.target as NodeSingular
-      const nodeId: IdType = targetNode.data('id')
-
-      // Get the new position from Cytoscape.js
-      const position: Position = targetNode.position()
-
-      // Get the original position recorded at drag start
-      const startPos: { x: number; y: number } | undefined =
-        dragStartPosition.current.get(nodeId)
-
-      // Determine the undo position (original position)
-      let undoPosition: [number, number]
-      if (startPos !== undefined) {
-        undoPosition = [startPos.x, startPos.y]
-      } else {
-        logUi.warn(
-          `[${CyjsRenderer.name}]:[cy.on('dragfree', 'node')]: The start position of the node ${nodeId} is undefined. This should not happen.`,
+    // One drag is one undo entry, however many nodes it moved (#870)
+    listenForNodeDrags(
+      cy,
+      ({ from, to }): void => {
+        // Set flag to avoid unnecessary fit
+        setNodesMoved(true)
+        updateNodePositions(id, to)
+        postEdit(
+          UndoCommandType.MOVE_NODES,
+          `Move Nodes`,
+          [id, from],
+          [id, to],
+          id,
         )
-        // Fallback to the current position in the view model
-        const nodeView: NodeView | undefined = networkView?.nodeViews[nodeId]
-        if (nodeView !== undefined) {
-          undoPosition = [nodeView.x, nodeView.y]
-        } else {
-          // Fallback to (0, 0) if the node view is also undefined
-          undoPosition = [0, 0]
-        }
-      }
-
-      // Remove the cached original position
-      dragStartPosition.current.delete(nodeId)
-
-      // Update the view model with the new position
-      setNodePosition(id, nodeId, [position.x, position.y])
-
-      // Record the undo action for node movement
-      postEdit(
-        UndoCommandType.MOVE_NODES,
-        `Move Nodes`,
-        [id, nodeId, undoPosition],
-        [id, nodeId, [position.x, position.y]],
-      )
-    })
+      },
+      {
+        // Read the store: this listener outlives the render that registered it.
+        positionBeforeDrag: (nodeId) => {
+          const nodeView: NodeView | undefined =
+            getViewModel(id)?.nodeViews[nodeId]
+          return nodeView === undefined ? undefined : [nodeView.x, nodeView.y]
+        },
+      },
+    )
 
     // --- Hover Effects ---
 
@@ -856,36 +875,7 @@ const CyjsRenderer = ({
     cy.on('viewport', viewportChangeHandler)
 
     // --- Annotation Rendering ---
-
-    // Extract CX annotations from the network summary
-    const annotations = (summary?.properties ?? []).filter(
-      (p) => p.predicateString === CX_ANNOTATIONS_KEY,
-    )
-
-    // Prepare CX format for annotation rendering
-    const niceCXForCyAnnotationRendering = {
-      networkAttributes: {
-        elements: annotations.map((a) => {
-          return {
-            n: CX_ANNOTATIONS_KEY,
-            v: !Array.isArray(a.value) ? [a.value] : a.value,
-          }
-        }),
-      },
-    }
-
-    // Swap the annotation data on the canvases created with the Cytoscape
-    // instance. `cy.removeAllListeners()` above dropped their redraw handlers,
-    // so re-attach them; `attach()` is idempotent.
-    const annotationLayers = annotationLayersRef.current
-    if (annotationLayers !== null) {
-      annotationLayers.setAnnotations(niceCXForCyAnnotationRendering)
-      annotationLayers.setBackgroundColor(
-        annotations.length > 0 ? bgColor : undefined,
-      )
-      annotationLayers.attach()
-      annotationLayers.redraw()
-    }
+    paintAnnotations()
 
     // --- Finalize Rendering ---
 
@@ -930,10 +920,16 @@ const CyjsRenderer = ({
     // Update the visual style in the application state
     setVisualStyle(id, vs)
 
-    // Mark the view as created after a short delay to allow for rendering
-    setTimeout(() => {
-      isViewCreated.current = true
-    }, 1000)
+    // The network is on screen, styled from these inputs. From here on,
+    // onStyleModelUpdate applies changes in place. This used to be a 1000 ms
+    // timer, and a change made before it fired was drawn but never written
+    // back to ViewModelStore (#861).
+    renderedRef.current = { cy, networkId: id, topologyVersion }
+    appliedStyleInputsRef.current = {
+      visualStyle: vs,
+      table,
+      visualEditorProperties,
+    }
   }
 
   /**
@@ -943,43 +939,35 @@ const CyjsRenderer = ({
   useEffect(
     function onLoadNewNetwork() {
       if (id === '' || cy === null) return
-      isViewCreated.current = false
       renderNetwork()
-      setRenderedId(id)
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on network prop; the [cy] effect covers instance creation
     [network],
   )
 
   /**
-   * Effect: Triggers a redraw of the Cytoscape network when the nodes or edges are added to the network.
+   * Effect: Redraws the network, without fitting the view, when its topology
+   * changes: nodes or edges added, removed or replaced (e.g. creation, deletion,
+   * undo of a deletion, or an app editing the network through the App API).
    *
-   * This effect monitors the counts of nodes and edges in both the Cytoscape instance and the application model.
-   * If the model contains more nodes or edges than the current Cytoscape view (i.e., new elements have been added),
-   * it invokes a redraw of the network (without fitting the view). The effect only runs if the view has already been created.
+   * Keyed on `NetworkStore.topologyVersions`, which every topology action
+   * bumps. Element counts used to be the trigger, and they miss a replacement
+   * of as many elements as were removed (#861). The effect only acts once the
+   * network is on screen; until then the first render draws every element
+   * anyway, and renderNetwork returns early when the version it drew is current.
    */
   useEffect(
-    function onNetworkElementsAdded() {
+    function onTopologyChange() {
       if (network === undefined || id === '' || cy === null) {
         return
       }
-      // Only redraw when the set of nodes or edges changes (e.g., elements are added)
-      const cyNodeCount: number = cy.nodes().length
-      const cyEdgeCount: number = cy.edges().length
-      const modelNodeCount: number = network.nodes.length
-      const modelEdgeCount: number = network.edges.length
-
-      if (!isViewCreated.current) {
+      if (!isShowing(renderedRef.current, cy, id)) {
         return
       }
-
-      // Redraw only when new nodes or edges are added to the model
-      if (modelNodeCount > cyNodeCount || modelEdgeCount > cyEdgeCount) {
-        renderNetwork(false)
-      }
+      renderNetwork(false)
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- element counts are the intended trigger, not network identity
-    [network?.nodes.length, network?.edges.length],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the topology version is the intended trigger; renderNetwork is a new closure each render
+    [topologyVersion],
   )
 
   /**
@@ -990,6 +978,12 @@ const CyjsRenderer = ({
    * visual style to the Cytoscape.js instance, updates the node and edge styles,
    * and persists the updated view model.
    *
+   * It is the only path for these changes once the network is on screen:
+   * renderNetwork returns early then, rather than redrawing every element (#861).
+   * Until the network is on screen there is nothing to update. The render that
+   * puts it there applies the current inputs and records them, and this effect
+   * skips inputs that were already applied (they reach it in that same commit).
+   *
    * Note: `networkView` must NOT be a dependency — this effect writes it via
    * setViewModel with a new object each run, so adding it would loop forever.
    */
@@ -998,13 +992,23 @@ const CyjsRenderer = ({
       if (
         network === undefined ||
         cy === null ||
+        cy.destroyed() ||
         table === undefined ||
         vs === undefined ||
-        !isViewCreated.current ||
-        cyStyle.length === 0
+        !isShowing(renderedRef.current, cy, id)
       ) {
         return
       }
+      const inputs: StyleInputs = {
+        visualStyle: vs,
+        table,
+        visualEditorProperties,
+      }
+      if (isSameStyleInputs(appliedStyleInputsRef.current, inputs)) {
+        return
+      }
+      appliedStyleInputsRef.current = inputs
+
       cy.startBatch()
 
       const data: NetworkViewSources = {
@@ -1020,9 +1024,9 @@ const CyjsRenderer = ({
       applyViewModel(cy, updatedNetworkView, visualEditorProperties)
 
       cy.endBatch()
-      if (cyStyle.length > 0) {
-        cy.style(cyStyle)
-      }
+      // Built from the current style: which visual properties it maps decides
+      // the stylesheet's selectors.
+      cy.style(createCyjsDataMapper(vs))
 
       // Reapplying the stylesheet does not clear element bypasses, but it does
       // reset node sizes, so re-run the apply to resize any SVG images.
@@ -1324,6 +1328,11 @@ const CyjsRenderer = ({
    * rows, so cross-tab hydration can deliver them after the network). Without
    * this, nothing would re-trigger the render and the canvas would stay blank —
    * none of the other render triggers watch these two.
+   *
+   * Once the network is on screen, a later style or table change makes this a
+   * no-op: renderNetwork returns early unless the topology changed since it
+   * drew the network, and onStyleModelUpdate applies the change in place.
+   * It used to redraw every element on each change (#861).
    */
   useEffect(
     function onNetworkDataCompleted() {
@@ -1333,6 +1342,26 @@ const CyjsRenderer = ({
       renderNetworkRef.current()
     },
     [cy, table, vs],
+  )
+
+  /**
+   * Effect: repaint the annotations when the summary or the background color
+   * changes after the network is on screen. Full renders paint them too, and
+   * used to run on every style change, which hid that nothing else did (#861).
+   */
+  useEffect(
+    function onAnnotationSourcesChange() {
+      if (
+        cy === null ||
+        cy.destroyed() ||
+        !isShowing(renderedRef.current, cy, id)
+      ) {
+        return
+      }
+      paintAnnotations()
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- paintAnnotations reads exactly these two; it is a new closure each render
+    [summary, bgColor],
   )
 
   /**

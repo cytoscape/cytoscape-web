@@ -544,3 +544,42 @@ describe('MapperFactory', () => {
     })
   })
 })
+
+// #812: a color passthrough handed the raw cell text to Cytoscape.js, which
+// draws an unparseable value in its own grey (not the style default) and logs
+// two warnings per element, and turns `#GG0000` into `rgb(NaN,0,0)`.
+describe('createPassthroughMapper — color properties', () => {
+  const mapper = createPassthroughMapper({
+    type: MappingFunctionType.Passthrough,
+    attribute: 'FillColor',
+    visualPropertyType: VisualPropertyValueTypeName.Color,
+    defaultValue: '#89D0F5',
+    attributeType: ValueTypeName.String,
+  })
+
+  it.each([
+    ['#FF0000', '#ff0000'],
+    ['#f00', '#ff0000'],
+    ['#14961e', '#14961e'],
+    ['red', '#ff0000'],
+    ['rgb(0, 128, 0)', '#008000'],
+    ['hsl(120, 100%, 25%)', '#008000'],
+    ['#ff000080', '#ff0000'],
+    ['  #0000ff  ', '#0000ff'],
+  ])('maps %j to %s', (cell, expected) => {
+    expect(mapper(cell)).toBe(expected)
+  })
+
+  it.each([
+    'ENSG00000141510',
+    '',
+    'FF0000',
+    '#GG0000',
+    'transparent',
+    null,
+    undefined,
+    42,
+  ])('falls back to the default for %j', (cell) => {
+    expect(mapper(cell as never)).toBe('#89D0F5')
+  })
+})
