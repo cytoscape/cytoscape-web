@@ -142,6 +142,8 @@ const HIGHLIGHT_ID = 'manual-capture-highlight'
 /**
  * Draws a ring around the union of `targets` for the next capture. A fixed
  * overlay above every dialog and popover; it never takes pointer events.
+ * The ring stays inside the viewport, so a target at the window's edge (the
+ * side panel) keeps all four sides of it.
  */
 const drawHighlight = async (
   page: Page,
@@ -153,21 +155,31 @@ const drawHighlight = async (
     if (box === null) throw new Error(`No box for ${JSON.stringify(target)}`)
     boxes.push(box)
   }
-  const left = Math.min(...boxes.map((b) => b.x))
-  const top = Math.min(...boxes.map((b) => b.y))
-  const right = Math.max(...boxes.map((b) => b.x + b.width))
-  const bottom = Math.max(...boxes.map((b) => b.y + b.height))
+  const pad = 5
+  const viewport = page.viewportSize() ?? {
+    width: Infinity,
+    height: Infinity,
+  }
+  const left = Math.max(Math.min(...boxes.map((b) => b.x)) - pad, 0)
+  const top = Math.max(Math.min(...boxes.map((b) => b.y)) - pad, 0)
+  const right = Math.min(
+    Math.max(...boxes.map((b) => b.x + b.width)) + pad,
+    viewport.width,
+  )
+  const bottom = Math.min(
+    Math.max(...boxes.map((b) => b.y + b.height)) + pad,
+    viewport.height,
+  )
   await page.evaluate(
     ({ id, rect }) => {
       const ring = document.createElement('div')
       ring.id = id
-      const pad = 5
       Object.assign(ring.style, {
         position: 'fixed',
-        left: `${rect.left - pad}px`,
-        top: `${rect.top - pad}px`,
-        width: `${rect.right - rect.left + 2 * pad}px`,
-        height: `${rect.bottom - rect.top + 2 * pad}px`,
+        left: `${rect.left}px`,
+        top: `${rect.top}px`,
+        width: `${rect.right - rect.left}px`,
+        height: `${rect.bottom - rect.top}px`,
         border: '3px solid #e8590c',
         borderRadius: '6px',
         boxShadow: '0 0 0 2px #ffffff, 0 0 12px 2px rgba(232, 89, 12, 0.45)',
@@ -215,10 +227,15 @@ for (const recipe of SCREENSHOT_RECIPES) {
     await page.mouse.move(recipe.viewport.width - 1, recipe.viewport.height - 1)
     // Let menus and dialogs finish opening before the capture.
     await page.waitForTimeout(500)
+    if (recipe.highlight !== undefined) {
+      await drawHighlight(page, recipe.highlight)
+    }
 
     const file = path.join(OUT_DIR, screenshotPath(recipe.id))
     const options = { ...CAPTURE_OPTIONS, path: file }
-    if (recipe.capture === undefined) {
+    if (recipe.clip !== undefined) {
+      await page.screenshot({ ...options, clip: recipe.clip })
+    } else if (recipe.capture === undefined) {
       await page.screenshot(options)
     } else {
       await locate(page, recipe.capture).screenshot(options)
