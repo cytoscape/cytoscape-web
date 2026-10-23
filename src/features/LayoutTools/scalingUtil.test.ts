@@ -1,16 +1,24 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 
+import { IdType } from '../../models/IdType'
+import { NodeView } from '../../models/ViewModel'
 import {
+  Anchor,
   calcScale,
   formatScale,
   getCenter,
+  inferSliderState,
   isPointerEvent,
   Position,
+  samePositions,
+  scaleFactors,
   scalePosition,
   SCALING_MARKS,
+  SLIDER_STEP,
+  SliderState,
+  sliderValueOfScale,
   snapToMark,
-  unscalePosition,
 } from './scalingUtil'
 
 describe('calcScale', () => {
@@ -145,7 +153,7 @@ describe('getCenter', () => {
   })
 })
 
-describe('scalePosition / unscalePosition', () => {
+describe('scalePosition', () => {
   const anchor: [number, number] = [500, 300]
 
   it('scales the distance from the anchor', () => {
@@ -171,23 +179,261 @@ describe('scalePosition / unscalePosition', () => {
       position[1],
       3,
     ])
-    expect(unscalePosition(position, oddAnchor, [1, 1, 1])).toEqual([
-      position[0],
-      position[1],
-      3,
-    ])
+  })
+})
+
+describe('sliderValueOfScale', () => {
+  it('inverts calcScale on every slider step', () => {
+    for (let steps = -90; steps <= 90; steps++) {
+      // The slider's own values: 3.3, not 3.3000000000000003
+      const value = Number((steps * SLIDER_STEP).toFixed(1))
+      expect(sliderValueOfScale(calcScale(value))).toBe(value)
+    }
   })
 
-  it('round-trips through unscalePosition', () => {
-    const position: Position = [123.456, -78.9, 4]
-    const factors: [number, number, number] = [0.1, 10, 0.5]
-    const [x, y, z] = unscalePosition(
-      scalePosition(position, anchor, factors),
-      anchor,
-      factors,
+  it('returns 0, not -0, for x1.0', () => {
+    expect(Object.is(sliderValueOfScale(1), 0)).toBe(true)
+    expect(Object.is(sliderValueOfScale(1 - 1e-12), 0)).toBe(true)
+  })
+})
+
+describe('scaleFactors', () => {
+  it('scales only the axes of the mode, and z always', () => {
+    expect(scaleFactors('both', 10)).toEqual([10, 10, 10])
+    expect(scaleFactors('width', 10)).toEqual([10, 1, 10])
+    expect(scaleFactors('height', 10)).toEqual([1, 10, 10])
+  })
+})
+
+describe('inferSliderState (#896)', () => {
+  // Bounding box (400, 200)–(600, 400): centered at (500, 300)
+  const originals = new Map<IdType, Position>([
+    ['n1', [400, 200]],
+    ['n2', [600, 400]],
+    ['n3', [450, 350, 5]],
+  ])
+  const anchor: Anchor = getCenter(originals)
+  const BOTH_AT_1: SliderState = { scalingType: 'both', value: 0 }
+
+  /** The node views the slider writes for `state` */
+  const scaled = (
+    state: SliderState,
+    from: Map<IdType, Position> = originals,
+    about: Anchor = anchor,
+  ): Record<IdType, NodeView> => {
+    const factors = scaleFactors(state.scalingType, calcScale(state.value))
+    return Object.fromEntries(
+      [...from].map(([id, position]) => {
+        const [x, y, z] = scalePosition(position, about, factors)
+        return [id, { id, x, y, z, values: new Map() } as NodeView]
+      }),
     )
-    expect(x).toBeCloseTo(position[0], 9)
-    expect(y).toBeCloseTo(position[1], 9)
-    expect(z).toBeCloseTo(4, 9)
+  }
+
+  it('keeps the current state when the positions are its own', () => {
+    const current: SliderState = { scalingType: 'width', value: 3.3 }
+    expect(inferSliderState(scaled(current), originals, anchor, current)).toBe(
+      current,
+    )
+  })
+
+  it('reads the value of a scale in any mode', () => {
+    const cases: SliderState[] = [
+      { scalingType: 'both', value: 9 },
+      { scalingType: 'both', value: -9 },
+      { scalingType: 'both', value: 3.3 },
+      { scalingType: 'width', value: 9 },
+      { scalingType: 'height', value: -0.1 },
+    ]
+    for (const state of cases) {
+      expect(
+        inferSliderState(scaled(state), originals, anchor, BOTH_AT_1),
+      ).toEqual(state)
+    }
+  })
+
+  it('reads the original positions as x1.0 in the selected mode', () => {
+    const current: SliderState = { scalingType: 'height', value: 9 }
+    expect(
+      inferSliderState(scaled(BOTH_AT_1), originals, anchor, current),
+    ).toEqual({ scalingType: 'height', value: 0 })
+  })
+
+  it('does not explain a node moved by hand', () => {
+    const views = scaled({ scalingType: 'both', value: 9 })
+    views.n3 = { ...views.n3, x: views.n3.x + 1 }
+    expect(inferSliderState(views, originals, anchor, BOTH_AT_1)).toBe(
+      undefined,
+    )
+  })
+
+  it('does not explain a node with no original position', () => {
+    const views = scaled(BOTH_AT_1)
+    views.n4 = { id: 'n4', x: 500, y: 300, values: new Map() } as NodeView
+    expect(inferSliderState(views, originals, anchor, BOTH_AT_1)).toBe(
+      undefined,
+    )
+  })
+
+  it('does not explain a scale about another point', () => {
+    const views = scaled({ scalingType: 'both', value: 9 }, originals, [0, 0])
+    expect(inferSliderState(views, originals, anchor, BOTH_AT_1)).toBe(
+      undefined,
+    )
+  })
+
+  it('does not explain a factor off the slider', () => {
+    // x20 is past x10; x2.05 falls between two steps
+    for (const factor of [20, 2.05]) {
+      const views = Object.fromEntries(
+        [...originals].map(([id, position]) => {
+          const [x, y, z] = scalePosition(position, anchor, [
+            factor,
+            factor,
+            factor,
+          ])
+          return [id, { id, x, y, z, values: new Map() } as NodeView]
+        }),
+      )
+      expect(inferSliderState(views, originals, anchor, BOTH_AT_1)).toBe(
+        undefined,
+      )
+    }
+  })
+
+  it('does not explain a mirrored layout', () => {
+    const views = scaled(BOTH_AT_1)
+    for (const id of Object.keys(views)) {
+      views[id] = { ...views[id], x: 2 * anchor[0] - views[id].x }
+    }
+    expect(inferSliderState(views, originals, anchor, BOTH_AT_1)).toBe(
+      undefined,
+    )
+  })
+
+  it('reads a row of nodes on the anchor line from the one axis it spans', () => {
+    // Every node at y = 300: the y factor cannot be read, the x factor can
+    const row = new Map<IdType, Position>([
+      ['a', [0, 300]],
+      ['b', [100, 300]],
+    ])
+    const rowAnchor = getCenter(row)
+    const state: SliderState = { scalingType: 'both', value: 9 }
+    expect(
+      inferSliderState(
+        scaled(state, row, rowAnchor),
+        row,
+        rowAnchor,
+        BOTH_AT_1,
+      ),
+    ).toEqual(state)
+  })
+
+  it('reads a layout under one unit across', () => {
+    // Every node half a unit from the anchor (0.5, 0.5)
+    const compact = new Map<IdType, Position>([
+      ['a', [0, 0]],
+      ['b', [1, 1]],
+    ])
+    const compactAnchor = getCenter(compact)
+    for (const state of [
+      { scalingType: 'both', value: 1 },
+      { scalingType: 'width', value: -9 },
+      { scalingType: 'height', value: 9 },
+    ] as SliderState[]) {
+      expect(
+        inferSliderState(
+          scaled(state, compact, compactAnchor),
+          compact,
+          compactAnchor,
+          BOTH_AT_1,
+        ),
+      ).toEqual(state)
+    }
+  })
+
+  it('reads the value from z when no node is off the anchor in x or y', () => {
+    const stacked = new Map<IdType, Position>([
+      ['a', [0, 0, 5]],
+      ['b', [0, 0, 10]],
+    ])
+    const stackedAnchor = getCenter(stacked)
+    const state: SliderState = { scalingType: 'both', value: 1 }
+    expect(
+      inferSliderState(
+        scaled(state, stacked, stackedAnchor),
+        stacked,
+        stackedAnchor,
+        BOTH_AT_1,
+      ),
+    ).toEqual(state)
+  })
+
+  it('reads no nodes as x1.0', () => {
+    const current: SliderState = { scalingType: 'width', value: 9 }
+    expect(inferSliderState({}, new Map(), [0, 0], current)).toEqual({
+      scalingType: 'width',
+      value: 0,
+    })
+  })
+
+  it('checks 20,000 nodes quickly', () => {
+    const many = new Map<IdType, Position>()
+    for (let i = 0; i < 20000; i++) {
+      many.set(`n${i}`, [(i * 7919) % 5000, (i * 104729) % 5000])
+    }
+    const manyAnchor = getCenter(many)
+    const views = scaled({ scalingType: 'both', value: 9 }, many, manyAnchor)
+
+    const start = performance.now()
+    const inferred = inferSliderState(views, many, manyAnchor, BOTH_AT_1)
+    const elapsed = performance.now() - start
+
+    expect(inferred).toEqual({ scalingType: 'both', value: 9 })
+    // About 2.5 ms on a laptop; the limit only catches a gross slowdown
+    expect(elapsed).toBeLessThan(250)
+  })
+})
+
+describe('samePositions', () => {
+  const view = (id: IdType, x: number, y: number, z?: number): NodeView =>
+    ({ id, x, y, z, values: new Map() }) as NodeView
+  const previous: Record<IdType, NodeView> = {
+    a: view('a', 1, 2),
+    b: view('b', 3, 4, 5),
+  }
+
+  it('is true for a new record with the same coordinates', () => {
+    expect(
+      samePositions(previous, { a: view('a', 1, 2), b: view('b', 3, 4, 5) }),
+    ).toBe(true)
+  })
+
+  it('treats a missing z as 0', () => {
+    expect(
+      samePositions(previous, { a: view('a', 1, 2, 0), b: view('b', 3, 4, 5) }),
+    ).toBe(true)
+  })
+
+  it('is false when a node moved on any axis', () => {
+    expect(samePositions(previous, { ...previous, a: view('a', 1.5, 2) })).toBe(
+      false,
+    )
+    expect(samePositions(previous, { ...previous, a: view('a', 1, 3) })).toBe(
+      false,
+    )
+    expect(
+      samePositions(previous, { ...previous, b: view('b', 3, 4, 6) }),
+    ).toBe(false)
+  })
+
+  it('is false when a node was added, removed or replaced', () => {
+    expect(samePositions(previous, { ...previous, c: view('c', 0, 0) })).toBe(
+      false,
+    )
+    expect(samePositions(previous, { a: previous.a })).toBe(false)
+    expect(
+      samePositions(previous, { a: previous.a, c: view('c', 3, 4, 5) }),
+    ).toBe(false)
   })
 })

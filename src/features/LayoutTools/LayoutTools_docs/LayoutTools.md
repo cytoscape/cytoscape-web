@@ -24,7 +24,7 @@ LayoutTools/
 ├── Scaling.tsx                    # Main scaling component
 ├── Scaling.spec.tsx               # Scaling component tests
 ├── ScalingTypeSelector.tsx        # Scaling dimension selector
-├── scalingUtil.ts                 # Scale factor, marks, anchor and snapping helpers
+├── scalingUtil.ts                 # Scale factor, marks, anchor, snapping and slider-state inference
 ├── scalingUtil.test.ts            # Helper tests
 ├── store/layoutToolsPanelStore.ts # Open/closed state of the floating window
 └── index.tsx                       # Public exports
@@ -78,8 +78,7 @@ The core component that provides scaling functionality for node positions.
 - Updates node positions in real-time as slider is adjusted
 - Provides reset functionality to restore original positions
 - Creates undo commands for scaling operations
-- Tracks initialization state to prevent position confusion when networks switch
-- Automatically updates original positions when external components modify node positions
+- Keeps the slider truthful whenever node positions change: it shows the value that produced the positions, or x1.0 when no value does (#896)
 
 **Key Features:**
 
@@ -92,8 +91,15 @@ The core component that provides scaling functionality for node positions.
   - Width: Scales only X coordinates
   - Height: Scales only Y coordinates
   - Both: Scales both X and Y coordinates
-- **Position Tracking**: Maintains original positions and adjusts them when external changes occur. A node the slider placed is recognized by recomputing its scaled position exactly, so it keeps its original position; a node moved by something else gets the original position it stands for at the current scale, about the same anchor. The anchor stays fixed while the slider is off x1.0, and follows the layout's center at x1.0. Deleted nodes are dropped from the original positions, so neither the anchor nor the next scale counts them
-- **Undo Support**: All scaling operations are undoable
+- **Truthful Slider (#896)**: Whenever the node positions change, `inferSliderState` (`scalingUtil.ts`) looks for the slider state that explains them: every node at its original position scaled about the anchor by a slider value, in Width, Height or Both mode. The current state is tried first; otherwise one factor per axis is read off the node farthest from the anchor on that axis, rounded to the slider step, and each mode is checked against every node, stopping at the first that does not fit. The factor is only a guess the check confirms, so any nonzero distance works, including in a layout under one unit across; the search stops early once a node at least one unit away has been seen on both x and y. z, which scales by the slider's factor in every mode, stands in when no node is off the anchor in x or y.
+  - **Explained** (the slider's own write; undo or redo of any number of scales; another `Scaling` on the same network, such as two split-view panels or the manual's demo): the slider and the mode are set to that state. The original positions and the anchor stay, so x1.0 still restores the original layout. A redone Width scale switches the mode to Width even if Both was selected since.
+  - **Not explained** (a drag, even of one node; a layout; an App API move; a node with no original position, including one restored by undoing a delete; a newly loaded view): the positions on screen become the new original positions, the anchor moves to their center, and the slider goes to x1.0. Nodes never move: only what the slider shows changes.
+  - With no nodes the slider shows x1.0.
+  - **Nothing moved**: the store replaces `nodeViews` for writes that move no node, such as `updateNodePositions` with the current coordinates. `samePositions` compares the new record with the last one the effect read (held by reference; the store never mutates it) and skips the check, so a mode picked since the last scale is kept. Without this, picking Width at Both x10 and then such a write switched the mode back to Both, and the next commit scaled both axes.
+  - Before #896 the slider kept its value and every moved node was back-computed to the original position it would have at that scale. After **Edit → Undo** of x10 the slider still read x10, the back-computed baseline was a tenth of the real layout, and x1.0 then shrank the network to a tenth about its center.
+  - Cost: one pass over the nodes in the common cases, about 2.5 ms for 20,000 nodes (a unit test catches a gross slowdown). The node ids are listed once with `Object.keys`, because a `for...in` over that many keys lists them all again every time it starts, even when it stops at the first node.
+- **Anchor**: The anchor stays fixed while the slider is off x1.0, and follows the layout's center at x1.0. Deleted nodes are dropped from the original positions, so neither the anchor nor the next scale counts them. The original positions are a ref, not state: nothing renders them, and the sync effect must see a rebase at once
+- **Undo Support**: All scaling operations are undoable. The undo entry's previous positions include z, so undo restores z along with x and y
 - **Nothing to Scale**: When the network has no nodes, or its view is not loaded yet, the Width/Height/Both radios, the slider and the reset button are disabled. `applyScaling` also returns before raising the layout store's `isRunning` flag when it has no original positions (they can lag the view by a render), so it never records an empty undo entry or leaves "Applying layout..." on screen (#880)
 - **Reset Function**: Restores positions to current state and resets slider to center
 
@@ -130,9 +136,9 @@ The LayoutTools components integrate with the following stores and services:
 
 1. **Original Position Tracking**: Maintains a snapshot of original positions to enable relative scaling. This allows users to scale from a known baseline rather than accumulating scaling operations. The positions scale about the center of that baseline's bounding box, captured with it (see Centered Scaling above).
 
-2. **External Position Updates**: Automatically adjusts original positions when external components (e.g., layout algorithms) modify node positions. This prevents position drift and maintains scaling accuracy.
+2. **Positions, Not Commands, Drive the Slider**: The slider reads its state off the node positions (see Truthful Slider above) instead of carrying its value in the undo entry. Every source of position changes (undo, redo, another slider, a drag, a layout) goes through the one check, and the undo entry stays a plain `APPLY_LAYOUT` of positions like every other layout's.
 
-3. **Initialization Guard**: Uses a ref-based initialization flag to prevent position confusion when networks are switched. This ensures original positions are only captured once per network.
+3. **Network Switch**: Switching networks clears the original positions and resets the slider. The sync effect, declared after that reset, then finds no original positions for the new network's nodes and reads its positions as x1.0. A view that loads later does the same when it arrives.
 
 4. **Slider-Based Interface**: Uses a slider with visual marks for intuitive scale factor selection. The logarithmic-like scale (0.1x to 10x) covers a wide range of scaling needs.
 
@@ -147,7 +153,7 @@ The LayoutTools components integrate with the following stores and services:
 ## Data Flow
 
 1. **Network Detection**: LayoutToolsPanel resolves target network ID
-2. **Position Initialization**: Scaling component captures original node positions when network view is ready
+2. **Position Initialization**: Scaling component captures original node positions when network view is ready, and re-reads the slider state from the positions on every later change
 3. **User Interaction**: User adjusts slider or changes scaling type
 4. **Scale Calculation**: Slider value is converted to scaling factor
 5. **Position Update**: Node positions are calculated based on original positions and scaling factor

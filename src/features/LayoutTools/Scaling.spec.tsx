@@ -61,10 +61,12 @@ const center = (record: Record<IdType, [number, number]>): [number, number] => {
   ]
 }
 
-const seed = (): void => {
+const seed = (
+  original: Record<IdType, [number, number, number?]> = ORIGINAL,
+): void => {
   const network = NetworkFn.createNetworkFromLists(
     NETWORK_ID,
-    Object.keys(ORIGINAL).map((id) => ({ id })),
+    Object.keys(original).map((id) => ({ id })),
     [],
   )
   const view = ViewModelFn.createViewModel(network, NETWORK_ID)
@@ -72,15 +74,32 @@ const seed = (): void => {
     useViewModelStore.getState().add(NETWORK_ID, view)
     useViewModelStore
       .getState()
-      .updateNodePositions(NETWORK_ID, new Map(Object.entries(ORIGINAL)))
+      .updateNodePositions(NETWORK_ID, new Map(Object.entries(original)))
   })
 }
 
 /** Move the slider to `value` and release it, as the keyboard does. */
-const commit = (value: number): void => {
-  const input = screen.getByRole('slider') as HTMLInputElement
+const commit = (value: number, index = 0): void => {
+  const input = screen.getAllByRole('slider')[index] as HTMLInputElement
   act(() => {
     fireEvent.change(input, { target: { value: String(value) } })
+  })
+}
+
+/** The value the slider shows, e.g. '9' for x10. */
+const sliderValue = (index = 0): string =>
+  (screen.getAllByRole('slider')[index] as HTMLInputElement).value
+
+/**
+ * Undo or redo the `index`-th posted scale the way useUndoStack replays an
+ * APPLY_LAYOUT entry: write its stored positions back to the view model.
+ */
+const replay = (index: number, direction: 'undo' | 'redo'): void => {
+  const [, , undoParams, redoParams] = postEdit.mock.calls[index]
+  const [networkId, entryPositions] =
+    direction === 'undo' ? undoParams : redoParams
+  act(() => {
+    useViewModelStore.getState().updateNodePositions(networkId, entryPositions)
   })
 }
 
@@ -161,7 +180,7 @@ describe('Scaling (#890)', () => {
     expect(positions().n2[1]).toBeCloseTo(310)
   })
 
-  it('scales a node moved while scaled about the same center', () => {
+  it('rebases to x1.0 when a node is moved by hand while scaled (#896)', () => {
     render(<Scaling networkId={NETWORK_ID} />)
     commit(9)
 
@@ -171,14 +190,13 @@ describe('Scaling (#890)', () => {
         .getState()
         .updateNodePositions(NETWORK_ID, new Map([['n3', [1500, 300]]]))
     })
-    commit(0)
+    const moved = positions()
 
-    // The moved node lands a tenth of its new distance from the center
-    expect(positions().n3[0]).toBeCloseTo(600)
-    expect(positions().n3[1]).toBeCloseTo(300)
-    // The others are back where they started
-    expect(positions().n1).toEqual(ORIGINAL.n1)
-    expect(positions().n2).toEqual(ORIGINAL.n2)
+    // What is on screen is the new x1.0: the slider says so, and x1.0
+    // leaves every node where it is
+    expect(sliderValue()).toBe('0')
+    commit(0)
+    expect(positions()).toEqual(moved)
   })
 
   it('scales about the remaining nodes after a node is deleted', () => {
@@ -303,5 +321,194 @@ describe('Scaling with no node positions (#880)', () => {
     seed()
 
     expectControlsDisabled(false)
+  })
+})
+
+describe('Scaling after undo and redo (#896)', () => {
+  beforeEach(() => {
+    postEdit.mockClear()
+    act(() => {
+      useViewModelStore.getState().delete(NETWORK_ID)
+    })
+    seed()
+  })
+
+  it('shows x1.0 after undoing x10, and x1.0 then changes nothing', () => {
+    render(<Scaling networkId={NETWORK_ID} />)
+
+    commit(9)
+    replay(0, 'undo')
+
+    expect(positions()).toEqual(ORIGINAL)
+    expect(sliderValue()).toBe('0')
+
+    // Before the fix, x1.0 shrank the network to a tenth about its center
+    commit(0)
+    expect(positions()).toEqual(ORIGINAL)
+  })
+
+  it('scales from the restored layout after an undo', () => {
+    render(<Scaling networkId={NETWORK_ID} />)
+
+    commit(9)
+    replay(0, 'undo')
+    commit(9)
+
+    // A real change, not an entry that moves nothing
+    const [, , [, before], [, after]] = postEdit.mock.calls[1]
+    expect(after).not.toEqual(before)
+    expect(positions().n1[0]).toBeCloseTo(-500)
+    expect(positions().n2[1]).toBeCloseTo(1300)
+  })
+
+  it('shows x10 again after redo, and x1.0 then restores the original', () => {
+    render(<Scaling networkId={NETWORK_ID} />)
+
+    commit(9)
+    replay(0, 'undo')
+    replay(0, 'redo')
+
+    expect(sliderValue()).toBe('9')
+    commit(0)
+    expect(positions()).toEqual(ORIGINAL)
+  })
+
+  it('shows the earlier value when one of several scales is undone', () => {
+    render(<Scaling networkId={NETWORK_ID} />)
+
+    commit(1) // x2
+    commit(9) // x10
+    replay(1, 'undo')
+
+    expect(sliderValue()).toBe('1')
+    commit(0)
+    expect(positions()).toEqual(ORIGINAL)
+  })
+
+  it('reads a redone Width scale as Width even with Both selected', () => {
+    render(<Scaling networkId={NETWORK_ID} />)
+    fireEvent.click(screen.getByLabelText('Width'))
+
+    commit(9)
+    replay(0, 'undo')
+    fireEvent.click(screen.getByLabelText('Both'))
+    replay(0, 'redo')
+
+    expect(sliderValue()).toBe('9')
+    expect((screen.getByLabelText('Width') as HTMLInputElement).checked).toBe(
+      true,
+    )
+    commit(0)
+    expect(positions()).toEqual(ORIGINAL)
+  })
+
+  it('keeps a newly selected mode when a write leaves every node in place', () => {
+    render(<Scaling networkId={NETWORK_ID} />)
+    commit(9)
+    fireEvent.click(screen.getByLabelText('Width'))
+
+    // A new nodeViews object with the same coordinates: nothing moved, so
+    // the slider must not reread the Both x10 layout and undo the choice
+    act(() => {
+      useViewModelStore
+        .getState()
+        .updateNodePositions(NETWORK_ID, new Map(Object.entries(positions())))
+    })
+
+    expect((screen.getByLabelText('Width') as HTMLInputElement).checked).toBe(
+      true,
+    )
+    expect(sliderValue()).toBe('9')
+    // The next commit scales the width only
+    commit(4) // x5
+    expect(positions().n1[0]).toBeCloseTo(0)
+    expect(positions().n1[1]).toBe(ORIGINAL.n1[1])
+    expect(positions().n2[1]).toBe(ORIGINAL.n2[1])
+  })
+
+  it('rebases to x1.0 when a new layout replaces the scaled one', () => {
+    render(<Scaling networkId={NETWORK_ID} />)
+    commit(9)
+
+    const layout = new Map<IdType, [number, number]>([
+      ['n1', [0, 0]],
+      ['n2', [100, 0]],
+      ['n3', [0, 300]],
+    ])
+    act(() => {
+      useViewModelStore.getState().updateNodePositions(NETWORK_ID, layout)
+    })
+
+    expect(sliderValue()).toBe('0')
+    commit(0)
+    expect(positions()).toEqual(Object.fromEntries(layout))
+  })
+
+  it('reads the value back for a layout under one unit across', () => {
+    act(() => {
+      useViewModelStore.getState().delete(NETWORK_ID)
+    })
+    // Centered at (0.5, 0.5): every node is half a unit from the anchor
+    const compact: Record<IdType, [number, number]> = {
+      n1: [0, 0],
+      n2: [1, 1],
+    }
+    seed(compact)
+    render(<Scaling networkId={NETWORK_ID} />)
+
+    commit(1) // x2
+    commit(9) // x10
+    replay(1, 'undo')
+
+    expect(sliderValue()).toBe('1')
+    commit(0)
+    expect(positions()).toEqual(compact)
+  })
+
+  it('reads the value back from z when every node shares x and y', () => {
+    act(() => {
+      useViewModelStore.getState().delete(NETWORK_ID)
+    })
+    const stacked: Record<IdType, [number, number, number]> = {
+      n1: [0, 0, 5],
+      n2: [0, 0, 10],
+    }
+    seed(stacked)
+    render(<Scaling networkId={NETWORK_ID} />)
+    const zs = (): number[] =>
+      ['n1', 'n2'].map(
+        (id) =>
+          useViewModelStore.getState().getViewModel(NETWORK_ID)!.nodeViews[id]
+            .z as number,
+      )
+
+    commit(1) // x2
+    commit(9) // x10
+    replay(1, 'undo')
+
+    expect(sliderValue()).toBe('1')
+    commit(0)
+    expect(zs()).toEqual([5, 10])
+  })
+
+  it('keeps two mounted sliders on one network in step', () => {
+    render(
+      <>
+        <Scaling networkId={NETWORK_ID} />
+        <Scaling networkId={NETWORK_ID} />
+      </>,
+    )
+
+    commit(9, 0)
+    expect(sliderValue(1)).toBe('9')
+
+    replay(0, 'undo')
+    expect(sliderValue(0)).toBe('0')
+    expect(sliderValue(1)).toBe('0')
+
+    commit(4, 1) // x5 from the second slider
+    expect(sliderValue(0)).toBe('4')
+    commit(0, 0)
+    expect(positions()).toEqual(ORIGINAL)
   })
 })
