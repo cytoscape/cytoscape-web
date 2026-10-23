@@ -96,6 +96,11 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
     state.getViewModel(networkId),
   )
 
+  // Nothing to scale: the network has no nodes, or its view is not loaded
+  // yet. The controls are disabled rather than doing nothing on release.
+  const hasNodes: boolean =
+    networkView !== undefined && Object.keys(networkView.nodeViews).length > 0
+
   /**
    * Initialize the original positions when new network is detected
    */
@@ -176,7 +181,11 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
   }
 
   const applyScaling = (scalingFactor: number): void => {
-    if (networkView === undefined || originalPositions === undefined) {
+    // Nothing to scale: a network with no nodes, or the original positions
+    // are not read yet. Return before raising the running flag, which
+    // nothing else would clear (#880).
+    const nodeIds: IdType[] = [...originalPositions.keys()]
+    if (networkView === undefined || nodeIds.length === 0) {
       return
     }
 
@@ -185,14 +194,6 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
 
     // Scale relative to the original positions
     const positions = new Map<IdType, Position>()
-
-    let nodeIds: IdType[] = []
-    if (originalPositions !== undefined) {
-      nodeIds = [...originalPositions.keys()]
-    }
-    if (nodeIds.length === 0) {
-      return
-    }
 
     const factors = scaleFactors(scalingType, scalingFactor)
     const prevPositions = new Map<IdType, [number, number]>()
@@ -252,6 +253,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
       <ScalingTypeSelector
         scalingType={scalingType}
         setScalingType={setScalingType}
+        disabled={!hasNodes}
       />
       <Stack
         sx={{ paddingLeft: theme.spacing(2) }}
@@ -273,6 +275,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
           min={-9}
           max={9}
           track={false}
+          disabled={!hasNodes}
           onChangeCommitted={handleUpdate}
           onChange={handleChange}
         />
@@ -281,6 +284,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
           aria-label="refresh"
           size="large"
           sx={{ marginBottom: theme.spacing(4) }}
+          disabled={!hasNodes}
           onClick={reset}
         >
           <RefreshIcon fontSize="large" />

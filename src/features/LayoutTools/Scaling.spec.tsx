@@ -8,6 +8,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useLayoutStore } from '../../data/hooks/stores/LayoutStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { IdType } from '../../models/IdType'
 import NetworkFn from '../../models/NetworkModel'
@@ -190,5 +191,99 @@ describe('Scaling (#890)', () => {
 
     commit(0)
     expect(label()).toBe('x1.0')
+  })
+})
+
+describe('Scaling with no node positions (#880)', () => {
+  const EMPTY_ID = 'scaling-empty-net'
+
+  beforeEach(() => {
+    postEdit.mockClear()
+    act(() => {
+      useViewModelStore.getState().delete(EMPTY_ID)
+      useLayoutStore.getState().setIsRunning(false)
+    })
+  })
+
+  it('does not leave "Applying layout..." on for a network with no nodes', () => {
+    const network = NetworkFn.createNetworkFromLists(EMPTY_ID, [], [])
+    act(() => {
+      useViewModelStore
+        .getState()
+        .add(EMPTY_ID, ViewModelFn.createViewModel(network, EMPTY_ID))
+    })
+    render(<Scaling networkId={EMPTY_ID} />)
+
+    commit(9)
+
+    expect(useLayoutStore.getState().isRunning).toBe(false)
+    expect(postEdit).not.toHaveBeenCalled()
+  })
+
+  it('does not leave "Applying layout..." on before the view exists', () => {
+    render(<Scaling networkId={EMPTY_ID} />)
+
+    commit(9)
+
+    expect(useLayoutStore.getState().isRunning).toBe(false)
+    expect(postEdit).not.toHaveBeenCalled()
+  })
+
+  it('clears "Applying layout..." after scaling a network', () => {
+    act(() => {
+      useViewModelStore.getState().delete(NETWORK_ID)
+    })
+    seed()
+    render(<Scaling networkId={NETWORK_ID} />)
+
+    commit(9)
+
+    expect(useLayoutStore.getState().isRunning).toBe(false)
+    expect(postEdit).toHaveBeenCalledTimes(1)
+  })
+
+  const expectControlsDisabled = (disabled: boolean): void => {
+    expect((screen.getByRole('slider') as HTMLInputElement).disabled).toBe(
+      disabled,
+    )
+    for (const label of ['Width', 'Height', 'Both']) {
+      expect((screen.getByLabelText(label) as HTMLInputElement).disabled).toBe(
+        disabled,
+      )
+    }
+    expect(
+      (screen.getByTestId('scaling-reset-button') as HTMLButtonElement)
+        .disabled,
+    ).toBe(disabled)
+  }
+
+  it('disables the controls for a network with no nodes', () => {
+    const network = NetworkFn.createNetworkFromLists(EMPTY_ID, [], [])
+    act(() => {
+      useViewModelStore
+        .getState()
+        .add(EMPTY_ID, ViewModelFn.createViewModel(network, EMPTY_ID))
+    })
+    render(<Scaling networkId={EMPTY_ID} />)
+
+    expectControlsDisabled(true)
+  })
+
+  it('disables the controls before the view exists', () => {
+    render(<Scaling networkId={EMPTY_ID} />)
+
+    expectControlsDisabled(true)
+  })
+
+  it('enables the controls once the network view has nodes', () => {
+    render(<Scaling networkId={NETWORK_ID} />)
+    act(() => {
+      useViewModelStore.getState().delete(NETWORK_ID)
+    })
+    expectControlsDisabled(true)
+
+    seed()
+
+    expectControlsDisabled(false)
   })
 })
