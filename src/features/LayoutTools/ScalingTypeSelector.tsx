@@ -10,18 +10,21 @@ export type ScalingType = 'width' | 'height' | 'both'
 interface ScalingTypeSelectorProps {
   scalingType: ScalingType
   setScalingType: (scalingType: ScalingType) => void
+  disabled?: boolean
 }
 
 export const ScalingTypeSelector = ({
   scalingType,
   setScalingType,
+  disabled = false,
 }: ScalingTypeSelectorProps): JSX.Element => {
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     setScalingType(event.target.value as ScalingType)
   }
 
   return (
-    <FormControl data-testid="scaling-type-selector">
+    // A disabled FormControl disables its label and every radio in it
+    <FormControl data-testid="scaling-type-selector" disabled={disabled}>
       <FormLabel id="demo-row-radio-buttons-group-label">Scale</FormLabel>
       <RadioGroup
         row
