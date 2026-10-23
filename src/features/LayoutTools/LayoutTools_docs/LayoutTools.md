@@ -20,8 +20,10 @@ LayoutTools/
 ├── LayoutToolsBasePanel.tsx      # Accordion wrapper component
 ├── LayoutToolsPanel.tsx           # Main panel with network ID resolution
 ├── Scaling.tsx                    # Main scaling component
+├── Scaling.spec.tsx               # Scaling component tests
 ├── ScalingTypeSelector.tsx        # Scaling dimension selector
-├── scalingUtil.ts                 # Scaling calculation utility
+├── scalingUtil.ts                 # Scale factor, marks, anchor and snapping helpers
+├── scalingUtil.test.ts            # Helper tests
 └── index.tsx                       # Public exports
 ```
 
@@ -65,11 +67,15 @@ The core component that provides scaling functionality for node positions.
 **Key Features:**
 
 - **Slider Range**: -9 to 9, with marks at -9 (x0.1), -4 (x0.5), 0 (x1.0), 4 (x5), 9 (x10)
+- **Centered Scaling**: Positions scale about the center of the original positions' bounding box (`anchor + (position - anchor) * scale`), not about the coordinate origin, so the network stays where it is on screen. Scaling about the origin moved a centered network toward the top-left; scaled up, it could leave the view entirely, and the renderer's off-screen recovery (`cy.fit()`) then changed the zoom, so returning to x1.0 restored the positions but not the view (#890)
+- **Exact x1.0**: A factor of 1 returns each coordinate untouched, so x1.0 restores the original layout exactly
+- **Mark Snapping**: Mouse and touch input within 0.3 slider units (about three pixels) of a mark snaps onto it; the keyboard's arrow keys still step through every value. One step (0.1) is about a pixel, so a click aimed at x1.0 used to land on x0.99 or x1.1
+- **Value Label**: Shows up to two decimals (x0.99, x1.1), so a value just off a mark never reads as the mark
 - **Scaling Modes**:
   - Width: Scales only X coordinates
   - Height: Scales only Y coordinates
   - Both: Scales both X and Y coordinates
-- **Position Tracking**: Maintains original positions and adjusts them when external changes occur
+- **Position Tracking**: Maintains original positions and adjusts them when external changes occur. A node the slider placed is recognized by recomputing its scaled position exactly, so it keeps its original position; a node moved by something else gets the original position it stands for at the current scale, about the same anchor. The anchor stays fixed while the slider is off x1.0, and follows the layout's center at x1.0
 - **Undo Support**: All scaling operations are undoable
 - **Reset Function**: Restores positions to current state and resets slider to center
 
@@ -101,7 +107,7 @@ The LayoutTools components integrate with the following stores and services:
 
 ## Design Decisions
 
-1. **Original Position Tracking**: Maintains a snapshot of original positions to enable relative scaling. This allows users to scale from a known baseline rather than accumulating scaling operations.
+1. **Original Position Tracking**: Maintains a snapshot of original positions to enable relative scaling. This allows users to scale from a known baseline rather than accumulating scaling operations. The positions scale about the center of that baseline's bounding box, captured with it (see Centered Scaling above).
 
 2. **External Position Updates**: Automatically adjusts original positions when external components (e.g., layout algorithms) modify node positions. This prevents position drift and maintains scaling accuracy.
 

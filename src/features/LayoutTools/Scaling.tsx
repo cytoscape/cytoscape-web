@@ -16,30 +16,41 @@ import { IdType } from '../../models/IdType'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { NetworkView, NodeView } from '../../models/ViewModel'
 import { ScalingType, ScalingTypeSelector } from './ScalingTypeSelector'
-import { calcScale } from './scalingUtil'
+import {
+  Anchor,
+  calcScale,
+  formatScale,
+  getCenter,
+  isPointerEvent,
+  Position,
+  ScaleFactors,
+  scalePosition,
+  SCALING_MARKS,
+  snapToMark,
+  unscalePosition,
+} from './scalingUtil'
 
-const marks = [
-  {
-    value: -9,
-    label: 'x0.1',
-  },
-  {
-    value: -4,
-    label: 'x0.5',
-  },
-  {
-    value: 0,
-    label: 'x1.0',
-  },
-  {
-    value: 4,
-    label: 'x5',
-  },
-  {
-    value: 9,
-    label: 'x10',
-  },
+/** Per-axis factors for a scaling factor in the given mode */
+const scaleFactors = (
+  scalingType: ScalingType,
+  scalingFactor: number,
+): ScaleFactors => [
+  scalingType === 'height' ? 1.0 : scalingFactor,
+  scalingType === 'width' ? 1.0 : scalingFactor,
+  scalingFactor,
 ]
+
+/**
+ * Pointer input snaps onto a mark it lands next to, so x1.0 really is 1.0;
+ * the keyboard steps through every value.
+ */
+const sliderValueOf = (
+  event: Event | SyntheticEvent,
+  value: number | number[],
+): number => {
+  const valueAsNumber: number = typeof value === 'number' ? value : value[0]
+  return isPointerEvent(event) ? snapToMark(valueAsNumber) : valueAsNumber
+}
 
 interface ScalingProps {
   networkId: IdType
@@ -60,8 +71,14 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
 
   // Original positions of the nodes. Assign empty map as default
   const [originalPositions, setOriginalPositions] = useState<
-    Map<IdType, [number, number, number?]>
-  >(new Map<IdType, [number, number, number?]>())
+    Map<IdType, Position>
+  >(new Map<IdType, Position>())
+
+  // The point positions are scaled about: the center of the original
+  // positions' bounding box, so the network stays where it is on screen.
+  // It is held fixed while the slider is off x1.0, so that scaling and
+  // unscaling a position always use the same point.
+  const anchorRef: MutableRefObject<Anchor> = useRef<Anchor>([0, 0])
 
   // Notify other components that the manual layout is running
   const setIsRunning: (isRunning: boolean) => void = useLayoutStore(
@@ -86,7 +103,8 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
     initRef.current = false
     // Current network is switched. Reset the slider to zero
     setSliderValue(0)
-    setOriginalPositions(new Map<IdType, [number, number, number?]>())
+    setOriginalPositions(new Map<IdType, Position>())
+    anchorRef.current = [0, 0]
   }, [networkId])
 
   /**
@@ -110,35 +128,48 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
       const { nodeViews } = networkView
       // If external components change the node positions after initialization,
       // update the original positions used for scaling
-      const scalingFactor = calcScale(sliderValue)
+      const factors = scaleFactors(scalingType, calcScale(sliderValue))
       Object.keys(nodeViews).forEach((nodeId) => {
         const nv = nodeViews[nodeId]
+        const original = originalPositions.get(nodeId)
+        // Where the slider put this node. Computed exactly as applyScaling
+        // does, so a node the slider placed compares equal and keeps its
+        // original position instead of accumulating rounding error.
+        const expected =
+          original === undefined
+            ? undefined
+            : scalePosition(original, anchorRef.current, factors)
         if (
-          nv.x !== originalPositions?.get(nodeId)?.[0] ||
-          nv.y !== originalPositions?.get(nodeId)?.[1] ||
-          nv.z !== originalPositions?.get(nodeId)?.[2]
+          expected === undefined ||
+          nv.x !== expected[0] ||
+          nv.y !== expected[1] ||
+          (nv.z ?? 0) !== expected[2]
         ) {
-          // Adjust the original node position based on the current scaling factor
-          originalPositions?.set(nodeId, [
-            nv.x / (scalingType === 'height' ? 1.0 : scalingFactor),
-            nv.y / (scalingType === 'width' ? 1.0 : scalingFactor),
-            (nv.z ?? 0) / scalingFactor,
-          ])
+          // Moved by someone else: find the original position it now stands
+          // for at the current scale
+          originalPositions.set(
+            nodeId,
+            unscalePosition([nv.x, nv.y, nv.z], anchorRef.current, factors),
+          )
         }
       })
+      // At x1.0 the anchor can follow the layout without moving any node
+      if (sliderValue === 0) {
+        anchorRef.current = getCenter(originalPositions)
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [networkView?.nodeViews])
 
   const handleChange = (event: Event, value: number | number[]): void => {
-    setSliderValue(value as number)
+    setSliderValue(sliderValueOf(event, value))
   }
 
   const handleUpdate = (
     event: Event | SyntheticEvent,
     value: number | number[],
   ): void => {
-    const valueAsNumber: number = typeof value === 'number' ? value : value[0]
+    const valueAsNumber: number = sliderValueOf(event, value)
     setSliderValue(valueAsNumber)
     const scalingFactor = calcScale(valueAsNumber)
     applyScaling(scalingFactor)
@@ -153,7 +184,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
     setIsRunning(true)
 
     // Scale relative to the original positions
-    const positions = new Map<IdType, [number, number, number?]>()
+    const positions = new Map<IdType, Position>()
 
     let nodeIds: IdType[] = []
     if (originalPositions !== undefined) {
@@ -163,8 +194,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
       return
     }
 
-    const scaleX: number = scalingType === 'height' ? 1.0 : scalingFactor
-    const scaleY: number = scalingType === 'width' ? 1.0 : scalingFactor
+    const factors = scaleFactors(scalingType, scalingFactor)
     const prevPositions = new Map<IdType, [number, number]>()
 
     Object.entries(networkView?.nodeViews ?? {}).forEach(
@@ -175,11 +205,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
 
     nodeIds.forEach((nodeId: IdType) => {
       const position = originalPositions.get(nodeId) ?? [0, 0, 0]
-      positions.set(nodeId, [
-        position[0] * scaleX,
-        position[1] * scaleY,
-        (position[2] ?? 0) * scalingFactor,
-      ])
+      positions.set(nodeId, scalePosition(position, anchorRef.current, factors))
     })
     postEdit(
       UndoCommandType.APPLY_LAYOUT,
@@ -203,12 +229,13 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
   }
 
   const refreshPositions = (nodeViews: Record<IdType, NodeView>): void => {
-    const positions = new Map<IdType, [number, number, number?]>()
+    const positions = new Map<IdType, Position>()
     const nodeIds: IdType[] = Object.keys(nodeViews)
     nodeIds.forEach((nodeId: IdType) => {
       const nv: NodeView = nodeViews[nodeId]
       positions.set(nodeId, [nv.x, nv.y, nv.z])
     })
+    anchorRef.current = getCenter(positions)
     setOriginalPositions(positions)
   }
 
@@ -217,7 +244,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
   }
 
   const valueLabelFormat = (value: number): string => {
-    return `x${calcScale(value).toFixed(1)}`
+    return formatScale(calcScale(value))
   }
 
   return (
@@ -239,7 +266,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
           value={sliderValue}
           step={0.1}
           size="small"
-          marks={marks}
+          marks={SCALING_MARKS}
           valueLabelDisplay="auto"
           valueLabelFormat={valueLabelFormat}
           getAriaValueText={valuetext}
