@@ -27,6 +27,11 @@
           {
             "name": "@mui/material/Dialog",
             "message": "Use CyDialog from @/components/CyDialog. Modals close by button only. See docs/specifications/DIALOG_DISMISS_POLICY.md."
+          },
+          {
+            "name": "react-draggable",
+            "importNames": ["default", "Draggable"],
+            "message": "Use PointerDraggable from @/components/PointerDraggable (or DraggableCore). <Draggable> drops pointer moves under React 18 (#901)."
           }
         ],
         "patterns": [
