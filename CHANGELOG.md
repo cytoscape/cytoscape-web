@@ -44,6 +44,8 @@ retired, and fixes to undo, rendering, CX2 import and the style editor.
   dialog and could not be clicked (#841)
 - Fix issue where the merge dialog's buttons had wrong or missing names for screen
   readers (#841)
+- Fix issue where screen readers read the style mapping form's column options by their
+  tooltip instead of the column name (#841)
 - Fix typos in the merge and continuous-mapping forms (#856)
 
 ### Performance
