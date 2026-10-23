@@ -5,8 +5,11 @@
 <a id="menu_bar" />
 
 The **Edit**, **Analysis** and **Tools** menus are inactive until the
-workspace holds at least one network. Apps and service apps can add their own
-items to any menu. See [Extending Cytoscape Web](extending).
+workspace holds at least one network. Service apps can add their own items to
+the **Data**, **Edit**, **Layout**, **Analysis**, **Tools**, **Apps** and **Help**
+menus, but not **Select**. Other apps add theirs to the **Apps** menu, and can
+also add layouts to the **Layout** menu and items to the right-click menu. See
+[Extending Cytoscape Web](extending).
 
 <a id="data" />
 
@@ -88,8 +91,10 @@ over an algorithm to read what it does.
 
 The last two items are:
 
-- **Layout Tools** — opens the [Layout Tools](workspace-panels#layout_tools) panel in the
-  lower-left corner of the network view.
+- **Layout Tools** — opens the [Layout Tools](workspace-panels#layout_tools)
+  panel in the lower-left corner of the network view. Its slider stretches or
+  squeezes the current layout, across the width, the height or both. Choose
+  **Layout Tools** again to close the panel.
 - **Settings...** — opens the **Layout Option Editor**. Pick an algorithm,
   change its parameters, and click **Apply Layout**. Tick **Set as default**
   to make it the algorithm that Apply Default Layout runs.
@@ -138,8 +143,10 @@ you entered it for, and only over HTTPS or to your own computer.
 
 ## Tools
 
-The **Tools** menu holds **Merge Networks**, which combines two or more
-networks into one. See [Merging Networks](merge).
+The **Tools** menu holds tools that work on whole networks. For now it has
+one, **Merge Networks**, which combines two or more networks into one. See
+[Merging Networks](merge). Service apps you install can add their own tools
+to this menu. See [Extending Cytoscape Web](extending).
 
 <a id="apps" />
 
