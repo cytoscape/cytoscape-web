@@ -83,14 +83,15 @@ export const SCREENSHOT_RECIPES: readonly ScreenshotRecipe[] = [
   },
   {
     id: 'layout-tools',
-    alt: 'The Layout Tools section expanded below the workspace list',
+    alt: 'The floating Layout Tools panel in the network view',
     viewport: { width: 1280, height: 800 },
     steps: [
       { importNetwork: GAL_NETWORK, expectText: GAL_NAME },
-      { click: { role: 'button', name: 'Layout Tools' } },
+      { click: { testid: 'toolbar-layout-menu-menu-button' } },
+      { click: { testid: 'layout-menu-layout-tools' } },
       { waitFor: { testid: 'scaling-component' } },
     ],
-    capture: { testid: 'layout-tools-accordion' },
+    capture: { testid: 'floating-layout-tools-panel' },
     sources: ['src/features/LayoutTools/**'],
   },
   {

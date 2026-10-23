@@ -8,7 +8,8 @@ The LayoutTools feature provides manual layout manipulation capabilities for net
 
 The LayoutTools follows a **simple component composition pattern** where:
 
-- **LayoutToolsBasePanel** provides an accordion wrapper for collapsible UI
+- **FloatingLayoutToolsPanel** is the movable floating window in the network view that hosts the tools
+- **layoutToolsPanelStore** holds whether that window is open; the Layout menu toggles it
 - **LayoutToolsPanel** manages network ID resolution and renders the scaling component
 - **Scaling** is the main component that handles scaling logic and UI
 - **ScalingTypeSelector** provides radio buttons for selecting scaling dimension
@@ -17,25 +18,40 @@ The LayoutTools follows a **simple component composition pattern** where:
 
 ```
 LayoutTools/
-├── LayoutToolsBasePanel.tsx      # Accordion wrapper component
+├── FloatingLayoutToolsPanel.tsx  # Movable floating window in the network view
 ├── LayoutToolsPanel.tsx           # Main panel with network ID resolution
 ├── Scaling.tsx                    # Main scaling component
 ├── ScalingTypeSelector.tsx        # Scaling dimension selector
 ├── scalingUtil.ts                 # Scaling calculation utility
+├── store/layoutToolsPanelStore.ts # Open/closed state of the floating window
 └── index.tsx                       # Public exports
 ```
 
 ## Components
 
-### LayoutToolsBasePanel
+### FloatingLayoutToolsPanel
 
-An accordion wrapper that provides a collapsible container for the layout tools.
+The only place the layout tools appear (#887 removed the collapsible section
+that used to sit below the workspace list). `NetworkTab` renders it over the
+network view.
 
 **Behavior:**
 
-- Provides expandable/collapsible UI using Material-UI Accordion
-- Maintains consistent height when expanded or collapsed
-- Renders LayoutToolsPanel in the accordion details
+- Hidden by default; **Layout → Layout Tools** toggles it through `layoutToolsPanelStore`, and the close button in its title bar hides it
+- Opens in the lower-left corner of the network view
+- Moves when its title bar is dragged, and cannot be dragged out of the network view; the close button does not start a drag
+- Is placed against `NetworkTab`'s box (`position: relative`), so in a hierarchy it cannot be dragged over the TREE VIEW / CELL VIEW tabs
+- Forgets where it was moved when closed: it unmounts, so reopening it brings it back to the lower-left corner, which also recovers a panel left out of view after the canvas shrank
+- Renders LayoutToolsPanel below the title bar
+
+The drag uses react-draggable's `DraggableCore`, which only reports pointer
+positions; the panel computes its offset from the pointer's travel since the
+press and clamps it itself. `<Draggable>` is not used because it adds each
+move to its last *committed* position: React 18 commits mouse-move updates in
+a later task, so a move that arrives before the commit is lost and the panel
+falls behind the pointer (reproducible in WebKit, and under main-thread load
+in any browser). The unit test "keeps every move when React commits several
+at once" guards this.
 
 ### LayoutToolsPanel
 
@@ -76,6 +92,7 @@ The core component that provides scaling functionality for node positions.
 **Scaling Calculation:**
 
 The slider value is converted to a scaling factor using the formula:
+
 - Negative values: `scale = (10 - |value|) / 10` (e.g., -9 → 0.1, -4 → 0.6)
 - Positive values: `scale = value + 1.0` (e.g., 0 → 1.0, 4 → 5.0, 9 → 10.0)
 
@@ -137,4 +154,3 @@ The LayoutTools components integrate with the following stores and services:
 5. **Animation**: Add smooth transitions when scaling
 6. **Scale History**: Maintain history of scale factors for quick reapplication
 7. **Export Scale**: Allow exporting/importing scale configurations
-
