@@ -236,4 +236,13 @@ describe('goToEditor: the in-place navigation Firefox needs', () => {
     expect(win.open).toHaveBeenCalledTimes(1)
     expect(blank.close).toHaveBeenCalled()
   })
+
+  it('is skipped when the name found a tab other than the editor', () => {
+    const editor = editorWithNavigation()
+    const other = editorWithNavigation()
+    const { win, asWindow } = manualTab(editor, { found: other })
+    goToEditor(asWindow, BASE)
+    expect(win.open).toHaveBeenCalledTimes(1)
+    expect(other.close).not.toHaveBeenCalled()
+  })
 })

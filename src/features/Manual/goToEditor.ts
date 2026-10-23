@@ -126,6 +126,11 @@ const raise = (win: Window, editor: Window): (() => void) => {
     target?.close()
     return noCleanup
   }
+  if (target !== editor) {
+    // Another tab holds the name, e.g. a duplicate of the editor. The
+    // navigation would reach that tab, where nothing cancels it.
+    return noCleanup
+  }
   return navigateInPlace(win, editor, name)
 }
 
