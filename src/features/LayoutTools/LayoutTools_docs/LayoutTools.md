@@ -66,7 +66,7 @@ The core component that provides scaling functionality for node positions.
 
 **Key Features:**
 
-- **Slider Range**: -9 to 9, with marks at -9 (x0.1), -4 (x0.5), 0 (x1.0), 4 (x5), 9 (x10)
+- **Slider Range**: -9 to 9, with marks at -9 (x0.1), -5 (x0.5), 0 (x1.0), 4 (x5), 9 (x10)
 - **Centered Scaling**: Positions scale about the center of the original positions' bounding box (`anchor + (position - anchor) * scale`), not about the coordinate origin, so the network stays where it is on screen. Scaling about the origin moved a centered network toward the top-left; scaled up, it could leave the view entirely, and the renderer's off-screen recovery (`cy.fit()`) then changed the zoom, so returning to x1.0 restored the positions but not the view (#890)
 - **Exact x1.0**: A factor of 1 returns each coordinate untouched, so x1.0 restores the original layout exactly
 - **Mark Snapping**: Mouse and touch input within 0.3 slider units (about three pixels) of a mark snaps onto it; the keyboard's arrow keys still step through every value. One step (0.1) is about a pixel, so a click aimed at x1.0 used to land on x0.99 or x1.1
@@ -82,8 +82,10 @@ The core component that provides scaling functionality for node positions.
 **Scaling Calculation:**
 
 The slider value is converted to a scaling factor using the formula:
-- Negative values: `scale = (10 - |value|) / 10` (e.g., -9 → 0.1, -4 → 0.6)
+- Negative values: `scale = (10 - |value|) / 10` (e.g., -9 → 0.1, -5 → 0.5, -4 → 0.6)
 - Positive values: `scale = value + 1.0` (e.g., 0 → 1.0, 4 → 5.0, 9 → 10.0)
+
+The marks live in `SCALING_MARKS` (`scalingUtil.ts`), and a unit test checks that every mark's label is the factor `calcScale` gives at its value. The x0.5 mark sat at -4, which scales by 0.6 (#879).
 
 ### ScalingTypeSelector
 

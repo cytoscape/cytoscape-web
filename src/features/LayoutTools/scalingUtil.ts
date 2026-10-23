@@ -9,14 +9,18 @@ export type Anchor = [number, number]
 /** Per-axis scaling factors: [x, y, z] */
 export type ScaleFactors = [number, number, number]
 
-/** Labelled positions on the slider */
+/**
+ * Labelled positions on the slider. Each label must be the factor
+ * `calcScale` gives at its value: x0.5 sits at -5, not at -4 (x0.6) where it
+ * would mirror x5.
+ */
 export const SCALING_MARKS: { value: number; label: string }[] = [
   {
     value: -9,
     label: 'x0.1',
   },
   {
-    value: -4,
+    value: -5,
     label: 'x0.5',
   },
   {

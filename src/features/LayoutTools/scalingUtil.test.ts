@@ -21,6 +21,20 @@ describe('calcScale', () => {
   })
 })
 
+describe('SCALING_MARKS (#879)', () => {
+  it('scales by the factor each mark is labelled with', () => {
+    for (const { value, label } of SCALING_MARKS) {
+      expect(calcScale(value), label).toBeCloseTo(Number(label.slice(1)), 9)
+    }
+  })
+
+  it('has a mark labelled x0.5 that scales by 0.5', () => {
+    const mark = SCALING_MARKS.find(({ label }) => label === 'x0.5')
+    expect(mark).toBeDefined()
+    expect(calcScale(mark!.value)).toBeCloseTo(0.5, 9)
+  })
+})
+
 describe('formatScale', () => {
   it('shows whole numbers with one decimal', () => {
     expect(formatScale(1)).toBe('x1.0')
