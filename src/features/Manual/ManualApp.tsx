@@ -1,7 +1,7 @@
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import MenuIcon from '@mui/icons-material/Menu'
-import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import {
   AppBar,
   Box,
@@ -17,11 +17,18 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material'
-import { type ReactElement, useCallback, useEffect, useState } from 'react'
+import {
+  type MouseEvent,
+  type ReactElement,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react'
 import { Link, Navigate, useLocation, useParams } from 'react-router-dom'
 
 import { MANUAL_ROUTE_SEGMENT } from '@/data/db/dbScope'
 import { SnackbarMessageList } from '@/features/Messages'
+import { goToEditor } from './goToEditor'
 import { ManualNotFound, ManualPage, type TocEntry } from './ManualPage'
 import {
   DEFAULT_MANUAL_SLUG,
@@ -37,6 +44,25 @@ const NAV_WIDTH = 260
 const APP_BAR_HEIGHT = 48
 
 const pagePath = (slug: string): string => `/${MANUAL_ROUTE_SEGMENT}/${slug}`
+
+/**
+ * A plain click goes back to the editor tab that opened the manual
+ * (`goToEditor`). A modified or middle click keeps the link's own behaviour,
+ * so Ctrl/⌘-click still opens the editor in a new tab.
+ */
+const handleOpenEditor = (event: MouseEvent<HTMLElement>): void => {
+  if (
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  ) {
+    return
+  }
+  event.preventDefault()
+  goToEditor(window, import.meta.env.BASE_URL)
+}
 
 interface PageListProps {
   currentSlug: string
@@ -366,15 +392,17 @@ export default function ManualApp(): ReactElement {
             v{REACT_APP_VERSION}
           </Typography>
           <Box sx={{ flex: 1 }} />
-          {/* A full page load: the editor must open with its own database. */}
+          {/* A tab switch or a full page load: the editor must open with its
+              own database. */}
           <Button
             size="small"
             href={import.meta.env.BASE_URL}
-            endIcon={<OpenInNewIcon fontSize="small" />}
+            onClick={handleOpenEditor}
+            endIcon={<ArrowForwardIcon fontSize="small" />}
             sx={{ whiteSpace: 'nowrap', flexShrink: 0 }}
             data-testid="manual-open-app"
           >
-            {wide ? 'Open Cytoscape Web' : 'Open app'}
+            {wide ? 'Go to Cytoscape Web' : 'Go to app'}
           </Button>
         </Toolbar>
       </AppBar>

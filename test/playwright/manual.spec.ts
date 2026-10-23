@@ -201,6 +201,78 @@ test.describe('manual', () => {
     await expect(manual.locator('[data-testid="manual-page"]')).toBeVisible()
   })
 
+  test('Go to Cytoscape Web loads the editor in the tab when no editor opened it', async ({
+    page,
+    context,
+  }) => {
+    await page.goto('/manual/introduction')
+    await page.locator('[data-testid="manual-open-app"]').click()
+    await expect(page).not.toHaveURL(/\/manual(\/|$)/, { timeout: 30_000 })
+    expect(context.pages()).toHaveLength(1)
+  })
+
+  test('Go to Cytoscape Web never reloads or moves the editor tab that opened the manual', async ({
+    page,
+    context,
+  }) => {
+    await gotoAndSeedNetwork(page)
+    await page.evaluate(() => {
+      ;(window as unknown as { __survived?: boolean }).__survived = true
+    })
+    const editorUrl = page.url()
+    const historyLength = await page.evaluate(() => history.length)
+    await page.locator('[data-testid="toolbar-help-menu-menu-button"]').click()
+    const [manual] = await Promise.all([
+      context.waitForEvent('page'),
+      page.locator('[data-testid="help-menu-user-manual"]').click(),
+    ])
+    await expect(manual.locator('[data-testid="manual-page"]')).toBeVisible({
+      timeout: 30_000,
+    })
+
+    await manual.locator('[data-testid="manual-open-app"]').click()
+    // Whether the editor tab comes forward is the browser's call, and
+    // Playwright reports focus its own way, so the manual tab may or may not
+    // fall back to loading the editor itself (goToEditor.ts waits 300 ms).
+    // Either way, the switch must not reload the editor, leave a blank tab,
+    // or keep the in-place navigation Firefox needs (it is cancelled).
+    await manual.waitForTimeout(1_500)
+
+    expect(
+      await page.evaluate(
+        () => (window as unknown as { __survived?: boolean }).__survived,
+      ),
+    ).toBe(true)
+    expect(page.url()).toBe(editorUrl)
+    expect(await page.evaluate(() => history.length)).toBe(historyLength)
+    expect(context.pages()).toHaveLength(2)
+  })
+
+  test('Ctrl/⌘-click on Go to Cytoscape Web opens the editor in a new tab', async ({
+    page,
+    context,
+  }) => {
+    await page.goto('/manual/introduction')
+    const button = page.locator('[data-testid="manual-open-app"]')
+    await expect(button).toBeVisible({ timeout: 30_000 })
+
+    // A modified click keeps the link's own behaviour: no tab switch, no
+    // navigation of this tab (ManualApp.tsx, handleOpenEditor).
+    const [editor] = await Promise.all([
+      // The tab opens on the click itself; it boots later.
+      context.waitForEvent('page', { timeout: 10_000 }),
+      button.click({ modifiers: ['ControlOrMeta'] }),
+    ])
+    await expect(editor.locator('[data-testid="app-shell"]')).toBeVisible({
+      timeout: 30_000,
+    })
+    expect(new URL(editor.url()).pathname).not.toMatch(/^\/manual(\/|$)/)
+    // The editor took longer to boot than goToEditor's 300 ms fallback, so a
+    // plain-click path that ran by mistake would have moved this tab by now.
+    await expect(page).toHaveURL(/\/manual\/introduction$/)
+    expect(context.pages()).toHaveLength(2)
+  })
+
   test.describe('live demos', () => {
     // The demos are hidden while step sequences are tried in their place
     // (src/features/Manual/components/liveDemoSwitch.ts).
