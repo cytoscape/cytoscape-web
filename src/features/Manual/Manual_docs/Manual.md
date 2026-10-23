@@ -61,7 +61,21 @@ ManualApp            route element: app bar, page list, page
 - Below the `md` breakpoint the page list is a drawer that closes on
   click-away. It is a menu, not a form, so it falls in the out-of-scope class
   of `docs/specifications/DIALOG_DISMISS_POLICY.md`.
-- **Open Cytoscape Web** is a plain link to the base URL: a full page load.
+- **Go to Cytoscape Web** (`goToEditor.ts`) goes back to the editor tab that
+  opened the manual (Help → User Manual), when that tab is still open and
+  still on the editor. Browsers differ in which request to bring a tab forward
+  they honour, so it makes all of them on the click:
+  - `focus()` and `window.open('', <tab name>)` (`src/boot/tabManager.ts`) —
+    enough for Chrome and Safari;
+  - for Firefox, which switches tabs only for a navigation of the other tab, a
+    same-document navigation of the editor to `#cyweb-focus`, cancelled from
+    the editor's `navigate` event (Navigation API) so its URL and history do
+    not change. Skipped where the Navigation API is missing.
+
+  If the manual still has focus 300 ms later, the browser declined, and the
+  editor loads in the manual's tab. With no such tab it loads there at once —
+  a full page load to the base URL. Ctrl/⌘-click keeps the plain link and
+  opens a new tab.
 
 ### Page Layout
 
@@ -326,7 +340,8 @@ A component the script does not convert fails the export. The manual repo's
   demo network.
 - **UiStateStore** — `setActiveNetworkView` for the demo network.
 - **Help → User Manual** (`ToolBar/HelpMenu/TutorialMenuItem.tsx`) — opens
-  `<base>/manual/` in a new tab.
+  `<base>/manual/` in a new tab, keeping `window.opener` so **Go to Cytoscape
+  Web** can switch back to the editor tab.
 
 ## Design Decisions
 
