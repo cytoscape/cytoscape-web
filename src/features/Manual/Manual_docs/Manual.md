@@ -3,8 +3,9 @@
 ## Overview
 
 The in-app user manual, at `/manual/*`. Help → User Manual opens it in a new
-tab. It replaces the Read the Docs manual (`web-manual.cytoscape.org`), which
-redirects here (#658, #660).
+tab. It is the source of the Read the Docs manual (`web-manual.cytoscape.org`),
+which is exported from it ([Read the Docs Export](#read-the-docs-export), #868).
+Whether that site stays or redirects here is open (#660).
 
 The manual ships with the app, so it always describes the running version.
 Pages can embed working parts of the editor (`LiveDemo`), image sequences
@@ -60,7 +61,21 @@ ManualApp            route element: app bar, page list, page
 - Below the `md` breakpoint the page list is a drawer that closes on
   click-away. It is a menu, not a form, so it falls in the out-of-scope class
   of `docs/specifications/DIALOG_DISMISS_POLICY.md`.
-- **Open Cytoscape Web** is a plain link to the base URL: a full page load.
+- **Go to Cytoscape Web** (`goToEditor.ts`) goes back to the editor tab that
+  opened the manual (Help → User Manual), when that tab is still open and
+  still on the editor. Browsers differ in which request to bring a tab forward
+  they honour, so it makes all of them on the click:
+  - `focus()` and `window.open('', <tab name>)` (`src/boot/tabManager.ts`) —
+    enough for Chrome and Safari;
+  - for Firefox, which switches tabs only for a navigation of the other tab, a
+    same-document navigation of the editor to `#cyweb-focus`, cancelled from
+    the editor's `navigate` event (Navigation API) so its URL and history do
+    not change. Skipped where the Navigation API is missing.
+
+  If the manual still has focus 300 ms later, the browser declined, and the
+  editor loads in the manual's tab. With no such tab it loads there at once —
+  a full page load to the base URL. Ctrl/⌘-click keeps the plain link and
+  opens a new tab.
 
 ### Page Layout
 
@@ -130,7 +145,7 @@ ManualApp            route element: app bar, page list, page
   first frame show the first.
 - The image box keeps the widest frame's aspect, so the widget does not
   change height between steps. Clicking the image opens it full size.
-- One `Steps` per page (`content.test.ts`).
+- A page may hold several `Steps`, each sequence once (`content.test.ts`).
 
 ### BrowserStorageView
 
@@ -195,7 +210,10 @@ Images of the app come from the app, not from a camera.
   `public/manual-assets/generated/<id>.png`, captured by a recipe in
   `screenshots/recipes.ts`: a fixed viewport, steps that drive the app
   (import a network, click by `data-testid`, role, text or `aria-label`), and
-  the element to crop to.
+  the element to crop to. A recipe can instead crop to a region of the
+  viewport (`clip`), to show an element with what surrounds it, and ring
+  elements (`highlight`) as a sequence frame does. Rings stay inside the
+  viewport, so a target at the window's edge keeps all four sides.
 - **Step sequences** — `SCREENSHOT_SEQUENCES` in the same file. One run of
   the app captures every frame in order; each frame continues from the state
   the previous one left. A frame lists the steps that reach its state, the
@@ -284,6 +302,35 @@ Keep `sources` narrow: list the files whose behavior the page states, not the
 whole feature directory. Against the last 50 merges into `development`, the
 current globs list at least one page for 30.
 
+## Read the Docs Export
+
+`scripts/export-manual-myst.mts` writes the manual to
+[cytoscape/web-cytoscape-manual](https://github.com/cytoscape/web-cytoscape-manual)
+as MyST Markdown, for Sphinx and Read the Docs. The conversion is
+`mystExport.ts`; `mystExport.test.ts` converts every page and checks its
+images, labels and heading links.
+
+```bash
+npx tsx scripts/export-manual-myst.mts ../web-cytoscape-manual
+MANUAL_URL=http://localhost:5601 npx tsx scripts/export-manual-myst.mts ../web-cytoscape-manual
+```
+
+| Manual | Read the Docs |
+| --- | --- |
+| Page file | `docs/<legacyName>.md`; pages without one take a name from `NEW_PAGE_NAMES` in `mystExport.ts` |
+| Page order | The toctree in `docs/index.rst` |
+| `<Steps>` | A numbered list, each frame's image under its step |
+| `<Screenshot>`, `public/manual-assets/` | Images under `docs/_static/images/` |
+| `<UiIcon>` | `docs/_static/images/ui-icons/<name>.png`, captured from a running app with `MANUAL_URL` |
+| `<Note>` | A `{note}` or `{warning}` admonition |
+| `<VisualPropertyTable>` | A Markdown table from `visualPropertyRows` |
+| `<DemoOnly>`, `<LiveDemo>`, `<BrowserStorageView>` | Left out |
+| `<a id>` | Kept, plus a page-prefixed MyST label; links to it use `{ref}` |
+
+A component the script does not convert fails the export. The manual repo's
+`conf.py` needs `myst_heading_anchors` for links to headings and
+`autosectionlabel_prefix_document` because pages share heading names.
+
 ## Integration Points
 
 - **`src/data/db/dbScope.ts`** — the sandbox database and reset channel.
@@ -293,7 +340,8 @@ current globs list at least one page for 30.
   demo network.
 - **UiStateStore** — `setActiveNetworkView` for the demo network.
 - **Help → User Manual** (`ToolBar/HelpMenu/TutorialMenuItem.tsx`) — opens
-  `<base>/manual/` in a new tab.
+  `<base>/manual/` in a new tab, keeping `window.opener` so **Go to Cytoscape
+  Web** can switch back to the editor tab.
 
 ## Design Decisions
 

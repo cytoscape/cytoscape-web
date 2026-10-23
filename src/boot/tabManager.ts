@@ -3,16 +3,19 @@
  *
  * The id is written to `window.name` so an external web application can focus
  * an existing Cytoscape Web tab with `window.open(url, tabId)` and push a
- * network into it, instead of spawning a new tab. That is the entire contract;
- * the predecessor set a single fixed `window.name` for every tab, which is why
- * unique ids were needed.
+ * network into it, instead of spawning a new tab. The manual uses the same
+ * contract: its "Go to Cytoscape Web" button targets the name with
+ * `window.open` to bring back the editor tab that opened it
+ * (src/features/Manual/goToEditor.ts).
+ * That is the entire contract; the predecessor set a single fixed
+ * `window.name` for every tab, which is why unique ids were needed.
  *
  * NOT related to Cytoscape Desktop integration — that runs the other way
  * (OpenNetworkInCytoscapeMenuItem -> CyNDEx/CyREST) and never touches
  * window.name. A native application cannot target a named browser window at
  * all, so this could not serve a Desktop-to-Web handoff even in principle.
  *
- * This module is the ONLY `window.name` consumer. Cross-tab data sync used to
+ * This module is the ONLY `window.name` writer. Cross-tab data sync used to
  * share it, which coupled two unrelated contracts to one script-writable global:
  * anything on the page overwriting `window.name` silently changed the tab's sync
  * identity, and "Duplicate tab" copies it, so two live tabs shared one id. Sync
