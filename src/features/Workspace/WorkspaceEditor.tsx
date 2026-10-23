@@ -24,7 +24,6 @@ import { PanelState } from '../../models/UiModel/PanelState'
 import { useHierarchyViewerManager } from '../HierarchyViewer/store/useHierarchyViewerManager'
 import { isHCX } from '../HierarchyViewer/utils/hierarchyUtil'
 import { validateAndRecordHcx } from '../HierarchyViewer/utils/validateAndRecordHcx'
-import { LayoutToolsBasePanel } from '../LayoutTools'
 import { SnackbarMessageList } from '../Messages'
 import { setTabNetworkId } from '@/data/tabState/tabNetwork'
 import { createLayoutCompletionHandler } from './layoutCompletion'
@@ -429,14 +428,6 @@ const WorkSpaceEditor = (): JSX.Element => {
                     <NetworkBrowserPanel
                       allotmentDimensions={allotmentDimensions}
                     />
-                  </Box>
-                  <Box
-                    sx={{
-                      borderTop: (theme) =>
-                        `2px solid ${theme.palette.divider}`,
-                    }}
-                  >
-                    <LayoutToolsBasePanel />
                   </Box>
                 </Box>
               )}
