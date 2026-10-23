@@ -11,6 +11,7 @@ import {
   inferSliderState,
   isPointerEvent,
   Position,
+  samePositions,
   scaleFactors,
   scalePosition,
   SCALING_MARKS,
@@ -351,5 +352,48 @@ describe('inferSliderState (#896)', () => {
     expect(inferred).toEqual({ scalingType: 'both', value: 9 })
     // About 2.5 ms on a laptop; the limit only catches a gross slowdown
     expect(elapsed).toBeLessThan(250)
+  })
+})
+
+describe('samePositions', () => {
+  const view = (id: IdType, x: number, y: number, z?: number): NodeView =>
+    ({ id, x, y, z, values: new Map() }) as NodeView
+  const previous: Record<IdType, NodeView> = {
+    a: view('a', 1, 2),
+    b: view('b', 3, 4, 5),
+  }
+
+  it('is true for a new record with the same coordinates', () => {
+    expect(
+      samePositions(previous, { a: view('a', 1, 2), b: view('b', 3, 4, 5) }),
+    ).toBe(true)
+  })
+
+  it('treats a missing z as 0', () => {
+    expect(
+      samePositions(previous, { a: view('a', 1, 2, 0), b: view('b', 3, 4, 5) }),
+    ).toBe(true)
+  })
+
+  it('is false when a node moved on any axis', () => {
+    expect(samePositions(previous, { ...previous, a: view('a', 1.5, 2) })).toBe(
+      false,
+    )
+    expect(samePositions(previous, { ...previous, a: view('a', 1, 3) })).toBe(
+      false,
+    )
+    expect(
+      samePositions(previous, { ...previous, b: view('b', 3, 4, 6) }),
+    ).toBe(false)
+  })
+
+  it('is false when a node was added, removed or replaced', () => {
+    expect(samePositions(previous, { ...previous, c: view('c', 0, 0) })).toBe(
+      false,
+    )
+    expect(samePositions(previous, { a: previous.a })).toBe(false)
+    expect(
+      samePositions(previous, { a: previous.a, c: view('c', 3, 4, 5) }),
+    ).toBe(false)
   })
 })

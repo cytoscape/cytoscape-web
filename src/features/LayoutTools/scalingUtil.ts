@@ -234,6 +234,38 @@ const matches = (
 }
 
 /**
+ * True when `next` holds the same nodes as `previous`, each at the same
+ * x, y and z. The store replaces `nodeViews` for writes that move nothing
+ * (e.g. `updateNodePositions` with the current coordinates); those must not
+ * make the slider reread the layout and undo a mode the user just picked.
+ */
+export const samePositions = (
+  previous: Record<IdType, NodeView>,
+  next: Record<IdType, NodeView>,
+): boolean => {
+  if (previous === next) {
+    return true
+  }
+  const nodeIds: IdType[] = Object.keys(next)
+  if (nodeIds.length !== Object.keys(previous).length) {
+    return false
+  }
+  for (const nodeId of nodeIds) {
+    const before = previous[nodeId]
+    const after = next[nodeId]
+    if (
+      before === undefined ||
+      before.x !== after.x ||
+      before.y !== after.y ||
+      (before.z ?? 0) !== (after.z ?? 0)
+    ) {
+      return false
+    }
+  }
+  return true
+}
+
+/**
  * The slider state that explains the current node positions, or undefined
  * when none does and the slider must start over from what is on screen.
  *

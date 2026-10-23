@@ -400,6 +400,30 @@ describe('Scaling after undo and redo (#896)', () => {
     expect(positions()).toEqual(ORIGINAL)
   })
 
+  it('keeps a newly selected mode when a write leaves every node in place', () => {
+    render(<Scaling networkId={NETWORK_ID} />)
+    commit(9)
+    fireEvent.click(screen.getByLabelText('Width'))
+
+    // A new nodeViews object with the same coordinates: nothing moved, so
+    // the slider must not reread the Both x10 layout and undo the choice
+    act(() => {
+      useViewModelStore
+        .getState()
+        .updateNodePositions(NETWORK_ID, new Map(Object.entries(positions())))
+    })
+
+    expect((screen.getByLabelText('Width') as HTMLInputElement).checked).toBe(
+      true,
+    )
+    expect(sliderValue()).toBe('9')
+    // The next commit scales the width only
+    commit(4) // x5
+    expect(positions().n1[0]).toBeCloseTo(0)
+    expect(positions().n1[1]).toBe(ORIGINAL.n1[1])
+    expect(positions().n2[1]).toBe(ORIGINAL.n2[1])
+  })
+
   it('rebases to x1.0 when a new layout replaces the scaled one', () => {
     render(<Scaling networkId={NETWORK_ID} />)
     commit(9)

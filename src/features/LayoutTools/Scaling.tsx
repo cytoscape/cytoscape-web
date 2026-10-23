@@ -24,6 +24,7 @@ import {
   inferSliderState,
   isPointerEvent,
   Position,
+  samePositions,
   scaleFactors,
   scalePosition,
   SCALING_MARKS,
@@ -73,6 +74,13 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
   // unscaling a position always use the same point.
   const anchorRef: MutableRefObject<Anchor> = useRef<Anchor>([0, 0])
 
+  // The node views the sync effect last read. The store never mutates them,
+  // so holding the record is enough to tell a move from a replacement that
+  // moves nothing.
+  const lastNodeViewsRef: MutableRefObject<
+    Record<IdType, NodeView> | undefined
+  > = useRef<Record<IdType, NodeView> | undefined>(undefined)
+
   // Notify other components that the manual layout is running
   const setIsRunning: (isRunning: boolean) => void = useLayoutStore(
     (state) => state.setIsRunning,
@@ -103,6 +111,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
     setSliderValue(0)
     originalsRef.current = new Map<IdType, Position>()
     anchorRef.current = [0, 0]
+    lastNodeViewsRef.current = undefined
   }, [networkId])
 
   /**
@@ -112,13 +121,22 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
    * another slider on this network) set the slider to the value and mode
    * that produced them. Any other change (a drag, a layout, new nodes, a
    * newly loaded view) makes the positions on screen the new x1.0. Nodes
-   * never move here: only what the slider shows changes.
+   * never move here: only what the slider shows changes. A replacement of
+   * the node views that moves no node is ignored.
    */
   useEffect(() => {
     if (networkView === undefined) {
+      lastNodeViewsRef.current = undefined
       return
     }
     const { nodeViews } = networkView
+    const previous = lastNodeViewsRef.current
+    lastNodeViewsRef.current = nodeViews
+    // Nothing moved: keep what the slider shows, including a mode the user
+    // picked since the last scale
+    if (previous !== undefined && samePositions(previous, nodeViews)) {
+      return
+    }
     const originals = originalsRef.current
     // Forget deleted nodes, so neither the anchor nor the next scale
     // counts them
