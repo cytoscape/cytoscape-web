@@ -3,8 +3,9 @@
 ## Overview
 
 The in-app user manual, at `/manual/*`. Help → User Manual opens it in a new
-tab. It replaces the Read the Docs manual (`web-manual.cytoscape.org`), which
-redirects here (#658, #660).
+tab. It is the source of the Read the Docs manual (`web-manual.cytoscape.org`),
+which is exported from it ([Read the Docs Export](#read-the-docs-export), #868).
+Whether that site stays or redirects here is open (#660).
 
 The manual ships with the app, so it always describes the running version.
 Pages can embed working parts of the editor (`LiveDemo`), image sequences
@@ -130,7 +131,7 @@ ManualApp            route element: app bar, page list, page
   first frame show the first.
 - The image box keeps the widest frame's aspect, so the widget does not
   change height between steps. Clicking the image opens it full size.
-- One `Steps` per page (`content.test.ts`).
+- A page may hold several `Steps`, each sequence once (`content.test.ts`).
 
 ### BrowserStorageView
 
@@ -286,6 +287,35 @@ someone to review. The rules are in `drift.ts`, tested in `drift.test.ts`.
 Keep `sources` narrow: list the files whose behavior the page states, not the
 whole feature directory. Against the last 50 merges into `development`, the
 current globs list at least one page for 30.
+
+## Read the Docs Export
+
+`scripts/export-manual-myst.mts` writes the manual to
+[cytoscape/web-cytoscape-manual](https://github.com/cytoscape/web-cytoscape-manual)
+as MyST Markdown, for Sphinx and Read the Docs. The conversion is
+`mystExport.ts`; `mystExport.test.ts` converts every page and checks its
+images, labels and heading links.
+
+```bash
+npx tsx scripts/export-manual-myst.mts ../web-cytoscape-manual
+MANUAL_URL=http://localhost:5601 npx tsx scripts/export-manual-myst.mts ../web-cytoscape-manual
+```
+
+| Manual | Read the Docs |
+| --- | --- |
+| Page file | `docs/<legacyName>.md`; pages without one take a name from `NEW_PAGE_NAMES` in `mystExport.ts` |
+| Page order | The toctree in `docs/index.rst` |
+| `<Steps>` | A numbered list, each frame's image under its step |
+| `<Screenshot>`, `public/manual-assets/` | Images under `docs/_static/images/` |
+| `<UiIcon>` | `docs/_static/images/ui-icons/<name>.png`, captured from a running app with `MANUAL_URL` |
+| `<Note>` | A `{note}` or `{warning}` admonition |
+| `<VisualPropertyTable>` | A Markdown table from `visualPropertyRows` |
+| `<DemoOnly>`, `<LiveDemo>`, `<BrowserStorageView>` | Left out |
+| `<a id>` | Kept, plus a page-prefixed MyST label; links to it use `{ref}` |
+
+A component the script does not convert fails the export. The manual repo's
+`conf.py` needs `myst_heading_anchors` for links to headings and
+`autosectionlabel_prefix_document` because pages share heading names.
 
 ## Integration Points
 
