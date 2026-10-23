@@ -2,6 +2,60 @@
 
 All notable changes to Cytoscape Web are documented here.
 
+## [1.1.1] — 2026-10-23
+
+An in-app user manual, a new default model for LLM Query now that `gpt-3.5-turbo` is
+retired, and fixes to undo, rendering, CX2 import and the style editor.
+
+### Added
+
+- A user manual inside the app at `/manual`, opened from Help → User Manual. Procedures
+  show one step at a time with a screenshot beside the text, and the Styles page has a
+  live demo. The manual uses its own sandbox database, so it never touches your
+  workspace (#841, #885)
+- Go to Cytoscape Web in the manual's header switches back to the editor tab that opened
+  the manual, instead of opening a second editor (#889)
+- Open private NDEx networks from an NDEx share link: a link carrying `?accesskey=` opens
+  the network without signing in (#808)
+
+### Changed
+
+- LLM Query's default model is now `gpt-6-luna`, replacing `gpt-3.5-turbo`, which OpenAI
+  shut down on 2026-10-23. The model suggestions list current models (#833)
+- The REMOVE button in the Remove Filter dialog is red
+
+### Fixed
+
+- Fix issue where undoing Delete Selected Nodes or Edges restored the elements without
+  their views, so they came back invisible and lost their positions (#858)
+- Fix issue where undoing a drag of several nodes moved back one node per undo (#872)
+- Fix issue where every style or table change stored another copy of the network's view,
+  growing browser storage and slowing selection and node moves (#862)
+- Fix issue where importing a CX2 file whose `status` aspect was not last dropped its
+  nodes or edges without warning (#836)
+- Fix issue where Passthrough mapping was disabled for every color property (#813)
+- Fix issue where the mapping form showed a blank Column and Mapping Type for an
+  existing mapping it would not offer as a new one (#835)
+- Fix issue where an unmodified local network could not be saved as a copy to NDEx from
+  its row menu (#822)
+- Fix issue where the NDEx / Local chip on a network row lost its tooltip (#875)
+- Fix issue where the cookie banner's Learn more link returned a 404 (#841)
+- Fix issue where the Key Column for Network list in Import Table opened behind the
+  dialog and could not be clicked (#841)
+- Fix issue where the merge dialog's buttons had wrong or missing names for screen
+  readers (#841)
+- Fix typos in the merge and continuous-mapping forms (#856)
+
+### Performance
+
+- Changing a style or a table no longer redraws the whole network (#864)
+
+### Internal
+
+The manual can be exported to the Read the Docs repository, so web-manual.cytoscape.org
+can be generated from the in-app manual (#869). Two other pull requests set the version
+to 1.1.1 (#892) and completed the 1.1.0 changelog section (#824).
+
 ## [1.1.0] — 2026-10-14
 
 Dark mode, several named visual styles per network, a FILTER tab ported from Cytoscape
