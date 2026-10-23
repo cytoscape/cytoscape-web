@@ -47,10 +47,13 @@ network view.
 - Forgets where it was moved when closed: it unmounts, so reopening it brings it back to the lower-left corner, which also recovers a panel left out of view after the canvas shrank
 - Renders LayoutToolsPanel below the title bar
 
-The drag uses react-draggable's `DraggableCore`, which only reports pointer
-positions; the panel computes its offset from the pointer's travel since the
-press and clamps it itself. `<Draggable>` is not used because it adds each
-move to its last *committed* position: React 18 commits mouse-move updates in
+The drag goes through `PointerDraggable` (`src/components/PointerDraggable.tsx`,
+#901), which wraps react-draggable's `DraggableCore` and computes the offset
+from the pointer's travel since the press. The panel passes `dragLimits` as
+its bounds: measured from the network view at each press, so a resized canvas
+applies from the next drag, and no drag starts while the panel has no offset
+parent. `<Draggable>` is not used because it adds each move to its last
+*committed* position: React 18 commits mouse-move updates in
 a later task, so a move that arrives before the commit is lost and the panel
 falls behind the pointer (reproducible in WebKit, and under main-thread load
 in any browser). The unit test "keeps every move when React commits several

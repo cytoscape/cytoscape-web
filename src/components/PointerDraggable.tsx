@@ -30,7 +30,12 @@ export interface PointerDraggableProps {
   onStop?: () => void
   /** The axes the element moves along (default both) */
   axis?: 'x' | 'y' | 'both'
-  bounds?: DragBounds
+  /**
+   * Limits of the position, or a function that measures them from the
+   * element once at each press. A function that returns `null` refuses the
+   * drag.
+   */
+  bounds?: DragBounds | ((node: HTMLElement) => DragBounds | null)
   disabled?: boolean
   /** Selector of the part that starts a drag (default the whole element) */
   handle?: string
@@ -45,6 +50,7 @@ interface DragStart {
   pointer: DragPosition
   /** The element's position at the press */
   position: DragPosition
+  bounds: DragBounds
 }
 
 const clamp = (value: number, min = -Infinity, max = Infinity): number =>
@@ -82,8 +88,21 @@ export const PointerDraggable = ({
   const nodeRef = useRef<HTMLElement>(null)
   const dragStart = useRef<DragStart | null>(null)
 
-  const handleStart = (_e: unknown, data: DraggableData): void => {
-    dragStart.current = { pointer: { x: data.x, y: data.y }, position }
+  const handleStart = (_e: unknown, data: DraggableData): false | void => {
+    const measured =
+      typeof bounds === 'function'
+        ? nodeRef.current === null
+          ? null
+          : bounds(nodeRef.current)
+        : bounds
+    if (measured === null) {
+      return false
+    }
+    dragStart.current = {
+      pointer: { x: data.x, y: data.y },
+      position,
+      bounds: measured,
+    }
     onStart?.()
   }
 
@@ -92,6 +111,7 @@ export const PointerDraggable = ({
     if (start === null) {
       return
     }
+    const { bounds } = start
     onDrag({
       x:
         axis === 'y'

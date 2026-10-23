@@ -1,47 +1,36 @@
 import CloseIcon from '@mui/icons-material/Close'
 import { Box, IconButton, Paper, Typography } from '@mui/material'
-import { JSX, useRef, useState } from 'react'
-import { DraggableCore, DraggableData } from 'react-draggable'
+import { JSX, useState } from 'react'
 
+import {
+  DragBounds,
+  DragPosition,
+  PointerDraggable,
+} from '@/components/PointerDraggable'
 import { LayoutToolsPanel } from './LayoutToolsPanel'
 import { useLayoutToolsPanelStore } from './store/layoutToolsPanelStore'
 
 /** Class of the title bar, the only part of the panel that starts a drag */
 const DRAG_HANDLE_CLASS = 'floating-layout-tools-drag-handle'
 
-interface Offset {
-  x: number
-  y: number
-}
-
-interface DragStart {
-  /** Pointer position at the press, relative to the network view */
-  pointer: Offset
-  /** The panel's offset at the press */
-  offset: Offset
-  /** The offsets that keep the panel inside the network view */
-  min: Offset
-  max: Offset
-}
-
-const clamp = (value: number, min: number, max: number): number =>
-  Math.min(Math.max(value, min), max)
-
 /**
- * Offsets that keep `panel` inside the padding box of `view`, its offset
- * parent. `offsetLeft`/`offsetTop` ignore the transform, so they are the
- * panel's position at offset (0, 0).
+ * Offsets that keep `panel` inside the padding box of the network view, its
+ * offset parent, or `null` (no drag) when it has none. `offsetLeft`/
+ * `offsetTop` ignore the transform, so they are the panel's position at
+ * offset (0, 0).
  */
-const dragLimits = (
-  panel: HTMLElement,
-  view: HTMLElement,
-): { min: Offset; max: Offset } => ({
-  min: { x: -panel.offsetLeft, y: -panel.offsetTop },
-  max: {
-    x: view.clientWidth - panel.offsetWidth - panel.offsetLeft,
-    y: view.clientHeight - panel.offsetHeight - panel.offsetTop,
-  },
-})
+const dragLimits = (panel: HTMLElement): DragBounds | null => {
+  const view = panel.offsetParent
+  if (!(view instanceof HTMLElement)) {
+    return null
+  }
+  return {
+    left: -panel.offsetLeft,
+    top: -panel.offsetTop,
+    right: view.clientWidth - panel.offsetWidth - panel.offsetLeft,
+    bottom: view.clientHeight - panel.offsetHeight - panel.offsetTop,
+  }
+}
 
 /**
  * Floating Layout Tools panel shown in the lower-left corner of the network
@@ -55,10 +44,11 @@ const dragLimits = (
  * closing and reopening also brings back a panel left out of view by a
  * resized canvas.
  *
- * The drag uses `DraggableCore`, not `Draggable`: `Draggable` adds each move
- * to its last committed position, and React 18 commits mouse-move updates in
- * a later task, so a move that arrives before the commit is lost and the
- * panel falls behind the pointer. Here every move is measured from the press.
+ * The drag goes through `PointerDraggable`, which measures every move from
+ * the press: react-draggable's `<Draggable>` adds each move to its last
+ * committed position, and React 18 commits mouse-move updates in a later
+ * task, so a move that arrives before the commit is lost and the panel falls
+ * behind the pointer.
  */
 export const FloatingLayoutToolsPanel = (): JSX.Element | null => {
   const open = useLayoutToolsPanelStore((state) => state.open)
@@ -69,61 +59,19 @@ export const FloatingLayoutToolsPanel = (): JSX.Element | null => {
 }
 
 const MovablePanel = ({ onClose }: { onClose: () => void }): JSX.Element => {
-  // react-draggable falls back to findDOMNode without a ref
-  const nodeRef = useRef<HTMLDivElement>(null)
-  const [offset, setOffset] = useState<Offset>({ x: 0, y: 0 })
-  const dragStart = useRef<DragStart | null>(null)
-
-  const handleStart = (_e: unknown, data: DraggableData): false | void => {
-    const panel = nodeRef.current
-    const view = panel?.offsetParent
-    if (panel == null || !(view instanceof HTMLElement)) {
-      return false
-    }
-    dragStart.current = {
-      pointer: { x: data.x, y: data.y },
-      offset,
-      ...dragLimits(panel, view),
-    }
-  }
-
-  const handleDrag = (_e: unknown, data: DraggableData): void => {
-    const start = dragStart.current
-    if (start === null) {
-      return
-    }
-    setOffset({
-      x: clamp(
-        start.offset.x + data.x - start.pointer.x,
-        start.min.x,
-        start.max.x,
-      ),
-      y: clamp(
-        start.offset.y + data.y - start.pointer.y,
-        start.min.y,
-        start.max.y,
-      ),
-    })
-  }
-
-  const handleStop = (): void => {
-    dragStart.current = null
-  }
+  const [offset, setOffset] = useState<DragPosition>({ x: 0, y: 0 })
 
   return (
-    <DraggableCore
-      nodeRef={nodeRef}
+    <PointerDraggable
+      position={offset}
+      onDrag={setOffset}
+      bounds={dragLimits}
       handle={`.${DRAG_HANDLE_CLASS}`}
       cancel="button"
-      onStart={handleStart}
-      onDrag={handleDrag}
-      onStop={handleStop}
     >
       <Paper
-        ref={nodeRef}
         data-testid="floating-layout-tools-panel"
         elevation={4}
-        style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}
         sx={{
           position: 'absolute',
           bottom: '1em',
@@ -163,6 +111,6 @@ const MovablePanel = ({ onClose }: { onClose: () => void }): JSX.Element => {
           <LayoutToolsPanel />
         </Box>
       </Paper>
-    </DraggableCore>
+    </PointerDraggable>
   )
 }

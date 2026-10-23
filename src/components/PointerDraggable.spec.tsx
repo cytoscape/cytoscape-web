@@ -111,6 +111,41 @@ describe('PointerDraggable (#901)', () => {
     release()
   })
 
+  it('measures bounds given as a function once, at the press', () => {
+    let right = 50
+    const measure = vi.fn((node: HTMLElement) => {
+      expect(node).toBe(moved())
+      return { right }
+    })
+    render(<Controlled bounds={measure} />)
+
+    press(moved())
+    expect(measure).toHaveBeenCalledTimes(1)
+    // A change after the press applies from the next drag on
+    right = 20
+    act(() => moveBy(100, 0))
+    act(() => moveBy(200, 0))
+    release()
+    expect(measure).toHaveBeenCalledTimes(1)
+    expect(positionOf()).toEqual({ x: 50, y: 0 })
+
+    drag(moved(), 100, 0)
+    expect(measure).toHaveBeenCalledTimes(2)
+    // Starts at 50, already past the new right edge: pulled back to it
+    expect(positionOf()).toEqual({ x: 20, y: 0 })
+  })
+
+  it('does not start a drag when the bounds function returns null', () => {
+    const onStart = vi.fn()
+    const onDrag = vi.fn()
+    render(<Controlled bounds={() => null} onStart={onStart} onDrag={onDrag} />)
+
+    drag(moved(), 40, 25)
+    expect(onStart).not.toHaveBeenCalled()
+    expect(onDrag).not.toHaveBeenCalled()
+    expect(positionOf()).toEqual({ x: 0, y: 0 })
+  })
+
   it.each([
     ['x', { x: 40, y: 0 }],
     ['y', { x: 0, y: 25 }],
