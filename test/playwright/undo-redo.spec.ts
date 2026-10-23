@@ -250,13 +250,13 @@ test.describe('Undo and Redo', () => {
     const after = (await getRendered(page))!.nodes
 
     // One undo puts both back...
-    await page.keyboard.press('ControlOrMeta+z')
+    await clickEditMenuItem(page, /^Undo - /)
     await expect
       .poll(async () => (await getRendered(page))?.nodes, { timeout: 10000 })
       .toEqual(before)
 
     // ...and one redo moves both forward again
-    await page.keyboard.press('ControlOrMeta+Shift+z')
+    await clickEditMenuItem(page, /^Redo - /)
     await expect
       .poll(async () => (await getRendered(page))?.nodes, { timeout: 10000 })
       .toEqual(after)
