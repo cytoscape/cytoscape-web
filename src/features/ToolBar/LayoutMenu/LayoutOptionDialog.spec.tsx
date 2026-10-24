@@ -4,9 +4,10 @@
 // parameter spec) through ParameterForm: built-in algorithms keyed by their
 // engine option names, app algorithms with fieldsets from `groups`. Edits
 // reach setLayoutOption under the engine key; a validation error disables
-// Apply; switching algorithms shows the other algorithm's values.
+// Apply; switching algorithms shows the other algorithm's values. The
+// dialog moves when its title is dragged (#901).
 
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useLayoutStore } from '@/data/hooks/stores/LayoutStore'
@@ -200,5 +201,87 @@ describe('LayoutOptionDialog', () => {
       'Reverse',
       true,
     )
+  })
+})
+
+describe('LayoutOptionDialog dragging (#901)', () => {
+  beforeEach(() => {
+    useLayoutStore.setState({
+      layoutEngines: [
+        {
+          name: 'core',
+          defaultAlgorithmName: 'circle',
+          algorithms: { circle },
+          apply: vi.fn(),
+        },
+      ],
+      preferredLayout: circle,
+    } as any)
+  })
+
+  const press = (target: Element): void => {
+    fireEvent.mouseDown(target, { button: 0, clientX: 100, clientY: 100 })
+  }
+
+  /** Moves the pressed pointer by (dx, dy) from where it was pressed */
+  const moveBy = (dx: number, dy: number): void => {
+    document.dispatchEvent(
+      new MouseEvent('mousemove', { clientX: 100 + dx, clientY: 100 + dy }),
+    )
+  }
+
+  const release = (): void => {
+    fireEvent.mouseUp(document)
+  }
+
+  const drag = (target: Element, dx: number, dy: number): void => {
+    press(target)
+    act(() => moveBy(dx, dy))
+    release()
+  }
+
+  const title = (): HTMLElement => screen.getByText('Layout Option Editor')
+
+  const offsetOf = (): { x: number; y: number } => {
+    const match = /translate\((-?[\d.]+)px,\s*(-?[\d.]+)px\)/.exec(
+      screen.getByRole('dialog').style.transform,
+    )
+    expect(match).not.toBeNull()
+    return { x: Number(match![1]), y: Number(match![2]) }
+  }
+
+  it('moves when its title is dragged, and the next drag starts there', () => {
+    renderDialog()
+
+    drag(title(), 120, -80)
+    expect(offsetOf()).toEqual({ x: 120, y: -80 })
+
+    drag(title(), -20, 30)
+    expect(offsetOf()).toEqual({ x: 100, y: -50 })
+  })
+
+  it('keeps every move when React commits several at once', () => {
+    // React 18 commits mouse-move updates in a later task, so in a browser
+    // several moves can arrive before one is committed. One act() batches
+    // them the same way. react-draggable's <Draggable> added each move to
+    // its last committed position and ended this drag at (10, 10).
+    renderDialog()
+
+    press(title())
+    act(() => {
+      moveBy(10, 10)
+      moveBy(20, 20)
+      moveBy(30, 30)
+    })
+    release()
+    expect(offsetOf()).toEqual({ x: 30, y: 30 })
+  })
+
+  it('does not move when dragged from its content or its buttons', () => {
+    renderDialog()
+
+    drag(screen.getByTestId('layout-parameter-field-radius'), 120, -80)
+    drag(screen.getByTestId('layout-option-dialog-close-button'), 120, -80)
+    expect(offsetOf()).toEqual({ x: 0, y: 0 })
   })
 })

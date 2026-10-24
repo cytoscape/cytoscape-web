@@ -10,8 +10,8 @@ import { scaleLinear } from '@visx/scale'
 import { extent } from 'd3-array'
 import debounce from 'lodash/debounce'
 import * as React from 'react'
-import Draggable from 'react-draggable'
 
+import { PointerDraggable } from '@/components/PointerDraggable'
 import { useVisualStyleStore } from '../../../../../data/hooks/stores/VisualStyleStore'
 import { useUndoStack } from '../../../../../data/hooks/useUndoStack'
 import { IdType } from '../../../../../models/IdType'
@@ -88,6 +88,9 @@ export function ContinuousDiscreteMappingForm(props: {
 
   const NUM_GRADIENT_STEPS = 140
   const GRADIENT_STEP_WIDTH = 4
+  const GRADIENT_WIDTH = NUM_GRADIENT_STEPS * GRADIENT_STEP_WIDTH
+  // A handle is a line this wide; it stays on the gradient while dragged
+  const HANDLE_WIDTH = 2
   const GRADIENT_HEIGHT = 100
   const GRADIENT_AXIS_HORIZONTAL_PADDING = 30
   const GRADIENT_AXIS_VERTICAL_PADDING = 100
@@ -105,7 +108,7 @@ export function ContinuousDiscreteMappingForm(props: {
   ]
 
   const valuePixelScale = scaleLinear({
-    range: [0, NUM_GRADIENT_STEPS * GRADIENT_STEP_WIDTH],
+    range: [0, GRADIENT_WIDTH],
     domain: extent(valueDomain) as [number, number],
   })
 
@@ -319,6 +322,7 @@ export function ContinuousDiscreteMappingForm(props: {
               followCursor
             >
               <Paper
+                data-testid="continuous-mapping-gradient"
                 sx={{
                   display: 'flex',
                   position: 'relative',
@@ -344,7 +348,7 @@ export function ContinuousDiscreteMappingForm(props: {
                 <Box sx={{ display: 'flex' }}>
                   <Box
                     sx={{
-                      width: NUM_GRADIENT_STEPS * GRADIENT_STEP_WIDTH,
+                      width: GRADIENT_WIDTH,
                       height: GRADIENT_HEIGHT,
                       backgroundColor: theme.palette.action.hover,
                       border: `1px solid ${theme.palette.divider}`,
@@ -357,10 +361,7 @@ export function ContinuousDiscreteMappingForm(props: {
                     }}
                   >
                     <svg
-                      width={
-                        GRADIENT_AXIS_HORIZONTAL_PADDING +
-                        NUM_GRADIENT_STEPS * GRADIENT_STEP_WIDTH
-                      }
+                      width={GRADIENT_AXIS_HORIZONTAL_PADDING + GRADIENT_WIDTH}
                       height={GRADIENT_AXIS_VERTICAL_PADDING + GRADIENT_HEIGHT}
                     >
                       <AxisBottom
@@ -394,16 +395,16 @@ export function ContinuousDiscreteMappingForm(props: {
               const isMaxHandle = index === handles.length - 1
 
               return (
-                <Draggable
+                <PointerDraggable
                   key={h.id}
                   disabled={isEndHandle}
-                  bounds="parent"
+                  bounds={{ left: 0, right: GRADIENT_WIDTH - HANDLE_WIDTH }}
                   axis="x"
                   handle=".handle"
                   onStart={() => setlastDraggedHandleId(h.id)}
                   onStop={() => setlastDraggedHandleId(h.id)}
-                  onDrag={(e, data) => {
-                    const newValue = valuePixelScale.invert(data.x)
+                  onDrag={({ x }) => {
+                    const newValue = valuePixelScale.invert(x)
                     setHandle(h.id, newValue, h.vpValue)
                   }}
                   position={{
@@ -412,9 +413,10 @@ export function ContinuousDiscreteMappingForm(props: {
                   }}
                 >
                   <Box
+                    data-testid="continuous-mapping-handle"
                     onClick={() => setlastDraggedHandleId(h.id)}
                     sx={{
-                      width: 2,
+                      width: HANDLE_WIDTH,
                       height: 1,
                       display: 'flex',
                       flexDirection: 'column',
@@ -540,7 +542,7 @@ export function ContinuousDiscreteMappingForm(props: {
                       />
                     </IconButton>
                   </Box>
-                </Draggable>
+                </PointerDraggable>
               )
             })}
             <Tooltip
