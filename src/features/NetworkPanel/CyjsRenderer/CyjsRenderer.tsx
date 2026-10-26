@@ -1498,6 +1498,8 @@ const CyjsRenderer = ({
   }
 
   const handleCreateNodeFromContext = (position: [number, number]): void => {
+    if (readOnly) return
+
     logUi.info('[CyjsRenderer] handleCreateNodeFromContext called', {
       position,
     })
@@ -1506,6 +1508,8 @@ const CyjsRenderer = ({
   }
 
   const handleCreateEdgeFromNode = (sourceNodeId: IdType): void => {
+    if (readOnly) return
+
     logUi.info('[CyjsRenderer] handleCreateEdgeFromNode called', {
       sourceNodeId,
     })
