@@ -315,7 +315,9 @@ export const StylePickerDialog = (
       data-testid="style-picker-dialog"
     >
       <DialogTitle sx={{ pb: 1 }}>Styles</DialogTitle>
-      <DialogContent>
+      {/* Outside DialogContent, which is the part of the dialog that scrolls:
+          the search stays in place while the sections scroll under it. */}
+      <Box sx={{ px: 3, pb: 2 }}>
         <TextField
           size="small"
           fullWidth
@@ -323,7 +325,6 @@ export const StylePickerDialog = (
           placeholder="Search styles"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          sx={{ mb: 2 }}
           inputProps={{ 'data-testid': 'style-picker-search' }}
           InputProps={{
             startAdornment: (
@@ -333,7 +334,8 @@ export const StylePickerDialog = (
             ),
           }}
         />
-
+      </Box>
+      <DialogContent sx={{ pt: 0 }}>
         {visibleLocal.length > 0 && (
           <Section
             title="This Network"
