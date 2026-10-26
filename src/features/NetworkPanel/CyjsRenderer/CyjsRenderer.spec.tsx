@@ -170,6 +170,36 @@ const setName = (nodeId: IdType, name: string): void => {
   })
 }
 
+describe('CyjsRenderer read-only mode', () => {
+  beforeEach(() => {
+    created.instances.length = 0
+    useNetworkStore.setState({
+      networks: new Map(),
+      topologyVersions: new Map(),
+    } as any)
+    useTableStore.setState({ tables: {} } as any)
+    useVisualStyleStore.setState({ visualStyles: {} } as any)
+    useViewModelStore.setState({ viewModels: {} } as any)
+  })
+
+  it('disables graph editing while allowing pan and zoom', async () => {
+    const network = seed()
+    render(<CyjsRenderer network={network} readOnly />)
+
+    await waitFor(() => {
+      expect(created.instances.length).toBeGreaterThan(0)
+    })
+
+    const cy = created.instances.at(-1)!
+
+    expect(cy.autoungrabify()).toBe(true)
+    expect(cy.autounselectify()).toBe(true)
+    expect(cy.boxSelectionEnabled()).toBe(false)
+    expect(cy.userPanningEnabled()).toBe(true)
+    expect(cy.userZoomingEnabled()).toBe(true)
+  })
+})
+
 describe('CyjsRenderer style and table updates (regression: #861)', () => {
   beforeEach(() => {
     created.instances.length = 0

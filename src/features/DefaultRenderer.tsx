@@ -28,9 +28,14 @@ export const DefaultRenderer: Renderer = {
     initialSize?: { w: number; h: number },
     visible?: boolean,
     hasTab?: boolean,
+    readOnly = false,
   ) => (
     <Suspense fallback={null}>
-      <CyjsRendererLazy network={networkData} hasTab={hasTab} />
+      <CyjsRendererLazy
+        network={networkData}
+        hasTab={hasTab}
+        readOnly={readOnly}
+      />
     </Suspense>
   ),
 }
