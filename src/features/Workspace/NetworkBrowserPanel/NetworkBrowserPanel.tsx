@@ -265,17 +265,13 @@ export const NetworkBrowserPanel = ({
           hidden={currentTabIndex !== 1}
           sx={{
             flexGrow: 1,
-            height: '100%',
+            minHeight: 0,
             width: '100%',
-            overflowY: 'auto',
           }}
         >
           {currentTabIndex === 1 && (
             <Suspense fallback={tabContentFallback}>
-              <VizmapperView
-                networkId={targetNetworkId}
-                height={allotmentDimensions[0]}
-              />
+              <VizmapperView networkId={targetNetworkId} />
             </Suspense>
           )}
         </Box>

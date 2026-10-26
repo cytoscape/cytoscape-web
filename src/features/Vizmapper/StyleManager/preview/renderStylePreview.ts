@@ -23,6 +23,7 @@ import {
   applyViewModel,
   createCyjsDataMapper,
 } from '../../../NetworkPanel/CyjsRenderer/cyjsRenderUtil'
+import { previewBackgroundColor } from './previewBackground'
 import { PreviewSample } from './previewSample'
 
 const PREVIEW_WIDTH = 300
@@ -201,15 +202,7 @@ export const renderStylePreview = async (
       output: 'base64uri',
       maxWidth: PREVIEW_WIDTH,
       maxHeight: PREVIEW_HEIGHT,
-      // The style's OWN background, because networkBackgroundColor never reaches
-      // the cyjs stylesheet — NetworkPanel applies it as container CSS, so a
-      // hardcoded white here would render every dark style on white and lie
-      // about what the canvas will look like. Always a concrete colour, never
-      // transparent: a white or unfilled node on a transparent thumbnail reads
-      // as an empty tile.
-      bg:
-        (previewStyle.networkBackgroundColor?.defaultValue as string) ??
-        '#ffffff',
+      bg: previewBackgroundColor(previewStyle),
     })
 
     putInCache(visualStyle, sample.key, dataUrl)
