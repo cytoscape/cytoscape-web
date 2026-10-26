@@ -186,7 +186,6 @@ function VisualPropertyView(props: {
 
 export default function VizmapperView(props: {
   networkId: IdType
-  height: number
 }): React.ReactElement {
   const TAB_ROTATE_DEGREE = 330
   const TAB_TEXT_WIDTH = 34
@@ -261,6 +260,8 @@ export default function VizmapperView(props: {
       sx={{
         width: '100%',
         height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
       {/* key resets menu/dialog state when the user switches networks, so an
@@ -332,49 +333,22 @@ export default function VizmapperView(props: {
           Bypass
         </Box>
       </Box>
-      <div hidden={currentTabIndex !== 0}>
-        {currentTabIndex === 0 && (
-          <Box
-            sx={{
-              ml: 1,
-              overflow: 'scroll',
-              height: props.height - 202, // we want to only scroll the vp list instead of the whole allotment
-              // height has to be computed based on allotment size to allow overflow scroll
-              // height is passed as a prop but this could be pulled from a uiState store instead in the future
-            }}
-          >
-            {nodeVps}
-          </Box>
-        )}
-      </div>
-      <div hidden={currentTabIndex !== 1}>
-        {currentTabIndex === 1 && (
-          <Box
-            sx={{
-              ml: 1,
-              pt: 1,
-              overflow: 'scroll',
-              height: props.height - 202,
-            }}
-          >
-            {edgeVps}
-          </Box>
-        )}
-      </div>
-      <div hidden={currentTabIndex !== 2}>
-        {currentTabIndex === 2 && (
-          <Box
-            sx={{
-              ml: 1,
-              pt: 1,
-              overflow: 'scroll',
-              height: props.height - 202,
-            }}
-          >
-            {networkVps}
-          </Box>
-        )}
-      </div>
+      <Box
+        data-testid="vizmapper-vp-list"
+        sx={{
+          ml: 1,
+          pt: currentTabIndex === 0 ? 0 : 1,
+          // Only the list scrolls: flex-basis 0 + minHeight 0 let it take
+          // whatever height the header rows leave, however tall its content
+          flex: '1 1 0',
+          minHeight: 0,
+          overflowY: 'auto',
+        }}
+      >
+        {currentTabIndex === 0 && nodeVps}
+        {currentTabIndex === 1 && edgeVps}
+        {currentTabIndex === 2 && networkVps}
+      </Box>
     </Box>
   )
 }

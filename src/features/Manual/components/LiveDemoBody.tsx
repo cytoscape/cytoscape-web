@@ -469,14 +469,7 @@ export default function LiveDemoBody({
               data-testid={`manual-live-demo-${sideTab}`}
             >
               {sideTab === 'style' ? (
-                <VizmapperView
-                  networkId={shownId}
-                  height={
-                    fill
-                      ? sideHeight
-                      : height - (sidePanels.length > 1 ? TAB_STRIP_HEIGHT : 0)
-                  }
-                />
+                <VizmapperView networkId={shownId} />
               ) : null}
               {sideTab === 'filter' ? (
                 <Lazy>

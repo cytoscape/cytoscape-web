@@ -253,11 +253,10 @@ export const StyleManager = (props: {
       sx={{
         display: 'flex',
         alignItems: 'center',
-        px: 1,
-        py: 0.5,
-        height: 40,
+        p: 1,
+        backgroundColor: 'background.default',
         borderBottom: (theme) =>
-          `2px solid ${theme.palette.background.default}`,
+          `1px solid ${theme.palette.divider}`,
       }}
     >
       <Tooltip title={`${activeEntry.name} — click to browse styles`}>
@@ -267,27 +266,29 @@ export const StyleManager = (props: {
           sx={{
             flexGrow: 1,
             minWidth: 0,
-            height: 30,
             px: 0.5,
+            py: 0.5,
             gap: 0.75,
             justifyContent: 'flex-start',
+            backgroundColor: 'background.paper',
             border: (theme) => `1px solid ${theme.palette.divider}`,
             borderRadius: 1,
-            '&:hover': { borderColor: 'primary.main' },
+            '&:hover': { borderColor: 'text.primary' },
           }}
         >
           {/* The live style, visible without opening anything. */}
           <Box
             sx={{
-              width: 34,
-              height: 22,
+              width: 32,
+              height: 30,
               flexShrink: 0,
-              borderRadius: 0.5,
-              backgroundColor: '#f5f5f5',
+              borderRadius: 1,
+              backgroundColor: 'common.white',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               overflow: 'hidden',
+              border: (theme) => `1px solid ${theme.palette.divider}`,
             }}
           >
             {activeThumbnail !== undefined && (
@@ -296,7 +297,7 @@ export const StyleManager = (props: {
                 src={activeThumbnail}
                 alt=""
                 data-testid="style-manager-active-thumbnail"
-                sx={{ maxWidth: '100%', maxHeight: '100%', display: 'block' }}
+                sx={{ width: 'fit-content', height: '100%', display: 'block' }}
               />
             )}
           </Box>
@@ -304,7 +305,6 @@ export const StyleManager = (props: {
             variant="body2"
             data-testid="style-manager-active-name"
             sx={{
-              fontSize: 13,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
@@ -312,10 +312,7 @@ export const StyleManager = (props: {
           >
             {activeEntry.name}
           </Typography>
-          <UnfoldMoreIcon
-            fontSize="small"
-            sx={{ ml: 'auto', color: 'action.active' }}
-          />
+          <UnfoldMoreIcon sx={{ ml: 'auto', color: 'action.active' }} />
         </ButtonBase>
       </Tooltip>
       <Tooltip title="Manage styles">
@@ -325,7 +322,7 @@ export const StyleManager = (props: {
           onClick={(e) => setMenuAnchor(e.currentTarget)}
           data-testid="style-manager-menu-button"
         >
-          <MoreVertIcon fontSize="small" />
+          <MoreVertIcon />
         </IconButton>
       </Tooltip>
       <Menu
