@@ -245,7 +245,13 @@ export const StyleTile = (props: StyleTileProps): React.ReactElement => {
         </>
       )}
 
-      <Box sx={{ px: 0.75, py: 0.5 }}>
+      <Box
+        sx={{
+          px: 0.75,
+          py: 0.5,
+          borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+        }}
+      >
         {/* Full name in a tooltip: style names are long and share prefixes, and
             a clipped label is how Desktop makes two different styles look
             identical. */}
