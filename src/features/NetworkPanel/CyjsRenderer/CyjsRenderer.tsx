@@ -1082,7 +1082,7 @@ const CyjsRenderer = ({
       setViewModel(id, updatedNetworkView)
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- style/table triggers only; networkView is written here (loop)
-    [vs, table, visualEditorProperties],
+    [vs, table, visualEditorProperties, readOnly],
   )
 
   /**
