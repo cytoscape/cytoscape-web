@@ -27,6 +27,7 @@ import { logUi } from '@/debug'
 import { IdType } from '@/models/IdType'
 import { UndoCommandType } from '@/models/StoreModel/UndoStoreModel'
 import { StyleTemplate, VisualStyle } from '@/models/VisualStyleModel'
+import { previewBackgroundColor } from './preview/previewBackground'
 import { useStylePreviewSample } from './preview/useStylePreviewSample'
 import { useStyleThumbnail } from './preview/useStyleThumbnail'
 import { StyleLibraryDialog } from './StyleLibraryDialog'
@@ -255,8 +256,7 @@ export const StyleManager = (props: {
         alignItems: 'center',
         p: 1,
         backgroundColor: 'background.default',
-        borderBottom: (theme) =>
-          `1px solid ${theme.palette.divider}`,
+        borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
       }}
     >
       <Tooltip title={`${activeEntry.name} — click to browse styles`}>
@@ -283,7 +283,9 @@ export const StyleManager = (props: {
               height: 30,
               flexShrink: 0,
               borderRadius: 1,
-              backgroundColor: 'common.white',
+              // The thumbnail's own background, so a dark style does not show
+              // a white box while its thumbnail renders
+              backgroundColor: previewBackgroundColor(activeVisualStyle),
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
