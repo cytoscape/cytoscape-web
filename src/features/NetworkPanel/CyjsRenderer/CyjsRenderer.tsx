@@ -136,6 +136,8 @@ const CyjsRenderer = ({
   // is still null in that effect's closure, so cleanup must destroy via this
   // ref instead.
   const cyInstance = useRef<Core | null>(null)
+  const readOnlyRef = useRef(readOnly)
+  readOnlyRef.current = readOnly
 
   // The network the instance shows, set when renderNetwork completes. Until it
   // names the current network, there is nothing on screen to update in place.
@@ -1241,9 +1243,9 @@ const CyjsRenderer = ({
       const cy: Core = Cytoscape({
         container: cyContainer.current,
         hideEdgesOnViewport: true,
-        boxSelectionEnabled: !readOnly,
-        autoungrabify: readOnly,
-        autounselectify: readOnly,
+        boxSelectionEnabled: !readOnlyRef.current,
+        autoungrabify: readOnlyRef.current,
+        autounselectify: readOnlyRef.current,
         userPanningEnabled: true,
         userZoomingEnabled: true,
       })
@@ -1256,7 +1258,7 @@ const CyjsRenderer = ({
       setCy(cy)
 
       return () => {
-        if (!readOnly) {
+        if (!readOnlyRef.current) {
           flushPendingViewportSave()
         }
         unregisterDebugTool()
@@ -1270,7 +1272,7 @@ const CyjsRenderer = ({
 
     return () => {
       // Reset the guard so a StrictMode remount recreates the instance.
-      if (!readOnly) {
+      if (!readOnlyRef.current) {
         flushPendingViewportSave()
       }
       annotationLayersRef.current?.dispose()
