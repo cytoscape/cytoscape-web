@@ -6,6 +6,7 @@ import { logUi } from '../../../debug'
 import { IdType } from '../../../models/IdType'
 import { ContextMenuTarget } from '../../../models/StoreModel/ContextMenuItemStoreModel'
 import { NetworkView } from '../../../models/ViewModel'
+import { catalogAppId, trackEvent } from '@/data/analytics/trackEvent'
 
 export interface ContextMenuState {
   open: boolean
@@ -282,6 +283,11 @@ export const NetworkContextMenu = ({
         <MenuItem
           key={item.itemId}
           onClick={() => {
+            trackEvent('app_run', {
+              app_type: 'plugin',
+              app_id:
+                item.appId === undefined ? 'custom' : catalogAppId(item.appId),
+            })
             item.handler({
               type: target,
               id:

@@ -14,15 +14,15 @@ Vite 8 with the Module Federation Vite plugin provides the microfrontend build:
 
 ### Important Files & Configuration
 
-| File                      | Purpose                                                                                                                                                                                 |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/assets/config.json`  | Runtime configuration: NDEx server URL, thresholds (`maxNetworkElementsThreshold: 26000`, `maxEdgeCountThreshold: 20000`, `maxNetworkFileSize: 500MB`), Keycloak auth, Google Analytics |
-| `src/assets/apps.json`    | External Module Federation app definitions                                                                                                                                              |
-| `src/debug.ts`            | Structured logging system (debug package)                                                                                                                                               |
-| `src/AppConfigContext.ts` | React context for runtime app configuration                                                                                                                                             |
-| `src/custom.d.ts`         | Global TypeScript type declarations                                                                                                                                                     |
-| `src/boot/`               | The entire startup path — boot shell, phase orchestrator, instrumentation. See `src/boot/boot_docs/boot.md`                                                                             |
-| `src/boot/bootstrap.tsx`  | Boot entry (calls `enableMapSet()`, sets up logging, renders)                                                                                                                           |
+| File                      | Purpose                                                                                                                                                                                                                                                                         |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/assets/config.json`  | Runtime configuration: NDEx server URL, thresholds (`maxNetworkElementsThreshold: 26000`, `maxEdgeCountThreshold: 20000`, `maxNetworkFileSize: 500MB`), Keycloak auth, Google Analytics ID. Named analytics events go through `trackEvent` (`src/data/analytics/trackEvent.ts`) |
+| `src/assets/apps.json`    | External Module Federation app definitions                                                                                                                                                                                                                                      |
+| `src/debug.ts`            | Structured logging system (debug package)                                                                                                                                                                                                                                       |
+| `src/AppConfigContext.ts` | React context for runtime app configuration                                                                                                                                                                                                                                     |
+| `src/custom.d.ts`         | Global TypeScript type declarations                                                                                                                                                                                                                                             |
+| `src/boot/`               | The entire startup path — boot shell, phase orchestrator, instrumentation. See `src/boot/boot_docs/boot.md`                                                                                                                                                                     |
+| `src/boot/bootstrap.tsx`  | Boot entry (calls `enableMapSet()`, sets up logging, renders)                                                                                                                                                                                                                   |
 
 **Environment variables:** The `.env` file exists but is unused. Build-time metadata is injected through Vite's `define` option.
 

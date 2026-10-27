@@ -1,10 +1,12 @@
 import Cookies from 'js-cookie'
 import { CookieConsent } from 'react-cookie-consent'
 
+import { COOKIE_CONSENT_NAME } from '../data/analytics/trackEvent'
 import { MANUAL_ROUTE_SEGMENT } from '../data/db/dbScope'
 import { useCrashDataConsent } from '../data/hooks/useCrashDataConsent'
 
-export const COOKIE_NAME = 'cytoscapeWebCookieConsent'
+// Defined beside trackEvent, which reads it before sending an event.
+export const COOKIE_NAME = COOKIE_CONSENT_NAME
 
 export const CookieConsentWidget: React.FC = () => {
   const {

@@ -32,6 +32,7 @@ import { MessageSeverity } from '../../../models/MessageModel'
 import { Network } from '../../../models/NetworkModel'
 import { HcxValidationSaveDialog } from '../../HierarchyViewer/components/Validation/HcxValidationSaveDialog'
 import { useHcxValidatorStore } from '../../HierarchyViewer/store/HcxValidatorStore'
+import { trackEvent } from '@/data/analytics/trackEvent'
 
 export interface SaveNetworkToNDExFlow {
   /** Save the current network to NDEx, asking first where that needs a choice. */
@@ -105,6 +106,7 @@ export const useSaveNetworkToNDExFlow = (): SaveNetworkToNDExFlow => {
       ...networkData(networkId),
     )
     useWorkspaceStore.getState().setNetworkModified(networkId, false)
+    trackEvent('ndex_save', { mode: 'overwrite' })
     useMessageStore.getState().addMessage({
       message: `Saved network to NDEx`,
       duration: 3000,
@@ -133,6 +135,10 @@ export const useSaveNetworkToNDExFlow = (): SaveNetworkToNDExFlow => {
         ...networkData(networkId),
         deleteOriginal,
       )
+      // deleteOriginal: a local network's first upload, which replaces it.
+      trackEvent('ndex_save', {
+        mode: deleteOriginal ? 'first_upload' : 'copy',
+      })
       useMessageStore.getState().addMessage({
         message: `Saved a copy of the current network to NDEx with new uuid ${
           uuid as string

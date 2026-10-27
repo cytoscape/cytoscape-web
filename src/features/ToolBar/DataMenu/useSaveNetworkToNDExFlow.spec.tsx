@@ -36,8 +36,13 @@ const mocks = vi.hoisted(() => {
     setNetworkModified: vi.fn(),
     saveNetworkOverwrite: vi.fn(),
     saveNetworkCopy: vi.fn(),
+    trackEvent: vi.fn(),
   }
 })
+
+vi.mock('@/data/analytics/trackEvent', () => ({
+  trackEvent: mocks.trackEvent,
+}))
 
 vi.mock('../../../data/external-api/ndex', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -275,5 +280,56 @@ describe('useSaveNetworkToNDExFlow', () => {
     )
     await waitFor(() => expect(syncDialog()).toBeNull())
     expect(mocks.setNetworkModified).not.toHaveBeenCalled()
+  })
+
+  describe('analytics', () => {
+    it('counts an overwrite as ndex_save overwrite', async () => {
+      render(<Harness />)
+      act(() => flow.start())
+
+      await waitFor(() =>
+        expect(mocks.trackEvent).toHaveBeenCalledWith('ndex_save', {
+          mode: 'overwrite',
+        }),
+      )
+      expect(mocks.trackEvent).toHaveBeenCalledTimes(1)
+    })
+
+    it("counts a local network's upload as ndex_save first_upload", async () => {
+      mocks.summaries.n1 = { isNdex: false, modificationTime: 100 }
+      render(<Harness />)
+      act(() => flow.start())
+
+      await waitFor(() =>
+        expect(mocks.trackEvent).toHaveBeenCalledWith('ndex_save', {
+          mode: 'first_upload',
+        }),
+      )
+      expect(mocks.trackEvent).toHaveBeenCalledTimes(1)
+    })
+
+    it('counts a kept-original copy as ndex_save copy', async () => {
+      ndexIsNewer()
+      render(<Harness />)
+      act(() => flow.start())
+      await waitFor(() => expect(syncDialog()).not.toBeNull())
+      fireEvent.click(screen.getByTestId('save-to-ndex-copy-button'))
+
+      await waitFor(() =>
+        expect(mocks.trackEvent).toHaveBeenCalledWith('ndex_save', {
+          mode: 'copy',
+        }),
+      )
+      expect(mocks.trackEvent).toHaveBeenCalledTimes(1)
+    })
+
+    it('counts nothing when the save fails', async () => {
+      mocks.saveNetworkOverwrite.mockRejectedValue(new Error('boom'))
+      render(<Harness />)
+      act(() => flow.start())
+
+      await waitFor(() => expect(mocks.addMessage).toHaveBeenCalled())
+      expect(mocks.trackEvent).not.toHaveBeenCalled()
+    })
   })
 })
