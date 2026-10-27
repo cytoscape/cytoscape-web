@@ -24,7 +24,7 @@ The `DataMenu` feature implements the **Data** toolbar menu. It centralizes all 
     - `DownloadNetworkMenuItem`: Download network data.
     - `SaveWorkspaceToNDExMenuItem`: Save current workspace to NDEx.
     - `SaveWorkspaceToNDExOverwriteMenuItem`: Overwrite an existing NDEx workspace.
-    - `ExportNetworkToImageMenuItem` (`ExportImageMenuItem`): Opens the `ExportImage` dialog (`PdfExportForm`/`PngExportForm`/`SvgExportForm`) to export the network view as an image or PDF.
+    - `ExportNetworkToImageMenuItem` (`ExportImageMenuItem`): Opens the `ExportImage` dialog (`PdfExportForm`/`PngExportForm`/`SvgExportForm`) to export the network view as an image or PDF. A line above the actions copies the Cytoscape Web citation as text or BibTeX (`HelpMenu/useCopyCitations`).
   - **Cleanup**
     - `RemoveNetworkMenuItem`: Remove the current network from the workspace.
     - `RemoveAllNetworksMenuItem`: Remove all networks.

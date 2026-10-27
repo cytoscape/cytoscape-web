@@ -22,7 +22,7 @@ The `HelpMenu` feature implements the **Help** toolbar menu. It centralizes link
 - **Dialog Components** (rendered by `HelpMenu` next to the menu, never inside a row)
   - `AboutDialog`: A short description with links to the code repository, Cytoscape Desktop and the Cytoscape home page; build information (version linked to the release notes, build id, build date, cache version) with a copy button; and a link to the Cytoscape Web roadmap. The URLs are exported constants (`CODE_REPO_URL`, `CYTOSCAPE_DESKTOP_URL`, `CYTOSCAPE_HOME_URL`, `RELEASE_NOTES_URL`, `ROADMAP_URL`) and every link opens in a new tab with `rel="noopener noreferrer"`.
   - `LicenseDialog`: The MIT license text, with a copy button.
-  - `CitationDialog`: The papers to cite, with a copy button.
+  - `CitationDialog`: The papers to cite, with buttons that copy them as plain text or as BibTeX. The papers and both formats live in `citations.ts`; `useCopyCitations` does the copying and reports it in the snackbar. The image export dialog (`DataMenu/ExportNetworkToImage/ExportImage.tsx`) uses the same hook for its citation line.
   - `BugReportDialog`: Asks for reproduction steps and data, and loads the Atlassian issue collector. The **Report a Bug** button (`id="myCustomTrigger"`) stays disabled until the collector has attached its click handler; the collector's description is pre-filled with the version, operating system and browser (`getIssueEnvironment`), so the dialog does not ask for them.
 
   Each dialog closes through the Close "X" in its top-right corner (`components/DialogCloseButton.tsx`, test id `<dialog>-close-button`). Bug Report also has a **Cancel** button next to its main action. Backdrop click and Esc are inert, as everywhere (`docs/specifications/DIALOG_DISMISS_POLICY.md`).
@@ -35,7 +35,9 @@ The `HelpMenu` feature implements the **Help** toolbar menu. It centralizes link
 The menu, top to bottom (`---` marks a divider):
 
 - About Cytoscape Web
-- ---
+
+---
+
 - Take a tour
 - User Manual: opens the in-app manual (`<base>/manual/`) in a new tab. A new document, so the manual tab opens its own sandbox database (`src/data/db/dbScope.ts`).
 - **Developer** (submenu)
@@ -45,13 +47,17 @@ The menu, top to bottom (`---` marks a divider):
     docs. Every released version links to this URL, so the page keeps its
     name.
   - Code Repository: opens the GitHub repository
-  - ---
+  ***
   - Export Database Snapshot
   - Import Database Snapshot...
 - License
-- ---
+
+---
+
 - Citation
-- ---
+
+---
+
 - Report a Bug
 
 Items from service apps whose `cyWebMenuItem.root` resolves to Help are added

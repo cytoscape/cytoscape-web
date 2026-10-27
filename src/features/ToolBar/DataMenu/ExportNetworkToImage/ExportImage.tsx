@@ -1,3 +1,4 @@
+import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import {
   Box,
   Button,
@@ -14,6 +15,7 @@ import { lazy, ReactElement, Suspense, useRef, useState } from 'react'
 import { CyDialog } from '@/components/CyDialog'
 import { useNetworkSummaryStore } from '../../../../data/hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
+import { useCopyCitations } from '../../HelpMenu/useCopyCitations'
 
 // Lazy load export forms - only load when user opens export dialog
 const PdfExportForm = lazy(() => import('./PdfExportForm'))
@@ -78,6 +80,7 @@ const ExportImageContent = (props: ExportImageProps): ReactElement => {
   const currentNetworkName = useNetworkSummaryStore(
     (state) => state.summaries[currentNetworkId]?.name,
   )
+  const { copyText, copyBibtex } = useCopyCitations()
   const [fileType, setFileType] = useState<FileType>('png')
   const [fileName, setFileName] = useState<string>(
     currentNetworkName ?? 'network',
@@ -166,6 +169,40 @@ const ExportImageContent = (props: ExportImageProps): ReactElement => {
           {currentExportForm}
         </Suspense>
       </DialogContent>
+      {/*
+        Static text rather than a post-export notice: export is the step
+        before a figure goes into a paper, and a line in a dialog the user
+        already opened never interrupts (#883).
+      */}
+      <Box
+        data-testid="export-network-to-image-citation"
+        // Matches the content's left inset; outside DialogContent so the line
+        // never scrolls out of view with a long form.
+        sx={{ pl: 4, pr: 3, pt: 1 }}
+      >
+        <Typography variant="body2" color="text.secondary">
+          Using this in a publication? Cite Cytoscape Web.
+        </Typography>
+        {/* Pulled left by the text buttons' padding, so the icons line up. */}
+        <Box sx={{ display: 'flex', gap: 1, ml: -0.5 }}>
+          <Button
+            data-testid="export-network-to-image-copy-citation-button"
+            size="small"
+            startIcon={<ContentCopyIcon />}
+            onClick={copyText}
+          >
+            Copy citation
+          </Button>
+          <Button
+            data-testid="export-network-to-image-copy-bibtex-button"
+            size="small"
+            startIcon={<ContentCopyIcon />}
+            onClick={copyBibtex}
+          >
+            Copy BibTeX
+          </Button>
+        </Box>
+      </Box>
       <DialogActions sx={{ pr: 1 }}>
         <Button
           data-testid="export-network-to-image-cancel-button"
