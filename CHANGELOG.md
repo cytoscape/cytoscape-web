@@ -2,6 +2,94 @@
 
 All notable changes to Cytoscape Web are documented here.
 
+## [1.1.1] — 2026-10-27
+
+An in-app user manual, keyboard shortcuts for undo, redo and delete, a Select menu, a new
+default model for LLM Query now that `gpt-3.5-turbo` is retired, and fixes to undo,
+rendering, CX2 import, Layout Tools and the style editor.
+
+### Added
+
+- A user manual inside the app at `/manual`, opened from Help → User Manual. Procedures
+  show one step at a time with a screenshot beside the text, and the Styles page has a
+  live demo. The manual uses its own sandbox database, so it never touches your
+  workspace (#841, #885)
+- Go to Cytoscape Web in the manual's header switches back to the editor tab that opened
+  the manual, instead of opening a second editor (#889)
+- Keyboard shortcuts in the network view: Ctrl/⌘+Z undoes, Ctrl/⌘+Shift+Z or Ctrl+Y redoes,
+  and Delete or Backspace deletes the selected nodes and edges (#867)
+- A Select menu with Select All, Deselect All, Hide Selected and Show All. Select All
+  (Ctrl/⌘+A) includes hidden elements, and Hide Selected deselects what it hides (#837)
+- Open private NDEx networks from an NDEx share link: a link carrying `?accesskey=` opens
+  the network without signing in (#808)
+
+### Changed
+
+- LLM Query's default model is now `gpt-6-luna`, replacing `gpt-3.5-turbo`, which OpenAI
+  shut down on 2026-10-23. The model suggestions list current models (#833)
+- Manage Apps has one Install from URL field for both React apps and service apps. The
+  app behind the URL decides which kind it installs as (#828)
+- Layout Tools is only the floating panel opened from Layout → Layout Tools. The panel
+  below the workspace list is gone, and the floating panel can be dragged by its title
+  bar (#899)
+- The Sub Network Viewer tab shows only when the current network is a hierarchy (#878).
+  Leaving a hierarchy with an app's tab selected keeps the right panel open (#882)
+- The Help dialogs close with an X in the corner. About links to the code, Cytoscape
+  Desktop and the roadmap, and Report a Bug no longer asks for your version, OS and
+  browser (#829)
+- The STYLE tab's property list fills the panel, the style picker is larger, and the
+  Styles dialog's search field stays in place while the list scrolls (#905)
+- The REMOVE button in the Remove Filter dialog is red
+
+### Fixed
+
+- Fix issue where undoing Delete Selected Nodes or Edges restored the elements without
+  their views, so they came back invisible and lost their positions (#858)
+- Fix issue where undoing a drag of several nodes moved back one node per undo (#872)
+- Fix issue where every style or table change stored another copy of the network's view,
+  growing browser storage and slowing selection and node moves (#862)
+- Fix issue where importing a CX2 file whose `status` aspect was not last dropped its
+  nodes or edges without warning (#836)
+- Fix issue where Layout Tools' Scale slider moved the network off center, x1.0 did not
+  restore the original layout, and the x0.5 mark scaled by 0.6 (#894)
+- Fix issue where Layout Tools stayed on "Applying layout..." when scaling a network with
+  no nodes; it is now disabled with nothing to scale (#894)
+- Fix issue where the Scale slider showed the wrong value after undo or redo, so moving
+  it next shrank or grew the network (#900)
+- Fix issue where dragged dialogs and continuous-mapping handles fell behind the
+  pointer, and a handle saved a value short of where it was dropped (#902)
+- Fix issue where a FILTER tab edit followed by Apply or the select/show switch applied
+  the filter again 300 ms later, undoing a Show All made in between (#865)
+- Fix issue where Passthrough mapping was disabled for every color property (#813)
+- Fix issue where the mapping form showed a blank Column and Mapping Type for an
+  existing mapping it would not offer as a new one (#835)
+- Fix issue where an unmodified local network could not be saved as a copy to NDEx from
+  its row menu (#822)
+- Fix issue where the NDEx / Local chip on a network row lost its tooltip (#875)
+- Fix issue where the cookie banner's Learn more link returned a 404 (#841)
+- Fix issue where the Key Column for Network list in Import Table opened behind the
+  dialog and could not be clicked (#841)
+- Fix issue where the merge dialog's buttons had wrong or missing names for screen
+  readers (#841)
+- Fix typos in the merge and continuous-mapping forms (#856)
+
+### Performance
+
+- Changing a style or a table no longer redraws the whole network (#864)
+
+### App API
+
+- `viewport.updateNodePositions` takes `{ recordUndo: true }` to make an app's move one
+  undo entry. Positions are now validated: a value that is not `[x, y]` or `[x, y, z]`
+  of finite numbers fails the call with `APP9` and moves no node (#876)
+
+### Internal
+
+The manual can be exported to the Read the Docs repository, so web-manual.cytoscape.org
+can be generated from the in-app manual (#869, #891). Five other pull requests fixed a
+flaky WebKit filter test (#823), completed the 1.1.0 changelog section and merged it back
+into `development` (#824, #825), and set the version (#888, #906).
+
 ## [1.1.0] — 2026-10-14
 
 Dark mode, several named visual styles per network, a FILTER tab ported from Cytoscape
