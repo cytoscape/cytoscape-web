@@ -4,22 +4,11 @@ All notable changes to Cytoscape Web are documented here.
 
 ## [Unreleased]
 
-### Changed
-
-- Network from File opens a CX2 file within the same size limits as Open Network(s) from
-  NDEx, using the node and edge counts the file lists, instead of refusing any file over
-  5 MB. A file over the limits is not read, and a message says why. Tables and SIF files
-  keep the 5 MB limit (#911)
-
-### Fixed
-
-- Fix issue where Network from File did nothing, with no message, when the browser could
-  not read the file (#911)
-
-## [1.1.1] — 2026-10-27
+## [1.1.1] — 2026-10-28
 
 An in-app user manual, keyboard shortcuts for undo, redo and delete, a Select menu, a new
-default model for LLM Query now that `gpt-3.5-turbo` is retired, and fixes to undo,
+default model for LLM Query now that `gpt-3.5-turbo` is retired, a citation prompt when
+exporting an image, Google Analytics that waits for cookie consent, and fixes to undo,
 rendering, CX2 import, Layout Tools and the style editor.
 
 ### Added
@@ -36,6 +25,11 @@ rendering, CX2 import, Layout Tools and the style editor.
   (Ctrl/⌘+A) includes hidden elements, and Hide Selected deselects what it hides (#837)
 - Open private NDEx networks from an NDEx share link: a link carrying `?accesskey=` opens
   the network without signing in (#808)
+- The Export Network to Image dialog asks you to cite Cytoscape Web, with buttons that
+  copy the citation as text or BibTeX. Help → Citation gains a Copy BibTeX button (#909)
+- With cookies accepted, Google Analytics counts networks opened (by source and format),
+  images exported, saves to NDEx and app runs. Events carry categories only: no network
+  ids or names, file names, user details or private app and service URLs (#910)
 
 ### Changed
 
@@ -54,6 +48,10 @@ rendering, CX2 import, Layout Tools and the style editor.
 - The STYLE tab's property list fills the panel, the style picker is larger, and the
   Styles dialog's search field stays in place while the list scrolls (#905)
 - The REMOVE button in the Remove Filter dialog is red
+- Network from File opens a CX2 file within the same size limits as Open Network(s) from
+  NDEx, using the node and edge counts the file lists, instead of refusing any file over
+  5 MB. A file over the limits is not read, and a message says why. Tables and SIF files
+  keep the 5 MB limit (#911)
 
 ### Fixed
 
@@ -86,6 +84,15 @@ rendering, CX2 import, Layout Tools and the style editor.
 - Fix issue where the merge dialog's buttons had wrong or missing names for screen
   readers (#841)
 - Fix typos in the merge and continuous-mapping forms (#856)
+- Fix issue where the Difference tooltip in Merge Networks described the merge backwards
+  (#914)
+- Fix issue where Google Analytics loaded and set cookies before, and regardless of, the
+  cookie banner. It now starts only after Accept, and page URLs sent to it no longer
+  carry workspace or network ids (#910)
+- Fix issue where an error on the manual opened the editor's workspace boot behind the
+  error page; `/error` now stands alone (#908)
+- Fix issue where Network from File did nothing, with no message, when the browser could
+  not read the file (#911)
 
 ### Performance
 
@@ -102,7 +109,10 @@ rendering, CX2 import, Layout Tools and the style editor.
 The manual can be exported to the Read the Docs repository, so web-manual.cytoscape.org
 can be generated from the in-app manual (#869, #891). Five other pull requests fixed a
 flaky WebKit filter test (#823), completed the 1.1.0 changelog section and merged it back
-into `development` (#824, #825), and set the version (#888, #906).
+into `development` (#824, #825), set the version (#888, #906), and added this section
+(#907). Development now requires Node 24.22.1, which fixes the October 2026 Node security
+issues, and clears five `npm install` deprecation warnings; the Cosmos layout moves to
+`@cosmos.gl/graph` (#915).
 
 ## [1.1.0] — 2026-10-14
 
