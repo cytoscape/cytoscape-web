@@ -5,6 +5,7 @@ import {
   CITATIONS,
   citationsAsBibtex,
   citationsAsText,
+  shortCitation,
   toBibtexAuthors,
 } from './citations'
 
@@ -95,5 +96,11 @@ describe('citations', () => {
     expect(genomeRes.fields.doi).toBe('10.1101/gr.1239303')
     expect(genomeRes.fields.year).toBe('2003')
     expect(genomeRes.fields.pages).toBe('2498--2504')
+  })
+
+  it('shortens the Cytoscape Web paper to one line', () => {
+    expect(shortCitation()).toBe(
+      'Ono K et al. Cytoscape Web: bringing network biology to the browser. Nucleic Acids Research (2025).',
+    )
   })
 })

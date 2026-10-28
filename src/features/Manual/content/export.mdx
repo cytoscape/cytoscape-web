@@ -13,21 +13,26 @@ in the network's ⋮ menu in the **WORKSPACE** panel. The
 
 <Screenshot id="export-image-dialog" />
 
-1. Choose the **File Type**: **PNG**, **SVG** or **PDF**.
-2. Edit the **File Name** if you like. It starts with the network's name; the
+1. Choose the **File type**: **PNG**, **SVG** or **PDF**.
+2. Edit the **File name** if you like. It starts with the network's name; the
    extension is added for you.
 3. Set the options for the chosen type, listed below.
-4. Click **Confirm**. The browser saves the file to your downloads, or asks
+4. Click **Export PNG**, **Export SVG** or **Export PDF**. The browser saves the file to your downloads, or asks
    where to save it, depending on your browser settings.
 
 The image shows the network view that is active. When a network has more than
 one view, such as the subnetworks of a hierarchy, it exports the one you last
 worked in.
 
-If the image is going into a publication, the line above **Cancel** and
-**Confirm** copies how to cite Cytoscape Web: **Copy citation** copies the
-references as text, and **Copy BibTeX** copies them as BibTeX entries for a
-`.bib` file. **Help → Citation** has the same buttons.
+If the image is going into a publication, the box above the dialog's
+buttons shows how to cite Cytoscape Web and links the paper's DOI. Its
+**Citation** button copies the references as text, and **BibTeX** copies them
+as BibTeX entries for a `.bib` file. **Help → Citation** has the same copy
+buttons.
+
+Every exported file also carries the citation in its metadata, so it stays
+with the figure: a PNG in its `Comment` text, an SVG in its `<metadata>`
+element, and a PDF in its document properties (**Subject**).
 
 <DemoOnly>
 
@@ -53,18 +58,18 @@ network, zoom in on that part and uncheck the box.
 | Transparent background | Checked by default. Uncheck it for a white background.                                                                                                                                            |
 | Units                  | **Pixels** or **Inches**.                                                                                                                                                                         |
 | Size                   | The image width and height. Width and height stay in proportion: change one and the other follows. In inches, choose a **DPI** (72, 100, 150, 300 or 600) to set how many pixels each inch holds. |
-| Zoom                   | Scales the image from 0% to 500% of the network view's size on screen. Changing the size changes the zoom, and the other way around.                                                              |
+| Zoom                   | Scales the image from 10% to 500% of the network view's size on screen. Changing the size changes the zoom, and the other way around.                                                             |
 
 For a sharp image in a publication, choose Inches, set the printed width, and
 pick a DPI of 300 or more.
 
 ### PDF Options
 
-| Option      | What it does                                                                                                                                               |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Paper Size  | **LETTER** (the default), **LEGAL**, **TABLOID**, **A0** to **A5**, or **CUSTOM**. With CUSTOM, enter the page **Width (inches)** and **Height (inches)**. |
-| Orientation | **PORTRAIT** or **LANDSCAPE**.                                                                                                                             |
-| Margin      | The space around the network on the page. The default is 52.                                                                                               |
+| Option      | What it does                                                                                                                                            |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paper size  | **Letter** (the default), **Legal**, **Tabloid**, **A0** to **A5**, or **Custom**. With Custom, enter the **Page width** and **Page height** in inches. |
+| Orientation | **Portrait** or **Landscape**.                                                                                                                          |
+| Margin      | The space around the network on the page, in points (72 to the inch). The default is 52.                                                                |
 
 ### SVG Options
 

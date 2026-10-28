@@ -3,7 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useNetworkSummaryStore } from '../../../../data/hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
-import { citationsAsBibtex, citationsAsText } from '../../HelpMenu/citations'
+import {
+  citationsAsBibtex,
+  citationsAsText,
+  shortCitation,
+} from '../../HelpMenu/citations'
 import { ExportImage } from './ExportImage'
 
 vi.mock('../../../../data/hooks/stores/NetworkSummaryStore')
@@ -73,7 +77,15 @@ describe('ExportImage citation line', () => {
 
     expect(
       screen.getByTestId('export-network-to-image-citation').textContent,
-    ).toContain('Using this in a publication? Cite Cytoscape Web.')
+    ).toContain('Publishing this figure? Please cite Cytoscape Web:')
+    expect(
+      screen.getByTestId('export-network-to-image-citation').textContent,
+    ).toContain(shortCitation())
+    expect(
+      screen
+        .getByTestId('export-network-to-image-citation-doi')
+        .getAttribute('href'),
+    ).toBe('https://doi.org/10.1093/nar/gkaf365')
 
     fireEvent.click(
       screen.getByTestId('export-network-to-image-copy-citation-button'),

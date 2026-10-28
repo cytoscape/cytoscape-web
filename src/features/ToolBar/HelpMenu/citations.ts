@@ -91,6 +91,17 @@ const citationAsText = (citation: CitationData): string => {
   return `${text}${citation.pmid.id}.`
 }
 
+/**
+ * The Cytoscape Web paper in one line, first author only and without the DOI,
+ * for a place too small for the full reference (the image export dialog,
+ * which links the DOI separately).
+ */
+export const shortCitation = (): string => {
+  const [primary] = CITATIONS
+  const firstAuthor = primary.authors.split(', ')[0]
+  return `${firstAuthor} et al. ${primary.title} ${primary.journal} (${primary.bibtex.year}).`
+}
+
 /** Every citation as plain text, one paragraph each. */
 export const citationsAsText = (): string =>
   CITATIONS.map(citationAsText).join('\n\n')
