@@ -19,8 +19,8 @@ This specification defines the routing behavior for the Cytoscape Web applicatio
 /:workspaceId               → Workspace Editor
 /:workspaceId/networks      → Workspace Editor with no network displayed
 /:workspaceId/networks/:networkId → Network viewer
-/error                      → Error page
-/manual/*                   → In-app user manual
+/error                      → Error page (no AppShell)
+/manual/*                   → In-app user manual (no AppShell)
 ```
 
 ### Route Parameters
@@ -124,6 +124,11 @@ Query paramters will set the initial ui state and subsequently removed from the 
 ### 5. Error Route (`/error`)
 
 **Purpose**: Display error page
+
+`/error` is a top-level route, a sibling of `/` like `/manual/*`. It mounts no
+`AppShell` and runs no workspace boot. Every `errorElement` renders `Error`,
+which navigates to `/error`, so an error from any route — the manual included —
+ends on a page with no editor around it (#886).
 
 **Behavior**:
 

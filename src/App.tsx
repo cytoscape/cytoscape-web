@@ -114,9 +114,13 @@ const router = createBrowserRouter(
           />
           <Route path="*" element={<RedirectPanel />} />
         </Route>
-
-        <Route path="/error" element={<Error />} />
       </Route>
+      {/*
+      A sibling of "/" for the same reason as the manual (#886): under "/" it
+      mounted AppShell, so an error from /manual ran the workspace boot against
+      the manual's database, and that boot navigated away from the error page.
+    */}
+      <Route path="/error" element={<Error />} />
     </>,
   ),
   routerOpts,
