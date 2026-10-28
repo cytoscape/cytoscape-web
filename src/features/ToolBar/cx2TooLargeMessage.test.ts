@@ -1,7 +1,6 @@
-// @vitest-environment node
 import { readFileSync } from 'fs'
 import path from 'path'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { cx2TooLargeMessage } from './cx2TooLargeMessage'
 
@@ -13,6 +12,20 @@ const FIXTURE = path.resolve(
 const fixtureFile = (): File =>
   new File([readFileSync(FIXTURE)], 'small-network.cx2')
 
+// The fixture re-encoded as UTF-16LE with a byte-order mark, as Windows
+// PowerShell 5 writes it.
+const utf16FixtureFile = (): File => {
+  const text = readFileSync(FIXTURE, 'utf8')
+  const bytes = new Uint8Array(2 + text.length * 2)
+  bytes.set([0xff, 0xfe])
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i)
+    bytes[2 + i * 2] = code & 0xff
+    bytes[3 + i * 2] = code >> 8
+  }
+  return new File([bytes], 'small-network.cx2')
+}
+
 const LIMITS = {
   maxEdgeCountThreshold: 10,
   maxNetworkElementsThreshold: 40,
@@ -20,6 +33,10 @@ const LIMITS = {
 }
 
 describe('cx2TooLargeMessage', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('gives no message for a network within the limits', async () => {
     const limits = { ...LIMITS, maxEdgeCountThreshold: 30 }
     expect(await cx2TooLargeMessage(fixtureFile(), limits)).toBeUndefined()
@@ -43,15 +60,20 @@ describe('cx2TooLargeMessage', () => {
     )
   })
 
+  it('reads the counts of a UTF-16 file with a byte-order mark', async () => {
+    expect(await cx2TooLargeMessage(utf16FixtureFile(), LIMITS)).toMatch(
+      /it has 20 nodes and 30 edges/,
+    )
+  })
+
   it('checks the size only when the start of the file cannot be read', async () => {
+    vi.spyOn(FileReader.prototype, 'readAsText').mockImplementation(function (
+      this: FileReader,
+    ) {
+      setTimeout(() => this.dispatchEvent(new ProgressEvent('error')))
+    })
     const unreadable = (size: number): File =>
-      ({
-        name: 'unreadable.cx2',
-        size,
-        slice: () => ({
-          text: () => Promise.reject(new Error('NotReadableError')),
-        }),
-      }) as unknown as File
+      new File(['x'.repeat(size)], 'unreadable.cx2')
 
     expect(await cx2TooLargeMessage(unreadable(100), LIMITS)).toBeUndefined()
     expect(await cx2TooLargeMessage(unreadable(2048), LIMITS)).toMatch(

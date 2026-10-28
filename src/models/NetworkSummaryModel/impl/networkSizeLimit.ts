@@ -7,18 +7,18 @@
 
 /** The `config.json` thresholds the rule reads. */
 export interface NetworkSizeLimits {
-  maxEdgeCountThreshold: number
-  maxNetworkElementsThreshold: number
+  readonly maxEdgeCountThreshold: number
+  readonly maxNetworkElementsThreshold: number
   /** In bytes. */
-  maxNetworkFileSize: number
+  readonly maxNetworkFileSize: number
 }
 
 export interface NetworkSize {
   /** Undefined when the source does not say. */
-  nodeCount?: number
-  edgeCount?: number
+  readonly nodeCount?: number
+  readonly edgeCount?: number
   /** In bytes. */
-  cx2FileSize: number
+  readonly cx2FileSize: number
 }
 
 /**

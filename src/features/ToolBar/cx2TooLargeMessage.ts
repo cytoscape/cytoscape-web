@@ -5,6 +5,7 @@ import {
   NetworkSizeLimits,
 } from '@/models/NetworkSummaryModel/impl/networkSizeLimit'
 import { formatBytes } from '@/utils/byteConversion'
+import { readFileAsText } from '@/utils/readFileAsText'
 
 // The metaData aspect follows the version entry, so the head holds it.
 const CX2_HEAD_BYTES = 64 * 1024
@@ -21,7 +22,9 @@ export const cx2TooLargeMessage = async (
 ): Promise<string | undefined> => {
   let head = ''
   try {
-    head = await file.slice(0, CX2_HEAD_BYTES).text()
+    // readFileAsText, as the full import uses, so a UTF-16 file decodes here
+    // too. The cut is an even byte count, so it never splits a UTF-16 unit.
+    head = await readFileAsText(file.slice(0, CX2_HEAD_BYTES))
   } catch (error) {
     logUi.warn(
       `[cx2TooLargeMessage]: Could not read the start of ${file.name}; checking its size only`,
