@@ -88,7 +88,12 @@ it opens:
   with more edges opens only if it has fewer than 26,000 nodes and edges
   combined and its file is smaller than 500 MB. Larger networks are shown but
   cannot be selected in **Open Network(s) from NDEx...**.
-- From a file: the file must be smaller than 5 MB.
+- From a CX2 file: the same rule, using the node and edge counts the file
+  lists at its start. A CX2 file that lists no counts opens if it is smaller
+  than 500 MB. A network over the limits is not loaded, and a message says
+  why.
+- From any other file (.csv, .tsv, .txt, .sif): the file must be smaller than
+  5 MB.
 
 A network without saved node positions gets a layout when it opens: **gForce
 Layout (force-directed)** for a network, **Hierarchical Layout (DAGRE)** for a

@@ -134,6 +134,8 @@ export const MANUAL_PAGES: readonly ManualPage[] = [
       'src/features/LayoutTools/**',
       'src/features/SyncTabs.tsx',
       'src/assets/config.json',
+      'src/models/NetworkSummaryModel/impl/networkSizeLimit.ts',
+      'src/features/ToolBar/cx2TooLargeMessage.ts',
     ],
     load: () => import('./content/workspace-panels.mdx'),
   },

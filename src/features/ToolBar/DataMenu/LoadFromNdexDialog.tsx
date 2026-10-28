@@ -56,6 +56,7 @@ import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { logUi } from '../../../debug'
 import { CyDialog } from '@/components/CyDialog'
 import { KeycloakContext } from '@/boot/keycloak'
+import { fitsNetworkSizeLimits } from '@/models/NetworkSummaryModel/impl/networkSizeLimit'
 import { IdType } from '../../../models/IdType'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { NetworkSummary } from '../../../models/NetworkSummaryModel'
@@ -464,17 +465,20 @@ export const LoadFromNdexDialog = (
     [displayItems],
   )
 
+  // The same rule as Network from File (networkSizeLimit.ts)
   const networkPassesSizeThreshold = (
     nodeCount: number,
     edgeCount: number,
     cx2FileSize: number,
-  ): boolean => {
-    return (
-      edgeCount <= maxEdgeCountThreshold ||
-      (+nodeCount + +edgeCount < maxNetworkElementsThreshold &&
-        cx2FileSize < maxNetworkFileSize)
+  ): boolean =>
+    fitsNetworkSizeLimits(
+      { nodeCount, edgeCount, cx2FileSize },
+      {
+        maxEdgeCountThreshold,
+        maxNetworkElementsThreshold,
+        maxNetworkFileSize,
+      },
     )
-  }
 
   const toggleSelectedNetwork = (networkId: IdType): void => {
     if (selectedNetworks.includes(networkId)) {

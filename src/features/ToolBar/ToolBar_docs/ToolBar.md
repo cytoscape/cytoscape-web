@@ -62,6 +62,51 @@ The ToolBar is organized into menu categories, each with its own submenu system.
 - Drag-and-drop interface
 - File validation
 - Progress indicators
+- Size limits: a CX2 file must fit the network size limits that also gate
+  Open Network(s) from NDEx (`fitsNetworkSizeLimits` in
+  `models/NetworkSummaryModel/impl/networkSizeLimit.ts`). The node and edge
+  counts come from the file's metaData, read from its first 64 KB
+  (`readCx2ElementCounts`) before the whole file is read; without them only
+  the file size is checked. `cx2TooLargeMessage.ts` runs the check and words
+  the message for a file over the limits. Tables and SIF files must be under
+  5 MB, checked by the dropzone validator in `FileUpload.tsx`.
+- Read errors: a file the browser cannot read (moved or deleted after it was
+  chosen, or too large to hold as text) gets a message instead of nothing
+  (`readFileAsText` in `utils/readFileAsText.ts`).
+
+### Known Limitation: Few Edges Skip the File Size Check
+
+`fitsNetworkSizeLimits` passes any network with at most
+`maxEdgeCountThreshold` (20,000) edges without looking at its file size. Open
+Network(s) from NDEx has always worked this way. Network from File now uses
+the same rule for CX2 files in place of its old 5 MB limit, so a local CX2
+file of any size opens if its metaData lists 20,000 edges or fewer. This was
+accepted to keep one rule for NDEx and local files, and because a large file
+with few edges is uncommon. It should be revisited:
+
+- Edge count is a poor measure of file size. Nodes and edges can carry large
+  attributes (long text, many columns, images as data URIs), so a network with
+  few edges can still be hundreds of MB.
+- The whole file is read into one string with `FileReader.readAsText`.
+  Browsers cap string length (about 512 MB in Chrome), so a larger file cannot
+  be read, and the import stops with only the general "could not be read"
+  message.
+- A file under that cap but still hundreds of MB is parsed with `JSON.parse`
+  and converted on the main thread. The tab can freeze for a long time or run
+  out of memory.
+
+The old 5 MB limit made all of these impossible. Possible fixes:
+
+- Check the file size in every case. Doing it in `fitsNetworkSizeLimits` also
+  changes NDEx: a network over `maxNetworkFileSize` with 20,000 edges or fewer
+  could no longer be selected in Open Network(s) from NDEx, so first check
+  whether such networks load today. The other option is to add the check for
+  local files only.
+- `maxNetworkFileSize` (500 MB) is close to Chrome's string cap, so local files
+  may need a lower limit, or a streaming parser.
+
+Revisit this when a user reports a CX2 file that could not be read or that
+froze the tab, or when CX2 parsing moves off the main thread.
 
 ## Integration Points
 

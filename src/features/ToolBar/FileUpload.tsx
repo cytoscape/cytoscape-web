@@ -1,11 +1,15 @@
 import { Typography } from '@mui/material'
+import { useContext } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 
+import { AppConfigContext } from '@/AppConfigContext'
 import {
   DropzoneHint,
   FileDropzoneDialog,
   FileRejection,
 } from '@/features/FileDropzoneDialog'
+import { NetworkSizeLimits } from '@/models/NetworkSummaryModel/impl/networkSizeLimit'
+import { readFileAsText } from '@/utils/readFileAsText'
 
 import { putNetworkSummaryToDb } from '../../data/db'
 import { useUrlNavigation } from '../../data/hooks/navigation/useUrlNavigation'
@@ -38,19 +42,28 @@ import {
   CreateNetworkFromTableStep,
   useCreateNetworkFromTableStore,
 } from '../TableDataLoader/store/createNetworkFromTableStore'
+import { cx2TooLargeMessage } from './cx2TooLargeMessage'
 import {
   createFileValidator,
   DEFAULT_MAX_FILE_SIZE_MB,
 } from './GenericFileUploadDialog'
 
 const NETWORK_FILE_TYPES = ['csv', 'txt', 'tsv', 'cx2', 'sif']
-// The whole file is read into memory and parsed on the main thread, so the
-// hint in the dropzone and the validator must promise the same limit.
-const NETWORK_FILE_MAX_SIZE_MB = DEFAULT_MAX_FILE_SIZE_MB
-const validateNetworkFile = createFileValidator(
-  NETWORK_FILE_TYPES,
-  NETWORK_FILE_MAX_SIZE_MB,
-)
+
+const extensionOf = (file: File): string | undefined =>
+  file.name.split('.').pop()?.toLowerCase()
+
+// A CX2 file has no byte limit here: it is checked against the network size
+// limits once dropped (cx2TooLargeMessage). Tables and SIF files declare no
+// counts to check first, and the whole file is read into memory and parsed on
+// the main thread, so they keep a byte limit; the hint in the dropzone and
+// the validator must promise the same one.
+const OTHER_FILE_MAX_SIZE_MB = DEFAULT_MAX_FILE_SIZE_MB
+const validateNetworkFile = (file: File) =>
+  createFileValidator(
+    NETWORK_FILE_TYPES,
+    extensionOf(file) === 'cx2' ? 0 : OTHER_FILE_MAX_SIZE_MB,
+  )(file)
 
 interface FileUploadProps {
   show: boolean
@@ -318,93 +331,115 @@ export function FileUpload(props: FileUploadProps) {
     props.handleClose()
   }
 
-  const onFileDrop = (file: File) => {
-    const reader = new FileReader()
-    reader.addEventListener('load', async () => {
-      const text = reader.result as string
-      const fileExtension = file.name.split('.').pop()?.toLowerCase()
+  const sizeLimits: NetworkSizeLimits = useContext(AppConfigContext)
 
-      // Check RTF format with wrong extension
-      if (
-        (fileExtension === 'txt' ||
-          fileExtension === 'csv' ||
-          fileExtension === 'tsv') &&
-        text.startsWith('{\\rtf')
-      ) {
+  const onFileDrop = async (file: File): Promise<void> => {
+    const extension = extensionOf(file)
+    if (extension === 'cx2') {
+      const tooLarge = await cx2TooLargeMessage(file, sizeLimits)
+      if (tooLarge !== undefined) {
         addMessage({
-          duration: 3000,
-          message: `File ${file.name} has a .${fileExtension} 
+          duration: 15000,
+          message: tooLarge,
+          severity: MessageSeverity.ERROR,
+        })
+        return
+      }
+    }
+
+    let text: string
+    try {
+      text = await readFileAsText(file)
+    } catch (error) {
+      logUi.error(
+        `[${FileUpload.name}]:[${onFileDrop.name}]: Could not read ${file.name}`,
+        error,
+      )
+      addMessage({
+        duration: 15000,
+        message: `${file.name} could not be read. It may have been moved or deleted, or be too large for the browser to read.`,
+        severity: MessageSeverity.ERROR,
+      })
+      return
+    }
+
+    // Check RTF format with wrong extension
+    if (
+      (extension === 'txt' || extension === 'csv' || extension === 'tsv') &&
+      text.startsWith('{\\rtf')
+    ) {
+      addMessage({
+        duration: 3000,
+        message: `File ${file.name} has a .${extension} 
             extension but appears to be an RTF file, which is 
             not supported for this extension. Please check the file format.`,
+        severity: MessageSeverity.ERROR,
+      })
+      return
+    }
+
+    if (extension === 'cx2') {
+      await handleCX2File(file, text)
+    } else if (extension === 'sif') {
+      await handleSifFile(file, text)
+    } else {
+      // Generalized delimiter check for .txt, .csv, and .tsv files
+      const trimmedText = text.trim()
+
+      if (trimmedText.length === 0) {
+        handleTableFile(file, text)
+        return
+      }
+
+      const lines = trimmedText
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0)
+      const firstLine = lines[0] || ''
+
+      if (firstLine.length === 0 && trimmedText.length > 0) {
+        addMessage({
+          duration: 3000,
+          message: `File ${file.name} starts with empty lines and might not be a valid table format.`,
           severity: MessageSeverity.ERROR,
         })
         return
       }
 
-      if (fileExtension === 'cx2') {
-        handleCX2File(file, text)
-      } else if (fileExtension === 'sif') {
-        handleSifFile(file, text)
-      } else {
-        // Generalized delimiter check for .txt, .csv, and .tsv files
-        const trimmedText = text.trim()
+      // Use the robust delimiter detection utility
+      const { detectBestDelimiter } = await import(
+        '../TableDataLoader/model/impl/DelimiterUtils'
+      )
+      const parseResult = detectBestDelimiter(text)
+      let columnCount = 0
 
-        if (trimmedText.length === 0) {
-          handleTableFile(file, text)
-          return
-        }
+      if (parseResult.data.length > 0) {
+        const firstRow = parseResult.data[0] as string[]
+        columnCount = firstRow.length
 
-        const lines = trimmedText
-          .split('\n')
-          .map((line) => line.trim())
-          .filter((line) => line.length > 0)
-        const firstLine = lines[0] || ''
-
-        if (firstLine.length === 0 && trimmedText.length > 0) {
+        if (columnCount <= 1 && firstLine.length > 0) {
           addMessage({
             duration: 3000,
-            message: `File ${file.name} starts with empty lines and might not be a valid table format.`,
+            message: `File ${file.name} does not appear to start with a delimited pattern (comma, semicolon, tab, or space). Please check your file format.`,
             severity: MessageSeverity.ERROR,
           })
           return
         }
 
-        // Use the robust delimiter detection utility
-        const { detectBestDelimiter } = await import(
-          '../TableDataLoader/model/impl/DelimiterUtils'
-        )
-        const parseResult = detectBestDelimiter(text)
-        let columnCount = 0
-
-        if (parseResult.data.length > 0) {
-          const firstRow = parseResult.data[0] as string[]
-          columnCount = firstRow.length
-
-          if (columnCount <= 1 && firstLine.length > 0) {
+        if (parseResult.data.length > 1) {
+          const secondRow = parseResult.data[1] as string[]
+          if (secondRow.length !== columnCount) {
             addMessage({
               duration: 3000,
-              message: `File ${file.name} does not appear to start with a delimited pattern (comma, semicolon, tab, or space). Please check your file format.`,
+              message: `File ${file.name} header and first data row have different column counts. Please check your file format.`,
               severity: MessageSeverity.ERROR,
             })
             return
           }
-
-          if (parseResult.data.length > 1) {
-            const secondRow = parseResult.data[1] as string[]
-            if (secondRow.length !== columnCount) {
-              addMessage({
-                duration: 3000,
-                message: `File ${file.name} header and first data row have different column counts. Please check your file format.`,
-                severity: MessageSeverity.ERROR,
-              })
-              return
-            }
-          }
         }
-        handleTableFile(file, text)
       }
-    })
-    reader.readAsText(file)
+      handleTableFile(file, text)
+    }
   }
 
   return (
@@ -418,7 +453,9 @@ export function FileUpload(props: FileUploadProps) {
         browseButton: 'file-upload-browse-button',
       }}
       validator={validateNetworkFile}
-      onDrop={onFileDrop}
+      onDrop={(file: File) => {
+        void onFileDrop(file)
+      }}
       onReject={(rejectedFiles: FileRejection[]) => {
         onFileError(rejectedFiles)
       }}
@@ -431,7 +468,8 @@ export function FileUpload(props: FileUploadProps) {
         Microsoft Excel files are not supported.
       </DropzoneHint>
       <DropzoneHint dimmed>
-        Files under {NETWORK_FILE_MAX_SIZE_MB}MB supported.
+        CX2 files: the same network size limits as networks from NDEx. Other
+        files: under {OTHER_FILE_MAX_SIZE_MB}MB.
       </DropzoneHint>
     </FileDropzoneDialog>
   )
