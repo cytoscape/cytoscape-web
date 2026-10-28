@@ -709,9 +709,8 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
                   networks.
                 </p>
                 <p>
-                  <strong>DIFFERENCE:</strong> Subtracts the base network from
-                  the second network according to the specified node removal
-                  rule.
+                  <strong>DIFFERENCE:</strong> Subtracts the second network from
+                  the base network according to the specified node removal rule.
                 </p>
               </Box>
             }
