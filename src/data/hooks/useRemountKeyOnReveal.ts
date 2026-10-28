@@ -10,14 +10,14 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
  * imperative structures in a mount effect come back from that cycle reset,
  * while their ref-held bookkeeping still describes the old structure.
  *
- * allotment 1.18.1 is such a library: its split view is recreated empty on
- * reveal, but the previous-keys ref it diffs children against survives, so
- * the next conditional <Allotment.Pane> unmount calls removeView with an
- * index past the end of the empty view list and throws "Index out of bounds"
+ * allotment is such a library (1.18.1, and still 1.20.6): its split view is
+ * recreated empty on reveal, but the previous-keys ref it diffs children
+ * against survives, so the next conditional <Allotment.Pane> unmount calls
+ * removeView with an index past the end of the empty view list and throws
+ * "Index out of bounds"
  * (crashed the workspace editor after the whole shell was suspended by a
  * lazy app component). Key the fragile subtree with this value so a reveal
- * remounts it from scratch instead. allotment 1.20.6 no longer crashes this
- * way (#913); the key is kept as a guard until the workaround is retired.
+ * remounts it from scratch instead.
  */
 export const useRemountKeyOnReveal = (): number => {
   const [remountKey, setRemountKey] = useState(0)
