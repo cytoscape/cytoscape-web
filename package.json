@@ -136,7 +136,7 @@
     "@visx/group": "^3.0.0",
     "@visx/scale": "^3.0.0",
     "@visx/shape": "^3.0.0",
-    "allotment": "1.20.6",
+    "allotment": "1.18.1",
     "chroma-js": "^2.4.2",
     "cytoscape": "^3.34.0",
     "cytoscape-biological-flow": "^1.0.0",

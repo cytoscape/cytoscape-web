@@ -5,10 +5,10 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { useRemountKeyOnReveal } from './useRemountKeyOnReveal'
 
-// jsdom has no ResizeObserver. allotment 1.20 builds its split view only after
-// its observer reports a non-zero size (an inert stub leaves it empty, so no
-// pane is ever added or removed and the tests below would pass vacuously), so
-// report one size per observed element (#913).
+// jsdom has no ResizeObserver. The stub reports one non-zero size per observed
+// element: allotment 1.20+ builds its split view only after its observer does,
+// so with an inert stub no pane would ever be added or removed and the tests
+// below would pass vacuously after an upgrade (#913).
 class ResizeObserverStub {
   constructor(private readonly callback: ResizeObserverCallback) {}
   observe(target: Element): void {
