@@ -147,6 +147,10 @@ default `test:unit` run.
   2. Locate the generated `dist/assets/virtual_mf-exposes*.js` chunk and assert
      it contains a `"./<Name>":` literal for **every** key in
      `FEDERATION_EXPOSES` (reuses the Tier-1 source of truth).
+     `@module-federation/vite` 1.23 inlines the exposes map in
+     `remoteEntry.js` and emits no separate chunk; the verifier falls back to
+     that file so it survives a future upgrade (1.23 was tried and reverted in
+     #913 because of a dev-server race).
   3. **Shared singletons present.** Assert the build registers
      `react`, `react-dom`, `@mui/material` as shared singletons (grep the
      `localSharedImportMap` / loadShare chunks for these names). This guards the

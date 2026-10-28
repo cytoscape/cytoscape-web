@@ -22,9 +22,9 @@ if [ -f "./node_modules/.bin/mmdc" ]; then
 elif command -v mmdc &> /dev/null; then
     MMDC="mmdc"
 else
-    echo -e "${YELLOW}⚠️  @mermaid-js/mermaid-cli not found. Installing locally...${NC}"
-    npm install --save-dev @mermaid-js/mermaid-cli
-    MMDC="./node_modules/.bin/mmdc"
+    # Not a project dependency: npx fetches it (and its Chromium) on demand.
+    echo -e "${YELLOW}⚠️  mmdc not found. Running @mermaid-js/mermaid-cli through npx...${NC}"
+    MMDC="npx --yes @mermaid-js/mermaid-cli"
 fi
 
 # Extract Mermaid diagram from markdown file or use existing .mmd file

@@ -1,7 +1,7 @@
 import { act, render, screen } from '@testing-library/react'
 import { Allotment } from 'allotment'
 import { ReactElement, StrictMode, Suspense } from 'react'
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 import { useRemountKeyOnReveal } from './useRemountKeyOnReveal'
 
@@ -89,7 +89,11 @@ interface HarnessProps {
   suspended: boolean
 }
 
-const Harness = ({ Panes, showRight, suspended }: HarnessProps): ReactElement => (
+const Harness = ({
+  Panes,
+  showRight,
+  suspended,
+}: HarnessProps): ReactElement => (
   <Suspense fallback={<div data-testid="fallback" />}>
     <Gate suspended={suspended} />
     <Panes showRight={showRight} />
@@ -113,23 +117,16 @@ const suspendAndReveal = async (
 }
 
 describe('allotment across a Suspense hide/reveal cycle', () => {
-  // Pins the upstream allotment bug this hook works around: React 18 destroys
-  // and re-attaches the subtree's effects around a Suspense hide/reveal, which
-  // recreates allotment's internal split view empty while its previous-keys
-  // ref survives — the next conditional pane unmount then calls
-  // removeView(index) past the end of the (empty) view list. If an allotment
-  // upgrade makes this pass, the workaround can be retired.
-  it('throws Index out of bounds on pane unmount after a reveal (upstream bug)', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-    // React re-reports commit-phase errors through the window 'error' event
-    // (bypassing the console mock); swallow the expected one to keep quiet
-    // test output clean.
-    const swallowExpected = (event: ErrorEvent): void => {
-      if (event.message.includes('Index out of bounds')) {
-        event.preventDefault()
-      }
-    }
-    window.addEventListener('error', swallowExpected)
+  // Records the upstream allotment bug this hook was written for: React 18
+  // destroys and re-attaches the subtree's effects around a Suspense
+  // hide/reveal, which recreated allotment's internal split view empty while
+  // its previous-keys ref survived — the next conditional pane unmount then
+  // called removeView(index) past the end of the (empty) view list and threw
+  // "Index out of bounds". allotment 1.18.1 threw here; 1.20.6 does not
+  // (#913), so unkeyed panes now survive the cycle. The hook stays until the
+  // workaround is retired on its own; if this starts throwing again after an
+  // allotment change, the keyed test below is what keeps the app safe.
+  it('survives pane unmount after a reveal without the workaround (fixed upstream)', async () => {
     const { rerender } = render(
       <Harness Panes={PlainPanes} showRight={true} suspended={false} />,
     )
@@ -137,15 +134,11 @@ describe('allotment across a Suspense hide/reveal cycle', () => {
 
     await suspendAndReveal(rerender, PlainPanes, true)
 
-    try {
-      expect(() =>
-        rerender(
-          <Harness Panes={PlainPanes} showRight={false} suspended={false} />,
-        ),
-      ).toThrow('Index out of bounds')
-    } finally {
-      window.removeEventListener('error', swallowExpected)
-    }
+    rerender(<Harness Panes={PlainPanes} showRight={false} suspended={false} />)
+    expect(screen.queryByTestId('right-pane')).toBeNull()
+
+    rerender(<Harness Panes={PlainPanes} showRight={true} suspended={false} />)
+    expect(screen.getByTestId('right-pane')).toBeDefined()
   })
 
   it('survives pane unmount after a reveal when keyed by useRemountKeyOnReveal', async () => {
@@ -239,7 +232,11 @@ describe('useRemountKeyOnReveal', () => {
       keys.push(useRemountKeyOnReveal())
       return null
     }
-    const ProbeHarness = ({ suspended }: { suspended: boolean }): ReactElement => (
+    const ProbeHarness = ({
+      suspended,
+    }: {
+      suspended: boolean
+    }): ReactElement => (
       <Suspense fallback={null}>
         <Gate suspended={suspended} />
         <Probe />

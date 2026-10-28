@@ -16,7 +16,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
  * index past the end of the empty view list and throws "Index out of bounds"
  * (crashed the workspace editor after the whole shell was suspended by a
  * lazy app component). Key the fragile subtree with this value so a reveal
- * remounts it from scratch instead.
+ * remounts it from scratch instead. allotment 1.20.6 no longer crashes this
+ * way (#913); the key is kept as a guard until the workaround is retired.
  */
 export const useRemountKeyOnReveal = (): number => {
   const [remountKey, setRemountKey] = useState(0)
