@@ -1,10 +1,11 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { ReactElement } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { AboutDialog } from './AboutDialog'
 import { BugReportDialog } from './BugReportDialog'
 import { CitationDialog } from './CitationDialog'
+import { citationsAsBibtex, citationsAsText } from './citations'
 import { LicenseDialog } from './LicenseDialog'
 
 vi.mock('../../../data/db', () => ({
@@ -65,5 +66,24 @@ describe('BugReportDialog', () => {
     // must not ask the user to type them.
     expect(screen.getByText(/added to the report automatically/i)).toBeTruthy()
     expect(screen.queryByText(/what browser you/i)).toBeNull()
+  })
+})
+
+describe('CitationDialog', () => {
+  it('copies both citations as plain text and as BibTeX', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    })
+    render(<CitationDialog open={true} onClose={vi.fn()} />)
+
+    fireEvent.click(screen.getByTestId('citation-dialog-copy-text-button'))
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1))
+    expect(writeText).toHaveBeenLastCalledWith(citationsAsText())
+
+    fireEvent.click(screen.getByTestId('citation-dialog-copy-bibtex-button'))
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(2))
+    expect(writeText).toHaveBeenLastCalledWith(citationsAsBibtex())
   })
 })
