@@ -9,12 +9,12 @@ All notable changes to Cytoscape Web are documented here.
 - Network from File opens a CX2 file within the same size limits as Open Network(s) from
   NDEx, using the node and edge counts the file lists, instead of refusing any file over
   5 MB. A file over the limits is not read, and a message says why. Tables and SIF files
-  keep the 5 MB limit
+  keep the 5 MB limit (#911)
 
 ### Fixed
 
 - Fix issue where Network from File did nothing, with no message, when the browser could
-  not read the file
+  not read the file (#911)
 
 ## [1.1.1] — 2026-10-27
 
