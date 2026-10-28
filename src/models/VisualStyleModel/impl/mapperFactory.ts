@@ -93,14 +93,23 @@ const customGraphicPassthroughFn = (
           Array.isArray(parsed.cy_dataColumns) &&
           Array.isArray(parsed.cy_colors)
         ) {
-          const isRing = parsed.cy_holeSize !== undefined
-          return {
-            type: CustomGraphicsTypeType.Chart,
-            name: isRing
-              ? CustomGraphicsNameType.RingChart
-              : CustomGraphicsNameType.PieChart,
-            properties: parsed,
-          } as CustomGraphicsType
+          let chartName: string | undefined
+
+          if (parsed.cy_lineWidth !== undefined) {
+            chartName = CustomGraphicsNameType.LineChart
+          } else if (parsed.cy_holeSize !== undefined) {
+            chartName = CustomGraphicsNameType.RingChart
+          } else if (parsed.cy_orientation === undefined) {
+            chartName = CustomGraphicsNameType.PieChart
+          }
+
+          if (chartName !== undefined) {
+            return {
+              type: CustomGraphicsTypeType.Chart,
+              name: chartName,
+              properties: parsed,
+            } as CustomGraphicsType
+          }
         }
       } catch {
         // Malformed JSON — fall through to default

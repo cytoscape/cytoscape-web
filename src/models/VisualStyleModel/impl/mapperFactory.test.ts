@@ -295,6 +295,25 @@ describe('MapperFactory', () => {
         })
       })
 
+      it('should parse valid LineChart JSON to line chart', () => {
+        const json =
+          '{"cy_dataColumns":["gal1RGexp","gal4RGexp","gal80Rexp"],"cy_colors":["#8DD3C7","#FFFFB3","#BEBADA"],"cy_lineWidth":2.1}'
+        expect(mapper(json)).toMatchObject({
+          type: 'chart',
+          name: 'org.cytoscape.LineChart',
+          properties: {
+            cy_dataColumns: ['gal1RGexp', 'gal4RGexp', 'gal80Rexp'],
+            cy_lineWidth: 2.1,
+          },
+        })
+      })
+      it('should return default for unsupported chart JSON', () => {
+        const json =
+          '{"cy_dataColumns":["a","b"],"cy_colors":["#f00","#0f0"],"cy_orientation":"HORIZONTAL"}'
+
+        expect(mapper(json)).toEqual(mapping.defaultValue)
+      })
+
       it('should return default for malformed JSON', () => {
         expect(mapper('{ broken json')).toEqual(mapping.defaultValue)
       })
