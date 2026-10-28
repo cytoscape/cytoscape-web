@@ -3,6 +3,7 @@ import { useContext } from 'react'
 import { AppConfigContext } from '../../AppConfigContext'
 import { logUi } from '../../debug'
 import { KeycloakContext } from '@/boot/keycloak'
+import { trackEvent } from '@/data/analytics/trackEvent'
 import { MessageSeverity } from '../../models/MessageModel'
 import { Network } from '../../models/NetworkModel'
 import {
@@ -107,6 +108,9 @@ export const useSaveCurrentNetworkToNDEx = () => {
           opaqueAspects,
           false,
         )
+        // A local network's first upload, as in the Data menu, though this
+        // path keeps the local network (#884).
+        trackEvent('ndex_save', { mode: 'first_upload' })
         addMessage({
           message: `Saved this network to NDEx (new id ${uuid}).`,
           duration: 3000,
@@ -162,6 +166,7 @@ export const useSaveCurrentNetworkToNDEx = () => {
         visualStyleOptions,
         opaqueAspects,
       )
+      trackEvent('ndex_save', { mode: 'overwrite' })
       setNetworkModified(networkId, false)
       addMessage({
         message: 'Saved network to NDEx.',

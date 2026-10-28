@@ -1,0 +1,139 @@
+# Workspace and Side Panel
+
+The side panel runs down the left side of the window. Its tabs are
+**WORKSPACE**, **STYLE** and **FILTER**, plus **LLM QUERY** for hierarchy
+networks.
+
+<Screenshot id="side-panel" />
+
+<DemoOnly>
+
+<LiveDemo panels={['renderer', 'style', 'filter', 'layout']} />
+
+The Style, Filter and Layout tabs in this demo are the real panels: change a
+style, run a filter or apply a layout to the network.
+
+</DemoOnly>
+
+<a id="network-management" />
+
+<a id="network_management" />
+
+<a id="workspace_tab" />
+
+## Workspace
+
+A workspace is a collection of networks, like a session in Cytoscape
+Desktop. It can hold many networks, but the network view shows one at a
+time.
+
+The **WORKSPACE** tab of the side panel has three parts:
+
+- A search bar that searches NDEx for networks to open. Apps can add other
+  search sources to it.
+- The name of the workspace.
+- The list of networks. Click a network to show it.
+
+Each network in the list shows its name, its node and edge counts, and a
+label for where it came from:
+
+- <UiIcon name="ndex-label" label="NDEx label" /> — the network
+  was opened from NDEx.
+- <UiIcon name="local-label" label="Local label" /> — the network
+  was imported from a file or created in Cytoscape Web. Its name is the file
+  name.
+
+The counts read like `N: 33 (2) / E: 45 (0)`: 33 nodes, 2 of them
+selected, and 45 edges, none selected.
+
+The **...** button on a network opens a menu of actions for it: **Save to
+NDEx** (or **Save a Copy to NDEx**), **Edit Network Properties**, **Open
+Network in Cytoscape Desktop**, **Duplicate Network**, **Download Network
+File (.cx2)**, **Export Network to Image**, **Share Network (Copy URL to
+Clipboard)** and **Remove the Network from Workspace**.
+
+Most of these act on the current network only; click a network first to use
+them. A dot on that button means the network has changes that are not saved
+to NDEx.
+
+A workspace can be saved to NDEx and opened again later from the **Data**
+menu. See [Creating and Saving Networks](creating-networks).
+
+### Working in Several Browser Tabs
+
+You can open Cytoscape Web in several tabs of the same browser. They share
+one workspace: a network you open, edit, restyle, select in or remove in one
+tab changes in the others too. Filters and undo history are shared as well.
+
+Each tab keeps its own:
+
+- current network, so two tabs can show two different networks;
+- open panels and their tabs;
+- zoom and pan.
+
+Edit a network in one tab at a time. When two tabs change the same network
+at once, one tab's change is lost without a warning.
+
+If a tab stops receiving changes from the others, it shows a message that
+asks you to reload it. Reload it before you edit there; otherwise its edits
+can overwrite the other tabs' work. Resetting the workspace in one tab
+reloads the others.
+
+### Network Size Limits
+
+Web browsers cannot draw very large networks, so Cytoscape Web limits what
+it opens:
+
+- From NDEx: a network opens if it has at most 20,000 edges. A network
+  with more edges opens only if it has fewer than 26,000 nodes and edges
+  combined and its file is smaller than 500 MB. Larger networks are shown but
+  cannot be selected in **Open Network(s) from NDEx...**.
+- From a CX2 file: the same rule, using the node and edge counts the file
+  lists at its start. A CX2 file that lists no counts opens if it is smaller
+  than 500 MB. A network over the limits is not loaded, and a message says
+  why.
+- From any other file (.csv, .tsv, .txt, .sif): the file must be smaller than
+  5 MB.
+
+A network without saved node positions gets a layout when it opens: **gForce
+Layout (force-directed)** for a network, **Hierarchical Layout (DAGRE)** for a
+hierarchy, and **Grid Layout** when the network has 1,000 or more nodes and
+edges combined. A network with more than 26,000 nodes and edges combined gets
+no automatic layout.
+
+<a id="style_tab" />
+
+## Style
+
+The **STYLE** tab sets how the network looks: colors, shapes, sizes, labels
+and arrows, fixed or driven by column data. See [Styles](styles).
+
+## Filter
+
+The **FILTER** tab selects or shows only the nodes and edges that meet
+conditions you set, such as a column value or a minimum degree. See
+[Filters](filters).
+
+<a id="layout_tools" />
+
+## Layout Tools
+
+**Layout Tools** stretches or squeezes the current layout. Open it from
+**Layout → Layout Tools**: it appears as a floating panel in the lower-left
+corner of the network view. Drag its title bar to move it anywhere in the
+network view, and click the **X** to close it. It opens in the lower-left
+corner again each time.
+
+<Screenshot id="layout-tools" />
+
+Under **Scale**, choose **Width**, **Height** or **Both**, then drag the
+slider. It scales the node positions from 0.1 times to 10 times about the
+center of the network, so the network stays where it is in the view, and
+**x1.0** puts every node back where it started. A click next to a mark snaps
+onto it; with the slider selected, the arrow keys step by 0.1. The
+circular-arrow button on the right resets the slider to the middle and keeps
+the current positions, so you can scale again from there. Scaling can be
+undone with **Edit → Undo**, and the slider follows undo and redo. If you
+move nodes by hand or apply a layout, the slider goes back to **x1.0**, and
+**x1.0** then means the layout you have now. For a network with no nodes, the
+controls are disabled.

@@ -16,7 +16,7 @@
 - **Test-Driven Fixes:** Before writing implementation code, write a failing regression test. Follow `vitest-setup.ts` conventions (including `enableMapSet()`) and test stores via `@testing-library/react` hooks. Prove it fails, apply the fix, then prove it passes.
 - **Verification Before Done:** NEVER mark a task complete without proving it works. Run `npm run test:checks:quiet` (lint ∥ unit), plus the one or few e2e specs covering the change, and diff the behavior. Always use the `:quiet` variants — see [Section 5](#5-development-operations).
 - **Fix Root Causes:** Fix root causes, not symptoms. Never apply band-aid fixes. Fix failing CI tests proactively.
-- **Docs Change With Behavior:** A change that alters behavior updates, in the same change, the docs that describe it: the feature's co-located `<Feature>_docs/` and any spec in `docs/specifications/`. After adding, moving or renaming a file, grep for its old path and fix every list that names it (§6, `docs/README.md`, `docs/guides/README.md`). The next agent reads a stale doc as current.
+- **Docs Change With Behavior:** A change that alters behavior updates, in the same change, the docs that describe it: the feature's co-located `<Feature>_docs/`, any spec in `docs/specifications/`, and any page of the in-app user manual (`src/features/Manual/content/`) whose `sources` in `src/features/Manual/pages.ts` match the changed files. `node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-manual-drift.mjs` lists those pages; CI runs it on every PR. When a listed page needs no change, record why in a commit trailer: `Manual-Reviewed: <slug> (<reason>)`. After adding, moving or renaming a file, grep for its old path and fix every list that names it (§6, `docs/README.md`, `docs/guides/README.md`). The next agent reads a stale doc as current.
 
 **Safety:**
 
@@ -106,7 +106,9 @@ Plugins import from the `cyweb/` prefix. Check `FEDERATION_EXPOSES` directly for
 
 ### Prerequisites
 
-**Node 24.** `package.json` sets `engines.node >= 24.0.0` and `.npmrc` sets
+**Node 24.22.1.** `.nvmrc` pins it (CI reads the same file), `package.json` sets
+`engines.node >= 24.22.1` — the 24.x release that fixes the October 2026 Node.js
+security issues, including CVE-2026-111497 — and `.npmrc` sets
 `engine-strict=true`, so `npm install` hard-fails on anything older, and Vite 8
 needs 22.12+ regardless. On a machine whose default `node` is older, the
 failures are cryptic — `vitest` dies loading its config with `ERR_REQUIRE_ESM`

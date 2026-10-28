@@ -158,6 +158,7 @@ Provides filtering capabilities for interaction networks.
 - Non-matching elements are set to `VisibilityType.None` (hidden)
 - When no options are selected, all elements are hidden
 - Filtering is applied through the visual style store's bypass map mechanism
+- The toolbar's Select › Show All, run on the subnetwork, removes these bypasses and switches the filter off, as applying a FILTER tab filter does (`SelectMenu_docs/SelectMenu.md`)
 
 **Note:** Filter configurations are extracted from the interaction network's `filterWidgets` opaque aspect. HCX networks do not contain filter widgets - only interaction networks (those referenced by `HCX::interactionNetworkUUID`) can have filter configurations.
 

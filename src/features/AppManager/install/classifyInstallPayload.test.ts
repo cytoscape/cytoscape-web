@@ -145,6 +145,27 @@ describe('classifyInstallPayload', () => {
     expect(classifyInstallPayload('a string')).toBeUndefined()
   })
 
+  // Service apps in the wild register with nothing but a name and parameters.
+  // The Manage Apps dialog has one URL field for both kinds (#827), so an
+  // unmarked service must still classify, or that field cannot add it.
+  it('classifies unmarked service metadata as a service app', () => {
+    const result = classifyInstallPayload({
+      name: 'Bare service',
+      parameters: [{ displayName: 'Threshold' }],
+    })
+
+    expect(result?.type).toBe('service')
+    if (result?.type === 'service') {
+      expect(result.metadata.name).toBe('Bare service')
+    }
+  })
+
+  it('does not read a broken manifest entry as unmarked service metadata', () => {
+    expect(
+      classifyInstallPayload({ id: 'noUrl', name: 'No URL' }),
+    ).toBeUndefined()
+  })
+
   it('rejects service metadata with no name', () => {
     const { name: _name, ...unnamed } = SERVICE_METADATA
 

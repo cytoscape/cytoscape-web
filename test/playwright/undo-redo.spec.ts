@@ -6,6 +6,15 @@ import { expect, gotoAndSeedNetwork, test } from './fixtures'
 // Seeds a two-node network, deletes a selected node via Edit ▸ Delete
 // Selected Nodes, then walks Undo and Redo and asserts the node count
 // round-trips. Selection and node-count reads go through window.CyWebApi.
+//
+// #857: a count is not enough — undo used to restore the topology without the
+// node and edge views, so the nodes came back invisible and without positions.
+// The second test reads what the renderer actually draws.
+//
+// #870: dragging a selection recorded one undo entry per node, so one undo
+// put back only one of them. The last test drags two nodes with the mouse.
+//
+// #874: an app move made with { recordUndo: true } is undone by one Ctrl/⌘+Z.
 
 type CyWebApiWindow = {
   CyWebApi?: {
@@ -28,7 +37,23 @@ type CyWebApiWindow = {
         edgeIds: string[],
       ) => { success: boolean }
     }
+    viewport: {
+      updateNodePositions: (
+        networkId: string,
+        positions: Record<string, [number, number]>,
+        options?: { recordUndo?: boolean },
+      ) => { success: boolean }
+      fit: (networkId: string) => Promise<{ success: boolean }>
+    }
   }
+}
+
+type Rendered = {
+  nodes: Record<string, [number, number]>
+  edgeCount: number
+  // Elements in the graph that Cytoscape.js does not draw (display: none,
+  // visibility: hidden). Membership alone does not prove a redraw.
+  hiddenCount: number
 }
 
 const getNodeCount = async (page: Page): Promise<number> =>
@@ -49,6 +74,43 @@ const clickEditMenuItem = async (page: Page, name: RegExp): Promise<void> => {
   // on item click; dismiss it so the next menu interaction is not blocked.
   await page.keyboard.press('Escape')
   await expect(item).not.toBeVisible()
+}
+
+/**
+ * Nodes and edges as drawn, read from the Cytoscape.js instance registered on
+ * the renderer's container (the network is a canvas, there is no DOM to read).
+ */
+const getRendered = async (page: Page): Promise<Rendered | null> =>
+  page.getByTestId('cyjs-renderer').evaluate((container) => {
+    const cy = (container as HTMLElement & { _cyreg?: { cy?: any } })._cyreg?.cy
+    if (cy === undefined) return null
+    const nodes: Record<string, [number, number]> = {}
+    cy.nodes().forEach((node: any) => {
+      const { x, y } = node.position()
+      nodes[node.id()] = [Math.round(x), Math.round(y)]
+    })
+    return {
+      nodes,
+      edgeCount: cy.edges().length,
+      hiddenCount: cy.elements().filter((ele: any) => !ele.visible()).length,
+    }
+  })
+
+/** Where a node is drawn, in page coordinates, so the mouse can grab it. */
+const getNodePagePosition = async (
+  page: Page,
+  nodeId: string,
+): Promise<{ x: number; y: number }> => {
+  const renderer = page.getByTestId('cyjs-renderer')
+  const box = await renderer.boundingBox()
+  if (box === null) throw new Error('The renderer is not visible')
+  const rendered = await renderer.evaluate((container, id) => {
+    const cy = (container as HTMLElement & { _cyreg?: { cy?: any } })._cyreg?.cy
+    const position = cy?.getElementById(id).renderedPosition()
+    return position === undefined ? null : { x: position.x, y: position.y }
+  }, nodeId)
+  if (rendered === null) throw new Error(`Node ${nodeId} is not drawn`)
+  return { x: box.x + rendered.x, y: box.y + rendered.y }
 }
 
 test.describe('Undo and Redo', () => {
@@ -82,5 +144,225 @@ test.describe('Undo and Redo', () => {
     // Edit ▸ Redo deletes it again
     await clickEditMenuItem(page, /^Redo - /)
     await expect.poll(() => getNodeCount(page), { timeout: 10000 }).toBe(1)
+  })
+
+  test('Ctrl/⌘+Z undoes, and Ctrl/⌘+Shift+Z and Ctrl+Y redo', async ({
+    page,
+  }) => {
+    await gotoAndSeedNetwork(page)
+    const selected = await page.evaluate(() => {
+      const api = (window as unknown as CyWebApiWindow).CyWebApi
+      const current = api?.workspace.getCurrentNetworkId()
+      if (!current?.success || current.data === undefined) return false
+      const { networkId } = current.data
+      const firstNode = api?.element.getNodeIds(networkId)?.data?.nodeIds[0]
+      if (firstNode === undefined) return false
+      return api?.selection.exclusiveSelect(networkId, [firstNode], [])?.success
+    })
+    expect(selected).toBe(true)
+
+    // The menu hands the focus back to its Edit button; the keys still work
+    await clickEditMenuItem(page, /^Delete Selected Nodes/)
+    await expect.poll(() => getNodeCount(page), { timeout: 10000 }).toBe(1)
+
+    await page.keyboard.press('ControlOrMeta+z')
+    await expect.poll(() => getNodeCount(page), { timeout: 10000 }).toBe(2)
+    await page.keyboard.press('ControlOrMeta+Shift+z')
+    await expect.poll(() => getNodeCount(page), { timeout: 10000 }).toBe(1)
+    await page.keyboard.press('ControlOrMeta+z')
+    await expect.poll(() => getNodeCount(page), { timeout: 10000 }).toBe(2)
+    // Cytoscape Desktop's Redo, on every platform
+    await page.keyboard.press('Control+y')
+    await expect.poll(() => getNodeCount(page), { timeout: 10000 }).toBe(1)
+
+    // The rows show the shortcuts
+    await page.locator('[data-testid="toolbar-edit-menu-menu-button"]').click()
+    await expect(
+      page.getByRole('menuitem', { name: /^Undo - / }).locator('kbd'),
+    ).toHaveText(/^(⌘Z|Ctrl\+Z)$/)
+    await expect(
+      page.getByRole('menuitem', { name: /^Redo/ }).locator('kbd'),
+    ).toHaveText(/^(⇧⌘Z|Ctrl\+Y)$/)
+    // ...and name every form for assistive technology
+    await expect(
+      page.getByRole('menuitem', { name: /^Undo - / }),
+    ).toHaveAttribute('aria-keyshortcuts', 'Control+Z Meta+Z')
+    await expect(page.getByRole('menuitem', { name: /^Redo/ })).toHaveAttribute(
+      'aria-keyshortcuts',
+      'Control+Shift+Z Meta+Shift+Z Control+Y',
+    )
+  })
+
+  test('undoing the deletion of every node redraws them at their original positions', async ({
+    page,
+  }) => {
+    await gotoAndSeedNetwork(page)
+
+    // Give the nodes distinct, known positions and wait for the renderer
+    const expected = await page.evaluate(() => {
+      const api = (window as unknown as CyWebApiWindow).CyWebApi
+      const current = api?.workspace.getCurrentNetworkId()
+      if (!current?.success || current.data === undefined) return null
+      const { networkId } = current.data
+      const nodeIds = api?.element.getNodeIds(networkId)?.data?.nodeIds ?? []
+      const positions: Record<string, [number, number]> = {}
+      nodeIds.forEach((id, i) => {
+        positions[id] = [150 + 200 * i, -75 * (i + 1)]
+      })
+      api?.viewport.updateNodePositions(networkId, positions)
+      return positions
+    })
+    expect(expected).not.toBeNull()
+    expect(Object.keys(expected!)).toHaveLength(2)
+    await expect
+      .poll(() => getRendered(page), { timeout: 10000 })
+      .toEqual({ nodes: expected, edgeCount: 1, hiddenCount: 0 })
+
+    // Select every node and delete them all
+    const selected = await page.evaluate((ids) => {
+      const api = (window as unknown as CyWebApiWindow).CyWebApi
+      const current = api?.workspace.getCurrentNetworkId()
+      if (!current?.success || current.data === undefined) return false
+      return api?.selection.exclusiveSelect(current.data.networkId, ids, [])
+        ?.success
+    }, Object.keys(expected!))
+    expect(selected).toBe(true)
+
+    await clickEditMenuItem(page, /^Delete Selected Nodes/)
+    await expect.poll(() => getNodeCount(page), { timeout: 10000 }).toBe(0)
+    await expect
+      .poll(() => getRendered(page), { timeout: 10000 })
+      .toEqual({ nodes: {}, edgeCount: 0, hiddenCount: 0 })
+
+    // Undo draws both nodes and their edge again, where they were
+    await clickEditMenuItem(page, /^Undo - /)
+    await expect
+      .poll(() => getRendered(page), { timeout: 10000 })
+      .toEqual({ nodes: expected, edgeCount: 1, hiddenCount: 0 })
+  })
+
+  test('one undo moves every node of a multi-node drag back (#870)', async ({
+    page,
+  }) => {
+    await gotoAndSeedNetwork(page)
+
+    // Apart, so the drag grabs one node and must carry the other along
+    const before = await page.evaluate(async () => {
+      const api = (window as unknown as CyWebApiWindow).CyWebApi
+      const current = api?.workspace.getCurrentNetworkId()
+      if (!current?.success || current.data === undefined) return null
+      const { networkId } = current.data
+      const nodeIds = api?.element.getNodeIds(networkId)?.data?.nodeIds ?? []
+      const positions: Record<string, [number, number]> = {}
+      nodeIds.forEach((id, i) => {
+        positions[id] = [200 * i, 100 * i]
+      })
+      api?.viewport.updateNodePositions(networkId, positions)
+      await api?.viewport.fit(networkId)
+      return positions
+    })
+    expect(before).not.toBeNull()
+    const nodeIds = Object.keys(before!)
+    expect(nodeIds).toHaveLength(2)
+    await expect
+      .poll(async () => (await getRendered(page))?.nodes, { timeout: 10000 })
+      .toEqual(before)
+
+    const selected = await page.evaluate((ids) => {
+      const api = (window as unknown as CyWebApiWindow).CyWebApi
+      const current = api?.workspace.getCurrentNetworkId()
+      if (!current?.success || current.data === undefined) return false
+      return api?.selection.exclusiveSelect(current.data.networkId, ids, [])
+        ?.success
+    }, nodeIds)
+    expect(selected).toBe(true)
+
+    // Grabbing one selected node drags the whole selection
+    const start = await getNodePagePosition(page, nodeIds[0])
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    await page.mouse.move(start.x + 60, start.y + 40, { steps: 10 })
+    await page.mouse.up()
+
+    await expect
+      .poll(
+        async () => {
+          const { nodes } = (await getRendered(page))!
+          return nodeIds.every(
+            (id) =>
+              nodes[id][0] !== before![id][0] ||
+              nodes[id][1] !== before![id][1],
+          )
+        },
+        { timeout: 10000 },
+      )
+      .toBe(true)
+    const after = (await getRendered(page))!.nodes
+
+    // One undo puts both back...
+    await page.keyboard.press('ControlOrMeta+z')
+    await expect
+      .poll(async () => (await getRendered(page))?.nodes, { timeout: 10000 })
+      .toEqual(before)
+
+    // ...and one redo moves both forward again
+    await page.keyboard.press('ControlOrMeta+Shift+z')
+    await expect
+      .poll(async () => (await getRendered(page))?.nodes, { timeout: 10000 })
+      .toEqual(after)
+  })
+
+  test('one undo reverts an app move made with recordUndo (#874)', async ({
+    page,
+  }) => {
+    await gotoAndSeedNetwork(page)
+
+    // Known start positions, recorded without undo
+    const before = await page.evaluate(async () => {
+      const api = (window as unknown as CyWebApiWindow).CyWebApi
+      const current = api?.workspace.getCurrentNetworkId()
+      if (!current?.success || current.data === undefined) return null
+      const { networkId } = current.data
+      const nodeIds = api?.element.getNodeIds(networkId)?.data?.nodeIds ?? []
+      const positions: Record<string, [number, number]> = {}
+      nodeIds.forEach((id, i) => {
+        positions[id] = [200 * i, 100 * i]
+      })
+      api?.viewport.updateNodePositions(networkId, positions)
+      await api?.viewport.fit(networkId)
+      return positions
+    })
+    expect(before).not.toBeNull()
+    await expect
+      .poll(async () => (await getRendered(page))?.nodes, { timeout: 10000 })
+      .toEqual(before)
+
+    const after = Object.fromEntries(
+      Object.entries(before!).map(([id, [x, y]]) => [id, [x + 50, y - 30]]),
+    ) as Record<string, [number, number]>
+    const moved = await page.evaluate((positions) => {
+      const api = (window as unknown as CyWebApiWindow).CyWebApi
+      const current = api?.workspace.getCurrentNetworkId()
+      if (!current?.success || current.data === undefined) return false
+      return api?.viewport.updateNodePositions(
+        current.data.networkId,
+        positions,
+        { recordUndo: true },
+      ).success
+    }, after)
+    expect(moved).toBe(true)
+    await expect
+      .poll(async () => (await getRendered(page))?.nodes, { timeout: 10000 })
+      .toEqual(after)
+
+    await page.keyboard.press('ControlOrMeta+z')
+    await expect
+      .poll(async () => (await getRendered(page))?.nodes, { timeout: 10000 })
+      .toEqual(before)
+
+    await page.keyboard.press('ControlOrMeta+Shift+z')
+    await expect
+      .poll(async () => (await getRendered(page))?.nodes, { timeout: 10000 })
+      .toEqual(after)
   })
 })

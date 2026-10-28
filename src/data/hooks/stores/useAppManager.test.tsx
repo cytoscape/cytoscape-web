@@ -27,7 +27,7 @@ import { appRegistry, loadedAppUrls, useAppManager } from './useAppManager'
 import { useWorkspaceStore } from './WorkspaceStore'
 
 // Stub the app-api/core barrel — its layout API transitively imports the
-// ESM-only @cosmograph/cosmos, which jest cannot transform. useAppManager only
+// ESM-only @cosmos.gl/graph, which jest cannot transform. useAppManager only
 // spreads CyWebApi into per-app apis, which the mocked lifecycle never uses.
 vi.mock('../../../app-api/core', () => ({ CyWebApi: {} }))
 

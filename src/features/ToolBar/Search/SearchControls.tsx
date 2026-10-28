@@ -4,6 +4,9 @@ import TuneIcon from '@mui/icons-material/Tune'
 import { Box, IconButton } from '@mui/material'
 import { useTheme } from '@mui/material/styles'
 
+/** The settings button's icon; the manual draws the same one (UiIcon). */
+export const SearchSettingsIcon = TuneIcon
+
 interface SearchControlsProps {
   searchTerm: string
   startSearch: () => void
@@ -50,7 +53,7 @@ export const SearchControls = ({
           sx={{ color: theme.palette.text.primary }}
           onClick={handleOpenSettings}
         >
-          <TuneIcon />
+          <SearchSettingsIcon />
         </IconButton>
       </Box>
     </>

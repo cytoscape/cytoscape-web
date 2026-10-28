@@ -101,6 +101,10 @@ describe('panelApi.open', () => {
     })
 
     it('selects the built-in viewer without an appId', () => {
+      setCurrentNetwork('hcx1', [
+        { predicateString: HCX_INTERACTION_NETWORK_UUID, value: 'uuid' },
+      ])
+
       const result = panelApi.open('right', 'sub-network-viewer')
 
       expect(result).toEqual({
@@ -110,6 +114,17 @@ describe('panelApi.open', () => {
       expect(selectedRightTab()).toBe(
         '__builtin__::right-panel::sub-network-viewer',
       )
+    })
+
+    it("matches 'sub-network-viewer' only while the current network is a hierarchy", () => {
+      const result = panelApi.open('right', 'sub-network-viewer')
+
+      expect(result).toMatchObject({
+        success: false,
+        error: { code: AppCodes.RESOURCE_NOT_FOUND.code },
+      })
+      expect(panels().right).toBe(PanelState.CLOSED)
+      expect(selectedRightTab()).toBeNull()
     })
 
     it("prefers the calling app's own tab among duplicate ids", () => {

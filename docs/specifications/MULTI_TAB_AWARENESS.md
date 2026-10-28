@@ -59,8 +59,10 @@ earlier version stored it in `window.name` — which is writable by any script o
 the page (a federated app, an auth redirect, a third-party widget) and is copied
 by "Duplicate tab", giving two live tabs one id and making each ignore the
 other's edits. `window.name` still carries the _addressable_ tab name for
-`window.open(url, tabId)` focusing (`src/boot/tabManager.ts`); that is a separate
-concern with a separate failure mode.
+`window.open(url, tabId)` focusing (`src/boot/tabManager.ts`) — used by external
+apps and by the manual's "Go to Cytoscape Web" button
+(`src/features/Manual/goToEditor.ts`); that is a separate concern with a
+separate failure mode.
 
 The cost of not persisting it: a `_changes` row written immediately before a
 reload reads as foreign afterwards, so the tab hydrates that one write itself.

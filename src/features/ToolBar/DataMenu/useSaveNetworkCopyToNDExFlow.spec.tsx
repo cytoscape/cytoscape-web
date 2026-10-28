@@ -33,8 +33,13 @@ const mocks = vi.hoisted(() => {
     navigateToNetwork: vi.fn(),
     saveNetworkCopy: vi.fn(),
     loadNetworkSummaries: vi.fn(),
+    trackEvent: vi.fn(),
   }
 })
+
+vi.mock('@/data/analytics/trackEvent', () => ({
+  trackEvent: mocks.trackEvent,
+}))
 
 vi.mock('../../../data/hooks/stores/CredentialStore', () => ({
   useCredentialStore: mocks.store({ getToken: mocks.getToken }),
@@ -193,5 +198,28 @@ describe('useSaveNetworkCopyToNDExFlow', () => {
       ),
     )
     expect(mocks.saveNetworkCopy).not.toHaveBeenCalled()
+  })
+
+  it('counts a saved copy as ndex_save copy, once', async () => {
+    render(<Harness />)
+
+    act(() => flow.start())
+
+    await waitFor(() =>
+      expect(mocks.trackEvent).toHaveBeenCalledWith('ndex_save', {
+        mode: 'copy',
+      }),
+    )
+    expect(mocks.trackEvent).toHaveBeenCalledTimes(1)
+  })
+
+  it('counts nothing when the copy fails', async () => {
+    mocks.saveNetworkCopy.mockRejectedValue(new Error('boom'))
+    render(<Harness />)
+
+    act(() => flow.start())
+
+    await waitFor(() => expect(mocks.addMessage).toHaveBeenCalled())
+    expect(mocks.trackEvent).not.toHaveBeenCalled()
   })
 })

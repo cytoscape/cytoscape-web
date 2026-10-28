@@ -229,6 +229,17 @@ Switching it back on calls `releaseWorkspaceFilter`: the workspace filter's
 visibility bypasses are removed (show mode only) and its record dropped, then
 the `filterWidgets` filter applies its own. No workspace filter is changed.
 
+**Show All (Select menu).** The toolbar's Select › Show All removes every node
+and edge visibility bypass of the network, whoever wrote it. It drops the
+network's record when the applied filter is in show mode (a select-mode record
+stays) and switches the subnetwork's `filterWidgets` filter off, so neither
+claims to hide anything afterwards. It also cancels the network's pending
+"Apply when filter changes" run, so an edit made just before cannot hide
+elements again after it. Select › Hide Selected Nodes and Edges adds
+`none` bypasses to those of an applied show filter; re-applying the filter
+rewrites them, which shows the hand-hidden elements that pass, as in Cytoscape
+Desktop. See `src/features/ToolBar/SelectMenu/SelectMenu_docs/SelectMenu.md`.
+
 ## FILTER tab
 
 The tab (`src/features/Filter/`, see `Filter_docs/Filter.md`) follows
@@ -241,6 +252,14 @@ Cytoscape Desktop's Filter tab:
 - The conditions of the filter, with "Match all (AND)" / "Match any (OR)" once
   there are two, and a "+" menu: Column filter, Degree filter, Topology
   filter, Group. Nested groups always show how they combine.
+- Conditions are moved and grouped by drag and drop, with Cytoscape Desktop's
+  rules (`moveCondition` / `canDropCondition` in `filterTreeImpl.ts`):
+  dropped in a gap, a condition moves there; onto a group or a topology
+  condition, it is added at its end; onto another condition, both go into a
+  new "match all" group in the target's place, the target first. A nested
+  group left empty by a move is removed (never the root or a topology
+  condition). Drops into the condition itself, or that would leave it where it
+  is, are refused. Mouse, touch and keyboard all work (`@dnd-kit/core`).
 - A column condition lists the node columns, then the edge columns ("Node:
   name", "Edge: weight"); its comparison follows the column type: text
   predicates and a text field, "is / is not" a range (slider plus fields) for
@@ -257,7 +276,9 @@ Cytoscape Desktop's Filter tab:
   `[n, max]`, "at most n" `[min, n]`, "equal to n" `[n, n]`.
 - "Apply when filter changes" (default on below 100,000 nodes and edges),
   select / show, Apply, and a status line ("Selected 2 nodes and 0 edges in
-  3 ms", or "Showing ..." in show mode).
+  3 ms", or "Showing ..." in show mode). The line clears when the network's
+  record is dropped (Show All, or the `filterWidgets` filter switched back
+  on), since the filter no longer hides anything.
 - Export writes every workspace filter to `cytoscape-filters.json`. Import
   adds the filters of a file under free names and reports what it skipped.
 

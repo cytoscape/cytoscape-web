@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import NetworkFn from '../../NetworkModel'
 import { TableType } from '../../StoreModel/TableStoreModel'
-import type { NodeView } from '../../ViewModel'
+import type { EdgeView, NetworkView, NodeView } from '../../ViewModel'
 import {
   createNodesCore,
   deleteNodesCore,
@@ -22,6 +22,19 @@ const makeNetwork = () =>
       { id: 'e2', s: 'n2', t: 'n3' },
     ],
   )
+
+// ViewModelStore keeps a LIST of views per network, primary view first
+const makeView = (
+  nodeViews: Record<string, NodeView> = {},
+  edgeViews: Record<string, EdgeView> = {},
+): NetworkView => ({
+  id: NET_ID,
+  values: new Map(),
+  nodeViews,
+  edgeViews,
+  selectedNodes: [],
+  selectedEdges: [],
+})
 
 const makeActions = (
   overrides: Partial<NodeOperationStoreActions> = {},
@@ -53,10 +66,12 @@ describe('deleteNodesCore', () => {
         },
       },
       viewModels: {
-        [NET_ID]: {
-          nodeViews: { n1: { id: 'n1', x: 10, y: 20, values: new Map() } },
-          edgeViews: { e1: { id: 'e1', values: new Map() } },
-        },
+        [NET_ID]: [
+          makeView(
+            { n1: { id: 'n1', x: 10, y: 20, values: new Map() } },
+            { e1: { id: 'e1', values: new Map() } },
+          ),
+        ],
       },
     })
 
@@ -67,8 +82,10 @@ describe('deleteNodesCore', () => {
     expect(result.deletedEdges).toEqual(connectingEdges)
     expect(result.deletedNodeRows.get('n1')).toEqual({ name: 'Node 1' })
     expect(result.deletedEdgeRows.get('e1')).toEqual({ weight: 2 })
-    expect(result.deletedNodeViews).toHaveLength(1)
-    expect(result.deletedEdgeViews).toHaveLength(1)
+    expect(result.deletedNodeViews).toEqual([
+      { id: 'n1', x: 10, y: 20, values: new Map() },
+    ])
+    expect(result.deletedEdgeViews).toEqual([{ id: 'e1', values: new Map() }])
 
     // Cascade: node + connecting edge removed from views and tables
     expect(actions.deleteViewObjects).toHaveBeenCalledWith(NET_ID, ['n1', 'e1'])
@@ -115,7 +132,7 @@ describe('createNodesCore', () => {
       tables: {
         [NET_ID]: { nodeTable: { rows: new Map() }, edgeTable: undefined },
       },
-      viewModels: { [NET_ID]: { nodeViews: {}, edgeViews: {} } },
+      viewModels: { [NET_ID]: [makeView()] },
     })
 
     createNodesCore(

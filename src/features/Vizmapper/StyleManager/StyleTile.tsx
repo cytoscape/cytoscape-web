@@ -13,6 +13,7 @@ import {
 import { useEffect, useRef, useState } from 'react'
 
 import { VisualStyle } from '@/models/VisualStyleModel'
+import { previewBackgroundColor } from './preview/previewBackground'
 import { PreviewSample } from './preview/previewSample'
 import { useStyleThumbnail } from './preview/useStyleThumbnail'
 
@@ -143,15 +144,9 @@ export const StyleTile = (props: StyleTileProps): React.ReactElement => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          // Light neutral rather than the paper colour: node fills are often
-          // white or transparent, and on a white tile those styles read as an
-          // empty box (a real weakness of Cytoscape Desktop's picker).
-          backgroundColor: '#f5f5f5',
-          backgroundImage:
-            'linear-gradient(45deg, #ebebeb 25%, transparent 25%, transparent 75%, #ebebeb 75%),' +
-            'linear-gradient(45deg, #ebebeb 25%, transparent 25%, transparent 75%, #ebebeb 75%)',
-          backgroundSize: '16px 16px',
-          backgroundPosition: '0 0, 8px 8px',
+          // The thumbnail's own background, so a letterboxed thumbnail leaves
+          // no visible band
+          backgroundColor: previewBackgroundColor(visualStyle),
         }}
       >
         {thumbnail !== undefined ? (
@@ -160,7 +155,12 @@ export const StyleTile = (props: StyleTileProps): React.ReactElement => {
             src={thumbnail}
             alt=""
             data-testid={`${testId}-thumbnail`}
-            sx={{ maxWidth: '100%', maxHeight: '100%', display: 'block' }}
+            sx={{
+              width: '100%',
+              height: '100%',
+              display: 'block',
+              objectFit: 'contain',
+            }}
           />
         ) : thumbnailFailed ? (
           // A spinner here would never stop: the render already gave up. The
@@ -245,7 +245,13 @@ export const StyleTile = (props: StyleTileProps): React.ReactElement => {
         </>
       )}
 
-      <Box sx={{ px: 0.75, py: 0.5 }}>
+      <Box
+        sx={{
+          px: 0.75,
+          py: 0.5,
+          borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+        }}
+      >
         {/* Full name in a tooltip: style names are long and share prefixes, and
             a clipped label is how Desktop makes two different styles look
             identical. */}

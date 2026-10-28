@@ -24,14 +24,6 @@
     ]
   },
   {
-    "status": [
-      {
-        "error": "",
-        "success": true
-      }
-    ]
-  },
-  {
     "nodes": [
       {
         "id": 0,
@@ -506,6 +498,14 @@
           "interaction": "inhibits",
           "weight": 1.45
         }
+      }
+    ]
+  },
+  {
+    "status": [
+      {
+        "error": "",
+        "success": true
       }
     ]
   }

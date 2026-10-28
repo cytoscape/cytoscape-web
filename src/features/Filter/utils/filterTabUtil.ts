@@ -2,8 +2,10 @@ import type { ApplyWorkspaceFilterResult } from '@/data/filter/applyWorkspaceFil
 import { DisplayMode } from '@/models/FilterModel/DisplayMode'
 import {
   ColumnFilterTarget,
+  FilterNode,
   FilterNodePath,
   FilterPredicate,
+  FilterTypeId,
   NumberRangeCriterion,
   WorkspaceFilter,
 } from '@/models/FilterModel/FilterTree'
@@ -266,3 +268,23 @@ export const formatApplyStatus = (
  */
 export const roundForDisplay = (value: number): number =>
   Number.isFinite(value) ? Number(value.toPrecision(6)) : value
+
+/**
+ * A short name for a condition, shown while it is dragged
+ */
+export const describeCondition = (node: FilterNode): string => {
+  switch (node.type) {
+    case FilterTypeId.Column:
+      return node.columnName === null
+        ? 'Column filter'
+        : columnLabel(node.target, node.columnName)
+    case FilterTypeId.Degree:
+      return 'Degree filter'
+    case FilterTypeId.Topology:
+      return 'Topology filter'
+    default: {
+      const count = node.children.length
+      return `Group (${count} condition${count === 1 ? '' : 's'})`
+    }
+  }
+}

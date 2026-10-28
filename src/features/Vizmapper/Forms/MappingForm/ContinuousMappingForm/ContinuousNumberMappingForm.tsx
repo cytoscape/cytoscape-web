@@ -18,8 +18,8 @@ import { scaleLinear as visXScaleLinear } from '@visx/scale'
 import { extent } from 'd3-array'
 import debounce from 'lodash/debounce'
 import * as React from 'react'
-import Draggable from 'react-draggable'
 
+import { PointerDraggable } from '@/components/PointerDraggable'
 import { useVisualStyleStore } from '../../../../../data/hooks/stores/VisualStyleStore'
 import { useUndoStack } from '../../../../../data/hooks/useUndoStack'
 import { IdType } from '../../../../../models/IdType'
@@ -439,8 +439,7 @@ export function ContinuousNumberMappingForm(props: {
                   LINE_CHART_MARGIN_TOP
 
                 return (
-                  <Draggable
-                    // disabled={isEndHandle}
+                  <PointerDraggable
                     axis={isEndHandle ? 'y' : 'both'}
                     key={h.id}
                     bounds={{
@@ -456,16 +455,12 @@ export function ContinuousNumberMappingForm(props: {
                     onStop={() => {
                       setlastDraggedHandleId(h.id)
                     }}
-                    onDrag={(e, data) => {
+                    onDrag={({ x, y }) => {
                       const newValue = Number(
-                        xScale
-                          .invert(data.x - LINE_CHART_MARGIN_LEFT)
-                          .toFixed(4),
+                        xScale.invert(x - LINE_CHART_MARGIN_LEFT).toFixed(4),
                       )
                       const newVpValue = Number(
-                        yScale
-                          .invert(data.y - LINE_CHART_MARGIN_TOP)
-                          .toFixed(4),
+                        yScale.invert(y - LINE_CHART_MARGIN_TOP).toFixed(4),
                       )
 
                       if (isEndHandle) {
@@ -480,6 +475,7 @@ export function ContinuousNumberMappingForm(props: {
                     }}
                   >
                     <Box
+                      data-testid="continuous-mapping-handle"
                       onClick={() => setlastDraggedHandleId(h.id)}
                       sx={{
                         width: 2,
@@ -671,14 +667,14 @@ export function ContinuousNumberMappingForm(props: {
                         />
                       </IconButton>
                     </Box>
-                  </Draggable>
+                  </PointerDraggable>
                 )
               })}
             </Box>
           </Tooltip>
           <Tooltip
             placement="top"
-            title={`${m.attribute} values less than the minmum (${minState.value}) will be mapped to this height value (${m.ltMinVpValue}).`}
+            title={`${m.attribute} values less than the minimum (${minState.value}) will be mapped to this value (${m.ltMinVpValue}).`}
           >
             <Paper
               variant="outlined"
@@ -720,7 +716,7 @@ export function ContinuousNumberMappingForm(props: {
 
           <Tooltip
             placement="top"
-            title={`${m.attribute} values greater than the maximum (${maxState.value}) will be mapped to this height value (${m.gtMaxVpValue}).`}
+            title={`${m.attribute} values greater than the maximum (${maxState.value}) will be mapped to this value (${m.gtMaxVpValue}).`}
           >
             <Paper
               variant="outlined"

@@ -14,27 +14,29 @@ Vite 8 with the Module Federation Vite plugin provides the microfrontend build:
 
 ### Important Files & Configuration
 
-| File                      | Purpose                                                                                                                                                                                 |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/assets/config.json`  | Runtime configuration: NDEx server URL, thresholds (`maxNetworkElementsThreshold: 26000`, `maxEdgeCountThreshold: 20000`, `maxNetworkFileSize: 500MB`), Keycloak auth, Google Analytics |
-| `src/assets/apps.json`    | External Module Federation app definitions                                                                                                                                              |
-| `src/debug.ts`            | Structured logging system (debug package)                                                                                                                                               |
-| `src/AppConfigContext.ts` | React context for runtime app configuration                                                                                                                                             |
-| `src/custom.d.ts`         | Global TypeScript type declarations                                                                                                                                                     |
-| `src/boot/`               | The entire startup path — boot shell, phase orchestrator, instrumentation. See `src/boot/boot_docs/boot.md`                                                                              |
-| `src/boot/bootstrap.tsx`  | Boot entry (calls `enableMapSet()`, sets up logging, renders)                                                                                                                            |
+| File                      | Purpose                                                                                                                                                                                                                                                                         |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/assets/config.json`  | Runtime configuration: NDEx server URL, thresholds (`maxNetworkElementsThreshold: 26000`, `maxEdgeCountThreshold: 20000`, `maxNetworkFileSize: 500MB`), Keycloak auth, Google Analytics ID. Named analytics events go through `trackEvent` (`src/data/analytics/trackEvent.ts`) |
+| `src/assets/apps.json`    | External Module Federation app definitions                                                                                                                                                                                                                                      |
+| `src/debug.ts`            | Structured logging system (debug package)                                                                                                                                                                                                                                       |
+| `src/AppConfigContext.ts` | React context for runtime app configuration                                                                                                                                                                                                                                     |
+| `src/custom.d.ts`         | Global TypeScript type declarations                                                                                                                                                                                                                                             |
+| `src/boot/`               | The entire startup path — boot shell, phase orchestrator, instrumentation. See `src/boot/boot_docs/boot.md`                                                                                                                                                                     |
+| `src/boot/bootstrap.tsx`  | Boot entry (calls `enableMapSet()`, sets up logging, renders)                                                                                                                                                                                                                   |
 
 **Environment variables:** The `.env` file exists but is unused. Build-time metadata is injected through Vite's `define` option.
 
 ### Scripts
 
-| Script                                       | Purpose                                         |
-| -------------------------------------------- | ----------------------------------------------- |
-| `scripts/generate-test-fixtures/`            | Generate CX2, SIF, table, and URL test fixtures |
-| `scripts/generate-model-diagram/`            | Generate Mermaid diagrams of model dependencies |
-| `scripts/generate-state-diagram/`            | Generate state structure diagrams               |
-| `scripts/download-ndex-networks.ts`          | Download networks from NDEx for testing         |
-| `scripts/manual-database-snapshot-export.js` | Export IndexedDB snapshots                      |
-| `scripts/batch-renaming/`                    | CSV-based batch file renaming with git-mv       |
+| Script                                       | Purpose                                                                                                           |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `scripts/generate-test-fixtures/`            | Generate CX2, SIF, table, and URL test fixtures                                                                   |
+| `scripts/generate-model-diagram/`            | Generate Mermaid diagrams of model dependencies                                                                   |
+| `scripts/generate-state-diagram/`            | Generate state structure diagrams                                                                                 |
+| `scripts/download-ndex-networks.ts`          | Download networks from NDEx for testing                                                                           |
+| `scripts/manual-database-snapshot-export.js` | Export IndexedDB snapshots                                                                                        |
+| `scripts/check-manual-drift.mjs`             | List manual pages a branch's changes may make stale (CI job **Manual Drift**)                                     |
+| `scripts/capture-manual-screenshots.mjs`     | Capture the in-app manual's screenshots from their recipes (workflow **Manual Screenshots** for committed images) |
+| `scripts/batch-renaming/`                    | CSV-based batch file renaming with git-mv                                                                         |
 
 ---

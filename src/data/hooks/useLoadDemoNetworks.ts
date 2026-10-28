@@ -9,6 +9,7 @@ import { useUrlNavigation } from './navigation/useUrlNavigation'
 import { useCredentialStore } from './stores/CredentialStore'
 import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import { useWorkspaceStore } from './stores/WorkspaceStore'
+import { trackEvent } from '@/data/analytics/trackEvent'
 
 export type DemoNetworksLoadStatus = 'idle' | 'loading' | 'error'
 
@@ -76,6 +77,10 @@ export const useLoadDemoNetworks = (): UseLoadDemoNetworksReturn => {
           },
           {} as Record<IdType, NetworkSummary>,
         ),
+      )
+
+      resolvedIds.forEach(() =>
+        trackEvent('network_open', { source: 'demo', format: 'cx2' }),
       )
 
       const firstId = resolvedIds[0]

@@ -98,6 +98,33 @@ describe('DropdownMenu keyboard access', () => {
     expect(command).toHaveBeenCalledTimes(2)
   })
 
+  it('names its shortcuts on the menuitem, for template and label rows', () => {
+    renderOpenMenu([
+      {
+        template: <span>Undo</span>,
+        keyShortcuts: 'Control+Z Meta+Z',
+      },
+      { label: 'Run', command: vi.fn(), keyShortcuts: 'Control+R' },
+      { label: 'Plain', command: vi.fn() },
+    ])
+
+    expect(
+      screen
+        .getByRole('menuitem', { name: 'Undo' })
+        .getAttribute('aria-keyshortcuts'),
+    ).toBe('Control+Z Meta+Z')
+    expect(
+      screen
+        .getByRole('menuitem', { name: 'Run' })
+        .getAttribute('aria-keyshortcuts'),
+    ).toBe('Control+R')
+    expect(
+      screen
+        .getByRole('menuitem', { name: 'Plain' })
+        .hasAttribute('aria-keyshortcuts'),
+    ).toBe(false)
+  })
+
   it('does not activate a disabled item and marks it aria-disabled', () => {
     const command = vi.fn()
     renderOpenMenu([{ label: 'Run', command, disabled: true }])

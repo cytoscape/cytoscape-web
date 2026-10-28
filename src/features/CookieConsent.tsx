@@ -1,9 +1,14 @@
 import Cookies from 'js-cookie'
 import { CookieConsent } from 'react-cookie-consent'
 
+import { initializeGoogleAnalytics } from '../boot/googleAnalytics'
+import { COOKIE_CONSENT_NAME } from '../data/analytics/trackEvent'
+import { MANUAL_ROUTE_SEGMENT } from '../data/db/dbScope'
 import { useCrashDataConsent } from '../data/hooks/useCrashDataConsent'
+import { logApp } from '../debug'
 
-export const COOKIE_NAME = 'cytoscapeWebCookieConsent'
+// Defined beside trackEvent, which reads it before sending an event.
+export const COOKIE_NAME = COOKIE_CONSENT_NAME
 
 export const CookieConsentWidget: React.FC = () => {
   const {
@@ -37,6 +42,13 @@ export const CookieConsentWidget: React.FC = () => {
         // Keep crash reporting enabled (opt-out model). Persist "accepted" so we don't
         // treat this as an undecided state forever.
         acceptCrashReports()
+        // The banner writes the consent cookie before calling onAccept, so
+        // GA starts now rather than on the next visit (#855).
+        try {
+          initializeGoogleAnalytics()
+        } catch (cause) {
+          logApp.warn('[CookieConsent]: analytics initialization failed', cause)
+        }
       }}
       cookieName={COOKIE_NAME}
       style={{ background: '#4F4F4F' }}
@@ -55,8 +67,11 @@ export const CookieConsentWidget: React.FC = () => {
       This site uses cookies to support Cytoscape Web’s network visualization
       tools and improve your experience. By accepting, you consent to our data
       practices.{' '}
+      {/* A new tab, so reading the policy never unloads the editor. */}
       <a
-        href="https://github.com/cytoscape/cytoscape-web/blob/development/privacy-policy.md"
+        href={`${import.meta.env.BASE_URL}${MANUAL_ROUTE_SEGMENT}/privacy-policy`}
+        target="_blank"
+        rel="noopener noreferrer"
         style={{ color: '#e0e0e0' }}
       >
         Learn more

@@ -5,6 +5,7 @@
 // immediately; opening without one keeps the browse-mode listing.
 // Also the search itself: one v3 search call with no visibility filter,
 // which NDEx answers with public and private results in one ranked list.
+// And the network size limits, which decide which rows can be selected.
 
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
@@ -12,6 +13,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import Keycloak from 'keycloak-js'
 
+import { AppConfigContext, defaultAppConfig } from '@/AppConfigContext'
 import { KeycloakContext } from '@/boot/keycloak'
 import { searchNdexFiles } from '@/data/external-api/ndex'
 import { useCredentialStore } from '@/data/hooks/stores/CredentialStore'
@@ -280,4 +282,92 @@ describe('LoadFromNdexDialog search', () => {
     expect(await screen.findByText('Only network')).toBeTruthy()
     expect(screen.queryByTestId('load-from-ndex-load-more')).toBeNull()
   })
+})
+
+describe('LoadFromNdexDialog size limits', () => {
+  const limits = {
+    ...defaultAppConfig,
+    maxEdgeCountThreshold: 100,
+    maxNetworkElementsThreshold: 150,
+    maxNetworkFileSize: 1000,
+  }
+
+  // Shows one search result with the given counts and file size.
+  const showNetwork = async (
+    nodes: number,
+    edges: number,
+    cx2FileSize: number,
+  ): Promise<HTMLElement> => {
+    vi.mocked(searchNdexFiles)
+      .mockReset()
+      .mockResolvedValue({
+        files: [
+          {
+            uuid: 'net-1',
+            name: 'Sized network',
+            type: 'NETWORK',
+            modificationTime: 0,
+            visibility: 'PUBLIC',
+            nodes,
+            edges,
+            cx2FileSize,
+          },
+        ],
+        numFound: 1,
+      })
+    useCredentialStore.setState({ getToken: vi.fn(async () => 'token') })
+    const client = {
+      authenticated: true,
+      tokenParsed: { preferred_username: 'me' },
+    } as unknown as Keycloak
+    render(
+      <AppConfigContext.Provider value={limits}>
+        <KeycloakContext.Provider value={client}>
+          <MemoryRouter>
+            <LoadFromNdexDialog
+              open={true}
+              handleClose={vi.fn()}
+              initialQuery="sized"
+            />
+          </MemoryRouter>
+        </KeycloakContext.Provider>
+      </AppConfigContext.Provider>,
+    )
+    await screen.findByText('Sized network')
+    return screen.getByTestId('load-from-ndex-network-row-net-1')
+  }
+
+  it('lets a network with more edges than the edge threshold be selected when it is small enough', async () => {
+    const row = await showNetwork(20, 120, 500)
+
+    expect(row.getAttribute('aria-disabled')).toBeNull()
+    expect(
+      screen.getByTestId('load-from-ndex-network-checkbox-net-1'),
+    ).toBeTruthy()
+  })
+
+  // Whatever the file size: see "Known Limitation" in ToolBar_docs/ToolBar.md.
+  it('lets a network with at most the edge threshold be selected', async () => {
+    const row = await showNetwork(10_000, 100, 1e9)
+
+    expect(row.getAttribute('aria-disabled')).toBeNull()
+  })
+
+  it.each([
+    ['too many nodes and edges combined', 40, 120, 500],
+    ['a file at the size limit', 20, 120, 1000],
+  ])(
+    'disables a network with %s and says why',
+    async (_case, nodes, edges, cx2FileSize) => {
+      const row = await showNetwork(nodes, edges, cx2FileSize)
+
+      expect(row.getAttribute('aria-disabled')).toBe('true')
+      expect(row.getAttribute('aria-label')).toBe(
+        'Network is too large to be loaded into Cytoscape Web.',
+      )
+      expect(
+        screen.queryByTestId('load-from-ndex-network-checkbox-net-1'),
+      ).toBeNull()
+    },
+  )
 })

@@ -44,7 +44,11 @@ if (remoteEntryExists) {
   check('remoteEntry.js exports `init`', /as init\b/.test(src))
 }
 
-// 2. Locate the (non-ssr) virtual exposes chunk and assert it lists every key.
+// 2. Locate the exposes map and assert it lists every key.
+// @module-federation/vite has emitted it in two places:
+//   <=1.16  a separate (non-ssr) `assets/virtual_mf-exposes*.js` chunk
+//   >=1.23  inline in remoteEntry.js (`var l={"./ApiTypes":async()=>...`)
+// Use the separate chunk when the build has one, remoteEntry.js otherwise.
 const assetsDir = path.resolve(DIST, 'assets')
 const exposesChunk = fs.existsSync(assetsDir)
   ? fs
@@ -56,15 +60,22 @@ const exposesChunk = fs.existsSync(assetsDir)
           f.endsWith('.js'),
       )
   : undefined
+const exposesPath =
+  exposesChunk !== undefined
+    ? path.resolve(assetsDir, exposesChunk)
+    : remoteEntryExists
+      ? remoteEntryPath
+      : undefined
+const exposesLabel = exposesChunk ?? FEDERATION_FILENAME
 
-check('virtual_mf-exposes chunk present', exposesChunk !== undefined)
-if (exposesChunk !== undefined) {
-  const chunkSrc = fs.readFileSync(
-    path.resolve(assetsDir, exposesChunk),
-    'utf8',
-  )
+check('exposes map present', exposesPath !== undefined)
+if (exposesPath !== undefined) {
+  const chunkSrc = fs.readFileSync(exposesPath, 'utf8')
   for (const key of Object.keys(FEDERATION_EXPOSES)) {
-    check(`expose key in chunk: "${key}"`, chunkSrc.includes(`"${key}":`))
+    check(
+      `expose key in ${exposesLabel}: "${key}"`,
+      chunkSrc.includes(`"${key}":`),
+    )
   }
 }
 
@@ -102,10 +113,9 @@ for (const name of FEDERATION_SHARED_SINGLETONS) {
   check(`shared singleton registered: ${name}`, registered)
 }
 
-// 4. Non-empty output: at least the exposes chunk carries real content.
-if (exposesChunk !== undefined) {
-  const size = fs.statSync(path.resolve(assetsDir, exposesChunk)).size
-  check('exposes chunk is non-empty', size > 0)
+// 4. Non-empty output: at least the exposes map carries real content.
+if (exposesPath !== undefined) {
+  check('exposes map is non-empty', fs.statSync(exposesPath).size > 0)
 }
 
 // --- summary ---

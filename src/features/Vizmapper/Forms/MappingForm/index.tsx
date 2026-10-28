@@ -55,6 +55,13 @@ const mappingFnIconMap: Record<MappingFunctionType, React.ReactElement> = {
   [MappingFunctionType.Continuous]: <ContinuousMappingIcon />,
 }
 
+// Select reads `value` from its direct children, so every option must be a
+// MenuItem: wrapping one in a Tooltip leaves the current value unmatched and
+// the Select blank (#831). A disabled MenuItem ignores the pointer, so its
+// content takes the pointer back to show the tooltip and swallows the click.
+const disabledOptionSx: SxProps = { pointerEvents: 'auto' }
+const stopOptionClick = (e: React.MouseEvent): void => e.stopPropagation()
+
 function MappingFormContent(props: {
   currentNetworkId: IdType
   visualProperty: VisualProperty<VisualPropertyValueType>
@@ -393,15 +400,23 @@ function MappingFormContent(props: {
               onChange={(e) => handleColumnChange(e.target.value)}
             >
               {columns.map((c) => {
-                const columnMenuItem = (
-                  <MenuItem
-                    disabled={!validColumnNames.includes(c.name)}
-                    key={c.name}
-                    value={c.name}
-                  >
+                const enabled =
+                  validColumnNames.includes(c.name) || c.name === column
+                const title = enabled
+                  ? `Data type: ${c.type}`
+                  : `${mappingType} mapping functions on column '${
+                      c.name
+                    }' cannot be applied to property ${
+                      props.visualProperty.displayName
+                    }`
+                return (
+                  <MenuItem disabled={!enabled} key={c.name} value={c.name}>
+                    {/* describeChild: the tooltip describes the option; the
+                        column name stays its accessible name. */}
                     <Tooltip
                       arrow
-                      title={`Data type: ${c.type}`}
+                      describeChild
+                      title={title}
                       placement="right"
                     >
                       <Box
@@ -409,42 +424,15 @@ function MappingFormContent(props: {
                           textOverflow: 'ellipsis',
                           overflow: 'hidden',
                           whiteSpace: 'nowrap',
+                          ...(enabled ? {} : disabledOptionSx),
                         }}
+                        onClick={enabled ? undefined : stopOptionClick}
                       >
                         {c.name}
                       </Box>
                     </Tooltip>
                   </MenuItem>
                 )
-
-                if (validColumnNames.includes(c.name)) {
-                  return columnMenuItem
-                } else {
-                  const invalidColumnTooltipStr = `${mappingType} mapping functions${
-                    c.name !== '' ? ` on column '${c.name}' ` : ' '
-                  }cannot be applied to property ${
-                    props.visualProperty.displayName
-                  }`
-
-                  return (
-                    <Tooltip
-                      arrow
-                      key={c.name}
-                      title={invalidColumnTooltipStr}
-                      placement="right"
-                    >
-                      <Box
-                        sx={{
-                          textOverflow: 'ellipsis',
-                          overflow: 'hidden',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {columnMenuItem}
-                      </Box>
-                    </Tooltip>
-                  )
-                }
               })}
             </Select>
           </FormControl>
@@ -462,34 +450,35 @@ function MappingFormContent(props: {
               }
             >
               {Object.values(MappingFunctionType).map((mappingFnType) => {
-                const mappingFnMenuItem = (
+                const enabled =
+                  validMappings.includes(mappingFnType) ||
+                  mappingFnType === mappingType
+                return (
                   <MenuItem
-                    disabled={!validMappings.includes(mappingFnType)}
+                    disabled={!enabled}
                     key={mappingFnType}
                     value={mappingFnType}
                   >
-                    {mappingFnType}
+                    {enabled ? (
+                      mappingFnType
+                    ) : (
+                      <Tooltip
+                        arrow
+                        describeChild
+                        placement="right"
+                        title={`${mappingFnType} mapping functions${
+                          column !== '' ? ` on column '${column}' ` : ' '
+                        }cannot be applied to property ${
+                          props.visualProperty.displayName
+                        }`}
+                      >
+                        <Box sx={disabledOptionSx} onClick={stopOptionClick}>
+                          {mappingFnType}
+                        </Box>
+                      </Tooltip>
+                    )}
                   </MenuItem>
                 )
-                if (validMappings.includes(mappingFnType)) {
-                  return mappingFnMenuItem
-                } else {
-                  const invalidMappingTooltipStr = `${mappingFnType} mapping functions${
-                    column !== '' ? ` on column '${column}' ` : ' '
-                  }cannot be applied to property ${
-                    props.visualProperty.displayName
-                  }`
-                  return (
-                    <Tooltip
-                      arrow
-                      placement="right"
-                      key={mappingFnType}
-                      title={invalidMappingTooltipStr}
-                    >
-                      <Box>{mappingFnMenuItem}</Box>
-                    </Tooltip>
-                  )
-                }
               })}
             </Select>
           </FormControl>
@@ -530,10 +519,14 @@ export function MappingForm(props: {
   const viewBox =
     props.visualProperty.mapping?.type == null ? (
       <EmptyVisualPropertyViewBox
+        data-testid="mapping-form-view-box"
         onClick={(e) => showForm(e.currentTarget)}
       ></EmptyVisualPropertyViewBox>
     ) : (
-      <VisualPropertyViewBox onClick={(e) => showForm(e.currentTarget)}>
+      <VisualPropertyViewBox
+        data-testid="mapping-form-view-box"
+        onClick={(e) => showForm(e.currentTarget)}
+      >
         {props.visualProperty.mapping?.type != null
           ? mappingFnIconMap[props.visualProperty.mapping?.type]
           : ''}

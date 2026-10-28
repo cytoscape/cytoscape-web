@@ -35,6 +35,11 @@ The `Vizmapper/Forms` feature provides the editable UI for configuring visual pr
    - Confirm → store updates via `VisualStyleStore` and undo stack push if applicable
    - Cancel → local state reset; no store updates
 
+### Column and Mapping Type
+- A column or mapping type that `typesCanBeMapped` rejects for the other selection is disabled, with a tooltip naming the conflict.
+- The current column and mapping type stay enabled even when rejected. A CX2 file can carry a mapping the form would not offer, such as a passthrough from an integer column onto a color, and the form shows it instead of opening blank (#831).
+- Every option is a direct `MenuItem` child of its `Select`. MUI matches the `Select` value against those children's `value` props, so an option wrapped in a `Tooltip` leaves the current value unmatched.
+
 ### Discrete Mapping
 - Builds the value list from the selected column and existing mapping keys.
 - Allows multi-select operations (select all/none); batch delete of mapping entries.
@@ -43,6 +48,8 @@ The `Vizmapper/Forms` feature provides the editable UI for configuring visual pr
 ### Continuous Mapping
 - Validates attribute types (only numeric types are eligible).
 - Supports min/max editing and control point manipulation (add/remove/drag).
+- Dragging a handle moves its control point to the value under the pointer. In the number form a handle moves on both axes (attribute and visual property value) and stays inside the chart; its end handles move up and down only. In the color and discrete forms an inner handle moves along the gradient and stays on it; the end handles do not move.
+- The handles use `PointerDraggable` (`src/components/PointerDraggable.tsx`), which measures every move from the press. react-draggable's `<Draggable>` added each move to its last committed position, and React 18 commits mouse-move updates in a later task, so moves were lost and a handle (and the value it set) fell behind the pointer (#901). `ContinuousMappingHandleDrag.spec.tsx` guards this.
 - Numeric mappings display a line chart; color mappings display a gradient and color editors.
 
 ### Bypass
