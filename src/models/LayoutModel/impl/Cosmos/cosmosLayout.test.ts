@@ -79,6 +79,32 @@ describe('fromCosmosPositions', () => {
   })
 })
 
+describe('fromCosmosPositions with incomplete output', () => {
+  // @cosmos.gl/graph returns [] from getPointPositions() when the graph was
+  // destroyed or never got a WebGL context.
+  it('throws instead of mapping an empty result to NaN positions', () => {
+    expect(() => fromCosmosPositions(nodes, [])).toThrow(
+      'Cosmos returned 0 coordinates for 3 nodes',
+    )
+  })
+
+  it('throws on a short result', () => {
+    expect(() => fromCosmosPositions(nodes, [1, 2, 3, 4])).toThrow(
+      'Cosmos returned 4 coordinates for 3 nodes',
+    )
+  })
+
+  it.each([NaN, Infinity, -Infinity])('throws on a %s coordinate', (bad) => {
+    expect(() => fromCosmosPositions(nodes, [1, 2, 3, bad, 5, 6])).toThrow(
+      'Cosmos returned a non-finite coordinate for node b',
+    )
+  })
+
+  it('accepts an empty network', () => {
+    expect(fromCosmosPositions([], []).size).toBe(0)
+  })
+})
+
 describe('CosmosLayout.apply', () => {
   beforeEach(() => {
     vi.useFakeTimers()
@@ -121,6 +147,18 @@ describe('CosmosLayout.apply', () => {
         ['c', [30, 30]],
       ]),
     )
+    expect(graphMock.destroy).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects without touching positions when WebGL is unavailable', async () => {
+    graphMock.getPointPositions.mockReturnValue([])
+    const afterLayout = vi.fn()
+    const done = CosmosLayout.apply(nodes, [], afterLayout, cosmos)
+    const assertion = expect(done).rejects.toThrow('0 coordinates for 3 nodes')
+    await vi.waitFor(() => expect(graphMock.render).toHaveBeenCalled())
+    await vi.advanceTimersByTimeAsync(2400)
+    await assertion
+    expect(afterLayout).not.toHaveBeenCalled()
     expect(graphMock.destroy).toHaveBeenCalledTimes(1)
   })
 

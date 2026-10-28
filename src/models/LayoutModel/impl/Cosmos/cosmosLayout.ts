@@ -52,15 +52,30 @@ export const toCosmosInput = (
 
 /**
  * Maps the positions @cosmos.gl/graph reports ([x0, y0, x1, y1, ...]) back to
- * node ids, scaled up 10x for the network view.
+ * node ids, scaled up 10x for the network view. Throws on anything but one
+ * finite pair per node: getPointPositions() returns [] when the graph has no
+ * WebGL context or was destroyed, and that must fail the layout rather than
+ * move every node to NaN.
  */
 export const fromCosmosPositions = (
   nodes: Node[],
   positions: ArrayLike<number>,
 ): Map<IdType, [number, number]> => {
+  if (positions.length !== nodes.length * 2) {
+    throw new Error(
+      `Cosmos returned ${positions.length} coordinates for ${nodes.length} nodes`,
+    )
+  }
   const positionMap = new Map<IdType, [number, number]>()
   nodes.forEach((node, i) => {
-    positionMap.set(node.id, [positions[i * 2] * 10, positions[i * 2 + 1] * 10])
+    const x = positions[i * 2]
+    const y = positions[i * 2 + 1]
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      throw new Error(
+        `Cosmos returned a non-finite coordinate for node ${node.id}`,
+      )
+    }
+    positionMap.set(node.id, [x * 10, y * 10])
   })
   return positionMap
 }
