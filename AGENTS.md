@@ -106,7 +106,9 @@ Plugins import from the `cyweb/` prefix. Check `FEDERATION_EXPOSES` directly for
 
 ### Prerequisites
 
-**Node 24.** `package.json` sets `engines.node >= 24.0.0` and `.npmrc` sets
+**Node 24.22.1.** `.nvmrc` pins it (CI reads the same file), `package.json` sets
+`engines.node >= 24.22.1` — the 24.x release that fixes the October 2026 Node.js
+security issues, including CVE-2026-111497 — and `.npmrc` sets
 `engine-strict=true`, so `npm install` hard-fails on anything older, and Vite 8
 needs 22.12+ regardless. On a machine whose default `node` is older, the
 failures are cryptic — `vitest` dies loading its config with `ERR_REQUIRE_ESM`

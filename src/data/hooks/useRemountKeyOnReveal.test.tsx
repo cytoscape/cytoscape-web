@@ -5,11 +5,22 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { useRemountKeyOnReveal } from './useRemountKeyOnReveal'
 
-// allotment initializes use-resize-observer at mount; jsdom has no
-// ResizeObserver, so provide an inert stub (sizes come from the fallback
-// getBoundingClientRect path instead).
+// jsdom has no ResizeObserver. The stub reports one non-zero size per observed
+// element: allotment 1.20+ builds its split view only after its observer does,
+// so with an inert stub no pane would ever be added or removed and the tests
+// below would pass vacuously after an upgrade (#913).
 class ResizeObserverStub {
-  observe(): void {}
+  constructor(private readonly callback: ResizeObserverCallback) {}
+  observe(target: Element): void {
+    const size = { inlineSize: 800, blockSize: 600 }
+    const entry = {
+      target,
+      contentRect: { width: 800, height: 600 },
+      contentBoxSize: [size],
+      borderBoxSize: [size],
+    } as unknown as ResizeObserverEntry
+    this.callback([entry], this as unknown as ResizeObserver)
+  }
   unobserve(): void {}
   disconnect(): void {}
 }
@@ -239,7 +250,11 @@ describe('useRemountKeyOnReveal', () => {
       keys.push(useRemountKeyOnReveal())
       return null
     }
-    const ProbeHarness = ({ suspended }: { suspended: boolean }): ReactElement => (
+    const ProbeHarness = ({
+      suspended,
+    }: {
+      suspended: boolean
+    }): ReactElement => (
       <Suspense fallback={null}>
         <Gate suspended={suspended} />
         <Probe />

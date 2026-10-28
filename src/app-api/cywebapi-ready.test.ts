@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 // cywebapi:ready fires correctly after the assignment.
 //
 // CyWebApi itself is not imported here (that would pull in LayoutStore →
-// @cosmograph/cosmos which requires a transform that Jest cannot apply).
+// @cosmos.gl/graph which requires a transform that Jest cannot apply).
 // The structural shape of CyWebApi is tested by the individual domain API
 // tests (elementApi.test.ts, networkApi.test.ts, …).
 // This file focuses solely on the runtime wiring contract:

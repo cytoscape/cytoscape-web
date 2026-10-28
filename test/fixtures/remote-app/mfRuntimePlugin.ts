@@ -4,7 +4,9 @@
 // Mirrors what the app-examples repo ships in every migrated app (its
 // vite-migration spec §6.4). Kept byte-for-byte equivalent in behaviour on
 // purpose: this fixture is how the host repo proves the mechanism works against
-// the real loader before any example depends on it.
+// the real loader before any example depends on it. Since #913 it also matches
+// the host remote by `alias`, which @module-federation/vite 1.23 requires; an
+// app must carry the same change before it upgrades that plugin.
 //
 // The host publishes its own remoteEntry.js URL on `window.__CYWEB_HOST__`
 // during boot (src/app-api/federation/hostDescriptor.ts); this replaces the
@@ -18,7 +20,7 @@ import { CYWEB_HOST_REQUIRED } from './cywebHostSentinel'
 // than imported from @module-federation/runtime: that package's types reach
 // @module-federation/sdk, whose ModuleFederationPlugin.d.ts does
 // `import webpack from "webpack"` — a package neither repo depends on.
-type RemoteEntryRecord = { name?: string; entry?: string }
+type RemoteEntryRecord = { name?: string; alias?: string; entry?: string }
 type BeforeInitArgs = {
   userOptions: { remotes?: RemoteEntryRecord[] }
   options: { remotes?: RemoteEntryRecord[] }
@@ -34,6 +36,16 @@ type MfRuntimePlugin = {
 }
 
 const HOST_REMOTE_NAME = 'cyweb'
+
+/**
+ * Whether a remote record is the host. @module-federation/vite up to 1.16
+ * registers it under `name: 'cyweb'`; 1.23 namespaces the name
+ * (`__mfe_internal__<app>__mf_owner__<id>__cyweb`) and keeps the key the app
+ * declared in `alias` (#913). Match either exactly — never a name suffix,
+ * which another remote could share.
+ */
+const isHostRemote = (remote: RemoteEntryRecord): boolean =>
+  remote.alias === HOST_REMOTE_NAME || remote.name === HOST_REMOTE_NAME
 
 /**
  * The host's entry URL, or undefined if the descriptor cannot be used for
@@ -79,7 +91,7 @@ export default function cywebHostResolver(): MfRuntimePlugin {
       // only one of the two works in exactly one of the two cases.
       for (const list of [args.userOptions.remotes, args.options.remotes]) {
         for (const remote of list ?? []) {
-          if (remote.name !== HOST_REMOTE_NAME || !('entry' in remote)) continue
+          if (!isHostRemote(remote) || !('entry' in remote)) continue
 
           if (hostEntry !== undefined) {
             remote.entry = hostEntry
