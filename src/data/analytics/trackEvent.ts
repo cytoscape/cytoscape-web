@@ -10,7 +10,8 @@ import bundledApps from '@/assets/apps.json'
  *
  * Params carry categories only. Never put a network UUID or name, a file
  * name, a user id or email, or a service URL in one: a private network's UUID
- * or a lab's server URL would reach Google.
+ * or a lab's server URL would reach Google. GA's automatic page fields would
+ * carry the UUIDs too, so `trackEvent` replaces them (`eventPageContext`).
  */
 export type AnalyticsEvent =
   | {
@@ -43,8 +44,34 @@ export const COOKIE_CONSENT_NAME = 'cytoscapeWebCookieConsent'
 const MAX_PENDING = 50
 let pending: AnalyticsEvent[] = []
 
-const accepted = (): boolean =>
+/** True once the visitor clicked Accept on the cookie banner. */
+export const hasAnalyticsConsent = (): boolean =>
   getCookieConsentValue(COOKIE_CONSENT_NAME) === 'true'
+
+/**
+ * Overrides for the page fields GA attaches to every hit. The real URL holds
+ * the workspace and network UUIDs (`/<workspaceId>/networks/<networkId>`)
+ * and can hold `?import=` URLs; the referrer can be an NDEx network page. An
+ * event carries the app's base URL and the referrer's origin instead.
+ */
+export const eventPageContext = (): {
+  page_location: string
+  page_referrer: string
+  page_title: string
+} => {
+  let referrerOrigin = ''
+  try {
+    referrerOrigin =
+      document.referrer === '' ? '' : new URL(document.referrer).origin
+  } catch {
+    // An unparseable referrer is dropped.
+  }
+  return {
+    page_location: `${window.location.origin}${import.meta.env.BASE_URL}`,
+    page_referrer: referrerOrigin,
+    page_title: 'Cytoscape Web',
+  }
+}
 
 /**
  * Send one named event. A no-op unless a GA ID is configured and the user
@@ -58,7 +85,7 @@ export const trackEvent = <N extends EventName>(
   name: N,
   params: ParamsOf<N>,
 ): void => {
-  if (appConfig.googleAnalyticsId === '' || !accepted()) {
+  if (appConfig.googleAnalyticsId === '' || !hasAnalyticsConsent()) {
     return
   }
   if (!ReactGA.isInitialized) {
@@ -67,7 +94,7 @@ export const trackEvent = <N extends EventName>(
     }
     return
   }
-  ReactGA.event(name, params)
+  ReactGA.event(name, { ...params, ...eventPageContext() })
 }
 
 /** Send the events held while GA was starting. Called once GA is up. */

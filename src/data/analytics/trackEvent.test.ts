@@ -21,10 +21,18 @@ vi.mock('@/assets/config.json', () => ({
 import {
   catalogAppId,
   catalogServiceId,
+  eventPageContext,
   flushPendingEvents,
   resetAnalyticsForTests,
   trackEvent,
 } from './trackEvent'
+
+/** The page fields every event carries in place of GA's automatic ones. */
+const PAGE = {
+  page_location: `${window.location.origin}/`,
+  page_referrer: '',
+  page_title: 'Cytoscape Web',
+}
 
 describe('trackEvent', () => {
   beforeEach(() => {
@@ -42,6 +50,40 @@ describe('trackEvent', () => {
 
     expect(mocks.ga.event).toHaveBeenCalledWith('image_export', {
       format: 'png',
+      ...PAGE,
+    })
+  })
+
+  // GA attaches page_location to every hit, and the app's URL is
+  // /<workspaceId>/networks/<networkId>?import=… (Copilot review on #910).
+  it('replaces the page fields, so no UUID or query reaches GA', () => {
+    mocks.ga.isInitialized = true
+    window.history.pushState(
+      {},
+      '',
+      '/1f0e-workspace/networks/9a8b-network?import=https://lab.internal/x.cx2',
+    )
+    Object.defineProperty(document, 'referrer', {
+      value: 'https://www.ndexbio.org/viewer/networks/9a8b-network',
+      configurable: true,
+    })
+
+    trackEvent('image_export', { format: 'png' })
+
+    const sent = JSON.stringify(mocks.ga.event.mock.calls)
+    expect(sent).not.toContain('workspace')
+    expect(sent).not.toContain('network?')
+    expect(sent).not.toContain('9a8b')
+    expect(sent).not.toContain('lab.internal')
+    expect(eventPageContext()).toEqual({
+      ...PAGE,
+      page_referrer: 'https://www.ndexbio.org',
+    })
+
+    window.history.pushState({}, '', '/')
+    Object.defineProperty(document, 'referrer', {
+      value: '',
+      configurable: true,
     })
   })
 
@@ -76,8 +118,8 @@ describe('trackEvent', () => {
     flushPendingEvents()
 
     expect(mocks.ga.event.mock.calls).toEqual([
-      ['network_open', { source: 'ndex_link', format: 'cx2' }],
-      ['network_open', { source: 'url_import', format: 'cx2' }],
+      ['network_open', { source: 'ndex_link', format: 'cx2', ...PAGE }],
+      ['network_open', { source: 'url_import', format: 'cx2', ...PAGE }],
     ])
 
     flushPendingEvents()
