@@ -3,6 +3,7 @@ import { ACCESS_KEY_QUERY_KEY } from '@/data/external-api/ndex/accessKeys'
 import { useCredentialStore } from '@/data/hooks/stores/CredentialStore'
 import { logStartup } from '@/debug'
 import type { AppShellBootContext, WorkspaceDraft } from './appShellBootContext'
+import { trackEvent } from '@/data/analytics/trackEvent'
 
 /**
  * How long boot waits for the NDEx summary before giving up on the deep link.
@@ -111,4 +112,5 @@ export const resolveDeepLink = async (
   summaries[networkIdParam] = summary
   workspace.currentNetworkId = networkIdParam
   workspace.networkIds.push(networkIdParam)
+  trackEvent('network_open', { source: 'ndex_link', format: 'cx2' })
 }

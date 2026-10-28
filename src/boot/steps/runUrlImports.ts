@@ -6,6 +6,7 @@ import { useViewModelStore } from '@/data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '@/data/hooks/stores/VisualStyleStore'
 import { fetchUrlCx } from '@/models/CxModel/fetchUrlCxUtil'
 import type { AppShellBootContext, WorkspaceDraft } from './appShellBootContext'
+import { trackEvent } from '@/data/analytics/trackEvent'
 
 const IMPORT_QUERY_KEY = 'import'
 
@@ -63,6 +64,7 @@ export const runUrlImports = async (
         .add(importedNetworkId, visualStyle, visualStyleSet)
       useTableStore.getState().add(importedNetworkId, nodeTable, edgeTable)
       useViewModelStore.getState().add(importedNetworkId, networkViews[0])
+      trackEvent('network_open', { source: 'url_import', format: 'cx2' })
     } catch (error) {
       draft.errors.push(
         `Unable to import network from query params at url ${importUrl}.`,

@@ -22,6 +22,8 @@ import { lazy, ReactElement, Suspense, useRef, useState } from 'react'
 import { CyDialog } from '@/components/CyDialog'
 import { useNetworkSummaryStore } from '../../../../data/hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
+import { trackEvent } from '@/data/analytics/trackEvent'
+import { logUi } from '@/debug'
 import { CITATIONS, shortCitation } from '../../HelpMenu/citations'
 import { useCopyCitations } from '../../HelpMenu/useCopyCitations'
 
@@ -115,13 +117,20 @@ const ExportImageContent = (props: ExportImageProps): ReactElement => {
     setLoading(true)
     try {
       // Call the appropriate save function based on file type
-      if (fileType === FileTypes.PNG && pngFormRef.current) {
-        await pngFormRef.current.save()
-      } else if (fileType === FileTypes.PDF && pdfFormRef.current) {
-        await pdfFormRef.current.save()
-      } else if (fileType === FileTypes.SVG && svgFormRef.current) {
-        await svgFormRef.current.save()
+      const form = {
+        [FileTypes.PNG]: pngFormRef,
+        [FileTypes.PDF]: pdfFormRef,
+        [FileTypes.SVG]: svgFormRef,
+      }[fileType].current
+      if (form) {
+        await form.save()
+        // After the save, so a failed export is not counted.
+        trackEvent('image_export', { format: fileType })
       }
+    } catch (e) {
+      // Logged rather than rethrown: a click handler's rejection has no
+      // caller, so it surfaced only as an unhandled rejection.
+      logUi.error(`[ExportImage]: Failed to export ${fileType}`, e)
     } finally {
       setLoading(false)
       props.handleClose()

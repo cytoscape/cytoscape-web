@@ -50,6 +50,7 @@ import {
   ColumnAssignmentTypeRender,
 } from './ColumnMeaningForm'
 import { NetworkNameInput } from './NetworkNameInput'
+import { trackEvent } from '@/data/analytics/trackEvent'
 
 export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
   const text = useCreateNetworkFromTableStore((state) => state.rawText)
@@ -334,6 +335,7 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
       searchParams: new URLSearchParams(location.search),
       replace: false,
     })
+    trackEvent('network_open', { source: 'file', format: 'table' })
 
     setLoading(false)
     reset()

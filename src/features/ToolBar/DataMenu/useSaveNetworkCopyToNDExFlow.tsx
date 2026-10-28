@@ -24,6 +24,7 @@ import { MessageSeverity } from '../../../models/MessageModel'
 import { Network } from '../../../models/NetworkModel'
 import { HcxValidationSaveDialog } from '../../HierarchyViewer/components/Validation/HcxValidationSaveDialog'
 import { useHcxValidatorStore } from '../../HierarchyViewer/store/HcxValidatorStore'
+import { trackEvent } from '@/data/analytics/trackEvent'
 
 export interface SaveNetworkCopyToNDExFlow {
   /** Save a copy of the current network, asking first if its HCX is invalid. */
@@ -82,6 +83,7 @@ export const useSaveNetworkCopyToNDExFlow = (): SaveNetworkCopyToNDExFlow => {
         searchParams: new URLSearchParams(location.search),
         replace: false,
       })
+      trackEvent('ndex_save', { mode: 'copy' })
       addMessage({
         message: `Saved a copy of the current network to NDEx with new uuid ${
           uuid as string

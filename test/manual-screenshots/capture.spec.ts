@@ -24,8 +24,9 @@ import { gotoAndWaitReady, test } from '../playwright/fixtures'
  * onboarding suppressed (the `test` fixture).
  */
 
-// COOKIE_NAME in src/features/CookieConsent.tsx; that module cannot load in
-// Node (it reads import.meta), so the name is repeated here.
+// COOKIE_CONSENT_NAME in src/data/analytics/trackEvent.ts. That module imports
+// through the `@/` alias, which this spec cannot resolve, so the name is
+// repeated here.
 const COOKIE_NAME = 'cytoscapeWebCookieConsent'
 
 const ROOT = path.resolve(__dirname, '../..')

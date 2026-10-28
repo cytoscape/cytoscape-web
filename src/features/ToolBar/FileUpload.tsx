@@ -42,6 +42,7 @@ import {
   createFileValidator,
   DEFAULT_MAX_FILE_SIZE_MB,
 } from './GenericFileUploadDialog'
+import { trackEvent } from '@/data/analytics/trackEvent'
 
 const NETWORK_FILE_TYPES = ['csv', 'txt', 'tsv', 'cx2', 'sif']
 // The whole file is read into memory and parsed on the main thread, so the
@@ -186,6 +187,7 @@ export function FileUpload(props: FileUploadProps) {
           searchParams: new URLSearchParams(location.search),
           replace: false,
         })
+        trackEvent('network_open', { source: 'file', format: 'cx2' })
       }
     } catch (error) {
       logUi.error(
@@ -259,6 +261,7 @@ export function FileUpload(props: FileUploadProps) {
           searchParams: new URLSearchParams(location.search),
           replace: false,
         })
+        trackEvent('network_open', { source: 'file', format: 'sif' })
       }
     } catch (error) {
       logUi.error(

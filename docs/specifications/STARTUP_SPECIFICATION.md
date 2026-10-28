@@ -122,7 +122,9 @@ harmless even when `database` aborts into the error shell. Therefore:
 Google Analytics initialization is scheduled for browser idle time after
 `react-render` (`runOnIdle` in `src/utils/idlePrefetch.ts`): the gtag script is
 pure overhead for startup and must not compete with boot-critical chunks or
-the SSO iframe for the connection.
+the SSO iframe for the connection. It starts only when the visitor has
+accepted cookies (`cytoscapeWebCookieConsent` is `"true"`); otherwise the
+cookie banner's **Accept** starts it (#855).
 
 `publish` additionally starts a **cache-only** read of the current network
 (`src/data/prefetch/networkPrefetch.ts`) so the IndexedDB deserialization

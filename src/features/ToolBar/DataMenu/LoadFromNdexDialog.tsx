@@ -60,6 +60,7 @@ import { IdType } from '../../../models/IdType'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { NetworkSummary } from '../../../models/NetworkSummaryModel'
 import { dateFormatter } from '../../../utils/dateFormat'
+import { trackEvent } from '@/data/analytics/trackEvent'
 
 interface LoadFromNdexDialogProps {
   open: boolean
@@ -505,6 +506,9 @@ export const LoadFromNdexDialog = (
           },
           {} as Record<IdType, NetworkSummary>,
         ),
+      )
+      summaries.forEach(() =>
+        trackEvent('network_open', { source: 'ndex_dialog', format: 'cx2' }),
       )
       const nextCurrentNetworkId: IdType | undefined = summaries[0]?.externalId
 
