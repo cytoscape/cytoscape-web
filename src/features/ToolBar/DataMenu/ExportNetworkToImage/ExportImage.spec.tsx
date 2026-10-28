@@ -1,8 +1,13 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useNetworkSummaryStore } from '../../../../data/hooks/stores/NetworkSummaryStore'
 import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
+import {
+  citationsAsBibtex,
+  citationsAsText,
+  shortCitation,
+} from '../../HelpMenu/citations'
 import { ExportImage } from './ExportImage'
 
 vi.mock('../../../../data/hooks/stores/NetworkSummaryStore')
@@ -48,5 +53,50 @@ describe('ExportImage', () => {
     rerender(<ExportImage open handleClose={() => {}} />)
 
     expect(fileNameInput().value).toBe('Network B')
+  })
+})
+
+describe('ExportImage citation line', () => {
+  beforeEach(() => {
+    ;(useWorkspaceStore as unknown as Mock).mockImplementation((selector) =>
+      selector({ workspace: { currentNetworkId: 'a' } }),
+    )
+    ;(useNetworkSummaryStore as unknown as Mock).mockImplementation(
+      (selector) => selector({ summaries }),
+    )
+  })
+
+  // Export is the step before a figure goes into a paper (#883).
+  it('asks for a citation and copies it as text or BibTeX', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    })
+    render(<ExportImage open handleClose={() => {}} />)
+
+    expect(
+      screen.getByTestId('export-network-to-image-citation').textContent,
+    ).toContain('Publishing this figure? Please cite Cytoscape Web:')
+    expect(
+      screen.getByTestId('export-network-to-image-citation').textContent,
+    ).toContain(shortCitation())
+    expect(
+      screen
+        .getByTestId('export-network-to-image-citation-doi')
+        .getAttribute('href'),
+    ).toBe('https://doi.org/10.1093/nar/gkaf365')
+
+    fireEvent.click(
+      screen.getByTestId('export-network-to-image-copy-citation-button'),
+    )
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1))
+    expect(writeText).toHaveBeenLastCalledWith(citationsAsText())
+
+    fireEvent.click(
+      screen.getByTestId('export-network-to-image-copy-bibtex-button'),
+    )
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(2))
+    expect(writeText).toHaveBeenLastCalledWith(citationsAsBibtex())
   })
 })

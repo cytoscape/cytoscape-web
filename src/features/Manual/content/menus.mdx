@@ -17,21 +17,21 @@ also add layouts to the **Layout** menu and items to the right-click menu. See
 
 The **Data** menu opens, imports, saves and removes networks:
 
-| Menu item | What it does |
-| --- | --- |
-| Open Network(s) from NDEx... | Search NDEx and open one or more networks. |
-| Open Workspace from NDEx... | Open a workspace you saved to NDEx. Requires you to sign in. |
-| Open Sample Networks | Load the example networks. |
-| Open Network in Cytoscape Desktop | Send the current network to the Cytoscape desktop application. |
-| Import → Network from File..., Import → Table from File... | Load a network, or add columns to the current network, from a file. |
-| Duplicate Network | Add a copy of the current network to the workspace. |
-| Save Network to NDEx | Save changes to a network that came from NDEx. |
-| Save Copy to NDEx | Save the current network to NDEx as a new network. |
-| Download Network File (.cx2) | Save the current network to your computer. |
-| Save Workspace, Save Workspace As... | Save the whole workspace to NDEx. |
-| Export → Network to Image... | Save a PNG, SVG or PDF image of the network view. |
-| Remove Current Network, Remove All Networks | Remove networks from the workspace. You are asked to confirm; this cannot be undone. |
-| Clear Local Database | Delete everything Cytoscape Web stores in your browser and start over. See [Advanced Topics](advanced). |
+| Menu item                                                  | What it does                                                                                            |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Open Network(s) from NDEx...                               | Search NDEx and open one or more networks.                                                              |
+| Open Workspace from NDEx...                                | Open a workspace you saved to NDEx. Requires you to sign in.                                            |
+| Open Sample Networks                                       | Load the example networks.                                                                              |
+| Open Network in Cytoscape Desktop                          | Send the current network to the Cytoscape desktop application.                                          |
+| Import → Network from File..., Import → Table from File... | Load a network, or add columns to the current network, from a file.                                     |
+| Duplicate Network                                          | Add a copy of the current network to the workspace.                                                     |
+| Save Network to NDEx                                       | Save changes to a network that came from NDEx.                                                          |
+| Save Copy to NDEx                                          | Save the current network to NDEx as a new network.                                                      |
+| Download Network File (.cx2)                               | Save the current network to your computer.                                                              |
+| Save Workspace, Save Workspace As...                       | Save the whole workspace to NDEx.                                                                       |
+| Export → Network to Image...                               | Save a PNG, SVG or PDF image of the network view.                                                       |
+| Remove Current Network, Remove All Networks                | Remove networks from the workspace. You are asked to confirm; this cannot be undone.                    |
+| Clear Local Database                                       | Delete everything Cytoscape Web stores in your browser and start over. See [Advanced Topics](advanced). |
 
 The NDEx save items need you to sign in. For details, see
 [Creating and Saving Networks](creating-networks) and
@@ -43,12 +43,12 @@ The NDEx save items need you to sign in. For details, see
 
 The **Edit** menu changes the network itself:
 
-| Menu item | What it does |
-| --- | --- |
-| Create Node | Add a node near the top left of the view. |
-| Create Edge | Connect two selected nodes. Select at least two nodes first; if more are selected, the first two in the selection are used. |
-| Delete Selected Nodes, Delete Selected Edges | Delete the selected nodes or edges. |
-| Undo, Redo | The item names the change it will undo or redo, for example **Undo - Apply layout**. Shortcuts: **Ctrl+Z** (**Cmd+Z** on a Mac) to undo; **Ctrl+Y** or **Ctrl+Shift+Z** (**Cmd+Shift+Z** on a Mac) to redo. They do not act while you type in a text field, while a dialog is open, or while you are creating an edge from a node. |
+| Menu item                                    | What it does                                                                                                                                                                                                                                                                                                                       |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Create Node                                  | Add a node near the top left of the view.                                                                                                                                                                                                                                                                                          |
+| Create Edge                                  | Connect two selected nodes. Select at least two nodes first; if more are selected, the first two in the selection are used.                                                                                                                                                                                                        |
+| Delete Selected Nodes, Delete Selected Edges | Delete the selected nodes or edges.                                                                                                                                                                                                                                                                                                |
+| Undo, Redo                                   | The item names the change it will undo or redo, for example **Undo - Apply layout**. Shortcuts: **Ctrl+Z** (**Cmd+Z** on a Mac) to undo; **Ctrl+Y** or **Ctrl+Shift+Z** (**Cmd+Shift+Z** on a Mac) to redo. They do not act while you type in a text field, while a dialog is open, or while you are creating an edge from a node. |
 
 You can also right-click in the network view. On empty space, Create Node
 adds a node where you clicked. On a node, **Create Edge from this
@@ -79,11 +79,11 @@ view.
 (force-directed)** unless you change it. Below it, the algorithms are grouped
 by type:
 
-| Type | Algorithms |
-| --- | --- |
+| Type           | Algorithms                                                                                                                  |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | Force-directed | **Compound Spring Embedder Layout (CoSE)**, **Cosmos Layout (GPU-based, nondeterministic)**, gForce Layout (force-directed) |
-| Geometric | **Circular Layout**, **Concentric Layout**, **Grid Layout**, **Radial Layout (Concentric Layout by G6)** |
-| Hierarchical | **Biological Flow Layout**, **Hierarchical Layout (DAGRE)** |
+| Geometric      | **Circular Layout**, **Concentric Layout**, **Grid Layout**, **Radial Layout (Concentric Layout by G6)**                    |
+| Hierarchical   | **Biological Flow Layout**, **Hierarchical Layout (DAGRE)**                                                                 |
 
 Layouts added by apps follow. Compound Spring Embedder Layout (CoSE) is
 inactive for networks with more than 2,000 nodes and edges combined. Hover
@@ -125,18 +125,18 @@ The **Analysis** menu has two items:
 
 Three providers are available:
 
-| Provider | What it needs |
-| --- | --- |
-| OpenAI | The default. Needs your own OpenAI API key, and OpenAI bills you for each query. The default model is `gpt-6-luna`; `gpt-6.1-sol` and `gpt-5` are also suggested, and you can type any other model name. |
-| Ollama (local) | A model running on your own computer. No API key is needed. The **Endpoint URL** defaults to `http://localhost:11434/v1`. |
-| Custom (OpenAI-compatible) | Any other service that speaks the OpenAI API. Enter its Endpoint URL and, if it needs one, an API key. |
+| Provider                   | What it needs                                                                                                                                                                                            |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| OpenAI                     | The default. Needs your own OpenAI API key, and OpenAI bills you for each query. The default model is `gpt-6-luna`; `gpt-6.1-sol` and `gpt-5` are also suggested, and you can type any other model name. |
+| Ollama (local)             | A model running on your own computer. No API key is needed. The **Endpoint URL** defaults to `http://localhost:11434/v1`.                                                                                |
+| Custom (OpenAI-compatible) | Any other service that speaks the OpenAI API. Enter its Endpoint URL and, if it needs one, an API key.                                                                                                   |
 
 Run LLM Query stays inactive until a provider is set up.
 
 <Note>
-Cytoscape Web keeps your API key in memory only, and only while the tab is
-open: you enter it again after a reload. The key goes only to the provider
-you entered it for, and only over HTTPS or to your own computer.
+  Cytoscape Web keeps your API key in memory only, and only while the tab is
+  open: you enter it again after a reload. The key goes only to the provider you
+  entered it for, and only over HTTPS or to your own computer.
 </Note>
 
 <a id="tools" />
@@ -162,15 +162,15 @@ remove them. See [Extending Cytoscape Web](extending).
 
 The **Help** menu holds:
 
-| Menu item | What it does |
-| --- | --- |
-| About Cytoscape Web | Shows the version and build information. |
-| Take a tour | Starts the guided tour of the interface. |
-| User Manual | Opens this manual in a new tab. |
-| Developer | Holds **Developer's Guide**, **Code Repository**, and **Export Database Snapshot** / **Import Database Snapshot...** for saving and restoring your local data (see [Advanced Topics](advanced)). |
-| License | Shows the MIT License of Cytoscape Web. |
-| Citation | Shows how to cite Cytoscape Web. |
-| Report a Bug | Sends a bug report to the Cytoscape team. |
+| Menu item           | What it does                                                                                                                                                                                     |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| About Cytoscape Web | Shows the version and build information.                                                                                                                                                         |
+| Take a tour         | Starts the guided tour of the interface.                                                                                                                                                         |
+| User Manual         | Opens this manual in a new tab.                                                                                                                                                                  |
+| Developer           | Holds **Developer's Guide**, **Code Repository**, and **Export Database Snapshot** / **Import Database Snapshot...** for saving and restoring your local data (see [Advanced Topics](advanced)). |
+| License             | Shows the MIT License of Cytoscape Web.                                                                                                                                                          |
+| Citation            | Shows how to cite Cytoscape Web, with buttons that copy the references as text or as BibTeX.                                                                                                     |
+| Report a Bug        | Sends a bug report to the Cytoscape team.                                                                                                                                                        |
 
 <a id="search_tool" />
 
@@ -190,11 +190,11 @@ Hover over the search box to see more examples.
 Click <UiIcon name="search-settings" label="Search settings button" />
 to open the search settings:
 
-| Setting | What it controls |
-| --- | --- |
-| Operator | **OR** finds elements that match any term; **AND** finds elements that match every term. |
-| Search Target | **Nodes**, **Edges**, or both. |
-| Search Mode | **Exact Match** finds only cells whose whole value matches a term. **Contains** also finds cells where the term is part of a longer value. |
+| Setting       | What it controls                                                                                                                           |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Operator      | **OR** finds elements that match any term; **AND** finds elements that match every term.                                                   |
+| Search Target | **Nodes**, **Edges**, or both.                                                                                                             |
+| Search Mode   | **Exact Match** finds only cells whose whole value matches a term. **Contains** also finds cells where the term is part of a longer value. |
 
 By default, searches use OR, look at Nodes only and use Exact Match. With
 these defaults, `gal4` finds the node GAL4 but `gal` finds nothing. With
@@ -211,10 +211,11 @@ mode. Its tooltip names the mode it turns on.
 ## Sign In Button
 
 The round button at the far right of the menu bar,
-<UiIcon name="sign-in" label="Sign-in button" />, signs you in to
-your NDEx account. Your NDEx account is the account for all Cytoscape
-ecosystem applications. Signing in lets you save networks and workspaces to
-NDEx and open your private networks.
+
+<UiIcon name="sign-in" label="Sign-in button" />, signs you in to your NDEx
+account. Your NDEx account is the account for all Cytoscape ecosystem
+applications. Signing in lets you save networks and workspaces to NDEx and open
+your private networks.
 
 Click it and the browser shows the NDEx sign-in page:
 
@@ -230,7 +231,7 @@ After you sign in, the button shows your initial. Click it to see your name
 and to **Logout**.
 
 <Note>
-The first time you sign in to Cytoscape Web with an NDEx account, you may be
-asked to verify your email address. Do this in the same browser and on the
-same device.
+  The first time you sign in to Cytoscape Web with an NDEx account, you may be
+  asked to verify your email address. Do this in the same browser and on the
+  same device.
 </Note>
