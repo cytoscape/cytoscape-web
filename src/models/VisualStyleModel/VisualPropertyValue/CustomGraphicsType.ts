@@ -90,23 +90,23 @@ export interface RingChartPropertiesType {
 }
 
 export interface LineChartPropertiesType {
-  cy_dataColumns: AttributeName[]
-  cy_colors: ColorType[]
-  cy_range?: [number, number]
-  cy_autoRange?: boolean
-  cy_lineWidth?: number
-  cy_showDomainAxis?: boolean
-  cy_showRangeAxis?: boolean
-  cy_axisColor?: string
-  cy_axisWidth?: number
-  cy_axisLabelFontSize?: number
-  cy_domainLabelPosition?: string
-  cy_showRangeZeroBaseline?: boolean
-  cy_colorScheme?: string
-  cy_itemLabelFontSize?: number
-  cy_showItemLabels?: boolean
-  cy_borderWidth?: number
-  cy_borderColor?: string
+  readonly cy_dataColumns: AttributeName[]
+  readonly cy_colors: ColorType[]
+  readonly cy_range?: [number, number]
+  readonly cy_autoRange?: boolean
+  readonly cy_lineWidth?: number
+  readonly cy_showDomainAxis?: boolean
+  readonly cy_showRangeAxis?: boolean
+  readonly cy_axisColor?: string
+  readonly cy_axisWidth?: number
+  readonly cy_axisLabelFontSize?: number
+  readonly cy_domainLabelPosition?: string
+  readonly cy_showRangeZeroBaseline?: boolean
+  readonly cy_colorScheme?: string
+  readonly cy_itemLabelFontSize?: number
+  readonly cy_showItemLabels?: boolean
+  readonly cy_borderWidth?: number
+  readonly cy_borderColor?: string
 }
 
 export type NonePropertiesType = Record<string, never>

@@ -1,4 +1,3 @@
-
 import type { AttributeName, ValueType } from '../../TableModel'
 import type { LineChartPropertiesType } from '../VisualPropertyValue/CustomGraphicsType'
 
@@ -33,18 +32,12 @@ export const buildLineChartSvg = (
     .filter((item) => isFiniteNumber(item.value))
 
   const configuredRange = properties.cy_range
-  const values = series
-    .map((item) => item.value)
-    .filter(isFiniteNumber)
+  const values = series.map((item) => item.value).filter(isFiniteNumber)
 
   let min = configuredRange?.[0]
   let max = configuredRange?.[1]
 
-  if (
-    !isFiniteNumber(min) ||
-    !isFiniteNumber(max) ||
-    min >= max
-  ) {
+  if (!isFiniteNumber(min) || !isFiniteNumber(max) || min >= max) {
     if (values.length === 0) {
       min = -1
       max = 1
@@ -89,9 +82,14 @@ export const buildLineChartSvg = (
   const domainLabelPosition = properties.cy_domainLabelPosition ?? 'DOWN'
   const domainLabelRotation = domainLabelPosition === 'DOWN_45' ? 45 : 0
   const showZeroBaseline = properties.cy_showRangeZeroBaseline ?? false
+  const showItemLabels = properties.cy_showItemLabels ?? false
+  const itemLabelFontSize = isFiniteNumber(properties.cy_itemLabelFontSize)
+    ? Math.max(0, properties.cy_itemLabelFontSize)
+    : 2
 
   const parts: string[] = [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${SVG_WIDTH}" height="${SVG_HEIGHT}" viewBox="0 0 ${SVG_WIDTH} ${SVG_HEIGHT}">`,
+    `<defs><clipPath id="line-chart-plot-clip"><rect x="${PADDING}" y="${PADDING}" width="${plotWidth}" height="${plotHeight}"/></clipPath></defs>`,
   ]
   const borderWidth = isFiniteNumber(properties.cy_borderWidth)
     ? Math.max(0, properties.cy_borderWidth)
@@ -146,14 +144,14 @@ export const buildLineChartSvg = (
     )
   }
 
-
   if (columns.length > 0) {
     let segment: string[] = []
+    const itemLabels: string[] = []
 
     const flushSegment = () => {
       if (segment.length > 0) {
         parts.push(
-          `<polyline fill="none" stroke="${escapeXml(colors[0] ?? '#333333')}" stroke-width="${lineWidth}" stroke-linecap="round" stroke-linejoin="round" points="${segment.join(' ')}"/>`,
+          `<polyline clip-path="url(#line-chart-plot-clip)" fill="none" stroke="${escapeXml(colors[0] ?? '#333333')}" stroke-width="${lineWidth}" stroke-linecap="round" stroke-linejoin="round" points="${segment.join(' ')}"/>`,
         )
         segment = []
       }
@@ -167,10 +165,25 @@ export const buildLineChartSvg = (
         return
       }
 
-      segment.push(`${xFor(index)},${yFor(value)}`)
+      const x = xFor(index)
+      const y = yFor(value)
+
+      segment.push(`${x},${y}`)
+
+      if (showItemLabels) {
+        const labelY = Math.max(
+          PADDING + itemLabelFontSize,
+          y - itemLabelFontSize,
+        )
+
+        itemLabels.push(
+          `<text x="${x}" y="${labelY}" fill="${escapeXml(colors[index] ?? '#333333')}" font-size="${itemLabelFontSize}" text-anchor="middle">${escapeXml(String(value))}</text>`,
+        )
+      }
     })
 
     flushSegment()
+    parts.push(...itemLabels)
   }
 
   parts.push('</svg>')
