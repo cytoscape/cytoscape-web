@@ -295,6 +295,63 @@ describe('MapperFactory', () => {
         })
       })
 
+      it('should parse valid LineChart JSON to line chart', () => {
+        const json =
+          '{"cy_dataColumns":["gal1RGexp","gal4RGexp","gal80Rexp"],"cy_colors":["#8DD3C7","#FFFFB3","#BEBADA"],"cy_lineWidth":2.1}'
+        expect(mapper(json)).toMatchObject({
+          type: 'chart',
+          name: 'org.cytoscape.LineChart',
+          properties: {
+            cy_dataColumns: ['gal1RGexp', 'gal4RGexp', 'gal80Rexp'],
+            cy_lineWidth: 2.1,
+          },
+        })
+      })
+      it('should parse LineChart JSON without an explicit line width', () => {
+        const json =
+          '{"cy_dataColumns":["a","b"],"cy_colors":["#f00","#0f0"],"cy_showDomainAxis":true}'
+
+        expect(mapper(json)).toMatchObject({
+          type: 'chart',
+          name: 'org.cytoscape.LineChart',
+          properties: {
+            cy_dataColumns: ['a', 'b'],
+            cy_showDomainAxis: true,
+          },
+        })
+      })
+      it('should reject chart JSON with non-string colors', () => {
+        const json =
+          '{"cy_dataColumns":["a"],"cy_colors":[42],"cy_lineWidth":2}'
+
+        expect(mapper(json)).toEqual(mapping.defaultValue)
+      })
+
+      it('should reject chart JSON with non-string data columns', () => {
+        const json =
+          '{"cy_dataColumns":["a",42],"cy_colors":["#f00"],"cy_lineWidth":2}'
+
+        expect(mapper(json)).toEqual(mapping.defaultValue)
+      })
+      it('should reject chart JSON with empty data columns', () => {
+        const json =
+          '{"cy_dataColumns":[],"cy_colors":["#f00"],"cy_lineWidth":2}'
+
+        expect(mapper(json)).toEqual(mapping.defaultValue)
+      })
+
+      it('should reject chart JSON with empty colors', () => {
+        const json = '{"cy_dataColumns":["a"],"cy_colors":[],"cy_lineWidth":2}'
+
+        expect(mapper(json)).toEqual(mapping.defaultValue)
+      })
+      it('should return default for unsupported chart JSON', () => {
+        const json =
+          '{"cy_dataColumns":["a","b"],"cy_colors":["#f00","#0f0"],"cy_orientation":"HORIZONTAL"}'
+
+        expect(mapper(json)).toEqual(mapping.defaultValue)
+      })
+
       it('should return default for malformed JSON', () => {
         expect(mapper('{ broken json')).toEqual(mapping.defaultValue)
       })

@@ -15,11 +15,13 @@ import {
   CustomGraphicsType,
   ImagePropertiesType,
   isImageCustomGraphicsName,
+  LineChartPropertiesType,
   PieChartPropertiesType,
   RingChartPropertiesType,
 } from '../VisualPropertyValue/CustomGraphicsType'
 import { SpecialPropertyName } from './CyjsProperties/CyjsStyleModels/directMappingSelector'
 import { normalizeImageSource, wrapSvgDataUriForSize } from './imageSourceImpl'
+import { buildLineChartSvg } from './lineChartSvg'
 
 export const getCustomGraphicNodeVps = (
   vps: VisualProperty<VisualPropertyValueType>[],
@@ -151,6 +153,7 @@ export const getFirstValidCustomGraphicVp = (
   const isSupportedGraphicsType = (value: CustomGraphicsType) =>
     value.name === CustomGraphicsNameType.PieChart ||
     value.name === CustomGraphicsNameType.RingChart ||
+    value.name === CustomGraphicsNameType.LineChart ||
     isImageCustomGraphicsName(value.name)
 
   const fullyValid = customGraphicNodeVps.find((vp) => {
@@ -418,6 +421,48 @@ export const computeImageProperties = (
   return pairs
 }
 
+
+export const computeLineChartProperties = (
+  id: IdType,
+  value: CustomGraphicsType,
+  row: Record<AttributeName, ValueType>,
+  widthVp: VisualProperty<VisualPropertyValueType>,
+  heightVp: VisualProperty<VisualPropertyValueType>,
+  mappers: Map<AttributeName, Mapper>,
+): [string, VisualPropertyValueType][] => {
+  const properties = value.properties as LineChartPropertiesType
+  const columns = properties.cy_dataColumns
+
+  if (!columns || columns.length === 0) {
+    return []
+  }
+
+  const width = computeCustomGraphicSizeProperties(id, widthVp, mappers, row)
+  const height = computeCustomGraphicSizeProperties(id, heightVp, mappers, row)
+
+  if (
+    !Number.isFinite(width) ||
+    !Number.isFinite(height) ||
+    width <= 0 ||
+    height <= 0
+  ) {
+    return []
+  }
+
+  const svg = buildLineChartSvg(properties, row)
+  const finalUrl = wrapSvgDataUriForSize(
+    `data:image/svg+xml,${encodeURIComponent(svg)}`,
+    width,
+    height,
+  )
+
+  return [
+    [SpecialPropertyName.BackgroundImage, finalUrl],
+    [SpecialPropertyName.BackgroundFit, 'contain'],
+    [SpecialPropertyName.BackgroundImageCrossorigin, 'null'],
+  ]
+}
+
 export const computeCustomGraphicsProperties = (
   id: IdType,
 
@@ -440,6 +485,15 @@ export const computeCustomGraphicsProperties = (
     )
   } else if (isImageCustomGraphicsName(value.name)) {
     return computeImageProperties(id, value, row, widthVp, heightVp, mappers)
+  } else if (value.name === CustomGraphicsNameType.LineChart) {
+    return computeLineChartProperties(
+      id,
+      value,
+      row,
+      widthVp,
+      heightVp,
+      mappers,
+    )
   }
 
   return []

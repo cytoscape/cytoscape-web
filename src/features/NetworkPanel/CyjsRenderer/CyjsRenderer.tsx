@@ -94,6 +94,7 @@ interface NetworkRendererProps {
   displayMode?: DisplayMode
 
   hasTab?: boolean
+  readOnly?: boolean
 }
 
 /**
@@ -103,6 +104,7 @@ interface NetworkRendererProps {
 const CyjsRenderer = ({
   network,
   hasTab = false,
+  readOnly = false,
 }: NetworkRendererProps): ReactElement => {
   const id = network?.id as IdType
 
@@ -134,6 +136,8 @@ const CyjsRenderer = ({
   // is still null in that effect's closure, so cleanup must destroy via this
   // ref instead.
   const cyInstance = useRef<Core | null>(null)
+  const readOnlyRef = useRef(readOnly)
+  readOnlyRef.current = readOnly
 
   // The network the instance shows, set when renderNetwork completes. Until it
   // names the current network, there is nothing on screen to update in place.
@@ -474,7 +478,9 @@ const CyjsRenderer = ({
     appliedStyleInputsRef.current = null
 
     // Save the outgoing network's camera before the instance shows another one.
-    flushPendingViewportSave()
+    if (!readOnly) {
+      flushPendingViewportSave()
+    }
 
     // Remove all event listeners and elements from the Cytoscape instance
     cy.removeAllListeners()
@@ -549,6 +555,9 @@ const CyjsRenderer = ({
     // This handler must be registered BEFORE the general tap handler
     // to intercept node clicks during edge creation mode
     const edgeCreationTapHandler = (e: EventObject): void => {
+      if (readOnly) {
+        return
+      }
       const currentMode = edgeCreationModeRef.current
 
       // Safety check: ensure target is an element with isNode method
@@ -615,6 +624,9 @@ const CyjsRenderer = ({
 
     // Single selection: handle tap events for background, nodes, and edges
     cy.on('tap', (e: EventObject) => {
+      if (readOnly) {
+        return
+      }
       // Get the currently active network ID from the ref
       const activeId: string = activeNetworkIdRef.current
 
@@ -695,12 +707,17 @@ const CyjsRenderer = ({
           }
         }
       }
-      // Always re-enable selection after tap
-      cy.autounselectify(false)
+      // Keep selection disabled in read-only mode.
+      if (!readOnly) {
+        cy.autounselectify(false)
+      }
     })
 
     // --- Right-click Context Menu ---
     cy.on('cxttap', (e: EventObject) => {
+      if (readOnly) {
+        return
+      }
       // Safety check: ensure target methods exist before calling
       const targetIsNode =
         typeof e.target.isNode === 'function' && e.target.isNode()
@@ -816,6 +833,9 @@ const CyjsRenderer = ({
     listenForNodeDrags(
       cy,
       ({ from, to }): void => {
+        if (readOnly) {
+          return
+        }
         // Set flag to avoid unnecessary fit
         setNodesMoved(true)
         updateNodePositions(id, to)
@@ -873,6 +893,9 @@ const CyjsRenderer = ({
      * Debounced to avoid excessive updates.
      */
     const viewportChangeHandler = debounce((): void => {
+      if (readOnly) {
+        return
+      }
       const zoom = cy.zoom()
       const pan = cy.pan()
       // Record the canvas size the pan is relative to, so a restore into a
@@ -937,8 +960,10 @@ const CyjsRenderer = ({
       cy.fit()
     }
 
-    // Update the visual style in the application state
-    setVisualStyle(id, vs)
+    // Update the visual style in the application state only in editable mode
+    if (!readOnly) {
+      setVisualStyle(id, vs)
+    }
 
     // The network is on screen, styled from these inputs. From here on,
     // onStyleModelUpdate applies changes in place. This used to be a 1000 ms
@@ -1009,6 +1034,9 @@ const CyjsRenderer = ({
    */
   useEffect(
     function onStyleModelUpdate() {
+      if (readOnly) {
+        return
+      }
       if (
         network === undefined ||
         cy === null ||
@@ -1056,7 +1084,7 @@ const CyjsRenderer = ({
       setViewModel(id, updatedNetworkView)
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- style/table triggers only; networkView is written here (loop)
-    [vs, table, visualEditorProperties],
+    [vs, table, visualEditorProperties, readOnly],
   )
 
   /**
@@ -1215,7 +1243,11 @@ const CyjsRenderer = ({
       const cy: Core = Cytoscape({
         container: cyContainer.current,
         hideEdgesOnViewport: true,
-        boxSelectionEnabled: true,
+        boxSelectionEnabled: !readOnlyRef.current,
+        autoungrabify: readOnlyRef.current,
+        autounselectify: readOnlyRef.current,
+        userPanningEnabled: true,
+        userZoomingEnabled: true,
       })
       cyInstance.current = cy
 
@@ -1226,7 +1258,9 @@ const CyjsRenderer = ({
       setCy(cy)
 
       return () => {
-        flushPendingViewportSave()
+        if (!readOnlyRef.current) {
+          flushPendingViewportSave()
+        }
         unregisterDebugTool()
         annotationLayersRef.current?.dispose()
         annotationLayersRef.current = null
@@ -1238,7 +1272,9 @@ const CyjsRenderer = ({
 
     return () => {
       // Reset the guard so a StrictMode remount recreates the instance.
-      flushPendingViewportSave()
+      if (!readOnlyRef.current) {
+        flushPendingViewportSave()
+      }
       annotationLayersRef.current?.dispose()
       annotationLayersRef.current = null
       cyInstance.current?.destroy()
@@ -1464,6 +1500,8 @@ const CyjsRenderer = ({
   }
 
   const handleCreateNodeFromContext = (position: [number, number]): void => {
+    if (readOnly) return
+
     logUi.info('[CyjsRenderer] handleCreateNodeFromContext called', {
       position,
     })
@@ -1472,6 +1510,8 @@ const CyjsRenderer = ({
   }
 
   const handleCreateEdgeFromNode = (sourceNodeId: IdType): void => {
+    if (readOnly) return
+
     logUi.info('[CyjsRenderer] handleCreateEdgeFromNode called', {
       sourceNodeId,
     })
