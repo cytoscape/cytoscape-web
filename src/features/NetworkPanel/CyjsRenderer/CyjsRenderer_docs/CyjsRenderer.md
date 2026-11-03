@@ -205,7 +205,7 @@ The `SHOW_HIDE` display mode was removed from the UI and renderer implementation
 
 - Selection state is synchronized with the view model store for the network being rendered
 - Only selections in the active network view (determined by `activeNetworkView` from UI state) are interactive
-- When `activeNetworkView` is set to a different network than the one being rendered, a tap on this canvas selects nothing (it only makes the view active, through the panel's click handler). The tap handler sets `cy.autounselectify(true)` so Cytoscape.js's own tap selection, which runs right after the `tap` event in the same handler, does nothing, and releases it in a microtask. The lock must not outlive the tap: Cytoscape.js also ignores programmatic `select()` under it, so a search run right after one click activated a Hierarchy Viewer subnetwork selected its matches in the store but not on the canvas (#921)
+- When `activeNetworkView` is set to a different network than the one being rendered, a tap on this canvas makes the view active and selects nothing. Selection must not stay blocked after that tap, so a selection made right after it (by a search, for example) still appears on the canvas (#921)
 
 ### Undo/Redo for Node Movement
 

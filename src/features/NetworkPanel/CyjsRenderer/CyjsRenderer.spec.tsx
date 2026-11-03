@@ -317,6 +317,22 @@ describe('CyjsRenderer tap on an inactive view (regression: #921)', () => {
     expect(cy.getElementById('n1').select().selected()).toBe(false)
   })
 
+  it('does not select a node tapped in the inactive view', async () => {
+    const { cy } = await mount(seed())
+
+    act(() => {
+      cy.getElementById('n1').emit({
+        type: 'tap',
+        originalEvent: new MouseEvent('mouseup'),
+      } as any)
+    })
+
+    expect(cy.autounselectify()).toBe(true)
+    expect(
+      useViewModelStore.getState().getViewModel(NETWORK_ID)?.selectedNodes,
+    ).toEqual([])
+  })
+
   it('shows a selection made after the tap that activated it', async () => {
     const { cy } = await mount(seed())
 
