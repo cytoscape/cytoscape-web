@@ -40,19 +40,24 @@ export const SearchBox = (): JSX.Element => {
 
   // The last search's result, kept with the network and query it was for so a
   // count is never shown for another view or another query.
+  // `id` tells repeated searches apart, so each one is announced.
   const [lastResult, setLastResult] = useState<
-    | { networkId: IdType; query: string; summary: SearchResultSummary }
+    | {
+        id: number
+        networkId: IdType
+        query: string
+        summary: SearchResultSummary
+      }
     | undefined
   >(undefined)
+  const searchCountRef = useRef(0)
   // The examples tooltip wraps the whole field; it stays closed while the
-  // pointer is on the count, which has its own tooltip.
+  // pointer or the keyboard focus is on the count, which has its own tooltip.
   const [examplesOpen, setExamplesOpen] = useState(false)
-  const [countHovered, setCountHovered] = useState(false)
+  const [countActive, setCountActive] = useState(false)
 
   const clearResult = (): void => {
     setLastResult(undefined)
-    // The count unmounts, so its mouse-leave never fires.
-    setCountHovered(false)
   }
 
   const baseRef = useRef<HTMLDivElement>(null)
@@ -213,7 +218,9 @@ export const SearchBox = (): JSX.Element => {
       const isAnyTargetSelected = isNodeTargetSelected || isEdgeTargetSelected
 
       if (isAnyTargetSelected && query !== '') {
+        searchCountRef.current += 1
         setLastResult({
+          id: searchCountRef.current,
           networkId,
           query,
           summary: describeSearchResult({
@@ -311,7 +318,7 @@ export const SearchBox = (): JSX.Element => {
     <>
       <Tooltip
         title={<SearchExamplesTooltip />}
-        open={examplesOpen && !countHovered}
+        open={examplesOpen && !countActive}
         onOpen={() => setExamplesOpen(true)}
         onClose={() => setExamplesOpen(false)}
         placement="left"
@@ -352,7 +359,8 @@ export const SearchBox = (): JSX.Element => {
                 ? lastResult.summary
                 : undefined
             }
-            onHoverChange={setCountHovered}
+            announcementId={lastResult?.id ?? 0}
+            onActiveChange={setCountActive}
           />
           <SearchControls
             searchTerm={query}

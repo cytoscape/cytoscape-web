@@ -276,6 +276,68 @@ describe('SearchBox', () => {
     expect(screen.queryByText('Search Examples:')).toBeNull()
   })
 
+  it('keeps the examples closed when the search is repeated over the count', () => {
+    vi.useFakeTimers()
+    ;(runSearch as import('vitest').Mock).mockReturnValue(['n1', 'n2'])
+
+    render(<SearchBox />)
+    submit()
+    fireEvent.mouseOver(screen.getByTestId('search-result-count'))
+    act(() => {
+      vi.advanceTimersByTime(1000)
+    })
+
+    // Enter again while the pointer stays on the count: the count is replaced
+    // in the same render, so it never unmounts and gets no new mouse-enter.
+    fireEvent.keyDown(screen.getByLabelText('search'), { key: 'Enter' })
+    act(() => {
+      vi.advanceTimersByTime(1000)
+    })
+
+    expect(screen.queryByText('Search Examples:')).toBeNull()
+    expect(screen.getByRole('tooltip').textContent).toBe('2 nodes selected.')
+  })
+
+  it('shows the full sentence when the count gets keyboard focus, not the examples', () => {
+    vi.useFakeTimers()
+    ;(runSearch as import('vitest').Mock).mockReturnValue(['n1', 'n2'])
+
+    render(<SearchBox />)
+    submit()
+
+    const count = screen.getByTestId('search-result-count')
+    expect(count.tabIndex).toBe(0)
+    // MUI opens a tooltip on focus only when the focus is keyboard-driven
+    fireEvent.keyDown(document.body, { key: 'Tab' })
+    act(() => {
+      count.focus()
+    })
+    act(() => {
+      vi.advanceTimersByTime(1000)
+    })
+
+    expect(screen.getByRole('tooltip').textContent).toBe('2 nodes selected.')
+    expect(screen.queryByText('Search Examples:')).toBeNull()
+  })
+
+  it('announces a repeated search again', () => {
+    ;(runSearch as import('vitest').Mock).mockReturnValue(['n1', 'n2'])
+
+    render(<SearchBox />)
+    submit()
+    const status = screen.getByRole('status')
+    const first = status.firstElementChild
+    expect(first?.textContent).toBe('2 nodes selected.')
+
+    // Same query, same result: the live region must still change, or screen
+    // readers say nothing the second time.
+    submit()
+
+    expect(screen.getByRole('status')).toBe(status)
+    expect(status.firstElementChild?.textContent).toBe('2 nodes selected.')
+    expect(status.firstElementChild).not.toBe(first)
+  })
+
   it('still shows the examples when hovering the input', () => {
     vi.useFakeTimers()
 

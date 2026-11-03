@@ -80,12 +80,16 @@ between the query and the buttons, like a browser's find-in-page count (#923):
   search target) still do.
 - Below the `lg` breakpoint the field (30vw) is too narrow for the nouns, so
   the count shortens to `2 · 13`.
-- Hovering the count shows the whole sentence below the field, e.g. "2 nodes
-  and 13 edges selected in the subnetwork view." While the pointer is on the
-  count, the field's search-examples tooltip is held closed.
+- Hovering the count, or tabbing to it (it is focusable, since below `lg` the
+  label is only numbers), shows the whole sentence below the field, e.g. "2
+  nodes and 13 edges selected in the subnetwork view." While the pointer or the
+  focus is on the count, the field's search-examples tooltip is held closed. A
+  new search replaces the count in the same render, so it keeps its hover and
+  focus; it reports itself inactive only when it unmounts.
 - The same sentence goes to a visually hidden `role="status"` region, so screen
   readers announce each result. The region is always mounted, so the first
-  result is announced too.
+  result is announced too, and the sentence inside it is re-created for every
+  search, so repeating a search with the same result is announced again.
 
 The count disappears when the query is edited or cleared, and the next search
 replaces it: there is no queue and no timer. It is kept with the network view
