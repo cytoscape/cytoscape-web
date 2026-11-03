@@ -16,19 +16,23 @@ import { EDGE_INTERACTION_ATTR } from '../model/impl/circlePackingSupport'
 import { useSubNetworkStore } from '../store/SubNetworkStore'
 import { CP_RENDERER_ID, MainPanel } from './MainPanel'
 
-const { PropertyPanelMock, FilterPanelMock } = vi.hoisted(() => ({
-  PropertyPanelMock: vi.fn((_props: { networkId: string }) => null),
-  FilterPanelMock: vi.fn((_props: { networkId: string }) => null),
-}))
+const { PropertyPanelMock, FilterPanelMock, SubNetworkPanelMock } = vi.hoisted(
+  () => ({
+    PropertyPanelMock: vi.fn((_props: { networkId: string }) => null),
+    FilterPanelMock: vi.fn((_props: { networkId: string }) => null),
+    SubNetworkPanelMock: vi.fn((_props: { subNetworkName: string }) => null),
+  }),
+)
 
 // Child panels are mocked to keep their heavy imports out. PropertyPanel and
-// FilterPanel are spies so the tests can check whether and where they render.
+// FilterPanel are spies so the tests can check whether and where they render;
+// SubNetworkPanel is one so they can read the subsystem name it is given.
 // Allotment measures its panes with ResizeObserver, which jsdom lacks.
 vi.mock('allotment', () => {
   const Pass = ({ children }: { children?: ReactNode }) => <>{children}</>
   return { Allotment: Object.assign(Pass, { Pane: Pass }) }
 })
-vi.mock('./SubNetworkPanel', () => ({ SubNetworkPanel: () => <div /> }))
+vi.mock('./SubNetworkPanel', () => ({ SubNetworkPanel: SubNetworkPanelMock }))
 vi.mock('./FilterPanel/FilterPanel', () => ({ default: FilterPanelMock }))
 vi.mock('./PropertyPanel/PropertyPanel', () => ({
   PropertyPanel: PropertyPanelMock,
@@ -257,6 +261,31 @@ describe('MainPanel property panel target', () => {
 
     const { networkId } = PropertyPanelMock.mock.lastCall![0]
     expect(networkId).toBe('')
+  })
+})
+
+// The HCX fixtures name their subsystems with an `n` column, and real HCX files
+// need not have a `name` either. Selecting one used to throw in the selection
+// effect and take the app to its error page.
+describe('MainPanel subsystem without a name', () => {
+  const SUBSYSTEM_ID = '42'
+
+  it('shows the subsystem under its node id instead of crashing', () => {
+    setupStores({
+      edgeTable: edgeTableWith(['interacts']),
+      nodeTable: {
+        columns: [],
+        rows: new Map([
+          [SUBSYSTEM_ID, { n: 'C42', [SubsystemTag.members]: [1, 2] }],
+        ]),
+      } as unknown as Table,
+      selectedNodes: [SUBSYSTEM_ID],
+    })
+
+    render(<MainPanel />)
+
+    const { subNetworkName } = SubNetworkPanelMock.mock.lastCall![0]
+    expect(subNetworkName).toBe(SUBSYSTEM_ID)
   })
 })
 
