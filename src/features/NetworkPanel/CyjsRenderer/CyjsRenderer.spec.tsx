@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useNetworkStore } from '@/data/hooks/stores/NetworkStore'
 import { useTableStore } from '@/data/hooks/stores/TableStore'
+import { useUiStateStore } from '@/data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '@/data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '@/data/hooks/stores/VisualStyleStore'
 import { IdType } from '@/models/IdType'
@@ -271,5 +272,69 @@ describe('CyjsRenderer style and table updates (regression: #861)', () => {
       storedNodeValue('m1', VisualPropertyName.NodeWidth, 'other-net'),
     ).toBe(55)
     expect(cy.getElementById('m1').data(VisualPropertyName.NodeWidth)).toBe(55)
+  })
+})
+
+// #921: tapping a canvas that is not the active view locked Cytoscape.js's
+// selection (autounselectify) so the tap would not select there. The lock
+// stayed on after the tap, and Cytoscape.js ignores programmatic select()
+// under it, so the first search after activating a Hierarchy Viewer
+// subnetwork with one click selected its matches in the store but never on
+// the canvas. A second tap, now on the active view, released the lock.
+describe('CyjsRenderer tap on an inactive view (regression: #921)', () => {
+  beforeEach(() => {
+    created.instances.length = 0
+    useNetworkStore.setState({
+      networks: new Map(),
+      topologyVersions: new Map(),
+    } as any)
+    useTableStore.setState({ tables: {} } as any)
+    useVisualStyleStore.setState({ visualStyles: {} } as any)
+    useViewModelStore.setState({ viewModels: {} } as any)
+    act(() => {
+      useUiStateStore.getState().setActiveNetworkView('tree-net')
+    })
+  })
+
+  const tapBackground = (cy: Core): void => {
+    act(() => {
+      cy.emit({
+        type: 'tap',
+        originalEvent: new MouseEvent('mouseup'),
+      } as any)
+    })
+  }
+
+  const selectedNodeIds = (cy: Core): IdType[] =>
+    cy.nodes(':selected').map((ele) => ele.id())
+
+  it('does not select on the tap that activates the view', async () => {
+    const { cy } = await mount(seed())
+
+    tapBackground(cy)
+
+    expect(cy.autounselectify()).toBe(true)
+    expect(cy.getElementById('n1').select().selected()).toBe(false)
+  })
+
+  it('shows a selection made after the tap that activated it', async () => {
+    const { cy } = await mount(seed())
+
+    tapBackground(cy)
+    // The panel's click, and later the search, are separate browser tasks
+    await act(async () => {})
+    // What the panel's onClick does after Cytoscape.js handles the tap
+    act(() => {
+      useUiStateStore.getState().setActiveNetworkView(NETWORK_ID)
+    })
+    // What a search does
+    act(() => {
+      useViewModelStore.getState().exclusiveSelect(NETWORK_ID, ['n1'], [])
+    })
+
+    await waitFor(() => {
+      expect(selectedNodeIds(cy)).toEqual(['n1'])
+    })
+    expect(cy.autounselectify()).toBe(false)
   })
 })
