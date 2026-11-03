@@ -660,9 +660,12 @@ const CyjsRenderer = ({
         id !== '' &&
         id !== activeId
       ) {
-        if (cy.autounselectify() === false) {
-          cy.autounselectify(true)
-        }
+        // Lock selection for the rest of this tap only: Cytoscape.js selects
+        // the tapped element right after emitting `tap`, in the same handler.
+        // The lock also blocks programmatic select(), so left on it kept the
+        // search's selection off this canvas once it became active (#921).
+        cy.autounselectify(true)
+        queueMicrotask(() => cy.autounselectify(false))
         return
       }
 

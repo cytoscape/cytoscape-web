@@ -205,7 +205,7 @@ The `SHOW_HIDE` display mode was removed from the UI and renderer implementation
 
 - Selection state is synchronized with the view model store for the network being rendered
 - Only selections in the active network view (determined by `activeNetworkView` from UI state) are interactive
-- When `activeNetworkView` is set to a different network than the one being rendered, selection is disabled to prevent cross-network selection conflicts
+- When `activeNetworkView` is set to a different network than the one being rendered, a tap on this canvas makes the view active and selects nothing. Selection must not stay blocked after that tap, so a selection made right after it (by a search, for example) still appears on the canvas (#921)
 
 ### Undo/Redo for Node Movement
 
