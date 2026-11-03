@@ -67,6 +67,36 @@ The search supports two boolean operators:
 2. Each token is searched independently against the Fuse.js index
 3. Results are combined based on the selected operator (AND/OR)
 4. Matching nodes/edges are selected in the network view
+5. The result is reported inside the search field (see below)
+
+### 6. Result Count
+
+After a search, `SearchResultCount` shows what it selected inside the field,
+between the query and the buttons, like a browser's find-in-page count (#923):
+
+- `2 nodes · 13 edges`, counting only the object types that were searched
+  (`2 nodes` for a node-only search), or `No matches`. A zero-match search no
+  longer queues a Snackbar; the warnings (no network, index not ready, no
+  search target) still do.
+- Below the `lg` breakpoint the field (30vw) is too narrow for the nouns, so
+  the count shortens to `2 · 13`.
+- Hovering the count shows the whole sentence below the field, e.g. "2 nodes
+  and 13 edges selected in the subnetwork view." While the pointer is on the
+  count, the field's search-examples tooltip is held closed.
+- The same sentence goes to a visually hidden `role="status"` region, so screen
+  readers announce each result. The region is always mounted, so the first
+  result is announced too.
+
+The count disappears when the query is edited or cleared, and the next search
+replaces it: there is no queue and no timer. It is kept with the network view
+and the query it was computed for, so it is never shown for another view.
+
+On a hierarchy (`ui.enablePopup`), the sentence names the view searched: the
+**main network view** when the search ran on the current network, the
+**subnetwork view** when it ran on the Sub Network Viewer's network
+(`activeNetworkView` differs from `currentNetworkId`). A non-hierarchy network
+has one view, so the sentence names none. The wording lives in
+`describeSearchResult` (`searchResultSummary.ts`).
 
 ## Usage Examples
 

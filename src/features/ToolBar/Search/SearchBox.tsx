@@ -18,6 +18,12 @@ import { Table, ValueType, ValueTypeName } from '../../../models/TableModel'
 import { Search } from './Search'
 import { SearchControls } from './SearchControls'
 import { SearchExamplesTooltip } from './SearchExamplesTooltip'
+import { SearchResultCount } from './SearchResultCount'
+import {
+  describeSearchResult,
+  SearchResultSummary,
+  SearchView,
+} from './searchResultSummary'
 import { createFuseIndex, filterColumns, runSearch } from './searchUtil'
 import { StyledInputBase } from './StyledInputBase'
 import { Settings } from './Settings'
@@ -32,6 +38,23 @@ export const SearchBox = (): JSX.Element => {
     [GraphObjectType.EDGE]: false,
   })
 
+  // The last search's result, kept with the network and query it was for so a
+  // count is never shown for another view or another query.
+  const [lastResult, setLastResult] = useState<
+    | { networkId: IdType; query: string; summary: SearchResultSummary }
+    | undefined
+  >(undefined)
+  // The examples tooltip wraps the whole field; it stays closed while the
+  // pointer is on the count, which has its own tooltip.
+  const [examplesOpen, setExamplesOpen] = useState(false)
+  const [countHovered, setCountHovered] = useState(false)
+
+  const clearResult = (): void => {
+    setLastResult(undefined)
+    // The count unmounts, so its mouse-leave never fires.
+    setCountHovered(false)
+  }
+
   const baseRef = useRef<HTMLDivElement>(null)
   const handleOpenSettings = (): void => {
     setAnchorEl(baseRef.current)
@@ -45,7 +68,21 @@ export const SearchBox = (): JSX.Element => {
     (state) => state.workspace.currentNetworkId,
   )
 
-  const networkId: IdType = activeNetworkId ?? currentNetworkId
+  // The active view starts as '' and only a network load through the
+  // workspace sets it, so a network the App API created has none yet.
+  const networkId: IdType =
+    activeNetworkId === undefined || activeNetworkId === ''
+      ? currentNetworkId
+      : activeNetworkId
+
+  // On while the current network is a hierarchy; its only other view is the
+  // Sub Network Viewer's subnetwork.
+  const isHierarchy: boolean = useUiStateStore((state) => state.ui.enablePopup)
+  const searchView: SearchView = isHierarchy
+    ? networkId === currentNetworkId
+      ? 'main'
+      : 'subnetwork'
+    : undefined
   // Search query stored in the global store
   const query: string = useFilterStore((state) => state.search.query)
 
@@ -83,6 +120,7 @@ export const SearchBox = (): JSX.Element => {
   const addMessage = useMessageStore((state) => state.addMessage)
 
   const clearSearch = (): void => {
+    clearResult()
     setQuery('')
     exclusiveSelect(networkId, [], [])
 
@@ -90,6 +128,7 @@ export const SearchBox = (): JSX.Element => {
   }
 
   const startSearch = (): void => {
+    clearResult()
     if (networkId === undefined || networkId === '') {
       logUi.warn(`[${startSearch.name}]: No network ID found`)
       addMessage({
@@ -173,16 +212,18 @@ export const SearchBox = (): JSX.Element => {
 
       const isAnyTargetSelected = isNodeTargetSelected || isEdgeTargetSelected
 
-      if (
-        isAnyTargetSelected &&
-        query !== '' &&
-        nodesToBeSelected.length === 0 &&
-        edgesToBeSelected.length === 0
-      ) {
-        logUi.info(`[${startSearch.name}]: No results found. Showing message.`)
-        addMessage({
-          message: `No matches for search term "${query}" found in the active network`,
-          severity: MessageSeverity.INFO,
+      if (isAnyTargetSelected && query !== '') {
+        setLastResult({
+          networkId,
+          query,
+          summary: describeSearchResult({
+            query,
+            nodeCount: nodesToBeSelected.length,
+            edgeCount: edgesToBeSelected.length,
+            searchedNodes: isNodeTargetSelected,
+            searchedEdges: isEdgeTargetSelected,
+            view: searchView,
+          }),
         })
       } else if (!isAnyTargetSelected && query !== '') {
         logUi.warn(`[${startSearch.name}]: No search target selected.`)
@@ -270,6 +311,9 @@ export const SearchBox = (): JSX.Element => {
     <>
       <Tooltip
         title={<SearchExamplesTooltip />}
+        open={examplesOpen && !countHovered}
+        onOpen={() => setExamplesOpen(true)}
+        onClose={() => setExamplesOpen(false)}
         placement="left"
         arrow
         enterDelay={500}
@@ -294,8 +338,21 @@ export const SearchBox = (): JSX.Element => {
             placeholder="Search current network"
             inputProps={{ 'aria-label': 'search' }}
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              clearResult()
+              setQuery(e.target.value)
+            }}
             onKeyDown={handleKeyDown}
+          />
+          <SearchResultCount
+            summary={
+              lastResult !== undefined &&
+              lastResult.networkId === networkId &&
+              lastResult.query === query
+                ? lastResult.summary
+                : undefined
+            }
+            onHoverChange={setCountHovered}
           />
           <SearchControls
             searchTerm={query}

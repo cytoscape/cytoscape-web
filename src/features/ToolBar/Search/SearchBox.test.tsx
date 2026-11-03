@@ -1,6 +1,6 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import React from 'react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFilterStore } from '../../../data/hooks/stores/FilterStore'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
@@ -37,6 +37,28 @@ describe('SearchBox', () => {
   const setQueryMock = vi.fn()
   const setSearchStateMock = vi.fn()
 
+  // The search runs on the active view; `enablePopup` is on while the current
+  // network is a hierarchy.
+  const setActiveView = (activeNetworkView: string, enablePopup: boolean) => {
+    ;(useUiStateStore as unknown as import('vitest').Mock).mockImplementation(
+      (selector) => selector({ ui: { activeNetworkView, enablePopup } }),
+    )
+  }
+
+  const submit = (): void => {
+    fireEvent.click(screen.getByTestId('search-submit-button'))
+  }
+
+  // Turns on the Edges target (Nodes is on by default).
+  const searchEdgesToo = (): void => {
+    fireEvent.click(screen.getByTestId('search-settings-button'))
+    fireEvent.click(screen.getByLabelText('Edges'))
+  }
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
 
@@ -50,6 +72,10 @@ describe('SearchBox', () => {
         options: { exact: false, operator: 'OR' },
         index: {
           net1: { [GraphObjectType.NODE]: {}, [GraphObjectType.EDGE]: {} },
+          net1_sub1: {
+            [GraphObjectType.NODE]: {},
+            [GraphObjectType.EDGE]: {},
+          },
         },
         indexedColumns: { net1: {} },
       },
@@ -65,9 +91,7 @@ describe('SearchBox', () => {
     ;(
       useFilterStore.getState as unknown as import('vitest').Mock
     ).mockReturnValue(filterStoreState)
-    ;(useUiStateStore as unknown as import('vitest').Mock).mockImplementation(
-      (selector) => selector({ ui: { activeNetworkView: 'net1' } }),
-    )
+    setActiveView('net1', false)
     ;(useWorkspaceStore as unknown as import('vitest').Mock).mockImplementation(
       (selector) =>
         selector({
@@ -82,6 +106,10 @@ describe('SearchBox', () => {
               nodeTable: { columns: new Map(), rows: new Map() },
               edgeTable: { columns: new Map(), rows: new Map() },
             },
+            net1_sub1: {
+              nodeTable: { columns: new Map(), rows: new Map() },
+              edgeTable: { columns: new Map(), rows: new Map() },
+            },
           },
         }),
     )
@@ -90,19 +118,174 @@ describe('SearchBox', () => {
     )
   })
 
-  it('shows "No matches found" when a search target is selected but no matches occur', async () => {
+  it('shows "No matches" in the field, not a snackbar, when nothing matches', () => {
     ;(runSearch as import('vitest').Mock).mockReturnValue([]) // No matches
 
     render(<SearchBox />)
+    submit()
 
-    const submitButton = screen.getByTestId('search-submit-button')
-    fireEvent.click(submitButton)
+    expect(screen.getByTestId('search-result-count').textContent).toBe(
+      'No matches',
+    )
+    expect(screen.getByRole('status').textContent).toBe(
+      'No matches for "test-query".',
+    )
+    expect(addMessageMock).not.toHaveBeenCalled()
+  })
 
-    expect(addMessageMock).toHaveBeenCalledWith({
-      message:
-        'No matches for search term "test-query" found in the active network',
-      severity: MessageSeverity.INFO,
+  it('shows the node count in the field after a node search', () => {
+    ;(runSearch as import('vitest').Mock).mockReturnValue(['n1', 'n2'])
+
+    render(<SearchBox />)
+    expect(screen.queryByTestId('search-result-count')).toBeNull()
+    submit()
+
+    expect(exclusiveSelectMock).toHaveBeenLastCalledWith(
+      'net1',
+      ['n1', 'n2'],
+      [],
+    )
+    expect(screen.getByTestId('search-result-count').textContent).toBe(
+      '2 nodes',
+    )
+    expect(screen.getByRole('status').textContent).toBe('2 nodes selected.')
+    expect(addMessageMock).not.toHaveBeenCalled()
+  })
+
+  it('counts nodes and edges when both are searched', () => {
+    ;(runSearch as import('vitest').Mock)
+      .mockReturnValueOnce(['n1'])
+      .mockReturnValueOnce(['e1', 'e2', 'e3'])
+
+    render(<SearchBox />)
+    searchEdgesToo()
+    submit()
+
+    expect(screen.getByTestId('search-result-count').textContent).toBe(
+      '1 node · 3 edges',
+    )
+  })
+
+  it('removes the count when the query is edited', () => {
+    ;(runSearch as import('vitest').Mock).mockReturnValue(['n1'])
+
+    render(<SearchBox />)
+    submit()
+    expect(screen.queryByTestId('search-result-count')).not.toBeNull()
+
+    fireEvent.change(screen.getByLabelText('search'), {
+      target: { value: 'test-quer' },
     })
+
+    expect(screen.queryByTestId('search-result-count')).toBeNull()
+    expect(screen.getByRole('status').textContent).toBe('')
+  })
+
+  it('removes the count when the search is cleared', () => {
+    ;(runSearch as import('vitest').Mock).mockReturnValue(['n1'])
+
+    render(<SearchBox />)
+    submit()
+    fireEvent.click(screen.getByTestId('search-clear-button'))
+
+    expect(screen.queryByTestId('search-result-count')).toBeNull()
+  })
+
+  it('replaces the count with the next search result', () => {
+    ;(runSearch as import('vitest').Mock)
+      .mockReturnValueOnce(['n1', 'n2'])
+      .mockReturnValueOnce(['n1'])
+
+    render(<SearchBox />)
+    submit()
+    submit()
+
+    expect(screen.getAllByTestId('search-result-count')).toHaveLength(1)
+    expect(screen.getByTestId('search-result-count').textContent).toBe('1 node')
+  })
+
+  it('names the subnetwork view of a hierarchy', () => {
+    setActiveView('net1_sub1', true)
+    ;(runSearch as import('vitest').Mock).mockReturnValue(['n1', 'n2'])
+
+    render(<SearchBox />)
+    submit()
+
+    expect(exclusiveSelectMock).toHaveBeenLastCalledWith(
+      'net1_sub1',
+      ['n1', 'n2'],
+      [],
+    )
+    expect(screen.getByRole('status').textContent).toBe(
+      '2 nodes selected in the subnetwork view.',
+    )
+  })
+
+  it('searches the current network while no view is active', () => {
+    // A network the App API creates is never loaded through the workspace,
+    // which is what sets the active view; it stays ''.
+    setActiveView('', false)
+    ;(runSearch as import('vitest').Mock).mockReturnValue(['n1'])
+
+    render(<SearchBox />)
+    submit()
+
+    expect(exclusiveSelectMock).toHaveBeenLastCalledWith('net1', ['n1'], [])
+    expect(screen.getByTestId('search-result-count').textContent).toBe('1 node')
+    expect(addMessageMock).not.toHaveBeenCalled()
+  })
+
+  it('names the main network view of a hierarchy', () => {
+    setActiveView('net1', true)
+    ;(runSearch as import('vitest').Mock).mockReturnValue(['n1', 'n2'])
+
+    render(<SearchBox />)
+    submit()
+
+    expect(screen.getByRole('status').textContent).toBe(
+      '2 nodes selected in the main network view.',
+    )
+  })
+
+  it('hides a count left by a search on another network view', () => {
+    ;(runSearch as import('vitest').Mock).mockReturnValue(['n1'])
+
+    const { rerender } = render(<SearchBox />)
+    submit()
+    setActiveView('net1_sub1', true)
+    rerender(<SearchBox />)
+
+    expect(screen.queryByTestId('search-result-count')).toBeNull()
+  })
+
+  it('shows the full sentence below the count on hover, not the examples', () => {
+    vi.useFakeTimers()
+    ;(runSearch as import('vitest').Mock).mockReturnValue(['n1', 'n2'])
+
+    render(<SearchBox />)
+    submit()
+
+    fireEvent.mouseOver(screen.getByTestId('search-result-count'))
+    act(() => {
+      vi.advanceTimersByTime(1000)
+    })
+
+    const tooltip = screen.getByRole('tooltip')
+    expect(tooltip.textContent).toBe('2 nodes selected.')
+    expect(tooltip.getAttribute('data-popper-placement')).toMatch(/^bottom/)
+    expect(screen.queryByText('Search Examples:')).toBeNull()
+  })
+
+  it('still shows the examples when hovering the input', () => {
+    vi.useFakeTimers()
+
+    render(<SearchBox />)
+    fireEvent.mouseOver(screen.getByLabelText('search'))
+    act(() => {
+      vi.advanceTimersByTime(1000)
+    })
+
+    expect(screen.queryByText('Search Examples:')).not.toBeNull()
   })
 
   it('shows "No search target selected" when no target is selected and a search is performed', async () => {
