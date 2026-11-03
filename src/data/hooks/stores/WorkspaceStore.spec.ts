@@ -229,6 +229,33 @@ describe('useWorkspaceStore', () => {
         expect(activeView()).toBe('network-1_42')
       })
 
+      it('follows a switch made by a listener of the switch it is in', () => {
+        // Subscribers run inside set(): the network:switched bridge, say, with
+        // an app that redirects one network to another. The outer call must
+        // not move the view back to the network it was asked for.
+        const unsubscribe = useWorkspaceStore.subscribe(
+          (state) => state.workspace.currentNetworkId,
+          (networkId) => {
+            if (networkId === 'network-2') {
+              useWorkspaceStore.getState().setCurrentNetworkId('network-3')
+            }
+          },
+        )
+        try {
+          act(() => {
+            useWorkspaceStore.getState().setCurrentNetworkId('network-1')
+            useWorkspaceStore.getState().setCurrentNetworkId('network-2')
+          })
+        } finally {
+          unsubscribe()
+        }
+
+        expect(useWorkspaceStore.getState().workspace.currentNetworkId).toBe(
+          'network-3',
+        )
+        expect(activeView()).toBe('network-3')
+      })
+
       it('leaves a subnetwork view of the previous network', () => {
         act(() => {
           useWorkspaceStore.getState().setCurrentNetworkId('network-1')

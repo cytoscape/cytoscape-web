@@ -134,10 +134,14 @@ export const useWorkspaceStore = create(
           // search act on the network shown before. Only a URL-driven load
           // used to set it, so App API switches never did (#927). A view of
           // the new network is kept: a selected subnetwork, or the boot
-          // restore of ?activeNetworkView=.
+          // restore of ?activeNetworkView=. Read the committed id, not newId:
+          // subscribers run inside set(), and one that switched again (a
+          // network:switched listener) has already moved the view on.
+          const currentId =
+            useWorkspaceStore.getState().workspace.currentNetworkId
           const ui = useUiStateStore.getState()
-          if (!UiImpl.isViewOfNetwork(ui.ui.activeNetworkView, newId)) {
-            ui.setActiveNetworkView(newId)
+          if (!UiImpl.isViewOfNetwork(ui.ui.activeNetworkView, currentId)) {
+            ui.setActiveNetworkView(currentId)
           }
         },
         setName: (name: string) => {
