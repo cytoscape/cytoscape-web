@@ -65,7 +65,7 @@ The main orchestrator component that manages the hierarchy viewer layout and sta
   - `HCX::interactionNetworkHost` (optional - host for interaction network queries)
 - Registers the Circle Packing renderer if hierarchy is detected
 - Manages selection state and extracts subsystem information from selected nodes
-- Names the selected subsystem (`getSubsystemName`) by the attribute the node label is mapped to, else its `name` column, else its node id: HCX files need not have a `name` column (the test fixtures name nodes with `n`), and a null, absent or blank value counts as none
+- Names the selected subsystem (`getSubsystemName`) by the attribute the node label is mapped to, else its `name` column, else its node id: HCX files need not have a `name` column (the test fixtures name nodes with `n`), and a null, absent or blank value, or a list with no non-blank item, counts as none
 - Coordinates between Circle Packing view and SubNetwork view
 - Handles multiple node selection and validates that selections are from the same branch
 - Displays appropriate messages when hierarchy is not detected or no subsystem is selected

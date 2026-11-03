@@ -35,6 +35,20 @@ describe('getSubsystemName', () => {
     ).toBe('42')
   })
 
+  // A list column can hold an empty list, or only blank items
+  it.each([[[]], [[null, '']]])('treats the list %j as no value', (empty) => {
+    expect(
+      getSubsystemName({ name: empty, label: empty } as any, 'label', '42'),
+    ).toBe('42')
+    expect(
+      getSubsystemName(
+        { name: 'Subsystem 42', label: empty } as any,
+        'label',
+        '42',
+      ),
+    ).toBe('Subsystem 42')
+  })
+
   it('stringifies non-string values', () => {
     expect(getSubsystemName({ name: 7 }, undefined, '42')).toBe('7')
     expect(getSubsystemName({ name: false }, undefined, '42')).toBe('false')
