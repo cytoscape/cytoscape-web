@@ -27,6 +27,7 @@ import {
 import { useSubNetworkStore } from '../store/SubNetworkStore'
 import { getHcxMetadata } from '../utils/hierarchyUtil'
 import { getSubNetworkId } from '../utils/subnetworkQueryUtil'
+import { getSubsystemName } from '../utils/subsystemName'
 import { CirclePackingPanel } from './CirclePackingLayout/CirclePackingPanel'
 import { DuplicateNodeSeparator } from './CirclePackingLayout/DataBuilderUtil'
 import FilterPanel from './FilterPanel/FilterPanel'
@@ -195,15 +196,7 @@ export const MainPanel = (): JSX.Element => {
     const nodeLabelMappingAttr: string | undefined =
       visualStyle?.nodeLabel?.mapping?.attribute
 
-    let nameVal = row['name']
-    if (nodeLabelMappingAttr !== undefined) {
-      const mappedVal = row[nodeLabelMappingAttr]
-      if (mappedVal !== undefined) {
-        nameVal = mappedVal
-      }
-    }
-    // const name: ValueType = nodeLabelMappingAttr !== undefined ? row.nodeLabelMappingAttr : row.name
-    setSubNetworkName(nameVal.toString())
+    setSubNetworkName(getSubsystemName(row, nodeLabelMappingAttr, idString))
     const newQuery: Query = { nodeIds: memberIds as number[] }
     if (interactionUuid === undefined || interactionUuid === '') {
       setQuery(newQuery)

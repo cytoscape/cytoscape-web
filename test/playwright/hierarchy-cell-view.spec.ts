@@ -549,3 +549,60 @@ test.describe('Right panel on leaving a hierarchy (#881)', () => {
     await expect(page.locator(openButton)).toBeVisible()
   })
 })
+
+// The HCX fixtures name their subsystems with an `n` column, not `name`, and
+// the node label is not mapped to it. Selecting one used to throw in
+// MainPanel and take the app to its error page.
+test.describe('Selecting a subsystem without a name', () => {
+  test('opens the subsystem under its node id', async ({ page }) => {
+    const pageErrors: string[] = []
+    page.on('pageerror', (error) => pageErrors.push(error.message))
+    // Hold the subnetwork fetch open, so the panel stays on its loading
+    // message, which names the subsystem.
+    await page.route('**/*ndexbio.org/**', () => {})
+
+    await importNetworkFile(
+      page,
+      MIXED_INTERACTION_HCX,
+      'Test Network 50 nodes',
+    )
+    await expect(page.getByText('Please select a subsystem')).toBeVisible({
+      timeout: 15000,
+    })
+
+    const selected = await page.evaluate(() => {
+      type Result<T> = { success: boolean; data: T }
+      const api = (
+        window as unknown as {
+          CyWebApi: {
+            workspace: {
+              getNetworkIds: () => Result<{ networkIds: string[] }>
+            }
+            selection: {
+              exclusiveSelect: (
+                networkId: string,
+                nodeIds: string[],
+                edgeIds: string[],
+              ) => Result<unknown>
+            }
+          }
+        }
+      ).CyWebApi
+      const [hierarchyId] = api.workspace.getNetworkIds().data.networkIds
+      return api.selection.exclusiveSelect(hierarchyId, ['0'], []).success
+    })
+    expect(selected).toBe(true)
+
+    const mainPanel = page.locator(
+      '[data-testid="hierarchy-viewer-main-panel"]',
+    )
+    await expect(mainPanel.getByText('Loading network data:')).toBeVisible({
+      timeout: 15000,
+    })
+    await expect(mainPanel.getByText('(0)')).toBeVisible()
+    await expect(
+      page.getByText('An unexpected error has occurred'),
+    ).toHaveCount(0)
+    expect(pageErrors).toEqual([])
+  })
+})
