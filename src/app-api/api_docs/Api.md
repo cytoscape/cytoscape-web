@@ -489,7 +489,8 @@ for `nodeLabel → name` is created automatically.
 The resulting `CyNetwork` is added to NetworkStore, TableStore, VisualStyleStore,
 ViewModelStore, and NetworkSummaryStore. If `addToWorkspace: true` (the default),
 the network is added to WorkspaceStore and set as the current network (firing
-`network:created` and `network:switched` events). Pass `addToWorkspace: false` to
+`network:created` and `network:switched` events), which the table browser,
+layout tools and toolbar search then act on. Pass `addToWorkspace: false` to
 create the network without adding it to the workspace.
 
 | Error Code | Condition                              |
@@ -1442,6 +1443,10 @@ Returns the currently active network ID.
 #### `switchCurrentNetwork(networkId): ApiResult`
 
 Switches the active network. Triggers `network:switched` via the Event Bus.
+
+The workspace's own tools — the table browser, the layout tools, the toolbar
+search — then act on the network switched to. Switching to the network already
+shown keeps a Sub Network Viewer subnetwork that is selected in it.
 
 | Error Code | Condition                           |
 | ---------- | ----------------------------------- |
