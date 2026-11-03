@@ -26,6 +26,13 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
 
 ### Fixed
 
+- **The workspace's tools follow an App API change of the current network**
+  (#927). After `workspace.switchCurrentNetwork`, or a
+  `network.createNetworkFrom*` call that makes the new network current
+  (`addToWorkspace`, or `navigate` for CX2), the table browser and the layout tools still acted on the network shown
+  before (and the toolbar search did until #926). They now act on the network
+  the call made current. Switching to the network already shown keeps a
+  selected Sub Network Viewer subnetwork.
 - **`viewport.updateNodePositions` validates positions** (#874). A value that
   is not `[x, y]` or `[x, y, z]` of finite numbers (`['10', 20]`, `[NaN, 0]`,
   `[1]`) was written into the view as it was. The call now fails with `APP9`

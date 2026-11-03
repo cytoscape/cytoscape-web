@@ -7,6 +7,7 @@ import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { InstalledApp } from '../../../models/AppModel/InstalledApp'
 import { Workspace } from '../../../models/WorkspaceModel'
 import { toPlainObject } from '../../db/serialization'
+import { DEFAULT_UI_STATE, useUiStateStore } from './UiStateStore'
 import { useWorkspaceStore } from './WorkspaceStore'
 
 const FIXED_TIME = '2026-06-01T00:00:00.000Z'
@@ -176,6 +177,67 @@ describe('useWorkspaceStore', () => {
       expect(result.current.workspace.networkIds).not.toContain(
         'network-not-in-list',
       )
+    })
+
+    // The active view is what the table browser, layout tools and search
+    // act on. Only a URL-driven load used to set it, so an App API switch
+    // left it naming the network shown before (#927).
+    describe('active network view', () => {
+      const activeView = () => useUiStateStore.getState().ui.activeNetworkView
+
+      beforeEach(() => {
+        useUiStateStore.setState({ ui: DEFAULT_UI_STATE })
+      })
+
+      it('follows a change of the current network', () => {
+        act(() => {
+          useWorkspaceStore.getState().setCurrentNetworkId('network-1')
+          useUiStateStore.getState().setActiveNetworkView('network-1')
+          useWorkspaceStore.getState().setCurrentNetworkId('network-2')
+        })
+
+        expect(activeView()).toBe('network-2')
+      })
+
+      it('is set when no view was active yet', () => {
+        act(() => {
+          useWorkspaceStore.getState().setCurrentNetworkId('network-1')
+        })
+
+        expect(activeView()).toBe('network-1')
+      })
+
+      it('keeps a subnetwork view when the same network is selected again', () => {
+        act(() => {
+          useWorkspaceStore.getState().setCurrentNetworkId('network-1')
+          useUiStateStore.getState().setActiveNetworkView('network-1_42')
+          useWorkspaceStore.getState().setCurrentNetworkId('network-1')
+        })
+
+        expect(activeView()).toBe('network-1_42')
+      })
+
+      it('keeps a subnetwork view of the network that becomes current', () => {
+        // The boot restore of ?activeNetworkView= can land before the
+        // current network is set.
+        act(() => {
+          useWorkspaceStore.getState().setCurrentNetworkId('network-2')
+          useUiStateStore.getState().setActiveNetworkView('network-1_42')
+          useWorkspaceStore.getState().setCurrentNetworkId('network-1')
+        })
+
+        expect(activeView()).toBe('network-1_42')
+      })
+
+      it('leaves a subnetwork view of the previous network', () => {
+        act(() => {
+          useWorkspaceStore.getState().setCurrentNetworkId('network-1')
+          useUiStateStore.getState().setActiveNetworkView('network-1_42')
+          useWorkspaceStore.getState().setCurrentNetworkId('network-2')
+        })
+
+        expect(activeView()).toBe('network-2')
+      })
     })
   })
 

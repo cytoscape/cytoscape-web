@@ -15,6 +15,7 @@ import { IdType } from '../../../models/IdType'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { GraphObjectType } from '../../../models/NetworkModel'
 import { Table, ValueType, ValueTypeName } from '../../../models/TableModel'
+import { isViewOfNetwork } from '../../../models/UiModel/impl/uiImpl'
 import { Search } from './Search'
 import { SearchControls } from './SearchControls'
 import { SearchExamplesTooltip } from './SearchExamplesTooltip'
@@ -74,14 +75,16 @@ export const SearchBox = (): JSX.Element => {
   )
 
   // Search the active view only while it is the current network or one of its
-  // subnetworks (`<networkId>_<subsystemId>`). Only a network load through the
-  // workspace sets the active view: it starts as '', and an App API switch of
-  // the current network leaves it naming the network shown before.
-  const networkId: IdType =
-    activeNetworkId === currentNetworkId ||
-    (activeNetworkId?.startsWith(`${currentNetworkId}_`) ?? false)
-      ? activeNetworkId
-      : currentNetworkId
+  // subnetworks (`<networkId>_<subsystemId>`). `setCurrentNetworkId` moves the
+  // active view along (#927), but it starts as '' and any path that changes
+  // the current network some other way would leave it naming the network
+  // shown before.
+  const networkId: IdType = isViewOfNetwork(
+    activeNetworkId ?? '',
+    currentNetworkId,
+  )
+    ? activeNetworkId
+    : currentNetworkId
 
   // On while the current network is a hierarchy; its only other view is the
   // Sub Network Viewer's subnetwork.

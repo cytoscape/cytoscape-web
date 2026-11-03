@@ -874,7 +874,7 @@ const useWorkspaceApi: () => WorkspaceApi // React hook — returns workspaceApi
 - **`getNetworkList`**: Joins `workspace.networkIds` with `NetworkSummaryStore.getState().summaries`. Networks with no summary entry are silently omitted; callers should not assume all IDs in `getNetworkIds()` have summaries.
 - **`getNetworkSummary`**: Validates `networkId ∈ workspace.networkIds` before reading the summary. Returns `APP1` if either check fails.
 - **`getCurrentNetworkId`**: Returns `APP2` when `workspace.networkIds.length === 0 || workspace.currentNetworkId === ''`.
-- **`switchCurrentNetwork`**: Validates `networkId ∈ workspace.networkIds`, then calls `WorkspaceStore.getState().setCurrentNetworkId(networkId)`. The `network:switched` event is dispatched automatically by the existing `initEventBus` Zustand subscription — no explicit dispatch is needed here.
+- **`switchCurrentNetwork`**: Validates `networkId ∈ workspace.networkIds`, then calls `WorkspaceStore.getState().setCurrentNetworkId(networkId)`. The `network:switched` event is dispatched automatically by the existing `initEventBus` Zustand subscription — no explicit dispatch is needed here. `setCurrentNetworkId` also moves `UiStateStore`'s `activeNetworkView` to the new network unless it already shows a view of it (#927).
 - **`setWorkspaceName`**: Validates `name.trim() !== ''`, then calls `WorkspaceStore.getState().setName(name.trim())`.
 
 #### 1.5.11 Context Menu API

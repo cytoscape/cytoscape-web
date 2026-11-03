@@ -49,6 +49,7 @@ Generated from the `test.describe` titles — keep this list in sync when adding
 or removing a spec.
 
 - **`annotation-canvas-lifecycle.spec.ts`** — Annotation canvas lifecycle (2 tests)
+- **`app-api-active-network-view.spec.ts`** — App API network changes move the active view (#927) (1 test)
 - **`cookie-consent.spec.ts`** — Cookie Consent (3 tests)
 - **`cross-tab-sync.spec.ts`** — cross-tab synchronization (4 tests)
 - **`cywebapi-ready.spec.ts`** — window.CyWebApi public surface (1 test)

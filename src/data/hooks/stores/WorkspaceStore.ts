@@ -13,6 +13,7 @@ import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { InstalledApp } from '../../../models/AppModel/InstalledApp'
 import { IdType } from '../../../models/IdType'
 import { WorkspaceStore } from '../../../models/StoreModel/WorkspaceStoreModel'
+import * as UiImpl from '../../../models/UiModel/impl/uiImpl'
 import { Workspace } from '../../../models/WorkspaceModel'
 import * as WorkspaceImpl from '../../../models/WorkspaceModel/impl/workspaceImpl'
 import { announceDatabaseReset } from '@/data/db/lifecycle'
@@ -20,6 +21,7 @@ import { deleteDb, putWorkspaceToDb } from '../../db'
 import { toPlainObject } from '../../db/serialization'
 import { isHydrating } from './hydrationContext'
 import { suspendWritesUntilReload } from './persistenceScheduler'
+import { useUiStateStore } from './UiStateStore'
 
 const EMPTY_WORKSPACE: Workspace = {
   id: '',
@@ -128,6 +130,15 @@ export const useWorkspaceStore = create(
             )
             return state
           })
+          // The active view follows, or the table browser, layout tools and
+          // search act on the network shown before. Only a URL-driven load
+          // used to set it, so App API switches never did (#927). A view of
+          // the new network is kept: a selected subnetwork, or the boot
+          // restore of ?activeNetworkView=.
+          const ui = useUiStateStore.getState()
+          if (!UiImpl.isViewOfNetwork(ui.ui.activeNetworkView, newId)) {
+            ui.setActiveNetworkView(newId)
+          }
         },
         setName: (name: string) => {
           set((state) => {

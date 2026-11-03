@@ -99,9 +99,10 @@ and the query it was computed for, so it is never shown for another view.
 
 The search runs on `activeNetworkView` only while that is the current network
 or one of its subnetworks (`<networkId>_<subsystemId>`); otherwise it runs on
-`currentNetworkId`. Only a network load through the workspace sets the active
-view: it starts as `''`, and an App API switch of the current network leaves it
-naming the network shown before.
+`currentNetworkId`. `WorkspaceStore.setCurrentNetworkId` moves the active view
+to the new current network (#927), so App API switches reach it too, but the
+view starts as `''` and the guard keeps the search on the shown network should
+any other path change the current network without it.
 
 On a hierarchy (`ui.enablePopup`), the sentence names the view searched: the
 **main network view** when the search ran on the current network, the
