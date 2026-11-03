@@ -79,12 +79,13 @@ describe('App API changes of the current network', () => {
     useWorkspaceStore.getState().setCurrentNetworkId('net-a')
     useUiStateStore.getState().setActiveNetworkView('net-a')
 
-    networkApi.createNetworkFromEdgeList({
+    const result = networkApi.createNetworkFromEdgeList({
       name: 'Detached',
       edgeList,
       addToWorkspace: false,
     })
 
+    expect(result.success).toBe(true)
     expect(activeView()).toBe('net-a')
   })
 })
