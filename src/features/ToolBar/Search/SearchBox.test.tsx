@@ -235,6 +235,39 @@ describe('SearchBox', () => {
     expect(addMessageMock).not.toHaveBeenCalled()
   })
 
+  it('searches the current network when the active view belongs to another network', () => {
+    // The App API can switch the current network without touching the active
+    // view, which then still names the network shown before.
+    setActiveView('net0', false)
+    ;(runSearch as import('vitest').Mock).mockReturnValue(['n1'])
+
+    render(<SearchBox />)
+    submit()
+
+    expect(exclusiveSelectMock).toHaveBeenLastCalledWith('net1', ['n1'], [])
+    expect(screen.getByTestId('search-result-count').textContent).toBe('1 node')
+  })
+
+  it('counts only edges for an edge-only search', () => {
+    ;(runSearch as import('vitest').Mock).mockReturnValue(['e1', 'e2', 'e3'])
+
+    render(<SearchBox />)
+    fireEvent.click(screen.getByTestId('search-settings-button'))
+    fireEvent.click(screen.getByLabelText('Nodes'))
+    fireEvent.click(screen.getByLabelText('Edges'))
+    submit()
+
+    expect(exclusiveSelectMock).toHaveBeenLastCalledWith(
+      'net1',
+      [],
+      ['e1', 'e2', 'e3'],
+    )
+    expect(screen.getByTestId('search-result-count').textContent).toBe(
+      '3 edges',
+    )
+    expect(addMessageMock).not.toHaveBeenCalled()
+  })
+
   it('names the main network view of a hierarchy', () => {
     setActiveView('net1', true)
     ;(runSearch as import('vitest').Mock).mockReturnValue(['n1', 'n2'])

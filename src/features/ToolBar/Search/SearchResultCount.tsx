@@ -69,7 +69,12 @@ const CountLabel = ({
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         sx={{
-          flexShrink: 0,
+          // Gives way to the query and the buttons in a narrow field, and
+          // leaves phone widths, where the field is too narrow for it, to the
+          // live region.
+          flexShrink: 1,
+          minWidth: 0,
+          display: { xs: 'none', sm: 'block' },
           pl: 1,
           color: theme.palette.text.secondary,
           cursor: 'default',

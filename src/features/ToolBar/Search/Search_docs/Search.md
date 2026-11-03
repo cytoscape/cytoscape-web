@@ -79,7 +79,9 @@ between the query and the buttons, like a browser's find-in-page count (#923):
   longer queues a Snackbar; the warnings (no network, index not ready, no
   search target) still do.
 - Below the `lg` breakpoint the field (30vw) is too narrow for the nouns, so
-  the count shortens to `2 · 13`.
+  the count shortens to `2 · 13`. It may shrink further to leave room for the
+  query and the buttons, and below `sm` (phone widths) it is not shown; the live
+  region still announces the result.
 - Hovering the count, or tabbing to it (it is focusable, since below `lg` the
   label is only numbers), shows the whole sentence below the field, e.g. "2
   nodes and 13 edges selected in the subnetwork view." While the pointer or the
@@ -94,6 +96,12 @@ between the query and the buttons, like a browser's find-in-page count (#923):
 The count disappears when the query is edited or cleared, and the next search
 replaces it: there is no queue and no timer. It is kept with the network view
 and the query it was computed for, so it is never shown for another view.
+
+The search runs on `activeNetworkView` only while that is the current network
+or one of its subnetworks (`<networkId>_<subsystemId>`); otherwise it runs on
+`currentNetworkId`. Only a network load through the workspace sets the active
+view: it starts as `''`, and an App API switch of the current network leaves it
+naming the network shown before.
 
 On a hierarchy (`ui.enablePopup`), the sentence names the view searched: the
 **main network view** when the search ran on the current network, the

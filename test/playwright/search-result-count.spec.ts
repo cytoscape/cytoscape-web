@@ -48,6 +48,11 @@ const search = async (page: Page, query: string): Promise<void> => {
 
 const count = (page: Page) => page.getByTestId('search-result-count')
 
+// The count's tooltip. The examples tooltip it holds closed can still be in
+// the DOM while it animates out (WebKit), so a bare role match finds both.
+const countTooltip = (page: Page) =>
+  page.getByRole('tooltip').filter({ hasText: 'selected' })
+
 test.describe('Search result count (#923)', () => {
   test('shows the count in the field, replaces it, and removes it on edit', async ({
     page,
@@ -66,7 +71,7 @@ test.describe('Search result count (#923)', () => {
     expect((await searchBox.boundingBox())?.height).toBe(heightBefore)
 
     await count(page).hover()
-    await expect(page.getByRole('tooltip')).toHaveText('2 nodes selected.')
+    await expect(countTooltip(page)).toHaveText('2 nodes selected.')
 
     // No match: shown in the field, and no Snackbar is queued
     await search(page, 'nonsense')
@@ -112,7 +117,7 @@ test.describe('Search result count (#923)', () => {
       '25 nodes selected in the main network view.',
     )
     await count(page).hover()
-    await expect(page.getByRole('tooltip')).toHaveText(
+    await expect(countTooltip(page)).toHaveText(
       '25 nodes selected in the main network view.',
     )
   })

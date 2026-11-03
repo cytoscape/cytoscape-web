@@ -73,12 +73,15 @@ export const SearchBox = (): JSX.Element => {
     (state) => state.workspace.currentNetworkId,
   )
 
-  // The active view starts as '' and only a network load through the
-  // workspace sets it, so a network the App API created has none yet.
+  // Search the active view only while it is the current network or one of its
+  // subnetworks (`<networkId>_<subsystemId>`). Only a network load through the
+  // workspace sets the active view: it starts as '', and an App API switch of
+  // the current network leaves it naming the network shown before.
   const networkId: IdType =
-    activeNetworkId === undefined || activeNetworkId === ''
-      ? currentNetworkId
-      : activeNetworkId
+    activeNetworkId === currentNetworkId ||
+    (activeNetworkId?.startsWith(`${currentNetworkId}_`) ?? false)
+      ? activeNetworkId
+      : currentNetworkId
 
   // On while the current network is a hierarchy; its only other view is the
   // Sub Network Viewer's subnetwork.
