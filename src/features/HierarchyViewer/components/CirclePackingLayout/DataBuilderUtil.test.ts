@@ -173,4 +173,68 @@ describe('cyNetDag2tree2 with numeric HCX::members', () => {
   it('falls back to the id when no name was found', () => {
     expect(ringNames(new Map([['189', 'SMARCD2']]))).toEqual(['0', 'SMARCD2'])
   })
+
+  it('finds the name of a zero-padded id, and keeps the id as written otherwise', () => {
+    const padded = tableWith({
+      complex: {
+        name: 'Complex',
+        [SubsystemTag.members]: ['0189', '007', '00'],
+      },
+    })
+    const elements: D3TreeNode[] = []
+    cyNetDag2tree2(
+      cyNet.getElementById('complex') as NodeSingular,
+      null,
+      padded,
+      {},
+      elements,
+      new Set(),
+      new Map([
+        ['189', 'SMARCD2'],
+        ['0', 'ACTB'],
+      ]),
+    )
+
+    expect(
+      elements.filter((e) => e.isMember === true).map((e) => e.name),
+    ).toEqual(['SMARCD2', '007', 'ACTB'])
+  })
+
+  // A member listed on the parent but on no child gets its ring on the parent
+  describe('on a parent subsystem', () => {
+    const parentNet = cytoscape({
+      headless: true,
+      elements: [
+        { data: { id: 'parent' } },
+        { data: { id: 'child' } },
+        { data: { id: 'e', source: 'parent', target: 'child' } },
+      ],
+    })
+    const parentTable = tableWith({
+      parent: { name: 'Parent', [SubsystemTag.members]: [1, 2] },
+      child: { name: 'Child', [SubsystemTag.members]: [1] },
+    })
+
+    const parentRingName = (names: Map<string, string>): string | undefined => {
+      const elements: D3TreeNode[] = []
+      cyNetDag2tree2(
+        parentNet.getElementById('parent') as NodeSingular,
+        null,
+        parentTable,
+        {},
+        elements,
+        new Set(),
+        names,
+      )
+      return elements.find((e) => e.id === 'parent-2')?.name
+    }
+
+    it('labels the ring with the name looked up for its id', () => {
+      expect(parentRingName(new Map([['2', 'TAF11']]))).toBe('TAF11')
+    })
+
+    it('falls back to the id when no name was found', () => {
+      expect(parentRingName(new Map())).toBe('2')
+    })
+  })
 })

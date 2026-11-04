@@ -66,12 +66,17 @@ export const findRoot = (cyNet: Core): NodeSingular | undefined => {
 /**
  * Label of a protein ring: the name looked up for its member id, else the
  * member itself. `HCX::members` holds numbers while the lookup is keyed by
- * their decimal strings, so the key is normalized here.
+ * their canonical decimal strings, so the key is normalized here: a padded
+ * `'0189'` is requested as node 189. Stripped as text, since going through
+ * Number would round a large id.
  */
 const memberLabel = (
   member: string | number,
   rootMemberMap: Map<string, string>,
-): string => rootMemberMap.get(String(member)) ?? String(member)
+): string => {
+  const id = String(member)
+  return rootMemberMap.get(id.replace(/^0+(?=\d)/, '')) ?? id
+}
 
 /**
  * Function to convert a DAG to a tree for stratify

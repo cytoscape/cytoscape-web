@@ -7,8 +7,9 @@ import NetworkFn, { Network } from '../../../../models/NetworkModel'
 import { Table } from '../../../../models/TableModel'
 import { NetworkView, NodeView } from '../../../../models/ViewModel'
 import { CirclePackingView } from '../../model/CirclePackingView'
+import { SubsystemTag } from '../../model/HcxMetaTag'
 import { D3TreeNode } from './D3TreeNode'
-import { cyNetDag2tree2, findRoot, getMembers } from './DataBuilderUtil'
+import { cyNetDag2tree2, findRoot } from './DataBuilderUtil'
 import { resolveMemberNames } from './memberNames'
 
 /**
@@ -50,9 +51,13 @@ export const createTreeLayout = async ({
   const allMembers = new Set<string>()
 
   // Protein names of the member ids, keyed by id. Empty when the members are
-  // names already, or the lookup failed: the rings then show the ids.
+  // names already, or the lookup failed: the rings then show the ids. Only
+  // HCX::members holds ids; HCX::memberNames is shown as it is, even when a
+  // name looks like a number. A parent's list includes its descendants'
+  // members, so the root's list covers every ring.
+  const rootMembers = nodeTable.rows.get(root.id())?.[SubsystemTag.members]
   const id2name: Map<string, string> = await resolveMemberNames({
-    members: getMembers(root.id(), nodeTable),
+    members: Array.isArray(rootMembers) ? rootMembers : [],
     interactionNetworkId,
     interactionNetworkHostUrl,
     getToken,

@@ -79,8 +79,10 @@ export const fetchGeneNamesFromIds = async (
 }
 
 // NDEx answers `{ "<node id>": { "name": "<name>" }, ... }`. Only the outer
-// shape is required; entries without a string name are skipped one by one.
-const NodeNameEntrySchema = z.object({ name: z.string() })
+// shape is required; entries without a usable name are skipped one by one.
+const NodeNameEntrySchema = z.object({
+  name: z.string().refine((name) => name.trim() !== ''),
+})
 
 /**
  * Gets the `name` attribute of the given nodes, keyed by node id.
@@ -94,7 +96,7 @@ const NodeNameEntrySchema = z.object({ name: z.string() })
  * @param accessToken - Optional authentication token
  * @param ndexUrl - Optional NDEx base URL (defaults to module configuration if not provided)
  * @returns Map from node id (as a decimal string) to its name. Nodes without a
- * string name are left out.
+ * name, or with a blank one, are left out.
  * @throws if the request fails or the response is not an object keyed by id
  */
 export const fetchNodeNamesByIds = async (

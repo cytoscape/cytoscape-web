@@ -200,15 +200,16 @@ Components for validating HCX network compliance.
 When `HCX::members` holds node ids of the interaction network (MuSIC does),
 `createTreeLayout` looks their names up in that network
 (`resolveMemberNames` in `memberNames.ts`, via `fetchNodeNamesByIds`) and
-labels each ring with the name found for its id. A ring whose name was not
-found, or a failed lookup, shows the id. `HCX::memberNames` lists are shown as
-they are.
+labels each ring with the name found for its id. A ring whose name is missing
+or blank, or a failed lookup, shows the id. `HCX::memberNames` lists are shown
+as they are, even when a name looks like a number.
 
 The interaction network and its host come from this hierarchy's own network
 summary (`interactionNetworkSource`), never from a shared store. The renderer
 is mounted hidden at startup, so it often builds before the summary has
-loaded. It waits for the summary and builds again whenever the interaction
-network changes. It used to take the network id from `SubNetworkStore`, which
+loaded. It waits for the summary and the primary view, and builds again whenever
+the interaction network changes or `NetworkTabs` reuses the panel for another
+hierarchy. It used to take the network id from `SubNetworkStore`, which
 `MainPanel` filled in only after reading the metadata, so after a reload the
 startup build looked names up in network `''` and the rings showed numbers
 (#933). The lookup returns names keyed by id: reading them back by position

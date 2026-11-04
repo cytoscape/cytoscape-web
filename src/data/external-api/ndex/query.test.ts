@@ -413,16 +413,18 @@ describe('fetchNodeNamesByIds', () => {
     ])
   })
 
-  it('skips entries that carry no string name', async () => {
+  it('skips entries that carry no usable name', async () => {
     clientReturning({
       '1': { name: 'GENE1' },
       '2': { name: 42 },
       '3': null,
       '4': 'GENE4',
       '5': {},
+      '6': { name: '' },
+      '7': { name: '   ' },
     })
 
-    const names = await fetchNodeNamesByIds('uuid', [1, 2, 3, 4, 5])
+    const names = await fetchNodeNamesByIds('uuid', [1, 2, 3, 4, 5, 6, 7])
 
     expect([...names.entries()]).toEqual([['1', 'GENE1']])
   })
@@ -435,6 +437,7 @@ describe('fetchNodeNamesByIds', () => {
     const names = await fetchNodeNamesByIds('uuid', [1])
 
     expect(names.get('1')).toBe('GENE1')
+    expect(names.get('__proto__')).toBe('EVIL')
     expect(({} as Record<string, unknown>).name).toBeUndefined()
   })
 

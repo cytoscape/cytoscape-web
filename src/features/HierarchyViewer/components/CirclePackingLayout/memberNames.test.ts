@@ -33,12 +33,23 @@ describe('isNumericMemberId', () => {
     expect(isNumericMemberId(member)).toBe(true)
   })
 
-  it.each([-1, 1.5, Number.NaN, '', ' 1', '1e3', '0x1', 'SMARCD2', null, {}])(
-    'rejects %j',
-    (member) => {
-      expect(isNumericMemberId(member)).toBe(false)
-    },
-  )
+  it.each([
+    -1,
+    1.5,
+    Number.NaN,
+    '',
+    ' 1',
+    '1e3',
+    '0x1',
+    'SMARCD2',
+    null,
+    {},
+    // Above Number.MAX_SAFE_INTEGER: would be rounded to a different node id
+    9007199254740992,
+    '9007199254740993',
+  ])('rejects %j', (member) => {
+    expect(isNumericMemberId(member)).toBe(false)
+  })
 })
 
 describe('interactionNetworkSource', () => {

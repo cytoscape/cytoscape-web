@@ -25,7 +25,13 @@ export const isNumericMemberId = (member: unknown): boolean => {
   if (typeof member === 'number') {
     return Number.isSafeInteger(member) && member >= 0
   }
-  return typeof member === 'string' && DECIMAL_ID.test(member)
+  // Same safe-integer limit as a number: resolveMemberNames sends Number(member),
+  // and a rounded id would fetch the name of a different node
+  return (
+    typeof member === 'string' &&
+    DECIMAL_ID.test(member) &&
+    Number.isSafeInteger(Number(member))
+  )
 }
 
 /**
