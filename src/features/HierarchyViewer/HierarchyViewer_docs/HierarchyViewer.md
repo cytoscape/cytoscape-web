@@ -196,9 +196,10 @@ Components for validating HCX network compliance.
 
 ### Search and protein rings
 
-A protein ring (a terminal ring with no rings inside) is generated from a
-subsystem's member list (`HCX::members` or `HCX::memberNames`) and has no row
-in the node table. `cyNetDag2tree2` marks these rings with
+A protein ring is generated from a subsystem's member list (`HCX::members`
+or `HCX::memberNames`) and has no row in the node table. A subsystem with no
+children is a terminal ring too, so only the flag tells them apart:
+`cyNetDag2tree2` marks these rings with
 `D3TreeNode.isMember`. The search can only select table rows, so a query for a
 protein selects the subsystems that list it (often the whole chain of
 ancestors, root included) and not the ring itself (#930).
@@ -210,8 +211,11 @@ highlight:
 
 - only after a search of the hierarchy itself (a search of the Sub Network
   Viewer's network is ignored), and only while the selection is still that
-  search's result. Selecting anything else (clicking a ring, Select ▸ Deselect
-  All, clearing the search) drops the highlight
+  search's result. Selecting anything else (Select ▸ Deselect All, clearing
+  the search) drops the highlight. Any click on a Cell View circle clears
+  `lastSearch` too: when the search selected a single subsystem, clicking one
+  of its proteins selects that subsystem again, and the selection alone would
+  not change
 - only rings directly inside a subsystem the search selected, including every
   copy of a subsystem the hierarchy reaches more than once
 - rings whose label matches any token of the query, using the search's own

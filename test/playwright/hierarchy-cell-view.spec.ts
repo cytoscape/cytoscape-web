@@ -679,4 +679,51 @@ test.describe('Searching a hierarchy in the Cell View (#930)', () => {
     await page.getByTestId('search-clear-button').click()
     await expect.poll(redRings).toEqual([])
   })
+
+  // A click in the Cell View can leave the selection as the search left it:
+  // here the search selects Nucleoplasm alone, and clicking one of its
+  // proteins selects Nucleoplasm again. The search outline must still go.
+  test('drops the search outline when a ring is clicked', async ({ page }) => {
+    await page.route('**/*ndexbio.org/**', () => {})
+
+    await importNetworkFile(page, MEMBER_NAMES_HCX, 'Member Names Hierarchy')
+    await page.getByRole('tab', { name: 'Cell View' }).click()
+    const svg = page.locator('[data-testid="circle-packing-svg"]')
+    await expect(svg.locator('circle')).toHaveCount(10)
+
+    const strokeOf = (ringId: string) =>
+      svg.evaluate(
+        (element, id) =>
+          [...element.querySelectorAll('circle')]
+            .find(
+              (circle) =>
+                (circle as unknown as { __data__?: { data: { id: string } } })
+                  .__data__?.data.id === id,
+            )
+            ?.getAttribute('stroke'),
+        ringId,
+      )
+
+    // AND: only Nucleoplasm is named Nucleoplasm and lists DR1.
+    await page.getByTestId('search-settings-button').click()
+    await page.getByTestId('search-operator-and-radio').click()
+    await page.getByRole('button', { name: 'Close', exact: true }).click()
+    const input = page.locator('[data-testid="search-box-input"] input')
+    await input.fill('Nucleoplasm DR1')
+    await input.press('Enter')
+    await expect(page.getByTestId('search-result-count')).toHaveText('1 node')
+    await expect.poll(() => strokeOf('2-DR1')).toBe('red')
+
+    // Click TAF11, inside Nucleoplasm. The click handler is d3's; dispatch it
+    // on the circle itself, since the ring's label lies over it (#931).
+    await svg.evaluate((element) => {
+      const ring = [...element.querySelectorAll('circle')].find(
+        (circle) =>
+          (circle as unknown as { __data__?: { data: { id: string } } })
+            .__data__?.data.id === '2-TAF11',
+      )
+      ring?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    await expect.poll(() => strokeOf('2-DR1')).not.toBe('red')
+  })
 })

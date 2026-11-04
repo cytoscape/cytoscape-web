@@ -133,6 +133,7 @@ export const CirclePackingPanel = ({
   // Filter and search state
   const searchState: SearchState = useFilterStore((state) => state.search.state)
   const lastSearch = useFilterStore((state) => state.search.lastSearch)
+  const setLastSearch = useFilterStore((state) => state.setLastSearch)
 
   // Renderer functions
   const getRendererFunction = useRendererFunctionStore(
@@ -195,6 +196,11 @@ export const CirclePackingPanel = ({
 
   const handleCircleClick = useCallback(
     (e: any, d: d3Hierarchy.HierarchyNode<D3TreeNode>) => {
+      // A click replaces the search's selection, even when it selects the
+      // same subsystems again (a protein of the one subsystem the search
+      // selected), so the search's protein rings stop being outlined (#930).
+      setLastSearch(undefined)
+
       if (d.height !== 0) {
         // Selected item is a subsystem
         if (d.data.originalId !== undefined) {
@@ -227,7 +233,13 @@ export const CirclePackingPanel = ({
         }
       }
     },
-    [network.id, exclusiveSelect, setSelectedNodes, setSelectedLeaves],
+    [
+      network.id,
+      exclusiveSelect,
+      setSelectedNodes,
+      setSelectedLeaves,
+      setLastSearch,
+    ],
   )
 
   const handleCircleMouseMove = useCallback((e: any) => {
