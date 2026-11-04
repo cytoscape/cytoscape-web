@@ -49,5 +49,10 @@ export interface Renderer {
     visible?: boolean,
 
     hasTab?: boolean,
+
+    /**
+     * Optional read-only mode for embedded network views
+     */
+    readOnly?: boolean,
   ) => ReactElement
 }

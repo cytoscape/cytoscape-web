@@ -15,7 +15,11 @@ import {
 } from 'react-router-dom'
 
 import appConfig from './assets/config.json'
-import { currentDbScope, MANUAL_ROUTE_SEGMENT } from './data/db/dbScope'
+import {
+  currentDbScope,
+  MANUAL_ROUTE_SEGMENT,
+  EMBED_ROUTE_SEGMENT,
+} from './data/db/dbScope'
 import { useCredentialStore } from './data/hooks/stores/CredentialStore'
 import { CookieConsentWidget } from './features/CookieConsent'
 import { Error } from './features/Error'
@@ -38,12 +42,14 @@ import { theme } from './theme'
 // close to free (3206ms -> 3194ms) because its boundary renders immediately;
 // it is kept for symmetry and for slower links.
 //
-// A manual tab (/manual/*) never mounts AppShell, so it skips both downloads.
-const isManualTab = currentDbScope() === 'manual'
+// Standalone tabs never mount AppShell, so they skip both downloads.
+const isStandaloneTab = currentDbScope() !== 'app'
 const loadAppShell = () => import('./features/AppShell')
 const loadWorkspaceEditor = () => import('./features/Workspace/WorkspaceEditor')
-const appShellPromise = isManualTab ? undefined : loadAppShell()
-const workspaceEditorPromise = isManualTab ? undefined : loadWorkspaceEditor()
+const appShellPromise = isStandaloneTab ? undefined : loadAppShell()
+const workspaceEditorPromise = isStandaloneTab
+  ? undefined
+  : loadWorkspaceEditor()
 
 // React.lazy only subscribes to these when its boundary first renders. A chunk
 // that fails to load before then would surface as an unhandledrejection —
@@ -58,6 +64,7 @@ const WorkspaceEditor = React.lazy(
 )
 // Not prefetched: most sessions never open the manual (#840).
 const ManualApp = React.lazy(() => import('./features/Manual/ManualApp'))
+const EmbedApp = React.lazy(() => import('./features/Embed/EmbedApp'))
 
 const routerOpts: any = {}
 
@@ -78,6 +85,15 @@ const router = createBrowserRouter(
         element={
           <Suspense fallback={null}>
             <ManualApp />
+          </Suspense>
+        }
+        errorElement={<Error />}
+      />
+      <Route
+        path={`/${EMBED_ROUTE_SEGMENT}/:networkId`}
+        element={
+          <Suspense fallback={<BootShell />}>
+            <EmbedApp />
           </Suspense>
         }
         errorElement={<Error />}
