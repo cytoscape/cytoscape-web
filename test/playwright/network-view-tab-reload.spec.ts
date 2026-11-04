@@ -21,13 +21,18 @@ const networkPersisted = (page: Page): Promise<boolean> =>
         open.onerror = () => resolve(false)
         open.onsuccess = () => {
           const db = open.result
+          // One transaction, so its completion means every count has finished
+          const transaction = db.transaction(stores, 'readonly')
           const counts = stores.map((store) =>
-            db.transaction(store, 'readonly').objectStore(store).count(),
+            transaction.objectStore(store).count(),
           )
-          // Requests finish in order, so the last one means all are done
-          counts[counts.length - 1].onsuccess = () => {
+          transaction.oncomplete = () => {
             db.close()
             resolve(counts.every((count) => count.result > 0))
+          }
+          transaction.onabort = () => {
+            db.close()
+            resolve(false)
           }
         }
       }),
@@ -93,7 +98,9 @@ test.describe('Network view tab after a reload', () => {
     )
   })
 
-  test('opens the tab a shared URL names', async ({ page }) => {
+  test('opens the tab a shared URL names, for that load only', async ({
+    page,
+  }) => {
     await importHierarchy(page)
 
     await page.goto(`${page.url()}?activeNetworkViewTab=1`)
@@ -102,6 +109,17 @@ test.describe('Network view tab after a reload', () => {
       'aria-selected',
       'true',
       { timeout: 15000 },
+    )
+    // The parameter applies to one load: it leaves the URL, and the next reload
+    // opens the first tab.
+    await expect(page).not.toHaveURL(/activeNetworkViewTab/)
+
+    await page.reload()
+
+    await expect(tab(page, 'Cell View')).toBeVisible({ timeout: 15000 })
+    await expect(tab(page, 'Tree View')).toHaveAttribute(
+      'aria-selected',
+      'true',
     )
   })
 })
