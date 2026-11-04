@@ -121,7 +121,38 @@ const SCENARIOS = [
       return waitForNetwork(page, 'embed-subsystem-canvas')
     },
   },
+  {
+    name: 'cytoplasm',
+    about:
+      'MuSIC v1 "Cytoplasm" clicked after the pointer rests on it for 600 ms',
+    url: `/embed/${HIERARCHY}`,
+    setup: async (page) => {
+      await page
+        .locator('[data-testid="embed-cell-view"] circle')
+        .first()
+        .waitFor({ timeout: 120000 })
+      await page.waitForTimeout(1500)
+      const point = await circleCentre(page, 'Cytoplasm')
+      await page.mouse.move(point.x, point.y)
+      await page.waitForTimeout(600)
+    },
+    run: async (page) => {
+      const point = await circleCentre(page, 'Cytoplasm')
+      await page.mouse.click(point.x, point.y)
+      return waitForNetwork(page, 'embed-subsystem-canvas')
+    },
+  },
 ]
+
+/** Centre of the Cell View circle whose tooltip is `name`. */
+const circleCentre = (page, name) =>
+  page.evaluate((name) => {
+    const circle = [
+      ...document.querySelectorAll('[data-testid="embed-cell-view"] circle'),
+    ].find((c) => c.querySelector('title')?.textContent === name)
+    const r = circle.getBoundingClientRect()
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2 }
+  }, name)
 
 const now = (page) => page.evaluate(() => performance.now())
 

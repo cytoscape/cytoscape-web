@@ -20,6 +20,8 @@ import { cellViewRoot } from './buildCellView'
 type Circle = HierarchyCircularNode<D3TreeNode>
 
 const FIT_PADDING = 10
+/** How long a pointer rests on a subsystem before its network is prefetched. */
+const HOVER_PREFETCH_MS = 150
 const colorScale = getColorMapper([0, 5])
 
 /** Subsystem id of a circle: duplicates in a DAG point at their original. */
@@ -32,6 +34,8 @@ interface CellViewProps {
   /** Leaf names to outline, from the subsystem view's selection. */
   highlightedLeafNames: ReadonlySet<string>
   onSelectSubsystem: (subsystemId: IdType | undefined) => void
+  /** A pointer has rested on a subsystem's circle; used to prefetch it. */
+  onHoverSubsystem?: (subsystemId: IdType) => void
   /** A leaf click: its name, and the subsystem that contains it. */
   onSelectLeaf: (leafName: string, parentSubsystemId: IdType) => void
 }
@@ -49,6 +53,7 @@ export const CellView = ({
   selectedSubsystemId,
   highlightedLeafNames,
   onSelectSubsystem,
+  onHoverSubsystem,
   onSelectLeaf,
 }: CellViewProps) => {
   const svgRef = useRef<SVGSVGElement>(null)
@@ -64,6 +69,8 @@ export const CellView = ({
   onSelectSubsystemRef.current = onSelectSubsystem
   const onSelectLeafRef = useRef(onSelectLeaf)
   onSelectLeafRef.current = onSelectLeaf
+  const onHoverSubsystemRef = useRef(onHoverSubsystem)
+  onHoverSubsystemRef.current = onHoverSubsystem
 
   /** Show circles down to `depth`, and the labels of that level and of leaves above it. */
   const showDepth = (depth: number): void => {
@@ -110,6 +117,8 @@ export const CellView = ({
     shownDepthRef.current = -1
     const wrapper = svg.append('g')
 
+    let hoverTimer: ReturnType<typeof setTimeout> | undefined
+
     svg.on('click', (event: MouseEvent) => {
       if (event.target === svgElement) onSelectSubsystemRef.current(undefined)
     })
@@ -132,6 +141,17 @@ export const CellView = ({
           onSelectLeafRef.current(d.data.name, subsystemIdOf(d.parent))
         }
       })
+      // The root is under every pointer that enters the view; not a sign
+      // of interest, so it is not prefetched.
+      .on('mouseenter', (_event: MouseEvent, d: Circle) => {
+        clearTimeout(hoverTimer)
+        if (d.height === 0 || d.depth === 0) return
+        hoverTimer = setTimeout(
+          () => onHoverSubsystemRef.current?.(subsystemIdOf(d)),
+          HOVER_PREFETCH_MS,
+        )
+      })
+      .on('mouseleave', () => clearTimeout(hoverTimer))
       .append('title')
       .text((d) => getLabel(d.data.id, cellView, d.data.name))
 
@@ -186,6 +206,7 @@ export const CellView = ({
     fit()
 
     return () => {
+      clearTimeout(hoverTimer)
       resizeObserver.disconnect()
       svg.on('.zoom', null)
       svg.selectAll('*').remove()

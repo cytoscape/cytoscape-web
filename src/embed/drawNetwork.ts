@@ -1,13 +1,8 @@
 import { Collection, Core, ElementDefinition } from 'cytoscape'
 
-import { CyNetwork } from '@/models/CyNetworkModel'
 import { IdType } from '@/models/IdType'
-import VisualStyleFn from '@/models/VisualStyleModel'
-import { VisualEditorProperties } from '@/models/VisualStyleModel/VisualStyleOptions'
 
-import { buildEmbedElements } from './embedElements'
-
-const DEFAULT_BACKGROUND = '#ffffff'
+import { Drawing } from './drawing'
 
 /**
  * Main-thread time spent adding edges before yielding a frame. The frame's
@@ -19,32 +14,18 @@ const EDGE_BUDGET_MS = 12
 /** Edges added between checks of the time budget. */
 const EDGE_STEP = 250
 
-/** Used when the CX2 carries no visual editor properties. */
-const DEFAULT_EDITOR_PROPERTIES: VisualEditorProperties = {
-  nodeSizeLocked: false,
-  arrowColorMatchesEdge: false,
-  tableDisplayConfiguration: {
-    nodeTable: { columnConfiguration: [] },
-    edgeTable: { columnConfiguration: [] },
-  },
-}
-
 export interface DrawProgress {
   edgesDrawn: number
   edgeCount: number
 }
 
 export interface NetworkDrawing {
-  /** The network background colour, applied by the caller as CSS. */
-  background: string
   /** Settles when every edge is drawn, or after `cancel`. */
   edgesDone: Promise<void>
   cancel: () => void
 }
 
 interface DrawOptions {
-  /** Node positions that replace the network's own, such as a layout's. */
-  positions?: ReadonlyMap<IdType, [number, number]>
   /** Called after each batch of edges, including the last. */
   onProgress?: (progress: DrawProgress) => void
   /** Called with each batch of edges once it is added and styled. */
@@ -52,8 +33,7 @@ interface DrawOptions {
 }
 
 /**
- * Draw a network into `cy`, styled as the full app's pipeline styles it
- * (CyjsRenderer.tsx renderNetwork), from buildEmbedElements.
+ * Draw `drawing` (from buildDrawing) into `cy`.
  *
  * Nodes are drawn at once. Edges are drawn in batches, one batch per
  * frame, so a large network shows its nodes at once and stays responsive
@@ -62,28 +42,9 @@ interface DrawOptions {
  */
 export const drawNetwork = (
   cy: Core,
-  cyNetwork: CyNetwork,
-  { positions, onProgress, onEdgesAdded }: DrawOptions = {},
+  { nodes, edges, stylesheet }: Drawing,
+  { onProgress, onEdgesAdded }: DrawOptions = {},
 ): NetworkDrawing => {
-  const { network, nodeTable, edgeTable, visualStyle, networkViews } = cyNetwork
-  const view = VisualStyleFn.applyVisualStyle({
-    network,
-    networkView: networkViews[0],
-    nodeTable,
-    edgeTable,
-    visualStyle,
-  })
-  const editorProperties =
-    cyNetwork.visualStyleOptions?.visualEditorProperties ??
-    DEFAULT_EDITOR_PROPERTIES
-
-  const { nodes, edges, stylesheet } = buildEmbedElements(
-    cyNetwork,
-    view,
-    editorProperties,
-    positions,
-  )
-
   cy.startBatch()
   cy.elements().remove()
   cy.style(stylesheet as any)
@@ -109,10 +70,6 @@ export const drawNetwork = (
   })()
 
   return {
-    background:
-      (visualStyle.networkBackgroundColor?.defaultValue as
-        | string
-        | undefined) ?? DEFAULT_BACKGROUND,
     edgesDone,
     cancel: () => {
       cancelled = true

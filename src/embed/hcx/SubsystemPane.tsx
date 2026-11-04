@@ -25,7 +25,7 @@ export const SubsystemPane = ({
   selectedNodeIds,
   onSelectNode,
 }: SubsystemPaneProps) => {
-  const { cyNetwork, positions, filterConfig } = subsystem
+  const { cyNetwork, filterConfig, drawing } = subsystem
   const [filterEnabled, setFilterEnabled] = useState(true)
   const [checked, setChecked] = useState<DiscreteFilterValue[]>(() =>
     filterConfig === undefined
@@ -61,7 +61,7 @@ export const SubsystemPane = ({
     <div className="embed-viewer" data-testid="embed-subsystem-view">
       <CyView
         cyNetwork={cyNetwork}
-        positions={positions}
+        drawing={drawing}
         selectedNodeIds={selectedNodeIds}
         hiddenIds={hiddenIds}
         onNodeTap={onSelectNode}

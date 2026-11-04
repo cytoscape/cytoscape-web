@@ -8,6 +8,7 @@ import { IdType } from '@/models/IdType'
 import { NetworkSummary } from '@/models/NetworkSummaryModel'
 
 import { drawAnnotations } from './drawAnnotations'
+import { buildDrawing, Drawing } from './drawing'
 import { applyPositions, DrawProgress, drawNetwork } from './drawNetwork'
 import { runDefaultLayout } from './runDefaultLayout'
 import { addSearchStyle } from './searchHighlight'
@@ -27,8 +28,8 @@ interface CyViewProps {
   cyNetwork: CyNetwork
   /** Draw this summary's Cytoscape Desktop annotations. */
   annotationsFrom?: NetworkSummary
-  /** Positions applied over the CX2 ones, e.g. from applyCpLayout. */
-  positions?: Map<IdType, [number, number]>
+  /** The network, built ahead (e.g. in the prepare worker); else built here. */
+  drawing?: Drawing
   /** Run the full app's default layout; for networks without coordinates. */
   defaultLayout?: { networkId: IdType; isHierarchical: boolean }
   /** Nodes shown as selected. */
@@ -51,7 +52,7 @@ interface CyViewProps {
 export const CyView = ({
   cyNetwork,
   annotationsFrom,
-  positions,
+  drawing: prebuilt,
   defaultLayout,
   selectedNodeIds,
   hiddenIds,
@@ -105,8 +106,8 @@ export const CyView = ({
       }
     }
 
-    const drawing = drawNetwork(cy, cyNetwork, {
-      positions,
+    const network = prebuilt ?? buildDrawing(cyNetwork)
+    const drawing = drawNetwork(cy, network, {
       // Edges drawn after the first frame miss the filter effect below
       onEdgesAdded: (edges) => {
         const hidden = hiddenIdsRef.current
@@ -121,7 +122,7 @@ export const CyView = ({
         }
       },
     })
-    const backgroundColor = drawing.background
+    const backgroundColor = network.background
     addSearchStyle(cy)
     cy.style()
       .selector(`.${FILTER_HIDDEN_CLASS}`)
@@ -196,7 +197,7 @@ export const CyView = ({
     // One instance per network and layout input; selection and filters
     // update it in place below.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- annotationsFrom/defaultLayout/exposeForCompare are fixed per network
-  }, [cyNetwork, positions])
+  }, [cyNetwork, prebuilt])
 
   useEffect(() => {
     const cy = cyRef.current
@@ -208,7 +209,7 @@ export const CyView = ({
         else node.unselect()
       })
     })
-  }, [selectedNodeIds, cyNetwork, positions])
+  }, [selectedNodeIds, cyNetwork, prebuilt])
 
   useEffect(() => {
     const cy = cyRef.current
@@ -221,7 +222,7 @@ export const CyView = ({
           .addClass(FILTER_HIDDEN_CLASS)
       }
     })
-  }, [hiddenIds, cyNetwork, positions])
+  }, [hiddenIds, cyNetwork, prebuilt])
 
   return (
     <div className="embed-cy" style={{ background }}>

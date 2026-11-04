@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { getNDExBaseUrl } from '@/data/external-api/ndex/config'
 import { logApi } from '@/debug'
 import { CirclePackingView } from '@/features/HierarchyViewer/model/CirclePackingView'
 import { HcxMetaData } from '@/features/HierarchyViewer/model/HcxMetaData'
 import { getSubsystemName } from '@/features/HierarchyViewer/utils/subsystemName'
+import { Cx2 } from '@/models/CxModel/Cx2'
 import { CyNetwork } from '@/models/CyNetworkModel'
 import { IdType } from '@/models/IdType'
 import { NetworkSummary } from '@/models/NetworkSummaryModel'
@@ -14,7 +15,12 @@ import { EmbedSelection } from '../readSelectionFromSearch'
 import { Toolbar } from '../Toolbar'
 import { buildCellView } from './buildCellView'
 import { CellView } from './CellView'
-import { loadSubsystem, Subsystem } from './loadSubsystem'
+import {
+  fetchSubsystemCx2,
+  loadSubsystem,
+  Subsystem,
+  subsystemRequest,
+} from './loadSubsystem'
 import { SubsystemPane } from './SubsystemPane'
 
 type Tab = 'cell' | 'tree'
@@ -24,6 +30,9 @@ type Loadable<T> =
   | { kind: 'loading' }
   | { kind: 'failed'; message: string }
   | { kind: 'ready'; value: T }
+
+/** Subsystem requests kept, hovered or loaded, newest last. */
+const MAX_CACHED_REQUESTS = 4
 
 const messageOf = (error: unknown): string =>
   error instanceof Error ? error.message : String(error)
@@ -95,6 +104,33 @@ export const HcxViewer = ({
     }
   }, [hierarchy, rootNetworkId, ndexUrl])
 
+  // Requests started by a hover or a selection, so a click on a hovered
+  // subsystem finds its network already downloading or downloaded
+  const requestsRef = useRef(new Map<IdType, Promise<Cx2>>())
+  const requestCx2 = useCallback(
+    (id: IdType): Promise<Cx2> | undefined => {
+      const requests = requestsRef.current
+      const cached = requests.get(id)
+      if (cached !== undefined) {
+        // Newest last
+        requests.delete(id)
+        requests.set(id, cached)
+        return cached
+      }
+      const source = subsystemRequest(hierarchy.nodeTable, id, rootNetworkId)
+      if (source === undefined) return undefined
+      const request = fetchSubsystemCx2(source, ndexUrl)
+      // A failed request is retried on the next hover or click
+      request.catch(() => requests.delete(id))
+      requests.set(id, request)
+      if (requests.size > MAX_CACHED_REQUESTS) {
+        requests.delete(requests.keys().next().value as IdType)
+      }
+      return request
+    },
+    [hierarchy, rootNetworkId, ndexUrl],
+  )
+
   useEffect(() => {
     if (subsystemId === undefined || cellView.kind !== 'ready') {
       setSubsystem({ kind: 'idle' })
@@ -102,23 +138,23 @@ export const HcxViewer = ({
     }
     let cancelled = false
     setSubsystem({ kind: 'loading' })
-    loadSubsystem({
-      hierarchyId: networkId,
-      subsystemId,
-      hierarchyNodeTable: hierarchy.nodeTable,
-      rootNetworkId,
-      ndexUrl,
-      cellView: cellView.value,
-    })
-      .then((value) => {
+    const request = requestCx2(subsystemId)
+    if (request === undefined) {
+      setSubsystem({
+        kind: 'failed',
+        message: 'This subsystem has no interaction network.',
+      })
+      return
+    }
+    request
+      .then((cx2) => {
         if (cancelled) return
-        if (value === undefined) {
-          setSubsystem({
-            kind: 'failed',
-            message: 'This subsystem has no interaction network.',
-          })
-          return
-        }
+        const value = loadSubsystem({
+          hierarchyId: networkId,
+          subsystemId,
+          cx2,
+          cellView: cellView.value,
+        })
         setSubsystem({ kind: 'ready', value })
         const leafName = pendingLeafNameRef.current
         const urlNodeIds = pendingSubNodeIdsRef.current
@@ -138,7 +174,7 @@ export const HcxViewer = ({
     return () => {
       cancelled = true
     }
-  }, [subsystemId, cellView, networkId, hierarchy, rootNetworkId, ndexUrl])
+  }, [subsystemId, cellView, networkId, requestCx2])
 
   const selectSubsystem = (id: IdType | undefined): void => {
     if (id === subsystemId) return
@@ -220,6 +256,7 @@ export const HcxViewer = ({
                   selectedSubsystemId={subsystemId}
                   highlightedLeafNames={highlightedLeafNames}
                   onSelectSubsystem={selectSubsystem}
+                  onHoverSubsystem={(id) => void requestCx2(id)}
                   onSelectLeaf={selectLeaf}
                 />
               ) : (
