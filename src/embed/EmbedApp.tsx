@@ -101,6 +101,7 @@ export const EmbedApp = ({ networkId, initialSelection }: EmbedAppProps) => {
               summary={state.summary}
               hierarchy={state.cyNetwork}
               metadata={metadata}
+              drawing={state.drawing}
               initialSelection={initialSelection}
             />
           </Suspense>
@@ -111,6 +112,7 @@ export const EmbedApp = ({ networkId, initialSelection }: EmbedAppProps) => {
           networkId={networkId}
           summary={state.summary}
           cyNetwork={state.cyNetwork}
+          drawing={state.drawing}
           initialSelectedNodeIds={initialSelection.nodeIds}
         />
       )

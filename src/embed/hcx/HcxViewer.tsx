@@ -5,22 +5,19 @@ import { logApi } from '@/debug'
 import { CirclePackingView } from '@/features/HierarchyViewer/model/CirclePackingView'
 import { HcxMetaData } from '@/features/HierarchyViewer/model/HcxMetaData'
 import { getSubsystemName } from '@/features/HierarchyViewer/utils/subsystemName'
-import { Cx2 } from '@/models/CxModel/Cx2'
 import { CyNetwork } from '@/models/CyNetworkModel'
+import { networkModelToImplNetwork } from '@/models/NetworkModel/impl/networkImpl'
 import { IdType } from '@/models/IdType'
 import { NetworkSummary } from '@/models/NetworkSummaryModel'
 
 import { CyView } from '../CyView'
+import { Drawing } from '../drawing'
+import { prepare } from '../preparer'
 import { EmbedSelection } from '../readSelectionFromSearch'
 import { Toolbar } from '../Toolbar'
 import { buildCellView } from './buildCellView'
 import { CellView } from './CellView'
-import {
-  fetchSubsystemCx2,
-  loadSubsystem,
-  Subsystem,
-  subsystemRequest,
-} from './loadSubsystem'
+import { Subsystem, subsystemRequest } from './loadSubsystem'
 import { SubsystemPane } from './SubsystemPane'
 
 type Tab = 'cell' | 'tree'
@@ -31,9 +28,6 @@ type Loadable<T> =
   | { kind: 'failed'; message: string }
   | { kind: 'ready'; value: T }
 
-/** Subsystem requests kept, hovered or loaded, newest last. */
-const MAX_CACHED_REQUESTS = 4
-
 const messageOf = (error: unknown): string =>
   error instanceof Error ? error.message : String(error)
 
@@ -41,6 +35,8 @@ interface HcxViewerProps {
   networkId: IdType
   summary: NetworkSummary
   hierarchy: CyNetwork
+  /** The hierarchy network's drawing, for the Hierarchy tab. */
+  drawing: Drawing
   metadata: HcxMetaData
   /**
    * Selection from the URL: the first id in `nodeIds` that is a subsystem
@@ -59,6 +55,7 @@ export const HcxViewer = ({
   networkId,
   summary,
   hierarchy,
+  drawing,
   metadata,
   initialSelection,
 }: HcxViewerProps) => {
@@ -90,7 +87,13 @@ export const HcxViewer = ({
   useEffect(() => {
     let cancelled = false
     setCellView({ kind: 'loading' })
-    buildCellView(hierarchy, rootNetworkId, ndexUrl)
+    // The Cell View walks the network model's Cytoscape.js instance, which
+    // the prepare worker leaves out
+    buildCellView(
+      { ...hierarchy, network: networkModelToImplNetwork(hierarchy.network) },
+      rootNetworkId,
+      ndexUrl,
+    )
       .then((value) => {
         if (!cancelled) setCellView({ kind: 'ready', value })
       })
@@ -104,32 +107,22 @@ export const HcxViewer = ({
     }
   }, [hierarchy, rootNetworkId, ndexUrl])
 
-  // Requests started by a hover or a selection, so a click on a hovered
-  // subsystem finds its network already downloading or downloaded
-  const requestsRef = useRef(new Map<IdType, Promise<Cx2>>())
-  const requestCx2 = useCallback(
-    (id: IdType): Promise<Cx2> | undefined => {
-      const requests = requestsRef.current
-      const cached = requests.get(id)
-      if (cached !== undefined) {
-        // Newest last
-        requests.delete(id)
-        requests.set(id, cached)
-        return cached
-      }
-      const source = subsystemRequest(hierarchy.nodeTable, id, rootNetworkId)
-      if (source === undefined) return undefined
-      const request = fetchSubsystemCx2(source, ndexUrl)
-      // A failed request is retried on the next hover or click
-      request.catch(() => requests.delete(id))
-      requests.set(id, request)
-      if (requests.size > MAX_CACHED_REQUESTS) {
-        requests.delete(requests.keys().next().value as IdType)
-      }
-      return request
-    },
-    [hierarchy, rootNetworkId, ndexUrl],
+  // The prepare worker keeps the last few subsystem downloads, so a click
+  // on a hovered subsystem finds its network already downloading
+  const requestOf = useCallback(
+    (id: IdType) => subsystemRequest(hierarchy.nodeTable, id, rootNetworkId),
+    [hierarchy, rootNetworkId],
   )
+  const prefetchSubsystem = (id: IdType): void => {
+    const request = requestOf(id)
+    if (request === undefined) return
+    prepare({
+      type: 'prefetch',
+      key: `${networkId}:${id}`,
+      request,
+      host: ndexUrl,
+    }).promise.catch(() => undefined)
+  }
 
   useEffect(() => {
     if (subsystemId === undefined || cellView.kind !== 'ready') {
@@ -138,7 +131,7 @@ export const HcxViewer = ({
     }
     let cancelled = false
     setSubsystem({ kind: 'loading' })
-    const request = requestCx2(subsystemId)
+    const request = requestOf(subsystemId)
     if (request === undefined) {
       setSubsystem({
         kind: 'failed',
@@ -146,15 +139,17 @@ export const HcxViewer = ({
       })
       return
     }
-    request
-      .then((cx2) => {
+    prepare<Subsystem>({
+      type: 'subsystem',
+      key: `${networkId}:${subsystemId}`,
+      request,
+      host: ndexUrl,
+      hierarchyId: networkId,
+      subsystemId,
+      cellView: cellView.value,
+    })
+      .promise.then((value) => {
         if (cancelled) return
-        const value = loadSubsystem({
-          hierarchyId: networkId,
-          subsystemId,
-          cx2,
-          cellView: cellView.value,
-        })
         setSubsystem({ kind: 'ready', value })
         const leafName = pendingLeafNameRef.current
         const urlNodeIds = pendingSubNodeIdsRef.current
@@ -174,7 +169,7 @@ export const HcxViewer = ({
     return () => {
       cancelled = true
     }
-  }, [subsystemId, cellView, networkId, requestCx2])
+  }, [subsystemId, cellView, networkId, requestOf, ndexUrl])
 
   const selectSubsystem = (id: IdType | undefined): void => {
     if (id === subsystemId) return
@@ -256,7 +251,7 @@ export const HcxViewer = ({
                   selectedSubsystemId={subsystemId}
                   highlightedLeafNames={highlightedLeafNames}
                   onSelectSubsystem={selectSubsystem}
-                  onHoverSubsystem={(id) => void requestCx2(id)}
+                  onHoverSubsystem={prefetchSubsystem}
                   onSelectLeaf={selectLeaf}
                 />
               ) : (
@@ -271,6 +266,7 @@ export const HcxViewer = ({
             {tab === 'tree' && (
               <CyView
                 cyNetwork={hierarchy}
+                drawing={drawing}
                 annotationsFrom={summary}
                 defaultLayout={treeLayout}
                 selectedNodeIds={treeSelection}

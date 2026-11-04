@@ -78,6 +78,9 @@ export default defineConfig({
     port: 5502,
     strictPort: true,
   },
+  // The prepare worker (src/embed/prepare.worker.ts) is an ES module, so
+  // it can share chunks with the page
+  worker: { format: 'es' },
   build: {
     outDir: 'dist',
     emptyOutDir: false,

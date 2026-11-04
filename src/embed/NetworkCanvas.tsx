@@ -6,6 +6,7 @@ import { IdType } from '@/models/IdType'
 import { NetworkSummary } from '@/models/NetworkSummaryModel'
 
 import { CyView, FIT_PADDING } from './CyView'
+import { Drawing } from './drawing'
 import { NodeAttributes } from './NodeAttributes'
 import { highlightNodes } from './searchHighlight'
 import { searchNodes } from './searchNodes'
@@ -17,6 +18,8 @@ interface NetworkCanvasProps {
   networkId: IdType
   summary: NetworkSummary
   cyNetwork: CyNetwork
+  /** The network's drawing, built in the prepare worker. */
+  drawing: Drawing
   /** Nodes selected on load, from the URL. */
   initialSelectedNodeIds: readonly IdType[]
 }
@@ -26,6 +29,7 @@ export const NetworkCanvas = ({
   networkId,
   summary,
   cyNetwork,
+  drawing,
   initialSelectedNodeIds,
 }: NetworkCanvasProps) => {
   const cyRef = useRef<Core | null>(null)
@@ -76,6 +80,7 @@ export const NetworkCanvas = ({
     <div className="embed-viewer">
       <CyView
         cyNetwork={cyNetwork}
+        drawing={drawing}
         annotationsFrom={summary}
         defaultLayout={defaultLayout}
         selectedNodeIds={initialSelectedNodeIds}
