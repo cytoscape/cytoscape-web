@@ -212,7 +212,9 @@ highlight:
 - only after a search of the hierarchy itself (a search of the Sub Network
   Viewer's network is ignored), and only while the selection is still that
   search's result. Selecting anything else (Select ▸ Deselect All, clearing
-  the search) drops the highlight. Any click on a Cell View circle clears
+  the search) drops the highlight for good: `SearchBox` forgets the search
+  once the selection stops matching it, so selecting the same nodes again
+  later does not bring the highlight back. Any click on a Cell View circle clears
   `lastSearch` too: when the search selected a single subsystem, clicking one
   of its proteins selects that subsystem again, and the selection alone would
   not change

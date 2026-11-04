@@ -680,6 +680,55 @@ test.describe('Searching a hierarchy in the Cell View (#930)', () => {
     await expect.poll(redRings).toEqual([])
   })
 
+  // The outline belongs to the search's selection, not to any equal one:
+  // once the selection changes, selecting the same nodes again by other means
+  // must not bring it back.
+  test('does not bring the outline back when the selection is restored', async ({
+    page,
+  }) => {
+    await page.route('**/*ndexbio.org/**', () => {})
+
+    await importNetworkFile(page, MEMBER_NAMES_HCX, 'Member Names Hierarchy')
+    await page.getByRole('tab', { name: 'Cell View' }).click()
+    const svg = page.locator('[data-testid="circle-packing-svg"]')
+    await expect(svg.locator('circle')).toHaveCount(10)
+
+    const redRings = () =>
+      svg.evaluate((element) =>
+        [...element.querySelectorAll('circle')]
+          .filter((circle) => circle.getAttribute('stroke') === 'red')
+          .map(
+            (circle) =>
+              (circle as unknown as { __data__: { data: { id: string } } })
+                .__data__.data.id,
+          )
+          .sort(),
+      )
+    const selectMenu = async (item: string): Promise<void> => {
+      await page
+        .locator('[data-testid="toolbar-select-menu-menu-button"]')
+        .click()
+      await page.getByRole('menuitem', { name: item, exact: true }).click()
+    }
+
+    // Every system lists DR1 or ACTB, so the search selects all four.
+    const input = page.locator('[data-testid="search-box-input"] input')
+    await input.fill('DR1 ACTB')
+    await input.press('Enter')
+    await expect(page.getByTestId('search-result-count')).toHaveText('4 nodes')
+    await expect.poll(redRings).toEqual(['2-DR1', '3-ACTB'])
+
+    await selectMenu('Deselect All')
+    await expect.poll(redRings).toEqual([])
+
+    await selectMenu('Select All Nodes')
+    await expect(page.getByText('Multiple nodes are selected')).toBeVisible()
+    await expect.poll(redRings).toEqual([])
+    // Give a late repaint the chance to bring it back before passing.
+    await page.waitForTimeout(500)
+    expect(await redRings()).toEqual([])
+  })
+
   // A click in the Cell View can leave the selection as the search left it:
   // here the search selects Nucleoplasm alone, and clicking one of its
   // proteins selects Nucleoplasm again. The search outline must still go.

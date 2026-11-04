@@ -181,6 +181,62 @@ describe('SearchBox', () => {
     expect(setLastSearchMock).toHaveBeenLastCalledWith(undefined)
   })
 
+  describe('keeping the recorded search', () => {
+    const run = {
+      id: 1,
+      networkId: 'net1',
+      query: 'test-query',
+      options: { exact: false, operator: 'OR' as const },
+      nodeIds: ['n1', 'n2'],
+    }
+
+    // Render with `run` recorded and `selectedNodes` selected on its network
+    // (`undefined`: the network has no view any more).
+    const renderWithRecordedSearch = (
+      selectedNodes: string[] | undefined,
+    ): void => {
+      const state = (
+        useFilterStore.getState as unknown as import('vitest').Mock
+      )()
+      const withRun = { ...state, search: { ...state.search, lastSearch: run } }
+      ;(useFilterStore as unknown as import('vitest').Mock).mockImplementation(
+        (selector) => selector(withRun),
+      )
+      ;(
+        useViewModelStore as unknown as import('vitest').Mock
+      ).mockImplementation((selector) =>
+        selector({
+          exclusiveSelect: exclusiveSelectMock,
+          getViewModel: (id: string) =>
+            id === 'net1' && selectedNodes !== undefined
+              ? { selectedNodes }
+              : undefined,
+        }),
+      )
+      render(<SearchBox />)
+    }
+
+    it('keeps it while the selection is the search result', () => {
+      renderWithRecordedSearch(['n2', 'n1'])
+
+      expect(setLastSearchMock).not.toHaveBeenCalled()
+    })
+
+    // #930: Deselect All, then Select All Nodes must not bring back the
+    // Cell View's search outline
+    it('forgets it once the selection changes', () => {
+      renderWithRecordedSearch([])
+
+      expect(setLastSearchMock).toHaveBeenCalledWith(undefined)
+    })
+
+    it('forgets it when the searched network has no view', () => {
+      renderWithRecordedSearch(undefined)
+
+      expect(setLastSearchMock).toHaveBeenCalledWith(undefined)
+    })
+  })
+
   it('counts nodes and edges when both are searched', () => {
     ;(runSearch as import('vitest').Mock)
       .mockReturnValueOnce(['n1'])

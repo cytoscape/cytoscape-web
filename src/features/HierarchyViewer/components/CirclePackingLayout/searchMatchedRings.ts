@@ -1,5 +1,6 @@
 import { HierarchyNode } from 'd3-hierarchy'
 
+import { selectionMatchesSearch } from '../../../../models/FilterModel/impl/filterStoreImpl'
 import { SearchRun } from '../../../../models/FilterModel/Search'
 import { IdType } from '../../../../models/IdType'
 import {
@@ -9,12 +10,6 @@ import {
 import { D3TreeNode } from './D3TreeNode'
 
 const NO_RINGS: ReadonlySet<string> = new Set()
-
-const sameIds = (a: readonly IdType[], b: readonly IdType[]): boolean => {
-  const setA = new Set(a)
-  const setB = new Set(b)
-  return setA.size === setB.size && [...setA].every((id) => setB.has(id))
-}
 
 /**
  * The protein rings of the Cell View that a search on the hierarchy matched
@@ -32,7 +27,9 @@ const sameIds = (a: readonly IdType[], b: readonly IdType[]): boolean => {
  *
  * The rings stay matched while the selection is still the search's result.
  * Once the user selects something else (a ring, Select ▸ Deselect All), the
- * search no longer describes what is shown, and nothing matches.
+ * search no longer describes what is shown, and nothing matches. `SearchBox`
+ * then also clears the recorded search, so selecting the same nodes again by
+ * other means does not bring the rings back.
  *
  * @param root Root of the Cell View's hierarchy; `{}` when it could not be
  *   built
@@ -52,7 +49,7 @@ export const findSearchMatchedRings = (
     run.networkId !== hierarchyId ||
     run.query.trim() === '' ||
     run.nodeIds.length === 0 ||
-    !sameIds(run.nodeIds, selectedNodeIds) ||
+    !selectionMatchesSearch(run, selectedNodeIds) ||
     typeof root?.leaves !== 'function'
   ) {
     return NO_RINGS

@@ -163,7 +163,11 @@ Finds all nodes/edges containing the exact phrase "cell cycle" OR "protein"
 - Search results update the network view selection
 - Each completed search with a query is recorded as `search.lastSearch`
   (`SearchRun`: id, network id, query, options, selected node ids), cleared
-  when a search starts and when the search is cleared. Views that draw more
+  when a search starts, when the search is cleared, and as soon as the
+  selection on the searched network stops matching it
+  (`selectionMatchesSearch`). It describes the search's own selection: an
+  equal selection made later by other means (Deselect All, then Select All
+  Nodes) does not revive it. Views that draw more
   than the network's nodes read it: the Hierarchy Viewer's Cell View
   highlights the protein rings a search matched (#930; see
   `HierarchyViewer_docs/HierarchyViewer.md`). `createFuseIndexFromRecords`

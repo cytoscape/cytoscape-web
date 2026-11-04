@@ -21,6 +21,7 @@ import {
   setFilterEnabled,
   setIndex,
   setIndexedColumns,
+  selectionMatchesSearch,
   setLastSearch,
   setOptions,
   setQuery,
@@ -106,6 +107,32 @@ describe('FilterStoreImpl', () => {
       const result = setLastSearch(state, undefined)
 
       expect(result.search.lastSearch).toBeUndefined()
+    })
+  })
+
+  describe('selectionMatchesSearch', () => {
+    const run = {
+      id: 1,
+      networkId: 'network-1',
+      query: 'DR1',
+      options: { exact: true, operator: 'OR' as const },
+      nodeIds: ['a', 'b'],
+    }
+
+    it('accepts the same nodes in any order', () => {
+      expect(selectionMatchesSearch(run, ['a', 'b'])).toBe(true)
+      expect(selectionMatchesSearch(run, ['b', 'a'])).toBe(true)
+    })
+
+    it('rejects fewer, more or other nodes', () => {
+      expect(selectionMatchesSearch(run, ['a'])).toBe(false)
+      expect(selectionMatchesSearch(run, ['a', 'b', 'c'])).toBe(false)
+      expect(selectionMatchesSearch(run, ['a', 'c'])).toBe(false)
+      expect(selectionMatchesSearch(run, [])).toBe(false)
+    })
+
+    it('matches an empty selection to a search that selected nothing', () => {
+      expect(selectionMatchesSearch({ ...run, nodeIds: [] }, [])).toBe(true)
     })
   })
 

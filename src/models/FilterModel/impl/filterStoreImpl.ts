@@ -181,6 +181,24 @@ export const setLastSearch = <T>(
 }
 
 /**
+ * Whether the selection is still the one a search made: the same node ids, in
+ * any order. A recorded search describes the selection only until it first
+ * changes; after that it is cleared, so an equal selection made later by
+ * other means is not taken for the search's.
+ */
+export const selectionMatchesSearch = (
+  run: SearchRun,
+  selectedNodeIds: readonly IdType[],
+): boolean => {
+  const searched = new Set(run.nodeIds)
+  const selected = new Set(selectedNodeIds)
+  return (
+    searched.size === selected.size &&
+    [...searched].every((id) => selected.has(id))
+  )
+}
+
+/**
  * Add filter config
  */
 export const addFilterConfig = <T>(
