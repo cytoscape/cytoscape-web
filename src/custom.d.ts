@@ -86,6 +86,8 @@ declare const REACT_APP_BUILD_TIME: string
 interface ImportMetaEnv {
   /** Full app the embed links to; see src/embed/fullAppUrl.ts. */
   readonly VITE_EMBED_APP_URL?: string
+  /** Largest network the embed draws; see src/embed/loadEmbedNetwork.ts. */
+  readonly VITE_EMBED_MAX_ELEMENTS?: string
 }
 
 // global variables for debugging

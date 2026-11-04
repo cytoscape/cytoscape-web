@@ -38,5 +38,8 @@ Vite 8 with the Module Federation Vite plugin provides the microfrontend build:
 | `scripts/check-manual-drift.mjs`             | List manual pages a branch's changes may make stale (CI job **Manual Drift**)                                     |
 | `scripts/capture-manual-screenshots.mjs`     | Capture the in-app manual's screenshots from their recipes (workflow **Manual Screenshots** for committed images) |
 | `scripts/batch-renaming/`                    | CSV-based batch file renaming with git-mv                                                                         |
+| `scripts/check-embed-size.mjs`               | Report the gzipped size of what the embed (`embed.html`) loads before first paint                                 |
+| `scripts/compare-embed.mjs`                  | Compare how the embed and the full app draw the same NDEx networks                                                |
+| `scripts/bench-embed.mjs`                    | Measure the embed's load and draw times; results go in `src/embed/embed_docs/performance.md`                      |
 
 ---

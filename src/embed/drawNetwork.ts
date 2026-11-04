@@ -1,19 +1,11 @@
-import { Collection, Core } from 'cytoscape'
+import { Collection, Core, ElementDefinition } from 'cytoscape'
 
-import {
-  createCyEdges,
-  createCyNodes,
-} from '@/features/NetworkPanel/CyjsRenderer/cyjsFactoryUtil'
-import {
-  applyViewModelTo,
-  createCyjsDataMapper,
-} from '@/features/NetworkPanel/CyjsRenderer/cyjsRenderUtil'
 import { CyNetwork } from '@/models/CyNetworkModel'
 import { IdType } from '@/models/IdType'
-import { Edge } from '@/models/NetworkModel'
-import { NetworkView } from '@/models/ViewModel'
 import VisualStyleFn from '@/models/VisualStyleModel'
 import { VisualEditorProperties } from '@/models/VisualStyleModel/VisualStyleOptions'
+
+import { buildEmbedElements } from './embedElements'
 
 const DEFAULT_BACKGROUND = '#ffffff'
 
@@ -51,6 +43,8 @@ export interface NetworkDrawing {
 }
 
 interface DrawOptions {
+  /** Node positions that replace the network's own, such as a layout's. */
+  positions?: ReadonlyMap<IdType, [number, number]>
   /** Called after each batch of edges, including the last. */
   onProgress?: (progress: DrawProgress) => void
   /** Called with each batch of edges once it is added and styled. */
@@ -58,9 +52,8 @@ interface DrawOptions {
 }
 
 /**
- * Draw a network into `cy` through the full app's pipeline
- * (CyjsRenderer.tsx renderNetwork):
- * applyVisualStyle -> add elements -> applyViewModel -> createCyjsDataMapper.
+ * Draw a network into `cy`, styled as the full app's pipeline styles it
+ * (CyjsRenderer.tsx renderNetwork), from buildEmbedElements.
  *
  * Nodes are drawn at once. Edges are drawn in batches, one batch per
  * frame, so a large network shows its nodes at once and stays responsive
@@ -70,7 +63,7 @@ interface DrawOptions {
 export const drawNetwork = (
   cy: Core,
   cyNetwork: CyNetwork,
-  { onProgress, onEdgesAdded }: DrawOptions = {},
+  { positions, onProgress, onEdgesAdded }: DrawOptions = {},
 ): NetworkDrawing => {
   const { network, nodeTable, edgeTable, visualStyle, networkViews } = cyNetwork
   const view = VisualStyleFn.applyVisualStyle({
@@ -84,22 +77,22 @@ export const drawNetwork = (
     cyNetwork.visualStyleOptions?.visualEditorProperties ??
     DEFAULT_EDITOR_PROPERTIES
 
+  const { nodes, edges, stylesheet } = buildEmbedElements(
+    cyNetwork,
+    view,
+    editorProperties,
+    positions,
+  )
+
   cy.startBatch()
   cy.elements().remove()
-  cy.style(createCyjsDataMapper(visualStyle) as any)
-  const nodes = cy.add(createCyNodes(Object.values(view.nodeViews)))
-  applyViewModelTo(nodes, view, editorProperties)
+  cy.style(stylesheet as any)
+  cy.add(nodes)
   cy.endBatch()
 
   let cancelled = false
-  const edgeCount = network.edges.length
-  const first = addEdgesWithinBudget(
-    cy,
-    network.edges,
-    0,
-    view,
-    editorProperties,
-  )
+  const edgeCount = edges.length
+  const first = addEdgesWithinBudget(cy, edges, 0)
   let next = first.next
   onEdgesAdded?.(first.added)
   onProgress?.({ edgesDrawn: next, edgeCount })
@@ -108,13 +101,7 @@ export const drawNetwork = (
     while (next < edgeCount) {
       await nextFrame()
       if (cancelled || cy.destroyed()) return
-      const batch = addEdgesWithinBudget(
-        cy,
-        network.edges,
-        next,
-        view,
-        editorProperties,
-      )
+      const batch = addEdgesWithinBudget(cy, edges, next)
       next = batch.next
       onEdgesAdded?.(batch.added)
       onProgress?.({ edgesDrawn: next, edgeCount })
@@ -140,10 +127,8 @@ export const drawNetwork = (
  */
 const addEdgesWithinBudget = (
   cy: Core,
-  edges: Edge[],
+  edges: ElementDefinition[],
   from: number,
-  view: NetworkView,
-  editorProperties: VisualEditorProperties,
 ): { added: Collection; next: number } => {
   const start = performance.now()
   const added = cy.collection()
@@ -151,8 +136,7 @@ const addEdgesWithinBudget = (
   while (next < edges.length && performance.now() - start < EDGE_BUDGET_MS) {
     const step = edges.slice(next, next + EDGE_STEP)
     cy.startBatch()
-    const stepEdges = cy.add(createCyEdges(step, view.edgeViews))
-    applyViewModelTo(stepEdges, view, editorProperties)
+    const stepEdges = cy.add(step)
     cy.endBatch()
     added.merge(stepEdges)
     next += step.length

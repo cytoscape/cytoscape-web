@@ -57,6 +57,8 @@ export const CellView = ({
   )
   const zoomDepthRef = useRef(1)
   const selectedDepthRef = useRef(0)
+  // Depth the circles and labels show now; -1 after a redraw
+  const shownDepthRef = useRef(-1)
 
   const onSelectSubsystemRef = useRef(onSelectSubsystem)
   onSelectSubsystemRef.current = onSelectSubsystem
@@ -66,7 +68,9 @@ export const CellView = ({
   /** Show circles down to `depth`, and the labels of that level and of leaves above it. */
   const showDepth = (depth: number): void => {
     const svg = svgRef.current
-    if (svg === null) return
+    // Zooming calls this every frame; the depth changes far less often
+    if (svg === null || depth === shownDepthRef.current) return
+    shownDepthRef.current = depth
     const select = d3Selection.select(svg)
     select
       .selectAll<SVGCircleElement, Circle>('circle')
@@ -103,6 +107,7 @@ export const CellView = ({
     const root = cellViewRoot(cellView)
     const svg = d3Selection.select(svgElement)
     svg.selectAll('*').remove()
+    shownDepthRef.current = -1
     const wrapper = svg.append('g')
 
     svg.on('click', (event: MouseEvent) => {

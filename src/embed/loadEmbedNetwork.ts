@@ -7,8 +7,12 @@ import { CyNetwork } from '@/models/CyNetworkModel'
 import { IdType } from '@/models/IdType'
 import { NetworkSummary } from '@/models/NetworkSummaryModel'
 
-/** Above this node + edge count the embed shows the link-out instead. */
-export const EMBED_MAX_ELEMENTS = 10_000
+/**
+ * Above this node + edge count the embed shows the link-out instead.
+ * `VITE_EMBED_MAX_ELEMENTS`, set at build time, overrides it.
+ */
+export const EMBED_MAX_ELEMENTS =
+  Number(import.meta.env.VITE_EMBED_MAX_ELEMENTS) || 10_000
 
 export type EmbedNetworkResult =
   | { kind: 'loaded'; summary: NetworkSummary; cyNetwork: CyNetwork }

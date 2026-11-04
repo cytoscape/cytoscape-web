@@ -106,6 +106,7 @@ export const CyView = ({
     }
 
     const drawing = drawNetwork(cy, cyNetwork, {
+      positions,
       // Edges drawn after the first frame miss the filter effect below
       onEdgesAdded: (edges) => {
         const hidden = hiddenIdsRef.current
@@ -131,7 +132,6 @@ export const CyView = ({
       annotationsFrom === undefined
         ? () => undefined
         : drawAnnotations(cy, annotationsFrom, backgroundColor)
-    if (positions !== undefined) applyPositions(cy, positions)
     // Fit to the nodes: edges still drawing add nothing to the bounds, and
     // fitting to them would resolve their styles all at once.
     cy.fit(cy.nodes(), FIT_PADDING)
