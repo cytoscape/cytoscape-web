@@ -38,6 +38,25 @@ export interface Search<T> {
 
   // Function to convert library-specific results to a list of object IDs to be selected
   convertResults: (result: any) => IdType[]
+
+  // The last search that ran, until the search is cleared. Views that draw
+  // more than the network's nodes read it: the Hierarchy Viewer's Cell View
+  // highlights the protein rings the query matches (#930).
+  lastSearch?: SearchRun
+}
+
+/**
+ * A completed search: what was searched, where, and the nodes it selected.
+ */
+export interface SearchRun {
+  // Tells repeated runs of the same query apart
+  readonly id: number
+  // The network (or Hierarchy Viewer subnetwork) the search ran on
+  readonly networkId: IdType
+  readonly query: string
+  readonly options: SearchOptions
+  // The nodes the search selected. Empty when nodes were not searched.
+  readonly nodeIds: IdType[]
 }
 
 export type Operator = 'AND' | 'OR'

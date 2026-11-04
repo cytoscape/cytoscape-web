@@ -125,6 +125,7 @@ export const cyNetDag2tree2 = (
         name: label,
         size: 1,
         members: [],
+        isMember: true,
       })
     })
   } else {
@@ -155,6 +156,7 @@ export const cyNetDag2tree2 = (
           name: label,
           size: 1,
           members: [],
+          isMember: true,
         })
       }
     })

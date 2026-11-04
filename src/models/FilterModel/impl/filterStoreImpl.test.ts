@@ -21,6 +21,7 @@ import {
   setFilterEnabled,
   setIndex,
   setIndexedColumns,
+  setLastSearch,
   setOptions,
   setQuery,
   setSearchState,
@@ -78,6 +79,33 @@ describe('FilterStoreImpl', () => {
 
       expect(result.search.query).toBe('test query')
       expect(result).not.toBe(state) // Immutability check
+    })
+  })
+
+  describe('setLastSearch', () => {
+    const run = {
+      id: 3,
+      networkId: 'network-1',
+      query: 'DR1',
+      options: { exact: false, operator: 'OR' as const },
+      nodeIds: ['n1'],
+    }
+
+    it('records the search that ran', () => {
+      const state = createDefaultState()
+
+      const result = setLastSearch(state, run)
+
+      expect(result.search.lastSearch).toEqual(run)
+      expect(state.search.lastSearch).toBeUndefined() // Immutability check
+    })
+
+    it('forgets it when given undefined', () => {
+      const state = setLastSearch(createDefaultState(), run)
+
+      const result = setLastSearch(state, undefined)
+
+      expect(result.search.lastSearch).toBeUndefined()
     })
   })
 

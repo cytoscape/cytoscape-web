@@ -4,7 +4,13 @@ import { DiscreteRange } from '../../PropertyModel/DiscreteRange'
 import { NumberRange } from '../../PropertyModel/NumberRange'
 import { DiscreteFilterValue } from '../DiscreteFilterValue'
 import { FilterConfig } from '../FilterConfig'
-import { IndexedColumns, Indices, Search, SearchOptions } from '../Search'
+import {
+  IndexedColumns,
+  Indices,
+  Search,
+  SearchOptions,
+  SearchRun,
+} from '../Search'
 import { SearchState } from '../SearchState'
 
 export interface FilterState<T> {
@@ -153,6 +159,23 @@ export const setOptions = <T>(
     search: {
       ...state.search,
       options,
+    },
+  }
+}
+
+/**
+ * Record the search that just ran, or forget it (`undefined`) when the search
+ * is cleared.
+ */
+export const setLastSearch = <T>(
+  state: FilterState<T>,
+  lastSearch: SearchRun | undefined,
+): FilterState<T> => {
+  return {
+    ...state,
+    search: {
+      ...state.search,
+      lastSearch,
     },
   }
 }

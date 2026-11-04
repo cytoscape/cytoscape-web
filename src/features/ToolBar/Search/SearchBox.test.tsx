@@ -36,6 +36,7 @@ describe('SearchBox', () => {
   const exclusiveSelectMock = vi.fn()
   const setQueryMock = vi.fn()
   const setSearchStateMock = vi.fn()
+  const setLastSearchMock = vi.fn()
 
   // The search runs on the active view; `enablePopup` is on while the current
   // network is a hierarchy.
@@ -81,6 +82,7 @@ describe('SearchBox', () => {
       },
       setQuery: setQueryMock,
       setSearchState: setSearchStateMock,
+      setLastSearch: setLastSearchMock,
       setIndexedColumns: vi.fn(),
       setIndex: vi.fn(),
     }
@@ -150,6 +152,33 @@ describe('SearchBox', () => {
     )
     expect(screen.getByRole('status').textContent).toBe('2 nodes selected.')
     expect(addMessageMock).not.toHaveBeenCalled()
+  })
+
+  // #930: the Cell View reads the search from the store to highlight the
+  // protein rings it matched
+  it('records the search that ran in the store', () => {
+    ;(runSearch as import('vitest').Mock).mockReturnValue(['n1', 'n2'])
+
+    render(<SearchBox />)
+    submit()
+
+    expect(setLastSearchMock).toHaveBeenLastCalledWith({
+      id: expect.any(Number),
+      networkId: 'net1',
+      query: 'test-query',
+      options: { exact: false, operator: 'OR' },
+      nodeIds: ['n1', 'n2'],
+    })
+  })
+
+  it('forgets the recorded search when the search is cleared', () => {
+    ;(runSearch as import('vitest').Mock).mockReturnValue(['n1'])
+
+    render(<SearchBox />)
+    submit()
+    fireEvent.click(screen.getByTestId('search-clear-button'))
+
+    expect(setLastSearchMock).toHaveBeenLastCalledWith(undefined)
   })
 
   it('counts nodes and edges when both are searched', () => {

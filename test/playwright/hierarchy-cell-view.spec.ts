@@ -606,3 +606,77 @@ test.describe('Selecting a subsystem without a name', () => {
     expect(pageErrors).toEqual([])
   })
 })
+
+// #930: a protein ring has no row in the node table, so the search cannot
+// select it; it selects the subsystems that list the protein. The Cell View
+// highlights the matched rings inside those subsystems. This fixture names its
+// members (HCX::memberNames), so the rings are labelled without NDEx.
+const MEMBER_NAMES_HCX = path.resolve(
+  __dirname,
+  '../fixtures/hcx/valid/member-names.valid.cx2',
+)
+
+test.describe('Searching a hierarchy in the Cell View (#930)', () => {
+  test('highlights the protein rings the search matched', async ({ page }) => {
+    // Nothing here needs NDEx; keep any request from reaching it.
+    await page.route('**/*ndexbio.org/**', () => {})
+
+    await importNetworkFile(page, MEMBER_NAMES_HCX, 'Member Names Hierarchy')
+    await page.getByRole('tab', { name: 'Cell View' }).click()
+    const svg = page.locator('[data-testid="circle-packing-svg"]')
+    await expect(svg.locator('circle')).toHaveCount(10)
+
+    // Ring id (`<subsystem node id>-<protein>`) → border color, for the
+    // protein rings only.
+    const ringBorders = () =>
+      svg.evaluate((element) =>
+        Object.fromEntries(
+          [...element.querySelectorAll('circle')]
+            .map(
+              (circle) =>
+                [
+                  circle,
+                  (
+                    circle as unknown as {
+                      __data__?: { data: { id: string; isMember?: boolean } }
+                    }
+                  ).__data__?.data,
+                ] as const,
+            )
+            .filter(([, data]) => data?.isMember === true)
+            .map(([circle, data]) => [data!.id, circle.getAttribute('stroke')]),
+        ),
+      )
+    const redRings = async (): Promise<string[]> =>
+      Object.entries(await ringBorders())
+        .filter(([, stroke]) => stroke === 'red')
+        .map(([id]) => id)
+        .sort()
+
+    expect(Object.keys(await ringBorders()).sort()).toEqual([
+      '0-WDR18',
+      '1-MYC',
+      '2-DR1',
+      '2-TAF11',
+      '3-ACTB',
+      '3-TUBB',
+    ])
+
+    // Exact mode (the default): Cell, Nucleus and Nucleoplasm list DR1. Only
+    // Nucleoplasm draws a DR1 ring; the others hold it through their children.
+    const input = page.locator('[data-testid="search-box-input"] input')
+    await input.fill('DR1')
+    await input.press('Enter')
+    await expect(page.getByTestId('search-result-count')).toHaveText('3 nodes')
+    await expect.poll(redRings).toEqual(['2-DR1'])
+
+    // Each token matches its own ring.
+    await input.fill('DR1 MYC')
+    await input.press('Enter')
+    await expect.poll(redRings).toEqual(['1-MYC', '2-DR1'])
+
+    // Clearing the search clears the rings with the selection.
+    await page.getByTestId('search-clear-button').click()
+    await expect.poll(redRings).toEqual([])
+  })
+})

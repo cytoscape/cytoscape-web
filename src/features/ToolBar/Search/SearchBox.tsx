@@ -102,6 +102,7 @@ export const SearchBox = (): JSX.Element => {
   )
 
   const setSearchState = useFilterStore((state) => state.setSearchState)
+  const setLastSearch = useFilterStore((state) => state.setLastSearch)
 
   const searchOptions = useFilterStore((state) => state.search.options)
   const { exact } = searchOptions
@@ -132,6 +133,7 @@ export const SearchBox = (): JSX.Element => {
 
   const clearSearch = (): void => {
     clearResult()
+    setLastSearch(undefined)
     setQuery('')
     exclusiveSelect(networkId, [], [])
 
@@ -140,6 +142,7 @@ export const SearchBox = (): JSX.Element => {
 
   const startSearch = (): void => {
     clearResult()
+    setLastSearch(undefined)
     if (networkId === undefined || networkId === '') {
       logUi.warn(`[${startSearch.name}]: No network ID found`)
       addMessage({
@@ -225,6 +228,15 @@ export const SearchBox = (): JSX.Element => {
 
       if (isAnyTargetSelected && query !== '') {
         searchCountRef.current += 1
+        // Views that draw more than the network's nodes read the search from
+        // the store, e.g. the Cell View's protein rings (#930)
+        setLastSearch({
+          id: searchCountRef.current,
+          networkId,
+          query,
+          options: { exact, operator },
+          nodeIds: nodesToBeSelected,
+        })
         setLastResult({
           id: searchCountRef.current,
           networkId,

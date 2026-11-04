@@ -194,10 +194,24 @@ export const CpDefaults = {
   borderWidthHover: 1,
 } as const
 
+/**
+ * Paint the selection borders of the Cell View's circles: orange for a
+ * selected subsystem, red for a selected protein ring.
+ *
+ * @param selectedNodeSet Subsystems selected in the hierarchy
+ * @param selectedLeaves Protein rings the user selected, by member
+ * @param searchMatchedRings Protein rings the last search matched, by ring id
+ *   (`D3TreeNode.id`, see `findSearchMatchedRings`)
+ */
 export const displaySelectedNodes = (
   selectedNodeSet: Set<string>,
   selectedLeaves: string[],
+  searchMatchedRings: ReadonlySet<string> = new Set(),
 ) => {
+  const isSelectedRing = (d: d3Hierarchy.HierarchyNode<D3TreeNode>): boolean =>
+    selectedLeaves.includes(d.data.originalId ?? d.data.id) ||
+    searchMatchedRings.has(d.data.id)
+
   d3Selection
     .select('.circle-packing-wrapper')
     .selectAll<SVGCircleElement, d3Hierarchy.HierarchyCircularNode<D3TreeNode>>(
@@ -206,15 +220,14 @@ export const displaySelectedNodes = (
     .attr('stroke', (d) => {
       if (selectedNodeSet.has(d.data.id)) {
         return CpDefaults.selectedBorderColor
-      } else if (selectedLeaves.includes(d.data.originalId ?? d.data.id)) {
+      } else if (isSelectedRing(d)) {
         return CpDefaults.leafBorderColor
       } else {
         return CpDefaults.borderColor
       }
     })
     .attr('stroke-width', (d) =>
-      selectedNodeSet.has(d.data.id) ||
-      selectedLeaves.includes(d.data.originalId ?? d.data.id)
+      selectedNodeSet.has(d.data.id) || isSelectedRing(d)
         ? CpDefaults.borderWidthHover
         : CpDefaults.borderWidth,
     )

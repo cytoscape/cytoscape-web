@@ -161,6 +161,14 @@ Finds all nodes/edges containing the exact phrase "cell cycle" OR "protein"
 - Search state is managed in the FilterStore
 - States include: `READY`, `IN_PROGRESS`, `DONE`
 - Search results update the network view selection
+- Each completed search with a query is recorded as `search.lastSearch`
+  (`SearchRun`: id, network id, query, options, selected node ids), cleared
+  when a search starts and when the search is cleared. Views that draw more
+  than the network's nodes read it: the Hierarchy Viewer's Cell View
+  highlights the protein rings a search matched (#930; see
+  `HierarchyViewer_docs/HierarchyViewer.md`). `createFuseIndexFromRecords`
+  builds an index over such records with the same options as the table index,
+  so `runSearch` matches them the same way
 
 ### Search Targets
 - Users can select whether to search nodes, edges, or both

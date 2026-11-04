@@ -146,6 +146,7 @@ export const MANUAL_PAGES: readonly ManualPage[] = [
     sources: [
       'src/features/FloatingToolBar/*Button.tsx',
       'src/features/HierarchyViewer/components/MainPanel.tsx',
+      'src/features/HierarchyViewer/components/CirclePackingLayout/searchMatchedRings.ts',
       'src/features/NetworkPanel/CyjsRenderer/NetworkContextMenu.tsx',
     ],
     load: () => import('./content/network-view.mdx'),

@@ -1,10 +1,12 @@
 // @vitest-environment node
+import cytoscape from 'cytoscape'
 import type { Core, NodeSingular } from 'cytoscape'
 import { describe, expect, it } from 'vitest'
 
 import type { Table } from '../../../../models/TableModel'
 import { SubsystemTag } from '../../model/HcxMetaTag'
-import { findRoot, getMembers } from './DataBuilderUtil'
+import { D3TreeNode } from './D3TreeNode'
+import { cyNetDag2tree2, findRoot, getMembers } from './DataBuilderUtil'
 
 const tableWith = (rows: Record<string, Record<string, unknown>>): Table =>
   ({ rows: new Map(Object.entries(rows)) }) as unknown as Table
@@ -78,5 +80,56 @@ describe('findRoot', () => {
 
     expect(() => findRoot(cyNet)).not.toThrow()
     expect(findRoot(cyNet)).toBeUndefined()
+  })
+})
+
+describe('cyNetDag2tree2', () => {
+  // Cell (members DR1, TAF11, ACTB) contains Nucleus (members DR1, TAF11)
+  const cyNet = cytoscape({
+    headless: true,
+    elements: [
+      { data: { id: 'cell' } },
+      { data: { id: 'nucleus' } },
+      { data: { id: 'e', source: 'cell', target: 'nucleus' } },
+    ],
+  })
+  const table = tableWith({
+    cell: {
+      name: 'Cell',
+      [SubsystemTag.memberNames]: ['DR1', 'TAF11', 'ACTB'],
+    },
+    nucleus: { name: 'Nucleus', [SubsystemTag.memberNames]: ['DR1', 'TAF11'] },
+  })
+
+  const build = (): D3TreeNode[] => {
+    const elements: D3TreeNode[] = []
+    cyNetDag2tree2(
+      cyNet.getElementById('cell') as NodeSingular,
+      null,
+      table,
+      {},
+      elements,
+      new Set(),
+      new Map(),
+    )
+    return elements
+  }
+
+  // #930: the Cell View tells protein rings from subsystems by this flag
+  it('marks the rings generated for members, and only those, as members', () => {
+    const elements = build()
+    const memberRings = elements
+      .filter((e) => e.isMember === true)
+      .map((e) => `${e.id} (${e.name}, ${e.originalId})`)
+      .sort()
+
+    expect(memberRings).toEqual([
+      'cell-ACTB (ACTB, ACTB)',
+      'nucleus-DR1 (DR1, DR1)',
+      'nucleus-TAF11 (TAF11, TAF11)',
+    ])
+    expect(
+      elements.filter((e) => e.isMember !== true).map((e) => e.id),
+    ).toEqual(['cell', 'nucleus'])
   })
 })

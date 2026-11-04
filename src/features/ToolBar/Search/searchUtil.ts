@@ -51,16 +51,34 @@ export const createFuseIndex = (
       list.push(newRow)
     }
   })
+
+  return createFuseIndexFromRecords(list, Array.from(keySet))
+}
+
+/**
+ * Generates a Fuse.js index over plain records, configured like the index of
+ * a data table (see {@link createFuseIndex}), so {@link runSearch} matches
+ * them exactly as it matches table rows. Each record needs an `id`, which
+ * `runSearch` returns for a match.
+ *
+ * @param records Records to be indexed
+ * @param keys Names of the record fields to search
+ * @returns Fuse.js index ready for searching
+ */
+export const createFuseIndexFromRecords = (
+  records: Array<Record<string, ValueType>>,
+  keys: string[],
+): Fuse<Record<string, ValueType>> => {
   const options = {
     includeScore: true,
     includeMatches: true,
     threshold: 0.0,
     useExtendedSearch: true,
     ignoreLocation: true,
-    keys: Array.from(keySet),
+    keys,
   }
 
-  return new Fuse(list, options)
+  return new Fuse(records, options)
 }
 
 /**
