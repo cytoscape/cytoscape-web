@@ -20,7 +20,7 @@ import { execFileSync } from 'node:child_process'
 import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 const DECIDE = resolve(__dirname, '../../../scripts/decide-registry-action.mjs')
 const CHECKS = resolve(__dirname, '../../../scripts/check-required-checks.mjs')
@@ -80,40 +80,16 @@ const withFakeGh = (
   jobsByRunId: Record<number, Job[]>,
   body: (env: NodeJS.ProcessEnv) => void,
 ): void => {
-  const dir = mkdtempSync(join(tmpdir(), 'fake-gh-'))
-  const bin = join(dir, 'gh')
-
-  // The payloads are serialized HERE and embedded already-escaped, rather than
-  // having the generated script build them. `gh --jq` emits one JSON object per
-  // line, and writing that newline through two levels of source would need
-  // escaping that is easy to get subtly wrong — the first attempt emitted a
-  // literal newline into the generated file and produced a script that ran but
-  // answered nothing.
+  // `gh --jq` emits one JSON object per line.
   const lines = (rows: object[]): string =>
     rows.map((row) => JSON.stringify(row)).join('\n') +
     (rows.length ? '\n' : '')
-  const jobPayloads = Object.fromEntries(
-    Object.entries(jobsByRunId).map(([id, jobs]) => [id, lines(jobs)]),
+  const jobs = Object.fromEntries(
+    Object.entries(jobsByRunId).map(([id, rows]) => [id, lines(rows)]),
   )
-
-  writeFileSync(
-    bin,
-    [
-      '#!/usr/bin/env node',
-      `const runs = ${JSON.stringify(lines(runs))}`,
-      `const jobs = ${JSON.stringify(jobPayloads)}`,
-      'const url = process.argv.find((a) => a.includes("actions/")) ?? ""',
-      'const m = /actions\\/runs\\/(\\d+)\\/jobs/.exec(url)',
-      'process.stdout.write(m ? (jobs[m[1]] ?? "") : runs)',
-      '',
-    ].join('\n'),
+  withCaseDir({ runs: lines(runs), jobs }, (caseEnv) =>
+    body({ ...caseEnv, CYWEB_GH_CLI: fakeGh }),
   )
-  chmodSync(bin, 0o755)
-  try {
-    body({ CYWEB_GH_CLI: bin })
-  } finally {
-    rmSync(dir, { recursive: true, force: true })
-  }
 }
 
 /**
@@ -141,44 +117,104 @@ const withFakeNpm = (
   plan: Record<string, NpmAnswer[]>,
   body: (env: NodeJS.ProcessEnv) => void,
 ): void => {
-  const dir = mkdtempSync(join(tmpdir(), 'fake-npm-'))
-  const bin = join(dir, 'npm')
-  const counts = join(dir, 'counts.json')
+  withCaseDir(plan, (caseEnv) => body({ ...caseEnv, CYWEB_NPM_CLI: fakeNpm }))
+}
 
+// Every case here starts real processes, so how long it takes is up to the OS
+// scheduler rather than this code. The suite's 1-second default says "a unit
+// test that takes longer is stuck"; these are bounded instead by a limit that
+// still catches a hung process. Set per describe block, not per case: a case
+// that went without it failed only under load.
+const SUBPROCESS_TIMEOUT = 10_000
+
+/**
+ * The fake CLIs. Each is written ONCE and run once before the first case; a
+ * case's answers live in a data file in its own directory.
+ *
+ * Do not go back to writing an executable per case. macOS scans a new
+ * executable (XprotectService) when it first runs, and those scans queue across
+ * the whole machine. Measured on 2026-11-04, a new script's first run took
+ * 190 ms alone, 1.1 s with 8 running at once and 4.6 s with 32, while running
+ * the same file again stayed at 37 ms throughout. So a few other processes
+ * starting new executables took every case past the 1-second default and past
+ * wait-for-registry's 1-second call budget (0 of 8 runs passed), whereas CPU
+ * load alone did not (15 of 15 passed at a load average over 200).
+ */
+const FAKE_GH_SOURCE = [
+  'const url = process.argv.find((a) => a.includes("actions/")) ?? ""',
+  'const m = /actions\\/runs\\/(\\d+)\\/jobs/.exec(url)',
+  'process.stdout.write(m ? (answers.jobs[m[1]] ?? "") : answers.runs)',
+]
+
+const FAKE_NPM_SOURCE = [
+  'const countsFile = path.join(caseDir, "counts.json")',
+  'const counts = fs.existsSync(countsFile) ? JSON.parse(fs.readFileSync(countsFile, "utf8")) : {}',
+  'const spec = process.argv[3]',
+  'const specAnswers = answers[spec] ?? [{ code: "E404" }]',
+  'const n = counts[spec] ?? 0',
+  'counts[spec] = n + 1',
+  'fs.writeFileSync(countsFile, JSON.stringify(counts))',
+  'const answer = specAnswers[Math.min(n, specAnswers.length - 1)]',
+  'if (answer.stallMs) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, answer.stallMs)',
+  'if ("code" in answer) {',
+  '  process.stdout.write(JSON.stringify({ error: { code: answer.code, summary: `fake ${answer.code}` } }))',
+  '  process.exit(1)',
+  '}',
+  'process.stdout.write(JSON.stringify(answer.version))',
+]
+
+const CASE_DIR_VAR = 'FAKE_CLI_CASE_DIR'
+const ANSWERS_FILE = 'answers.json'
+
+let fakeCliDir: string
+let fakeGh: string
+let fakeNpm: string
+
+const installFakeCli = (name: string, source: string[]): string => {
+  const bin = join(fakeCliDir, name)
   writeFileSync(
     bin,
     [
       '#!/usr/bin/env node',
       'const fs = require("node:fs")',
-      `const plan = ${JSON.stringify(plan)}`,
-      `const countsFile = ${JSON.stringify(counts)}`,
-      'const counts = fs.existsSync(countsFile) ? JSON.parse(fs.readFileSync(countsFile, "utf8")) : {}',
-      'const spec = process.argv[3]',
-      'const answers = plan[spec] ?? [{ code: "E404" }]',
-      'const n = counts[spec] ?? 0',
-      'counts[spec] = n + 1',
-      'fs.writeFileSync(countsFile, JSON.stringify(counts))',
-      'const answer = answers[Math.min(n, answers.length - 1)]',
-      'if (answer.stallMs) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, answer.stallMs)',
-      'if ("code" in answer) {',
-      '  process.stdout.write(JSON.stringify({ error: { code: answer.code, summary: `fake ${answer.code}` } }))',
-      '  process.exit(1)',
-      '}',
-      'process.stdout.write(JSON.stringify(answer.version))',
+      'const path = require("node:path")',
+      `const caseDir = process.env.${CASE_DIR_VAR}`,
+      // No case: this is the warm-up run below.
+      'if (!caseDir) process.exit(0)',
+      `const answers = JSON.parse(fs.readFileSync(path.join(caseDir, ${JSON.stringify(ANSWERS_FILE)}), "utf8"))`,
+      ...source,
       '',
     ].join('\n'),
   )
   chmodSync(bin, 0o755)
+  // Pay for the first-run scan here, so no case waits in that queue.
+  execFileSync(bin)
+  return bin
+}
+
+beforeAll(() => {
+  fakeCliDir = mkdtempSync(join(tmpdir(), 'fake-cli-'))
+  fakeGh = installFakeCli('gh', FAKE_GH_SOURCE)
+  fakeNpm = installFakeCli('npm', FAKE_NPM_SOURCE)
+}, SUBPROCESS_TIMEOUT)
+
+afterAll(() => {
+  rmSync(fakeCliDir, { recursive: true, force: true })
+})
+
+/** Gives one case a directory holding its answers, and the env that names it. */
+const withCaseDir = (
+  answers: object,
+  body: (env: NodeJS.ProcessEnv) => void,
+): void => {
+  const dir = mkdtempSync(join(tmpdir(), 'fake-cli-case-'))
+  writeFileSync(join(dir, ANSWERS_FILE), JSON.stringify(answers))
   try {
-    body({ CYWEB_NPM_CLI: bin })
+    body({ [CASE_DIR_VAR]: dir })
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
 }
-
-// Each case spawns the script, which spawns the fake npm twice per poll —
-// a few hundred milliseconds, too close to the suite's 1-second default.
-const SUBPROCESS_TIMEOUT = 10_000
 
 const REQUIRED = ['Lint', 'Build', 'Unit Tests', 'API Types Package']
 const green = (name: string): Job => ({
@@ -238,16 +274,12 @@ const decideArgs = (overrides: Record<string, string> = {}): string[] => {
   return Object.entries(base).flatMap(([flag, value]) => [flag, value])
 }
 
-describe('decide-registry-action', () => {
-  it(
-    'requires every argument it depends on',
-    () => {
-      const result = run(DECIDE, ['--package', 'x'])
-      expect(result.status).toBe(1)
-      expect(result.stderr).toContain('is required')
-    },
-    NETWORK_TIMEOUT,
-  )
+describe('decide-registry-action', { timeout: SUBPROCESS_TIMEOUT }, () => {
+  it('requires every argument it depends on', () => {
+    const result = run(DECIDE, ['--package', 'x'])
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('is required')
+  })
 
   it('names missing arguments by their flags', () => {
     // The internal keys are `pkg` and `distTag`; "--pkg is required" names a
@@ -387,44 +419,39 @@ describe('decide-registry-action', () => {
   )
 
   // Offline: the fake npm answers E404 for both the dist-tag and the version.
-  it(
-    'says publish when the version is absent (offline)',
-    () => {
-      withFakeNpm({}, (env) => {
-        const result = run(DECIDE, decideArgs(), env)
-        expect(result.status).toBe(0)
-        expect(result.stdout).toContain('action=publish')
-      })
-    },
-    SUBPROCESS_TIMEOUT,
-  )
+  it('says publish when the version is absent (offline)', () => {
+    withFakeNpm({}, (env) => {
+      const result = run(DECIDE, decideArgs(), env)
+      expect(result.status).toBe(0)
+      expect(result.stdout).toContain('action=publish')
+    })
+  })
 
-  it(
-    'fails under --expect-published when the version is absent',
-    () => {
-      // The post-publish read-back. Without this flag an absent version exits
-      // 0 with action=publish, and the beta.5 read-back went on to fail on the
-      // dist-tag instead, with a message that pointed nowhere near the cause.
-      withFakeNpm({}, (env) => {
-        const result = run(DECIDE, [...decideArgs(), '--expect-published'], env)
-        expect(result.status).toBe(1)
-        expect(result.stdout).not.toContain('action=')
-        expect(result.stderr).toContain('is not on the registry')
-        expect(result.stderr).toContain('expected it to be published')
-      })
-    },
-    SUBPROCESS_TIMEOUT,
-  )
+  it('fails under --expect-published when the version is absent', () => {
+    // The post-publish read-back. Without this flag an absent version exits
+    // 0 with action=publish, and the beta.5 read-back went on to fail on the
+    // dist-tag instead, with a message that pointed nowhere near the cause.
+    withFakeNpm({}, (env) => {
+      const result = run(DECIDE, [...decideArgs(), '--expect-published'], env)
+      expect(result.status).toBe(1)
+      expect(result.stdout).not.toContain('action=')
+      expect(result.stderr).toContain('is not on the registry')
+      expect(result.stderr).toContain('expected it to be published')
+    })
+  })
 })
 
-describe('wait-for-registry', () => {
+describe('wait-for-registry', { timeout: SUBPROCESS_TIMEOUT }, () => {
   const PKG = '@cytoscape-web/api-types'
   const VERSION = '1.0.0-beta.9'
   const at = (v: string): NpmAnswer => ({ version: v })
   const E404: NpmAnswer = { code: 'E404' }
 
-  // Short polls keep each case well under a second of waiting.
-  const waitArgs = (timeout = '0.6'): string[] => [
+  // The deadline also sets each npm call's budget (never under a second), so a
+  // case that expects an answer gets one it will not reach: it returns as soon
+  // as it has the answer, and a slow process cannot read as a timeout. Only the
+  // cases about running out of time pass a short one.
+  const waitArgs = (timeout = '5'): string[] => [
     '--package',
     PKG,
     '--version',
@@ -447,146 +474,122 @@ describe('wait-for-registry', () => {
     ).toContain('--dist-tag is required')
   })
 
-  it(
-    'holds its deadline when a registry call hangs',
-    () => {
-      // execFileSync has no timeout of its own. Without one, a stalled npm
-      // call outlives the deadline, and in CI the job's hard timeout kills the
-      // run before it can print the recovery instructions.
-      withFakeNpm(
-        {
-          [`${PKG}@${VERSION}`]: [{ code: 'E404', stallMs: 8000 }],
-          [`${PKG}@latest`]: [{ version: '1.0.0-beta.8', stallMs: 8000 }],
-        },
-        (env) => {
-          const started = Date.now()
-          const result = run(WAIT, waitArgs('1'), env)
-          expect(result.status).toBe(1)
-          expect(result.stderr).toContain('timed out')
-          expect(result.stderr).toContain('do NOT delete or move the tag')
-          expect(Date.now() - started).toBeLessThan(5000)
-        },
-      )
-    },
-    SUBPROCESS_TIMEOUT,
-  )
+  it('holds its deadline when a registry call hangs', () => {
+    // execFileSync has no timeout of its own. Without one, a stalled npm
+    // call outlives the deadline, and in CI the job's hard timeout kills the
+    // run before it can print the recovery instructions.
+    withFakeNpm(
+      {
+        [`${PKG}@${VERSION}`]: [{ code: 'E404', stallMs: 8000 }],
+        [`${PKG}@latest`]: [{ version: '1.0.0-beta.8', stallMs: 8000 }],
+      },
+      (env) => {
+        const started = Date.now()
+        const result = run(WAIT, waitArgs('1'), env)
+        expect(result.status).toBe(1)
+        expect(result.stderr).toContain('timed out')
+        expect(result.stderr).toContain('do NOT delete or move the tag')
+        expect(Date.now() - started).toBeLessThan(5000)
+      },
+    )
+  })
 
-  it(
-    'returns at once when the version is visible and the dist-tag names it',
-    () => {
-      withFakeNpm(
-        {
-          [`${PKG}@${VERSION}`]: [at(VERSION)],
-          [`${PKG}@latest`]: [at(VERSION)],
-        },
-        (env) => {
-          const result = run(WAIT, waitArgs(), env)
-          expect(result.status).toBe(0)
-          expect(result.stdout).toContain('attempt 1')
-          expect(result.stdout).not.toContain('not visible yet')
-        },
-      )
-    },
-    SUBPROCESS_TIMEOUT,
-  )
+  it('returns at once when the version is visible and the dist-tag names it', () => {
+    withFakeNpm(
+      {
+        [`${PKG}@${VERSION}`]: [at(VERSION)],
+        [`${PKG}@latest`]: [at(VERSION)],
+      },
+      (env) => {
+        const result = run(WAIT, waitArgs(), env)
+        expect(result.status).toBe(0)
+        expect(result.stdout).toContain('attempt 1')
+        expect(result.stdout).not.toContain('not visible yet')
+      },
+    )
+  })
 
-  it(
-    'keeps waiting while the version is still a 404',
-    () => {
-      // What beta.5 looked like: npm accepted the publish, then answered E404
-      // for the version for over three minutes while it processed it.
-      withFakeNpm(
-        {
-          [`${PKG}@${VERSION}`]: [E404, E404, at(VERSION)],
-          [`${PKG}@latest`]: [
-            at('1.0.0-beta.8'),
-            at('1.0.0-beta.8'),
-            at(VERSION),
-          ],
-        },
-        (env) => {
-          const result = run(WAIT, waitArgs('5'), env)
-          expect(result.status).toBe(0)
-          expect(result.stdout).toContain('not visible yet')
-          expect(result.stdout).toContain('E404')
-          expect(result.stdout).toContain('attempt 3')
-        },
-      )
-    },
-    SUBPROCESS_TIMEOUT,
-  )
+  it('keeps waiting while the version is still a 404', () => {
+    // What beta.5 looked like: npm accepted the publish, then answered E404
+    // for the version for over three minutes while it processed it.
+    withFakeNpm(
+      {
+        [`${PKG}@${VERSION}`]: [E404, E404, at(VERSION)],
+        [`${PKG}@latest`]: [
+          at('1.0.0-beta.8'),
+          at('1.0.0-beta.8'),
+          at(VERSION),
+        ],
+      },
+      (env) => {
+        const result = run(WAIT, waitArgs(), env)
+        expect(result.status).toBe(0)
+        expect(result.stdout).toContain('not visible yet')
+        expect(result.stdout).toContain('E404')
+        expect(result.stdout).toContain('attempt 3')
+      },
+    )
+  })
 
-  it(
-    'keeps waiting while the dist-tag still names the previous release',
-    () => {
-      // The version and the dist-tag are separate reads, and either can lag.
-      withFakeNpm(
-        {
-          [`${PKG}@${VERSION}`]: [at(VERSION)],
-          [`${PKG}@latest`]: [at('1.0.0-beta.8'), at(VERSION)],
-        },
-        (env) => {
-          const result = run(WAIT, waitArgs('5'), env)
-          expect(result.status).toBe(0)
-          expect(result.stdout).toContain('latest → 1.0.0-beta.8')
-          expect(result.stdout).toContain('attempt 2')
-        },
-      )
-    },
-    SUBPROCESS_TIMEOUT,
-  )
+  it('keeps waiting while the dist-tag still names the previous release', () => {
+    // The version and the dist-tag are separate reads, and either can lag.
+    withFakeNpm(
+      {
+        [`${PKG}@${VERSION}`]: [at(VERSION)],
+        [`${PKG}@latest`]: [at('1.0.0-beta.8'), at(VERSION)],
+      },
+      (env) => {
+        const result = run(WAIT, waitArgs(), env)
+        expect(result.status).toBe(0)
+        expect(result.stdout).toContain('latest → 1.0.0-beta.8')
+        expect(result.stdout).toContain('attempt 2')
+      },
+    )
+  })
 
-  it(
-    'retries a registry error instead of treating it as a verdict',
-    () => {
-      withFakeNpm(
-        {
-          [`${PKG}@${VERSION}`]: [{ code: 'E503' }, at(VERSION)],
-          [`${PKG}@latest`]: [at(VERSION)],
-        },
-        (env) => {
-          const result = run(WAIT, waitArgs('5'), env)
-          expect(result.status).toBe(0)
-          expect(result.stdout).toContain('E503')
-        },
-      )
-    },
-    SUBPROCESS_TIMEOUT,
-  )
+  it('retries a registry error instead of treating it as a verdict', () => {
+    withFakeNpm(
+      {
+        [`${PKG}@${VERSION}`]: [{ code: 'E503' }, at(VERSION)],
+        [`${PKG}@latest`]: [at(VERSION)],
+      },
+      (env) => {
+        const result = run(WAIT, waitArgs(), env)
+        expect(result.status).toBe(0)
+        expect(result.stdout).toContain('E503')
+      },
+    )
+  })
 
-  it(
-    'times out with a message that says not to undo the publish',
-    () => {
-      withFakeNpm(
-        {
-          [`${PKG}@${VERSION}`]: [E404],
-          [`${PKG}@latest`]: [at('1.0.0-beta.8')],
-        },
-        (env) => {
-          const result = run(
-            WAIT,
-            [
-              ...waitArgs('0.3'),
-              '--rerun-command',
-              'gh workflow run release-api-types.yml --ref api-types-v1.0.0-beta.9 -f dry_run=false',
-            ],
-            env,
-          )
-          expect(result.status).toBe(1)
-          expect(result.stderr).toContain('not visible')
-          expect(result.stderr).toContain('asynchronously')
-          expect(result.stderr).toContain('do NOT delete or move the tag')
-          expect(result.stderr).toContain(
+  it('times out with a message that says not to undo the publish', () => {
+    withFakeNpm(
+      {
+        [`${PKG}@${VERSION}`]: [E404],
+        [`${PKG}@latest`]: [at('1.0.0-beta.8')],
+      },
+      (env) => {
+        const result = run(
+          WAIT,
+          [
+            ...waitArgs('0.3'),
+            '--rerun-command',
             'gh workflow run release-api-types.yml --ref api-types-v1.0.0-beta.9 -f dry_run=false',
-          )
-        },
-      )
-    },
-    SUBPROCESS_TIMEOUT,
-  )
+          ],
+          env,
+        )
+        expect(result.status).toBe(1)
+        expect(result.stderr).toContain('not visible')
+        expect(result.stderr).toContain('asynchronously')
+        expect(result.stderr).toContain('do NOT delete or move the tag')
+        expect(result.stderr).toContain(
+          'gh workflow run release-api-types.yml --ref api-types-v1.0.0-beta.9 -f dry_run=false',
+        )
+      },
+    )
+  })
 })
 
-describe('check-required-checks', () => {
+describe('check-required-checks', { timeout: SUBPROCESS_TIMEOUT }, () => {
   const allGreen = REQUIRED.map(green)
 
   it('passes when every required job succeeded', () => {
