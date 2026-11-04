@@ -10,6 +10,7 @@ import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { logUi } from '../../../debug'
 import { Indices, Operator } from '../../../models/FilterModel/Search'
+import { selectionMatchesSearch } from '../../../models/FilterModel/impl/filterStoreImpl'
 import { SearchState } from '../../../models/FilterModel/SearchState'
 import { IdType } from '../../../models/IdType'
 import { MessageSeverity } from '../../../models/MessageModel'
@@ -102,6 +103,8 @@ export const SearchBox = (): JSX.Element => {
   )
 
   const setSearchState = useFilterStore((state) => state.setSearchState)
+  const setLastSearch = useFilterStore((state) => state.setLastSearch)
+  const lastSearch = useFilterStore((state) => state.search.lastSearch)
 
   const searchOptions = useFilterStore((state) => state.search.options)
   const { exact } = searchOptions
@@ -130,8 +133,31 @@ export const SearchBox = (): JSX.Element => {
   const exclusiveSelect = useViewModelStore((state) => state.exclusiveSelect)
   const addMessage = useMessageStore((state) => state.addMessage)
 
+  // The selection now on the network the last search ran on
+  const lastSearchSelection: IdType[] | undefined = useViewModelStore(
+    (state) =>
+      lastSearch === undefined
+        ? undefined
+        : state.getViewModel(lastSearch.networkId)?.selectedNodes,
+  )
+
+  // The recorded search describes the selection it made, until that selection
+  // first changes. Forget it then, so selecting the same nodes again by other
+  // means (Select ▸ Deselect All, then Select All Nodes) does not bring back
+  // what the search showed, e.g. the Cell View's protein rings (#930).
+  useEffect(() => {
+    if (lastSearch === undefined) return
+    if (
+      lastSearchSelection === undefined ||
+      !selectionMatchesSearch(lastSearch, lastSearchSelection)
+    ) {
+      setLastSearch(undefined)
+    }
+  }, [lastSearch, lastSearchSelection, setLastSearch])
+
   const clearSearch = (): void => {
     clearResult()
+    setLastSearch(undefined)
     setQuery('')
     exclusiveSelect(networkId, [], [])
 
@@ -140,6 +166,7 @@ export const SearchBox = (): JSX.Element => {
 
   const startSearch = (): void => {
     clearResult()
+    setLastSearch(undefined)
     if (networkId === undefined || networkId === '') {
       logUi.warn(`[${startSearch.name}]: No network ID found`)
       addMessage({
@@ -225,6 +252,15 @@ export const SearchBox = (): JSX.Element => {
 
       if (isAnyTargetSelected && query !== '') {
         searchCountRef.current += 1
+        // Views that draw more than the network's nodes read the search from
+        // the store, e.g. the Cell View's protein rings (#930)
+        setLastSearch({
+          id: searchCountRef.current,
+          networkId,
+          query,
+          options: { exact, operator },
+          nodeIds: nodesToBeSelected,
+        })
         setLastResult({
           id: searchCountRef.current,
           networkId,

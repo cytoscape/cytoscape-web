@@ -89,6 +89,7 @@ A D3.js-based visualization component that renders hierarchical structures as ne
 - Handles node selection (subsystems and leaf nodes)
 - Supports multi-selection of leaf nodes (enables selecting multiple leaves simultaneously)
 - Synchronizes selection with SubNetworkPanel (bidirectional sync between subnetwork view and circle packing view)
+- Highlights the protein rings a search matched (see [Search and protein rings](#search-and-protein-rings))
 - Applies visual styles from the visual style store
 - Provides fit-to-viewport functionality
 - On initial load with selected leaves (from URL parameters), automatically fits the viewport to show the subsystem containing those leaves
@@ -193,6 +194,46 @@ Components for validating HCX network compliance.
 - Provides revalidation functionality
 - Warns users when saving invalid HCX networks
 
+### Search and protein rings
+
+A protein ring is generated from a subsystem's member list (`HCX::members`
+or `HCX::memberNames`) and has no row in the node table. A subsystem with no
+children is a terminal ring too, so only the flag tells them apart:
+`cyNetDag2tree2` marks these rings with
+`D3TreeNode.isMember`. The search can only select table rows, so a query for a
+protein selects the subsystems that list it (often the whole chain of
+ancestors, root included) and not the ring itself (#930).
+
+The Cell View closes that gap. `SearchBox` records each completed search in the
+FilterStore (`search.lastSearch`: network, query, options, selected node ids),
+and `findSearchMatchedRings` (`searchMatchedRings.ts`) finds the rings to
+highlight:
+
+- only after a search of the hierarchy itself (a search of the Sub Network
+  Viewer's network is ignored), and only while the selection is still that
+  search's result. Selecting anything else (Select ▸ Deselect All, clearing
+  the search) drops the highlight for good: `SearchBox` forgets the search
+  once the selection stops matching it, so selecting the same nodes again
+  later does not bring the highlight back. Any click on a Cell View circle clears
+  `lastSearch` too: when the search selected a single subsystem, clicking one
+  of its proteins selects that subsystem again, and the selection alone would
+  not change
+- only rings directly inside a subsystem the search selected, including every
+  copy of a subsystem the hierarchy reaches more than once
+- rings whose label matches any token of the query, using the search's own
+  Contains/Exact mode (the same Fuse.js options as the table index, through
+  `createFuseIndexFromRecords`). The AND operator already decided which
+  subsystems were selected
+
+Matched rings get the protein-ring selection border (red). They are not added
+to the Sub Network Viewer's selection. The search count still counts nodes,
+since rings are not nodes.
+
+Contains matches substrings, so `DR1` also matches a `WDR18` ring. In Exact
+mode, a subsystem whose protein list is one comma-separated string column (as
+in MuSIC's `Proteins`) does not equal `DR1`, so the search selects no subsystem
+and no ring is highlighted.
+
 ## Integration Points
 
 The HierarchyViewer integrates with the following stores and services:
@@ -202,7 +243,7 @@ The HierarchyViewer integrates with the following stores and services:
 - **TableStore** - Node and edge table data
 - **ViewModelStore** - Network views and selections
 - **VisualStyleStore** - Visual styling information
-- **FilterStore** - Filter configurations
+- **FilterStore** - Filter configurations, and the last search (`search.lastSearch`) for highlighting protein rings
 - **RendererStore** - Renderer registration (Circle Packing)
 - **RendererFunctionStore** - Renderer function registration (fit, etc.)
 - **WorkspaceStore** - Current network ID

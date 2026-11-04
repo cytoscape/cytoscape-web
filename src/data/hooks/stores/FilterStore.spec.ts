@@ -179,6 +179,29 @@ describe('useFilterStore', () => {
     })
   })
 
+  describe('setLastSearch', () => {
+    it('records the search that ran and forgets it when cleared', () => {
+      const { result } = renderHook(() => useFilterStore())
+      const run = {
+        id: 1,
+        networkId: 'network-1',
+        query: 'DR1',
+        options: { exact: false, operator: 'OR' as const },
+        nodeIds: ['1', '2'],
+      }
+
+      act(() => {
+        result.current.setLastSearch(run)
+      })
+      expect(result.current.search.lastSearch).toEqual(run)
+
+      act(() => {
+        result.current.setLastSearch(undefined)
+      })
+      expect(result.current.search.lastSearch).toBeUndefined()
+    })
+  })
+
   describe('addFilterConfig', () => {
     it('should add a filter config', () => {
       const { result } = renderHook(() => useFilterStore())

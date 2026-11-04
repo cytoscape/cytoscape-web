@@ -1,0 +1,170 @@
+[
+  {
+    "CXVersion": "2.0",
+    "hasFragments": false
+  },
+  {
+    "metaData": [
+      {
+        "name": "attributeDeclarations",
+        "elementCount": 1
+      },
+      {
+        "name": "networkAttributes",
+        "elementCount": 1
+      },
+      {
+        "name": "nodes",
+        "elementCount": 4
+      },
+      {
+        "name": "edges",
+        "elementCount": 3
+      }
+    ]
+  },
+  {
+    "attributeDeclarations": [
+      {
+        "networkAttributes": {
+          "name": {
+            "d": "string"
+          },
+          "description": {
+            "d": "string"
+          },
+          "ndexSchema": {
+            "d": "string"
+          },
+          "HCX::modelFileCount": {
+            "d": "integer"
+          },
+          "HCX::interactionNetworkUUID": {
+            "d": "string"
+          },
+          "HCX::interactionNetworkHost": {
+            "d": "string"
+          }
+        },
+        "nodes": {
+          "name": {
+            "d": "string"
+          },
+          "HCX::memberNames": {
+            "d": "list_of_string"
+          }
+        },
+        "edges": {
+          "interaction": {
+            "d": "string"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "networkAttributes": [
+      {
+        "name": "Member Names Hierarchy",
+        "description": "A hierarchy whose subsystems list their proteins by name (HCX::memberNames), so the Cell View labels its protein rings without an NDEx lookup",
+        "ndexSchema": "hierarchy_v0.1",
+        "HCX::modelFileCount": 1,
+        "HCX::interactionNetworkUUID": "test-uuid-123",
+        "HCX::interactionNetworkHost": "dev1.ndexbio.org"
+      }
+    ]
+  },
+  {
+    "nodes": [
+      {
+        "id": 0,
+        "x": 0,
+        "y": 50,
+        "v": {
+          "name": "Cell",
+          "HCX::memberNames": [
+            "DR1",
+            "TAF11",
+            "MYC",
+            "WDR18",
+            "ACTB",
+            "TUBB"
+          ]
+        }
+      },
+      {
+        "id": 1,
+        "x": 100,
+        "y": 50,
+        "v": {
+          "name": "Nucleus",
+          "HCX::memberNames": [
+            "DR1",
+            "TAF11",
+            "MYC"
+          ]
+        }
+      },
+      {
+        "id": 2,
+        "x": 200,
+        "y": 50,
+        "v": {
+          "name": "Nucleoplasm",
+          "HCX::memberNames": [
+            "DR1",
+            "TAF11"
+          ]
+        }
+      },
+      {
+        "id": 3,
+        "x": 300,
+        "y": 50,
+        "v": {
+          "name": "Cytoplasm",
+          "HCX::memberNames": [
+            "ACTB",
+            "TUBB"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "edges": [
+      {
+        "id": 0,
+        "s": 0,
+        "t": 1,
+        "v": {
+          "interaction": "contains"
+        }
+      },
+      {
+        "id": 1,
+        "s": 1,
+        "t": 2,
+        "v": {
+          "interaction": "contains"
+        }
+      },
+      {
+        "id": 2,
+        "s": 0,
+        "t": 3,
+        "v": {
+          "interaction": "contains"
+        }
+      }
+    ]
+  },
+  {
+    "status": [
+      {
+        "error": "",
+        "success": true
+      }
+    ]
+  }
+]

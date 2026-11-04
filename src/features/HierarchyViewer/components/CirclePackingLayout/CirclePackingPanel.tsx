@@ -52,6 +52,7 @@ import {
   getWordLines,
 } from './CirclePackingUtils'
 import { D3TreeNode } from './D3TreeNode'
+import { findSearchMatchedRings } from './searchMatchedRings'
 import { useCenterAnchoredZoom } from './useCenterAnchoredZoom'
 
 interface CirclePackingPanelProps {
@@ -131,6 +132,8 @@ export const CirclePackingPanel = ({
 
   // Filter and search state
   const searchState: SearchState = useFilterStore((state) => state.search.state)
+  const lastSearch = useFilterStore((state) => state.search.lastSearch)
+  const setLastSearch = useFilterStore((state) => state.setLastSearch)
 
   // Renderer functions
   const getRendererFunction = useRendererFunctionStore(
@@ -168,6 +171,17 @@ export const CirclePackingPanel = ({
     [selectedNodes],
   )
 
+  // Protein rings have no row in the node table, so the search cannot select
+  // them; it selects the subsystems that contain them. Highlight the rings the
+  // query matches inside those subsystems while the search result is still
+  // the selection (#930).
+  const hierarchy = circlePackingView?.hierarchy
+  const searchMatchedRings: ReadonlySet<string> = useMemo(
+    () =>
+      findSearchMatchedRings(hierarchy, lastSearch, networkId, selectedNodes),
+    [hierarchy, lastSearch, networkId, selectedNodes],
+  )
+
   // ===== FUNCTIONS ====
 
   /**
@@ -182,6 +196,11 @@ export const CirclePackingPanel = ({
 
   const handleCircleClick = useCallback(
     (e: any, d: d3Hierarchy.HierarchyNode<D3TreeNode>) => {
+      // A click replaces the search's selection, even when it selects the
+      // same subsystems again (a protein of the one subsystem the search
+      // selected), so the search's protein rings stop being outlined (#930).
+      setLastSearch(undefined)
+
       if (d.height !== 0) {
         // Selected item is a subsystem
         if (d.data.originalId !== undefined) {
@@ -214,7 +233,13 @@ export const CirclePackingPanel = ({
         }
       }
     },
-    [network.id, exclusiveSelect, setSelectedNodes, setSelectedLeaves],
+    [
+      network.id,
+      exclusiveSelect,
+      setSelectedNodes,
+      setSelectedLeaves,
+      setLastSearch,
+    ],
   )
 
   const handleCircleMouseMove = useCallback((e: any) => {
@@ -632,11 +657,15 @@ export const CirclePackingPanel = ({
       // Sync selections from the subnetwork view to the circle packing view
       if (selectedHierarchyNodeNames.length === 0) {
         setSelectedLeaves([])
-        displaySelectedNodes(selectedNodeSet, [])
+        displaySelectedNodes(selectedNodeSet, [], searchMatchedRings)
         hasInitialFitToSelectedLeaves.current = false
       } else {
         setSelectedLeaves(selectedHierarchyNodeNames)
-        displaySelectedNodes(selectedNodeSet, selectedHierarchyNodeNames)
+        displaySelectedNodes(
+          selectedNodeSet,
+          selectedHierarchyNodeNames,
+          searchMatchedRings,
+        )
 
         // On initial load with selected leaves, expand to the subsystem containing them
         if (!hasInitialFitToSelectedLeaves.current && visible) {
@@ -1056,7 +1085,7 @@ export const CirclePackingPanel = ({
    */
   useEffect(
     function onNodeSelection() {
-      displaySelectedNodes(selectedNodeSet, selectedLeaves)
+      displaySelectedNodes(selectedNodeSet, selectedLeaves, searchMatchedRings)
 
       // Don't auto-expand on node selection - only expand on initial load with selected leaves from URL
       // The expansion is handled in onSelectedHierarchyNodeNamesChange when selected leaves are present
@@ -1065,7 +1094,13 @@ export const CirclePackingPanel = ({
         setNetworkSwitched(false)
       }
     },
-    [selectedNodes, selectedLeaves, networkSwitched, selectedNodeSet],
+    [
+      selectedNodes,
+      selectedLeaves,
+      networkSwitched,
+      selectedNodeSet,
+      searchMatchedRings,
+    ],
   )
 
   /**

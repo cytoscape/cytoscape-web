@@ -606,3 +606,173 @@ test.describe('Selecting a subsystem without a name', () => {
     expect(pageErrors).toEqual([])
   })
 })
+
+// #930: a protein ring has no row in the node table, so the search cannot
+// select it; it selects the subsystems that list the protein. The Cell View
+// highlights the matched rings inside those subsystems. This fixture names its
+// members (HCX::memberNames), so the rings are labelled without NDEx.
+const MEMBER_NAMES_HCX = path.resolve(
+  __dirname,
+  '../fixtures/hcx/valid/member-names.valid.cx2',
+)
+
+test.describe('Searching a hierarchy in the Cell View (#930)', () => {
+  test('highlights the protein rings the search matched', async ({ page }) => {
+    // Nothing here needs NDEx; keep any request from reaching it.
+    await page.route('**/*ndexbio.org/**', () => {})
+
+    await importNetworkFile(page, MEMBER_NAMES_HCX, 'Member Names Hierarchy')
+    await page.getByRole('tab', { name: 'Cell View' }).click()
+    const svg = page.locator('[data-testid="circle-packing-svg"]')
+    await expect(svg.locator('circle')).toHaveCount(10)
+
+    // Ring id (`<subsystem node id>-<protein>`) → border color, for the
+    // protein rings only.
+    const ringBorders = () =>
+      svg.evaluate((element) =>
+        Object.fromEntries(
+          [...element.querySelectorAll('circle')]
+            .map(
+              (circle) =>
+                [
+                  circle,
+                  (
+                    circle as unknown as {
+                      __data__?: { data: { id: string; isMember?: boolean } }
+                    }
+                  ).__data__?.data,
+                ] as const,
+            )
+            .filter(([, data]) => data?.isMember === true)
+            .map(([circle, data]) => [data!.id, circle.getAttribute('stroke')]),
+        ),
+      )
+    const redRings = async (): Promise<string[]> =>
+      Object.entries(await ringBorders())
+        .filter(([, stroke]) => stroke === 'red')
+        .map(([id]) => id)
+        .sort()
+
+    expect(Object.keys(await ringBorders()).sort()).toEqual([
+      '0-WDR18',
+      '1-MYC',
+      '2-DR1',
+      '2-TAF11',
+      '3-ACTB',
+      '3-TUBB',
+    ])
+
+    // Exact mode (the default): Cell, Nucleus and Nucleoplasm list DR1. Only
+    // Nucleoplasm draws a DR1 ring; the others hold it through their children.
+    const input = page.locator('[data-testid="search-box-input"] input')
+    await input.fill('DR1')
+    await input.press('Enter')
+    await expect(page.getByTestId('search-result-count')).toHaveText('3 nodes')
+    await expect.poll(redRings).toEqual(['2-DR1'])
+
+    // Each token matches its own ring.
+    await input.fill('DR1 MYC')
+    await input.press('Enter')
+    await expect.poll(redRings).toEqual(['1-MYC', '2-DR1'])
+
+    // Clearing the search clears the rings with the selection.
+    await page.getByTestId('search-clear-button').click()
+    await expect.poll(redRings).toEqual([])
+  })
+
+  // The outline belongs to the search's selection, not to any equal one:
+  // once the selection changes, selecting the same nodes again by other means
+  // must not bring it back.
+  test('does not bring the outline back when the selection is restored', async ({
+    page,
+  }) => {
+    await page.route('**/*ndexbio.org/**', () => {})
+
+    await importNetworkFile(page, MEMBER_NAMES_HCX, 'Member Names Hierarchy')
+    await page.getByRole('tab', { name: 'Cell View' }).click()
+    const svg = page.locator('[data-testid="circle-packing-svg"]')
+    await expect(svg.locator('circle')).toHaveCount(10)
+
+    const redRings = () =>
+      svg.evaluate((element) =>
+        [...element.querySelectorAll('circle')]
+          .filter((circle) => circle.getAttribute('stroke') === 'red')
+          .map(
+            (circle) =>
+              (circle as unknown as { __data__: { data: { id: string } } })
+                .__data__.data.id,
+          )
+          .sort(),
+      )
+    const selectMenu = async (item: string): Promise<void> => {
+      await page
+        .locator('[data-testid="toolbar-select-menu-menu-button"]')
+        .click()
+      await page.getByRole('menuitem', { name: item, exact: true }).click()
+    }
+
+    // Every system lists DR1 or ACTB, so the search selects all four.
+    const input = page.locator('[data-testid="search-box-input"] input')
+    await input.fill('DR1 ACTB')
+    await input.press('Enter')
+    await expect(page.getByTestId('search-result-count')).toHaveText('4 nodes')
+    await expect.poll(redRings).toEqual(['2-DR1', '3-ACTB'])
+
+    await selectMenu('Deselect All')
+    await expect.poll(redRings).toEqual([])
+
+    await selectMenu('Select All Nodes')
+    await expect(page.getByText('Multiple nodes are selected')).toBeVisible()
+    await expect.poll(redRings).toEqual([])
+    // Give a late repaint the chance to bring it back before passing.
+    await page.waitForTimeout(500)
+    expect(await redRings()).toEqual([])
+  })
+
+  // A click in the Cell View can leave the selection as the search left it:
+  // here the search selects Nucleoplasm alone, and clicking one of its
+  // proteins selects Nucleoplasm again. The search outline must still go.
+  test('drops the search outline when a ring is clicked', async ({ page }) => {
+    await page.route('**/*ndexbio.org/**', () => {})
+
+    await importNetworkFile(page, MEMBER_NAMES_HCX, 'Member Names Hierarchy')
+    await page.getByRole('tab', { name: 'Cell View' }).click()
+    const svg = page.locator('[data-testid="circle-packing-svg"]')
+    await expect(svg.locator('circle')).toHaveCount(10)
+
+    const strokeOf = (ringId: string) =>
+      svg.evaluate(
+        (element, id) =>
+          [...element.querySelectorAll('circle')]
+            .find(
+              (circle) =>
+                (circle as unknown as { __data__?: { data: { id: string } } })
+                  .__data__?.data.id === id,
+            )
+            ?.getAttribute('stroke'),
+        ringId,
+      )
+
+    // AND: only Nucleoplasm is named Nucleoplasm and lists DR1.
+    await page.getByTestId('search-settings-button').click()
+    await page.getByTestId('search-operator-and-radio').click()
+    await page.getByRole('button', { name: 'Close', exact: true }).click()
+    const input = page.locator('[data-testid="search-box-input"] input')
+    await input.fill('Nucleoplasm DR1')
+    await input.press('Enter')
+    await expect(page.getByTestId('search-result-count')).toHaveText('1 node')
+    await expect.poll(() => strokeOf('2-DR1')).toBe('red')
+
+    // Click TAF11, inside Nucleoplasm. The click handler is d3's; dispatch it
+    // on the circle itself, since the ring's label lies over it (#931).
+    await svg.evaluate((element) => {
+      const ring = [...element.querySelectorAll('circle')].find(
+        (circle) =>
+          (circle as unknown as { __data__?: { data: { id: string } } })
+            .__data__?.data.id === '2-TAF11',
+      )
+      ring?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    await expect.poll(() => strokeOf('2-DR1')).not.toBe('red')
+  })
+})

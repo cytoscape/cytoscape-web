@@ -4,7 +4,13 @@ import { DiscreteRange } from '../../PropertyModel/DiscreteRange'
 import { NumberRange } from '../../PropertyModel/NumberRange'
 import { DiscreteFilterValue } from '../DiscreteFilterValue'
 import { FilterConfig } from '../FilterConfig'
-import { IndexedColumns, Indices, Search, SearchOptions } from '../Search'
+import {
+  IndexedColumns,
+  Indices,
+  Search,
+  SearchOptions,
+  SearchRun,
+} from '../Search'
 import { SearchState } from '../SearchState'
 
 export interface FilterState<T> {
@@ -155,6 +161,41 @@ export const setOptions = <T>(
       options,
     },
   }
+}
+
+/**
+ * Record the search that just ran, or forget it (`undefined`) when the search
+ * is cleared.
+ */
+export const setLastSearch = <T>(
+  state: FilterState<T>,
+  lastSearch: SearchRun | undefined,
+): FilterState<T> => {
+  return {
+    ...state,
+    search: {
+      ...state.search,
+      lastSearch,
+    },
+  }
+}
+
+/**
+ * Whether the selection is still the one a search made: the same node ids, in
+ * any order. A recorded search describes the selection only until it first
+ * changes; after that it is cleared, so an equal selection made later by
+ * other means is not taken for the search's.
+ */
+export const selectionMatchesSearch = (
+  run: SearchRun,
+  selectedNodeIds: readonly IdType[],
+): boolean => {
+  const searched = new Set(run.nodeIds)
+  const selected = new Set(selectedNodeIds)
+  return (
+    searched.size === selected.size &&
+    [...searched].every((id) => selected.has(id))
+  )
 }
 
 /**

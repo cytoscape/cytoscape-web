@@ -36,6 +36,7 @@ describe('SearchBox', () => {
   const exclusiveSelectMock = vi.fn()
   const setQueryMock = vi.fn()
   const setSearchStateMock = vi.fn()
+  const setLastSearchMock = vi.fn()
 
   // The search runs on the active view; `enablePopup` is on while the current
   // network is a hierarchy.
@@ -81,6 +82,7 @@ describe('SearchBox', () => {
       },
       setQuery: setQueryMock,
       setSearchState: setSearchStateMock,
+      setLastSearch: setLastSearchMock,
       setIndexedColumns: vi.fn(),
       setIndex: vi.fn(),
     }
@@ -150,6 +152,89 @@ describe('SearchBox', () => {
     )
     expect(screen.getByRole('status').textContent).toBe('2 nodes selected.')
     expect(addMessageMock).not.toHaveBeenCalled()
+  })
+
+  // #930: the Cell View reads the search from the store to highlight the
+  // protein rings it matched
+  it('records the search that ran in the store', () => {
+    ;(runSearch as import('vitest').Mock).mockReturnValue(['n1', 'n2'])
+
+    render(<SearchBox />)
+    submit()
+
+    expect(setLastSearchMock).toHaveBeenLastCalledWith({
+      id: expect.any(Number),
+      networkId: 'net1',
+      query: 'test-query',
+      options: { exact: false, operator: 'OR' },
+      nodeIds: ['n1', 'n2'],
+    })
+  })
+
+  it('forgets the recorded search when the search is cleared', () => {
+    ;(runSearch as import('vitest').Mock).mockReturnValue(['n1'])
+
+    render(<SearchBox />)
+    submit()
+    fireEvent.click(screen.getByTestId('search-clear-button'))
+
+    expect(setLastSearchMock).toHaveBeenLastCalledWith(undefined)
+  })
+
+  describe('keeping the recorded search', () => {
+    const run = {
+      id: 1,
+      networkId: 'net1',
+      query: 'test-query',
+      options: { exact: false, operator: 'OR' as const },
+      nodeIds: ['n1', 'n2'],
+    }
+
+    // Render with `run` recorded and `selectedNodes` selected on its network
+    // (`undefined`: the network has no view any more).
+    const renderWithRecordedSearch = (
+      selectedNodes: string[] | undefined,
+    ): void => {
+      const state = (
+        useFilterStore.getState as unknown as import('vitest').Mock
+      )()
+      const withRun = { ...state, search: { ...state.search, lastSearch: run } }
+      ;(useFilterStore as unknown as import('vitest').Mock).mockImplementation(
+        (selector) => selector(withRun),
+      )
+      ;(
+        useViewModelStore as unknown as import('vitest').Mock
+      ).mockImplementation((selector) =>
+        selector({
+          exclusiveSelect: exclusiveSelectMock,
+          getViewModel: (id: string) =>
+            id === 'net1' && selectedNodes !== undefined
+              ? { selectedNodes }
+              : undefined,
+        }),
+      )
+      render(<SearchBox />)
+    }
+
+    it('keeps it while the selection is the search result', () => {
+      renderWithRecordedSearch(['n2', 'n1'])
+
+      expect(setLastSearchMock).not.toHaveBeenCalled()
+    })
+
+    // #930: Deselect All, then Select All Nodes must not bring back the
+    // Cell View's search outline
+    it('forgets it once the selection changes', () => {
+      renderWithRecordedSearch([])
+
+      expect(setLastSearchMock).toHaveBeenCalledWith(undefined)
+    })
+
+    it('forgets it when the searched network has no view', () => {
+      renderWithRecordedSearch(undefined)
+
+      expect(setLastSearchMock).toHaveBeenCalledWith(undefined)
+    })
   })
 
   it('counts nodes and edges when both are searched', () => {
