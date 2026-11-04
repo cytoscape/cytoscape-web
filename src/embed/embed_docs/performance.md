@@ -92,3 +92,77 @@ Against step 0: `done` falls 72% on `mouse` (120 s → 34 s), 60% on `celegans`,
 
 Small gains, within run-to-run noise for most scenarios. The Cell View change does not show here: no scenario zooms the Cell View.
 `cytoplasm` (hover, then click) was added in step 3 and run against this build for comparison.
+
+### 3. Fetch sooner: summary and CX2 together, hover prefetch (`70cbcdec`)
+
+- `loadEmbedNetwork` requests the summary and the CX2 at once, and aborts the CX2 when the summary puts the network over the size limit.
+- Resting the pointer on a Cell View circle for 150 ms starts that subsystem's download; the click reuses it.
+- `buildDrawing` and `Drawing` split building a network's elements from drawing them, ready for step 4.
+
+| Scenario  | visible | done   | blocked | p95 | max   | fetch |
+| --------- | ------- | ------ | ------- | --- | ----- | ----- |
+| wp1742    | 937     | 950    | 64      | 9   | 92    | 394   |
+| das       | 1,463   | 2,190  | 1,315   | 133 | 400   | 525   |
+| sars2     | 3,650   | 7,277  | 5,617   | 150 | 1,158 | 869   |
+| celegans  | 4,618   | 11,395 | 9,453   | 225 | 1,975 | 678   |
+| mouse     | 8,365   | 33,990 | 30,856  | 358 | 3,674 | 1,433 |
+| hierarchy | 936     | 936    | 98      | 17  | 108   | 621   |
+| root      | 2,433   | 3,775  | 2,429   | 150 | 700   | 511   |
+| cytoplasm | 992     | 1,100  | 1,055   | 525 | 525   | 201   |
+
+Against step 2: `visible` falls 35% on `das`, 31% on `cytoplasm` (hover prefetch), 14% on `hierarchy`.
+The large BioGRID networks do not change: their time is in converting and drawing, not in waiting for NDEx.
+For `cytoplasm`, `fetch` counts only requests after the click; the prefetched download started before it.
+
+### 4. Prepare networks in a Web Worker (`af646595`)
+
+- `prepare.worker.ts` downloads, converts, styles and lays out networks off the main thread; the page receives the drawing as a structured clone.
+- Networks come back with plain node and edge lists instead of the network model's headless Cytoscape.js instance, which cannot be posted.
+- Without a worker, the same code runs on the page.
+
+| Scenario  | visible | done   | blocked | p95 | max   | fetch |
+| --------- | ------- | ------ | ------- | --- | ----- | ----- |
+| wp1742    | 1,018   | 1,042  | 130     | 9   | 92    | 481   |
+| das       | 1,847   | 2,269  | 1,166   | 125 | 267   | 413   |
+| sars2     | 4,091   | 7,523  | 4,451   | 133 | 867   | 428   |
+| celegans  | 4,309   | 10,300 | 7,898   | 192 | 1,292 | 365   |
+| mouse     | 8,748   | 29,719 | 24,377  | 284 | 2,683 | 422   |
+| hierarchy | 937     | 937    | 99      | 9   | 108   | 655   |
+| root      | 1,823   | 4,036  | 2,319   | 142 | 283   | 0     |
+| cytoplasm | 909     | 1,027  | 782     | 225 | 242   | 0     |
+
+Against step 3: `blocked` falls 21% on `mouse`, 21% on `sars2`, 26% on `cytoplasm`; the longest frame falls 27% on `mouse` and 60% on `root`.
+`visible` barely moves: the work still happens before the first draw, only on another thread. It rises on `das` (1.5 s → 1.8 s), suspected to be worker start-up and the cost of posting the result; not confirmed.
+`fetch` no longer sees the CX2 download: Resource Timing on the page does not record the worker's requests, so the column shows only the summary request.
+
+## Summary
+
+| Scenario | Step 0 done | Step 4 done | Change | Step 0 blocked | Step 4 blocked |
+| --- | --- | --- | --- | --- | --- |
+| das | 4,186 | 2,269 | −46% | 2,819 | 1,166 |
+| sars2 | 13,236 | 7,523 | −43% | 11,866 | 4,451 |
+| celegans | 30,903 | 10,300 | −67% | 29,517 | 7,898 |
+| mouse | 120,374 | 29,719 | −75% | 117,789 | 24,377 |
+| root | 8,327 | 4,036 | −52% | 7,556 | 2,319 |
+
+Step 1 (element data and shared styles) gives most of the gain.
+
+## Where the time goes now
+
+- Above ~20,000 edges, `done` is set by edge streaming: 12 ms of adding per frame, plus the frame's render. `mouse` spends ~21 s streaming 86,296 edges.
+- `blocked` is mostly those per-frame renders. Each frame stays under ~300 ms at p95, so the page keeps responding, but it is not smooth.
+- `visible` on the large networks (4–9 s) is the worker's conversion and styling, and posting the result back.
+
+## Size limit
+
+The default limit is 10,000 nodes and edges (`EMBED_MAX_ELEMENTS`); `VITE_EMBED_MAX_ELEMENTS` overrides it at build time.
+With step 4, measured on this machine:
+
+| Elements | Network | First paint | Fully drawn |
+| --- | --- | --- | --- |
+| 12,249 | das | 1.8 s | 2.3 s |
+| 25,269 | sars2 | 4.1 s | 7.5 s |
+| 48,306 | celegans | 4.3 s | 10.3 s |
+| 103,556 | mouse | 8.7 s | 29.7 s |
+
+Phones and slower laptops are untested and will be slower.
