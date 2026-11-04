@@ -734,6 +734,23 @@ export const CirclePackingPanel = ({
   }
 
   /**
+   * Clear the failure state when the network changes, so a hierarchy that could
+   * not be built does not keep hiding the diagram of the next one. Same for an
+   * expansion waiting on the previous network's view model.
+   *
+   * Must precede onSelectedHierarchyNodeNamesChange: this also runs on mount,
+   * and declared after it would clear the wait that effect has just recorded
+   * for a selection that was there before the panel mounted.
+   */
+  useEffect(
+    function onNetworkIdChange() {
+      setCpError(undefined)
+      initialExpansionPendingRef.current = false
+    },
+    [networkId],
+  )
+
+  /**
    * Update selected leaf when hierarchy node names change
    * This syncs selections in the subnetwork view to this circle packing view
    */
@@ -775,12 +792,14 @@ export const CirclePackingPanel = ({
   )
 
   /**
-   * Run the initial expansion that had to wait for the view model
+   * Run the initial expansion that had to wait for the view model. It fits the
+   * viewport, which can't be measured while hidden, so it also waits to be shown.
    */
   useEffect(
     function onViewModelReady() {
       if (
         !initialExpansionPendingRef.current ||
+        !visible ||
         circlePackingView?.hierarchy === undefined
       ) {
         return
@@ -788,8 +807,8 @@ export const CirclePackingPanel = ({
       initialExpansionPendingRef.current = false
       expandToInitialSelection()
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs when the view model arrives; the pending flag makes it one-shot
-    [circlePackingView?.hierarchy],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs when the view model arrives or the panel is shown; the pending flag makes it one-shot
+    [circlePackingView?.hierarchy, visible],
   )
 
   /**
@@ -1150,18 +1169,6 @@ export const CirclePackingPanel = ({
       selectedNodeSet,
       searchMatchedRings,
     ],
-  )
-
-  /**
-   * Clear the failure state when the network changes, so a hierarchy that could
-   * not be built does not keep hiding the diagram of the next one.
-   */
-  useEffect(
-    function onNetworkIdChange() {
-      setCpError(undefined)
-      initialExpansionPendingRef.current = false
-    },
-    [networkId],
   )
 
   /**

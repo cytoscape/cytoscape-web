@@ -422,6 +422,44 @@ describe('CirclePackingPanel name lookup source (#933)', () => {
       expect(exclusiveSelect).toHaveBeenCalledWith(NETWORK_ID, ['root'], [])
     })
 
+    it('waits for the view model when the selection is there before mount', async () => {
+      const builds = deferBuilds()
+      useSubNetworkStore.setState({
+        selectedHierarchyNodeNames: ['leaf'],
+      } as any)
+
+      render(panel(network, true))
+      expect(exclusiveSelect).not.toHaveBeenCalled()
+
+      await act(async () => {
+        builds[0].resolve(hierarchyOf('root'))
+      })
+
+      expect(exclusiveSelect).toHaveBeenCalledTimes(1)
+      expect(exclusiveSelect).toHaveBeenCalledWith(NETWORK_ID, ['root'], [])
+    })
+
+    it('keeps waiting while hidden, and expands once shown again', async () => {
+      const builds = deferBuilds()
+      const { rerender } = render(panel(network, true))
+
+      act(() => {
+        useSubNetworkStore.setState({
+          selectedHierarchyNodeNames: ['leaf'],
+        } as any)
+      })
+      rerender(panel(network, false))
+      await act(async () => {
+        builds[0].resolve(hierarchyOf('root'))
+      })
+      expect(exclusiveSelect).not.toHaveBeenCalled()
+
+      rerender(panel(network, true))
+
+      expect(exclusiveSelect).toHaveBeenCalledTimes(1)
+      expect(exclusiveSelect).toHaveBeenCalledWith(NETWORK_ID, ['root'], [])
+    })
+
     it('forgets the wait when the selection is cleared first', async () => {
       const builds = deferBuilds()
       render(panel(network, true))
