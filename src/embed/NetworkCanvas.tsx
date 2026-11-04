@@ -17,6 +17,8 @@ interface NetworkCanvasProps {
   networkId: IdType
   summary: NetworkSummary
   cyNetwork: CyNetwork
+  /** Nodes selected on load, from the URL. */
+  initialSelectedNodeIds: readonly IdType[]
 }
 
 /** Viewer for a plain network: toolbar with search, the network, and the clicked node's attributes. */
@@ -24,9 +26,15 @@ export const NetworkCanvas = ({
   networkId,
   summary,
   cyNetwork,
+  initialSelectedNodeIds,
 }: NetworkCanvasProps) => {
   const cyRef = useRef<Core | null>(null)
-  const [selectedNodeId, setSelectedNodeId] = useState<IdType | undefined>()
+  const [selectedNodeId, setSelectedNodeId] = useState<IdType | undefined>(
+    () =>
+      initialSelectedNodeIds.length === 1
+        ? initialSelectedNodeIds[0]
+        : undefined,
+  )
   const [query, setQuery] = useState('')
   const [matchCount, setMatchCount] = useState<number | undefined>()
   const searchedRef = useRef(false)
@@ -70,6 +78,7 @@ export const NetworkCanvas = ({
         cyNetwork={cyNetwork}
         annotationsFrom={summary}
         defaultLayout={defaultLayout}
+        selectedNodeIds={initialSelectedNodeIds}
         onNodeTap={setSelectedNodeId}
         onReady={(cy) => {
           cyRef.current = cy

@@ -83,6 +83,11 @@ declare module 'allotment' {
 declare const REACT_APP_VERSION: string
 declare const REACT_APP_BUILD_TIME: string
 
+interface ImportMetaEnv {
+  /** Full app the embed links to; see src/embed/fullAppUrl.ts. */
+  readonly VITE_EMBED_APP_URL?: string
+}
+
 // global variables for debugging
 interface Window {
   debug: any

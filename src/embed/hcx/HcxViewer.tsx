@@ -10,6 +10,7 @@ import { IdType } from '@/models/IdType'
 import { NetworkSummary } from '@/models/NetworkSummaryModel'
 
 import { CyView } from '../CyView'
+import { EmbedSelection } from '../readSelectionFromSearch'
 import { Toolbar } from '../Toolbar'
 import { buildCellView } from './buildCellView'
 import { CellView } from './CellView'
@@ -32,6 +33,11 @@ interface HcxViewerProps {
   summary: NetworkSummary
   hierarchy: CyNetwork
   metadata: HcxMetaData
+  /**
+   * Selection from the URL: the first id in `nodeIds` that is a subsystem
+   * opens it, and `subnetworkNodeIds` are selected in its network.
+   */
+  initialSelection: EmbedSelection
 }
 
 /**
@@ -45,6 +51,7 @@ export const HcxViewer = ({
   summary,
   hierarchy,
   metadata,
+  initialSelection,
 }: HcxViewerProps) => {
   const ndexUrl =
     metadata.interactionNetworkHost !== undefined &&
@@ -57,13 +64,19 @@ export const HcxViewer = ({
   const [cellView, setCellView] = useState<Loadable<CirclePackingView>>({
     kind: 'loading',
   })
-  const [subsystemId, setSubsystemId] = useState<IdType | undefined>()
+  const [subsystemId, setSubsystemId] = useState<IdType | undefined>(() =>
+    initialSelection.nodeIds.find((id) => hierarchy.nodeTable.rows.has(id)),
+  )
   const [subsystem, setSubsystem] = useState<Loadable<Subsystem>>({
     kind: 'idle',
   })
   const [selectedSubNodeIds, setSelectedSubNodeIds] = useState<IdType[]>([])
   // A leaf clicked in the Cell View before its subsystem has loaded
   const pendingLeafNameRef = useRef<string | undefined>()
+  // Subsystem nodes from the URL, selected when the first subsystem loads
+  const pendingSubNodeIdsRef = useRef<readonly IdType[]>(
+    initialSelection.subnetworkNodeIds,
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -108,9 +121,13 @@ export const HcxViewer = ({
         }
         setSubsystem({ kind: 'ready', value })
         const leafName = pendingLeafNameRef.current
+        const urlNodeIds = pendingSubNodeIdsRef.current
         pendingLeafNameRef.current = undefined
+        pendingSubNodeIdsRef.current = []
         setSelectedSubNodeIds(
-          leafName === undefined ? [] : nodesNamed(value, leafName),
+          leafName !== undefined
+            ? nodesNamed(value, leafName)
+            : urlNodeIds.filter((id) => value.cyNetwork.nodeTable.rows.has(id)),
         )
       })
       .catch((error: unknown) => {

@@ -11,9 +11,12 @@ import {
 } from './loadEmbedNetwork'
 import { MessageView } from './MessageView'
 import { NetworkCanvas } from './NetworkCanvas'
+import { EmbedSelection } from './readSelectionFromSearch'
 
 interface EmbedAppProps {
   networkId: IdType | undefined
+  /** Selection from the URL, applied once the network loads. */
+  initialSelection: EmbedSelection
 }
 
 type LoadState = { kind: 'loading' } | EmbedNetworkResult
@@ -24,7 +27,7 @@ const HcxViewer = lazy(() =>
 )
 
 /** Root of the embeddable viewer: loads one NDEx network and draws it. */
-export const EmbedApp = ({ networkId }: EmbedAppProps) => {
+export const EmbedApp = ({ networkId, initialSelection }: EmbedAppProps) => {
   const [state, setState] = useState<LoadState>({ kind: 'loading' })
 
   useEffect(() => {
@@ -98,6 +101,7 @@ export const EmbedApp = ({ networkId }: EmbedAppProps) => {
               summary={state.summary}
               hierarchy={state.cyNetwork}
               metadata={metadata}
+              initialSelection={initialSelection}
             />
           </Suspense>
         )
@@ -107,6 +111,7 @@ export const EmbedApp = ({ networkId }: EmbedAppProps) => {
           networkId={networkId}
           summary={state.summary}
           cyNetwork={state.cyNetwork}
+          initialSelectedNodeIds={initialSelection.nodeIds}
         />
       )
     }
