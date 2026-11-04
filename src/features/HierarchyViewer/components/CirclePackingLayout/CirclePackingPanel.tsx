@@ -16,6 +16,7 @@ import {
 import { AppConfigContext } from '../../../../AppConfigContext'
 import { useCredentialStore } from '../../../../data/hooks/stores/CredentialStore'
 import { useFilterStore } from '../../../../data/hooks/stores/FilterStore'
+import { useNetworkSummaryStore } from '../../../../data/hooks/stores/NetworkSummaryStore'
 import { useRendererFunctionStore } from '../../../../data/hooks/stores/RendererFunctionStore'
 import { useTableStore } from '../../../../data/hooks/stores/TableStore'
 // Internal store imports
@@ -53,6 +54,7 @@ import {
 } from './CirclePackingUtils'
 import { D3TreeNode } from './D3TreeNode'
 import { findSearchMatchedRings } from './searchMatchedRings'
+import { interactionNetworkSource } from './memberNames'
 import { useCenterAnchoredZoom } from './useCenterAnchoredZoom'
 
 interface CirclePackingPanelProps {
@@ -96,6 +98,7 @@ export const CirclePackingPanel = ({
   const lastZoomLevelRef = useRef(0) // Keep the last zoom level for comparison
   const updatingNetworkIdRef = useRef<IdType | null>(null) // Track which network is currently being updated
   const hasInitialFitToSelectedLeaves = useRef(false) // Track if we've done initial fit to selected leaves
+  const latestBuildRef = useRef(0) // Only the latest layout build may register its view model
 
   // ===== LOCAL STATE =====
   const [lastNetworkId, setLastNetworkId] = useState<IdType>('')
@@ -145,11 +148,8 @@ export const CirclePackingPanel = ({
 
   // Credentials and network info
   const getToken = useCredentialStore((state) => state.getToken)
-  const rootNetworkId: IdType = useSubNetworkStore(
-    (state) => state.rootNetworkId,
-  )
-  const rootNetworkHost: string = useSubNetworkStore(
-    (state) => state.rootNetworkHost,
+  const networkSummary = useNetworkSummaryStore(
+    (state) => state.summaries[networkId],
   )
   const setSelectedNodes = useSubNetworkStore((state) => state.setSelectedNodes)
   const selectedHierarchyNodeNames = useSubNetworkStore(
@@ -157,8 +157,16 @@ export const CirclePackingPanel = ({
   )
 
   // ===== COMPUTED VALUES =====
-  const rootNetworkHostUrl: string =
-    rootNetworkHost === '' ? ndexBaseUrl : rootNetworkHost
+  // Protein names are looked up in the interaction network named by this
+  // hierarchy's own metadata. Undefined until the summary has loaded (#933).
+  const interactionSource = useMemo(
+    () => interactionNetworkSource(networkSummary, ndexBaseUrl),
+    [networkSummary, ndexBaseUrl],
+  )
+  const interactionSourceLoaded: boolean = interactionSource !== undefined
+  const interactionNetworkId: string | undefined = interactionSource?.id
+  const interactionNetworkHostUrl: string | undefined =
+    interactionSource?.hostUrl
 
   const circlePackingView: CirclePackingView | undefined = views.find(
     (view) => view.type === CirclePackingType,
@@ -419,6 +427,10 @@ export const CirclePackingPanel = ({
       visualStyle === undefined
     )
       return
+    // Without the summary there is nowhere to look protein names up, and the
+    // rings would keep their numeric ids. onInitialSizeChange builds once it
+    // arrives.
+    if (interactionSource === undefined) return
     const primaryView = getViewModel(networkId)
 
     // Primary view is not ready yet.
@@ -444,14 +456,18 @@ export const CirclePackingPanel = ({
     let rootNode: d3Hierarchy.HierarchyNode<D3TreeNode> =
       circlePackingView?.hierarchy as d3Hierarchy.HierarchyNode<D3TreeNode>
 
+    // A slower, earlier build must not overwrite a later one
+    const buildId = ++latestBuildRef.current
+
     createTreeLayout({
       network,
       nodeTable,
-      rootNetworkHostUrl,
+      interactionNetworkId: interactionSource.id,
+      interactionNetworkHostUrl: interactionSource.hostUrl,
       getToken,
-      rootNetworkId,
     })
       .then((root) => {
+        if (buildId !== latestBuildRef.current) return
         rootNode = root
         if (rootNode && Object.keys(rootNode).length === 0) {
           // createTreeLayout could not build a tree from this hierarchy
@@ -480,6 +496,7 @@ export const CirclePackingPanel = ({
         setCpError(undefined)
       })
       .catch((error) => {
+        if (buildId !== latestBuildRef.current) return
         // Without this, a rejection here (e.g. a subsystem with no member list)
         // became an unhandled rejection and left this panel blank (issue #630).
         logUi.error(
@@ -1115,7 +1132,13 @@ export const CirclePackingPanel = ({
   )
 
   /**
-   * Initialize view model when initial size is available
+   * Initialize view model when initial size is available, and rebuild it when
+   * the interaction network its protein names come from is known or changes.
+   *
+   * The renderer mounts hidden at startup, often before the network summary
+   * has loaded. Building then looked names up nowhere and left the protein
+   * rings labelled with their numeric ids (#933), so the build waits for the
+   * summary and runs again once it arrives.
    *
    * buildCirclePackingViewModel must NOT be a dependency: its identity changes
    * with every render caused by its own store write, so adding it would
@@ -1127,8 +1150,13 @@ export const CirclePackingPanel = ({
         buildCirclePackingViewModel()
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot build when the measured size arrives
-    [initialSize],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- build trigger only; rebuild writes the view model (loop)
+    [
+      initialSize,
+      interactionSourceLoaded,
+      interactionNetworkId,
+      interactionNetworkHostUrl,
+    ],
   )
 
   if (cpError !== undefined) {

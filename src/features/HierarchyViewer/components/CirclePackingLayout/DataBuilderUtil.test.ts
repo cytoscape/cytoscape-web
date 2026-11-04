@@ -133,3 +133,44 @@ describe('cyNetDag2tree2', () => {
     ).toEqual(['cell', 'nucleus'])
   })
 })
+
+describe('cyNetDag2tree2 with numeric HCX::members', () => {
+  // Leaf subsystem whose members are interaction-network node ids
+  const cyNet = cytoscape({
+    headless: true,
+    elements: [{ data: { id: 'complex' } }],
+  })
+  const table = tableWith({
+    complex: { name: 'Complex', [SubsystemTag.members]: [0, 189] },
+  })
+
+  const ringNames = (names: Map<string, string>): string[] => {
+    const elements: D3TreeNode[] = []
+    cyNetDag2tree2(
+      cyNet.getElementById('complex') as NodeSingular,
+      null,
+      table,
+      {},
+      elements,
+      new Set(),
+      names,
+    )
+    return elements.filter((e) => e.isMember === true).map((e) => e.name)
+  }
+
+  // #933: the lookup returns names keyed by id; the rings show them
+  it('labels each ring with the name looked up for its id', () => {
+    expect(
+      ringNames(
+        new Map([
+          ['0', 'ACTB'],
+          ['189', 'SMARCD2'],
+        ]),
+      ),
+    ).toEqual(['ACTB', 'SMARCD2'])
+  })
+
+  it('falls back to the id when no name was found', () => {
+    expect(ringNames(new Map([['189', 'SMARCD2']]))).toEqual(['0', 'SMARCD2'])
+  })
+})

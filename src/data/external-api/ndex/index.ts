@@ -19,7 +19,11 @@ export {
 } from './networkSummary'
 
 // Query operations
-export { fetchGeneNamesFromIds, fetchNdexInterconnectQuery } from './query'
+export {
+  fetchGeneNamesFromIds,
+  fetchNdexInterconnectQuery,
+  fetchNodeNamesByIds,
+} from './query'
 
 // Workspace operations
 export {

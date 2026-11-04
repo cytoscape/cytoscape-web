@@ -103,11 +103,6 @@ export const MainPanel = (): JSX.Element => {
   const deleteRenderer = useRendererStore((state) => state.delete)
   const renderers = useRendererStore((state) => state.renderers)
 
-  const setRootNetworkId = useSubNetworkStore((state) => state.setRootNetworkId)
-  const setRootNetworkHost = useSubNetworkStore(
-    (state) => state.setRootNetworkHost,
-  )
-
   // ID the shown subnetwork is stored under (`<hierarchyId>_<subsystemNodeId>`).
   // Empty until SubNetworkPanel has loaded it.
   const currentSubNetworkId: IdType = useSubNetworkStore(
@@ -203,16 +198,6 @@ export const MainPanel = (): JSX.Element => {
     }
     setInteractionNetworkId(interactionUuid)
   }, [selectedNodes, tableRecord, visualStyles, currentNetworkId])
-
-  useEffect(() => {
-    if (
-      metadata !== undefined &&
-      metadata.interactionNetworkUUID !== undefined
-    ) {
-      setRootNetworkId(metadata.interactionNetworkUUID)
-      setRootNetworkHost(metadata.interactionNetworkHost ?? '')
-    }
-  }, [metadata, setRootNetworkId, setRootNetworkHost])
 
   if (!isHierarchy) {
     return <MessagePanel message="This network is not a hierarchy" />

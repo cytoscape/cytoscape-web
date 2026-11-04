@@ -21,6 +21,7 @@ HierarchyViewer/
 │   ├── MainPanel.tsx                    # Main orchestrator component
 │   ├── CirclePackingLayout/              # Circle packing visualization
 │   │   ├── CirclePackingPanel.tsx       # D3.js-based circle packing renderer
+│   │   ├── memberNames.ts               # Protein-name lookup for member ids
 │   │   └── ...
 │   ├── SubNetworkPanel.tsx              # Interaction network viewer
 │   ├── FilterPanel/                     # Network filtering controls
@@ -75,7 +76,6 @@ The main orchestrator component that manages the hierarchy viewer layout and sta
 - Automatic hierarchy detection based on network metadata
 - Subsystem selection extraction from table data (nodes with `HCX::members` attribute)
 - Query generation for fetching interaction networks using `HCX::interactionNetworkUUID`
-- Root network ID and host management
 
 ### CirclePackingPanel
 
@@ -92,6 +92,7 @@ A D3.js-based visualization component that renders hierarchical structures as ne
 - Highlights the protein rings a search matched (see [Search and protein rings](#search-and-protein-rings))
 - Applies visual styles from the visual style store
 - Provides fit-to-viewport functionality
+- Labels protein rings with protein names (see [Protein ring labels](#protein-ring-labels))
 - On initial load with selected leaves (from URL parameters), automatically fits the viewport to show the subsystem containing those leaves
 
 **Key Features:**
@@ -194,6 +195,25 @@ Components for validating HCX network compliance.
 - Provides revalidation functionality
 - Warns users when saving invalid HCX networks
 
+### Protein ring labels
+
+When `HCX::members` holds node ids of the interaction network (MuSIC does),
+`createTreeLayout` looks their names up in that network
+(`resolveMemberNames` in `memberNames.ts`, via `fetchNodeNamesByIds`) and
+labels each ring with the name found for its id. A ring whose name was not
+found, or a failed lookup, shows the id. `HCX::memberNames` lists are shown as
+they are.
+
+The interaction network and its host come from this hierarchy's own network
+summary (`interactionNetworkSource`), never from a shared store. The renderer
+is mounted hidden at startup, so it often builds before the summary has
+loaded. It waits for the summary and builds again whenever the interaction
+network changes. It used to take the network id from `SubNetworkStore`, which
+`MainPanel` filled in only after reading the metadata, so after a reload the
+startup build looked names up in network `''` and the rings showed numbers
+(#933). The lookup returns names keyed by id: reading them back by position
+only worked because MuSIC's ids happen to be `0..n-1`.
+
 ### Search and protein rings
 
 A protein ring is generated from a subsystem's member list (`HCX::members`
@@ -281,7 +301,7 @@ The HierarchyViewer integrates with the following stores and services:
    - `HCX::modelFileCount` (required)
    - `HCX::interactionNetworkUUID` (optional)
    - `HCX::interactionNetworkHost` (optional)
-2. **Hierarchy Building**: CirclePackingPanel builds D3 hierarchy from network data using nodes with `HCX::members` attributes
+2. **Hierarchy Building**: CirclePackingPanel builds D3 hierarchy from network data using nodes with `HCX::members` attributes, once the network summary has loaded, and looks protein names up in the interaction network named by `HCX::interactionNetworkUUID` / `HCX::interactionNetworkHost`
 3. **Subsystem Selection**: User selects subsystem in Circle Packing view
 4. **Query Generation**: MainPanel extracts member nodes from `HCX::members` attribute and interaction network UUID from `HCX::interactionNetworkUUID`
 5. **Network Fetching**: SubNetworkPanel fetches interaction network via NDEx query using the interaction network UUID

@@ -3,7 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { Cx2 } from '../../../models/CxModel/Cx2'
 import { getNdexClient } from './client'
-import { fetchGeneNamesFromIds, fetchNdexInterconnectQuery } from './query'
+import {
+  fetchGeneNamesFromIds,
+  fetchNdexInterconnectQuery,
+  fetchNodeNamesByIds,
+} from './query'
 
 // Mock the NDEx client module
 vi.mock('./client', () => ({
@@ -356,5 +360,104 @@ describe('fetchGeneNamesFromIds', () => {
 
     expect(mockGetNdexClient).toHaveBeenCalledWith(mockAccessToken, mockNdexUrl)
     expect(result).toEqual(['Gene1', 'Gene2'])
+  })
+})
+
+describe('fetchNodeNamesByIds', () => {
+  const mockGetNdexClient = getNdexClient as import('vitest').MockedFunction<
+    typeof getNdexClient
+  >
+
+  const clientReturning = (response: unknown) => {
+    const client = {
+      networks: {
+        getAttributesOfSelectedNodes: vi.fn().mockResolvedValue(response),
+      },
+    }
+    mockGetNdexClient.mockReturnValue(client as any)
+    return client
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  // #933: names used to be read back by position, which only works when the
+  // ids happen to be 0..n-1
+  it('pairs each name with its node id, not its position', async () => {
+    const client = clientReturning({
+      '660': { name: 'METTL15' },
+      '7': { name: 'SMARCD2' },
+      '0': { name: 'ACTB' },
+    })
+
+    const names = await fetchNodeNamesByIds(
+      'uuid',
+      [660, 7, 0],
+      'token',
+      'https://ndex.example',
+    )
+
+    expect(mockGetNdexClient).toHaveBeenCalledWith(
+      'token',
+      'https://ndex.example',
+    )
+    expect(client.networks.getAttributesOfSelectedNodes).toHaveBeenCalledWith(
+      'uuid',
+      { ids: [660, 7, 0], attributeNames: ['name'] },
+    )
+    expect([...names.entries()].sort()).toEqual([
+      ['0', 'ACTB'],
+      ['660', 'METTL15'],
+      ['7', 'SMARCD2'],
+    ])
+  })
+
+  it('skips entries that carry no string name', async () => {
+    clientReturning({
+      '1': { name: 'GENE1' },
+      '2': { name: 42 },
+      '3': null,
+      '4': 'GENE4',
+      '5': {},
+    })
+
+    const names = await fetchNodeNamesByIds('uuid', [1, 2, 3, 4, 5])
+
+    expect([...names.entries()]).toEqual([['1', 'GENE1']])
+  })
+
+  it('keeps a __proto__ key as plain data', async () => {
+    clientReturning(
+      JSON.parse('{"__proto__": {"name": "EVIL"}, "1": {"name": "GENE1"}}'),
+    )
+
+    const names = await fetchNodeNamesByIds('uuid', [1])
+
+    expect(names.get('1')).toBe('GENE1')
+    expect(({} as Record<string, unknown>).name).toBeUndefined()
+  })
+
+  it.each([null, 'not an object', 7, ['GENE1']])(
+    'rejects a response that is not an id-keyed object (%j)',
+    async (response) => {
+      clientReturning(response)
+
+      await expect(fetchNodeNamesByIds('uuid', [1])).rejects.toThrow(
+        /Unexpected node name response/,
+      )
+    },
+  )
+
+  it('propagates errors from the NDEx client', async () => {
+    mockGetNdexClient.mockReturnValue({
+      networks: {
+        getAttributesOfSelectedNodes: vi
+          .fn()
+          .mockRejectedValue(new Error('404')),
+      },
+    } as any)
+
+    await expect(fetchNodeNamesByIds('uuid', [1])).rejects.toThrow('404')
   })
 })
