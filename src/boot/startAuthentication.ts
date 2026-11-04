@@ -1,6 +1,7 @@
 import type Keycloak from 'keycloak-js'
 
 import { useCredentialStore } from '@/data/hooks/stores/CredentialStore'
+import { restoreAuthReturnLocation } from './authReturnLocation'
 import { logStartup } from '@/debug'
 import { ensureTrailingSlash } from '@/utils/baseUrl'
 import type { AuthResolution } from './AppBootstrap'
@@ -132,17 +133,23 @@ export const startAuthentication = ({
     if (timeout !== undefined) window.clearTimeout(timeout)
   }
 
+  const appBaseUrl = new URL(
+    ensureTrailingSlash(urlBaseName),
+    window.location.origin,
+  )
+
   const initOptions = isLocalDevHost()
     ? { checkLoginIframe: false }
     : {
         onLoad: 'check-sso' as const,
         checkLoginIframe: false,
-        silentCheckSsoRedirectUri:
-          window.location.origin +
-          ensureTrailingSlash(urlBaseName) +
+        redirectUri: appBaseUrl.href,
+        silentCheckSsoRedirectUri: new URL(
           'silent-check-sso.html',
+          appBaseUrl,
+        ).href,
+        silentCheckSsoFallback: true,
       }
-
   void keycloak
     .init(initOptions)
     .then(async (authenticated) => {
@@ -163,6 +170,8 @@ export const startAuthentication = ({
         settle(UNAUTHENTICATED)
         return
       }
+
+      restoreAuthReturnLocation(urlBaseName)
 
       // Isolated from the outer .catch on purpose. The SSO check has already
       // succeeded here, so a failure of this *second* network call says nothing
