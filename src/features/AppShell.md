@@ -64,7 +64,7 @@ The main application shell component that provides layout and initialization.
 - **Selections (Subnetwork):** `?selectedSubnetworkNodes=node1 node2&selectedSubnetworkEdges=edge1` (requires `activeNetworkView` to be set to subnetwork ID)
 - **Filters:** `?filterFor=node&filterBy=name&filterRange=value1,value2`
 - **Table Browser:** `?activeTableBrowserTab=1`
-- **Network View Tab:** `?activeNetworkViewTab=1`
+- **Network View Tab:** `?activeNetworkViewTab=1` (without it, every load starts on the first tab, e.g. Tree View)
 - **Network View:** `?activeNetworkView=viewId` (can be hierarchy network or subnetwork ID, e.g., `hierarchyId_subsystemId`)
 - **Import:** `?import=https://example.com/network.cx` (can be multiple)
 
