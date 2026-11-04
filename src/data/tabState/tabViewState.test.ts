@@ -48,8 +48,25 @@ describe('@/data/tabState/tabViewState', () => {
       },
       tableActiveTabIndex: 2,
       networkBrowserPanelActiveTabIndex: 1,
-      networkViewActiveTabIndex: 3,
     })
+  })
+
+  it('does not store the network view tab', () => {
+    saveTabViewState(uiFixture())
+
+    const stored = window.sessionStorage.getItem('cyweb.tab.viewState')
+    expect(JSON.parse(stored as string)).not.toHaveProperty(
+      'networkViewActiveTabIndex',
+    )
+  })
+
+  it('ignores a network view tab stored by an older version', () => {
+    window.sessionStorage.setItem(
+      'cyweb.tab.viewState',
+      JSON.stringify({ networkViewActiveTabIndex: 1 }),
+    )
+
+    expect(getTabViewState()).toEqual(DEFAULT_TAB_VIEW_STATE)
   })
 
   it('falls back to defaults on a malformed stored blob', () => {
@@ -85,7 +102,7 @@ describe('@/data/tabState/tabViewState', () => {
       JSON.stringify({
         panels: { [Panel.LEFT]: 'sideways' },
         tableActiveTabIndex: -4,
-        networkViewActiveTabIndex: 'two',
+        networkBrowserPanelActiveTabIndex: 'two',
       }),
     )
 
@@ -102,7 +119,6 @@ describe('@/data/tabState/tabViewState', () => {
     expect(toTabViewState(legacyUi)).toMatchObject({
       tableActiveTabIndex: 0,
       networkBrowserPanelActiveTabIndex: 0,
-      networkViewActiveTabIndex: 0,
     })
   })
 
@@ -146,13 +162,13 @@ describe('@/data/tabState/tabViewState', () => {
       },
       tableActiveTabIndex: 5,
       networkBrowserPanelActiveTabIndex: 6,
-      networkViewActiveTabIndex: 7,
     })
 
     expect(restored.panels[Panel.RIGHT]).toBe(PanelState.OPEN)
     expect(restored.tableUi.activeTabIndex).toBe(5)
     expect(restored.networkBrowserPanelUi.activeTabIndex).toBe(6)
-    expect(restored.networkViewUi.activeTabIndex).toBe(7)
+    // The network view tab is not restored
+    expect(restored.networkViewUi.activeTabIndex).toBe(0)
     // Shared fields survive the overlay
     expect(restored.tableUi.columnUiState).toEqual({ col: { width: 100 } })
   })

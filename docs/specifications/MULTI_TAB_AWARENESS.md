@@ -142,7 +142,7 @@ init's read would otherwise leave the tab stale until the next unrelated edit.
 | Undo/redo stacks                                                | **Shared**  | `undoStacks`                                                                  |
 | Column widths, visual style options, custom tab names           | **Shared**  | `uiState`                                                                     |
 | Which network this tab shows                                    | **Per-tab** | URL, then `sessionStorage` (`tabNetwork.ts`)                                  |
-| Panel open/closed, active tab indices                           | **Per-tab** | `sessionStorage` (`tabViewState.ts`)                                          |
+| Panel open/closed, table and side panel tab indices             | **Per-tab** | `sessionStorage` (`tabViewState.ts`)                                          |
 | Camera pan/zoom                                                 | **Per-tab** | in-memory `RendererStore`                                                     |
 | Error dialogs, popups                                           | **Per-tab** | in-memory `UiStateStore`                                                      |
 
