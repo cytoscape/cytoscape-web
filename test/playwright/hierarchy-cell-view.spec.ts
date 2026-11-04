@@ -479,13 +479,18 @@ const networkPersisted = (page: Page): Promise<boolean> =>
         open.onerror = () => resolve(false)
         open.onsuccess = () => {
           const db = open.result
+          // One transaction, so its completion means every count has finished
+          const transaction = db.transaction(stores, 'readonly')
           const counts = stores.map((store) =>
-            db.transaction(store, 'readonly').objectStore(store).count(),
+            transaction.objectStore(store).count(),
           )
-          // Requests finish in order, so the last one means all are done
-          counts[counts.length - 1].onsuccess = () => {
+          transaction.oncomplete = () => {
             db.close()
             resolve(counts.every((count) => count.result > 0))
+          }
+          transaction.onabort = () => {
+            db.close()
+            resolve(false)
           }
         }
       }),
