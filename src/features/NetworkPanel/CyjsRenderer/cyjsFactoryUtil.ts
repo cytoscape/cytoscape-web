@@ -45,7 +45,7 @@ export interface CyEdge {
  * @param nodeViews - Array of NodeView objects
  * @returns Array of CyNode objects
  */
-const createCyNodes = (nodeViews: NodeView[]): CyNode[] =>
+export const createCyNodes = (nodeViews: NodeView[]): CyNode[] =>
   nodeViews.map((nv: NodeView) => {
     // Create elements with raw data - transformations will be applied via applyViewModel()
     const data: Record<VisualPropertyName | IdType, ValueType> = {
@@ -73,7 +73,7 @@ const createCyNodes = (nodeViews: NodeView[]): CyNode[] =>
  * @param edgeViews - Mapping from edge ID to EdgeView
  * @returns Array of CyEdge objects
  */
-const createCyEdges = (
+export const createCyEdges = (
   edges: Edge[],
   edgeViews: Record<IdType, EdgeView>,
 ): CyEdge[] =>

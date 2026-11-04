@@ -554,7 +554,30 @@ export const applyViewModel = (
   networkView: NetworkView,
   visualEditorProperties: VisualEditorProperties,
 ): void => {
+  applyViewModelTo(cy.elements(), networkView, visualEditorProperties)
+}
+
+/**
+ * applyViewModel for some elements only, such as a batch just added.
+ *
+ * @param elements - The elements to update
+ * @param networkView - The application's network view (nodeViews, edgeViews)
+ * @param visualEditorProperties - Visual editor options (e.g. node size lock)
+ */
+export const applyViewModelTo = (
+  elements: Collection,
+  networkView: NetworkView,
+  visualEditorProperties: VisualEditorProperties,
+): void => {
   const { nodeViews, edgeViews } = networkView
-  updateCyElements<NodeView>(nodeViews, cy.nodes(), visualEditorProperties)
-  updateCyElements<EdgeView>(edgeViews, cy.edges(), visualEditorProperties)
+  updateCyElements<NodeView>(
+    nodeViews,
+    elements.nodes(),
+    visualEditorProperties,
+  )
+  updateCyElements<EdgeView>(
+    edgeViews,
+    elements.edges(),
+    visualEditorProperties,
+  )
 }

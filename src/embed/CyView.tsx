@@ -8,19 +8,20 @@ import { IdType } from '@/models/IdType'
 import { NetworkSummary } from '@/models/NetworkSummaryModel'
 
 import { drawAnnotations } from './drawAnnotations'
-import { applyPositions, drawNetwork } from './drawNetwork'
+import { applyPositions, DrawProgress, drawNetwork } from './drawNetwork'
 import { runDefaultLayout } from './runDefaultLayout'
 import { addSearchStyle } from './searchHighlight'
 
 export const FIT_PADDING = 20
 /** Zoom change per pixel of wheel delta; a mouse notch (~100) is ~18%. */
 const WHEEL_ZOOM_RATE = 0.002
-const HINT_DURATION_MS = 1500
 const FILTER_HIDDEN_CLASS = 'embed-filter-hidden'
-
-export const ZOOM_KEY = /Mac|iPhone|iPad/.test(navigator.userAgent)
-  ? '⌘'
-  : 'Ctrl'
+/**
+ * Networks with at least this many nodes and edges draw with Cytoscape.js's
+ * WebGL renderer. The canvas renderer redraws every edge each frame, which
+ * blocks for hundreds of milliseconds per frame at ~20,000 edges.
+ */
+const WEBGL_MIN_ELEMENTS = 10000
 
 interface CyViewProps {
   cyNetwork: CyNetwork
@@ -44,9 +45,8 @@ interface CyViewProps {
 
 /**
  * One network drawn with Cytoscape.js through the full app's pipeline, with
- * annotations, an optional default layout, and a Fit button. The host page
- * scrolls on a plain wheel; Ctrl/⌘ + wheel (and trackpad pinch, which the
- * browser reports as Ctrl + wheel) zooms the network.
+ * annotations, an optional default layout, and a Fit button. The wheel and
+ * trackpad pinch zoom the network.
  */
 export const CyView = ({
   cyNetwork,
@@ -64,7 +64,7 @@ export const CyView = ({
   const cyRef = useRef<Core | null>(null)
   const [background, setBackground] = useState<string>('#ffffff')
   const [isLayingOut, setIsLayingOut] = useState(false)
-  const [showHint, setShowHint] = useState(false)
+  const [progress, setProgress] = useState<DrawProgress | undefined>()
 
   // Callbacks change identity on every parent render; the instance is
   // built once per network, so it reads them through refs.
@@ -72,21 +72,27 @@ export const CyView = ({
   onNodeTapRef.current = onNodeTap
   const onReadyRef = useRef(onReady)
   onReadyRef.current = onReady
+  // Read by the edge batches still drawing when the filter changes
+  const hiddenIdsRef = useRef(hiddenIds)
+  hiddenIdsRef.current = hiddenIds
 
   useEffect(() => {
     const container = containerRef.current
     if (container === null) return
 
+    const useWebgl =
+      cyNetwork.network.nodes.length + cyNetwork.network.edges.length >=
+      WEBGL_MIN_ELEMENTS
     const cy = cytoscape({
       container,
+      webgl: useWebgl,
       hideEdgesOnViewport: true,
       boxSelectionEnabled: false,
-      // Wheel zoom is handled below so a plain wheel scrolls the host page.
+      // Wheel zoom is handled below, at a steadier rate than Cytoscape.js's.
       userZoomingEnabled: false,
     })
     cyRef.current = cy
     let disposed = false
-    let hintTimer: ReturnType<typeof setTimeout> | undefined
     if (import.meta.env.DEV) {
       // For scripts/compare-embed.mjs and browser checks
       const w = window as unknown as { __embedCys?: Record<string, Core> }
@@ -99,7 +105,22 @@ export const CyView = ({
       }
     }
 
-    const backgroundColor = drawNetwork(cy, cyNetwork)
+    const drawing = drawNetwork(cy, cyNetwork, {
+      // Edges drawn after the first frame miss the filter effect below
+      onEdgesAdded: (edges) => {
+        const hidden = hiddenIdsRef.current
+        if (hidden === undefined || hidden.size === 0) return
+        edges
+          .filter((edge) => hidden.has(edge.id()))
+          .addClass(FILTER_HIDDEN_CLASS)
+      },
+      onProgress: (p) => {
+        if (!disposed) {
+          setProgress(p.edgesDrawn < p.edgeCount ? p : undefined)
+        }
+      },
+    })
+    const backgroundColor = drawing.background
     addSearchStyle(cy)
     cy.style()
       .selector(`.${FILTER_HIDDEN_CLASS}`)
@@ -111,7 +132,9 @@ export const CyView = ({
         ? () => undefined
         : drawAnnotations(cy, annotationsFrom, backgroundColor)
     if (positions !== undefined) applyPositions(cy, positions)
-    cy.fit(undefined, FIT_PADDING)
+    // Fit to the nodes: edges still drawing add nothing to the bounds, and
+    // fitting to them would resolve their styles all at once.
+    cy.fit(cy.nodes(), FIT_PADDING)
 
     cy.on('tap', 'node', (e: EventObject) =>
       onNodeTapRef.current?.(e.target.id()),
@@ -121,14 +144,7 @@ export const CyView = ({
     })
 
     const onWheel = (e: WheelEvent): void => {
-      if (!(e.ctrlKey || e.metaKey)) {
-        setShowHint(true)
-        clearTimeout(hintTimer)
-        hintTimer = setTimeout(() => setShowHint(false), HINT_DURATION_MS)
-        return
-      }
       e.preventDefault()
-      setShowHint(false)
       const rect = container.getBoundingClientRect()
       cy.zoom({
         level: cy.zoom() * Math.exp(-e.deltaY * WHEEL_ZOOM_RATE),
@@ -168,7 +184,8 @@ export const CyView = ({
 
     return () => {
       disposed = true
-      clearTimeout(hintTimer)
+      drawing.cancel()
+      setProgress(undefined)
       resizeObserver.disconnect()
       container.removeEventListener('wheel', onWheel)
       removeAnnotations()
@@ -224,16 +241,30 @@ export const CyView = ({
       >
         Fit
       </button>
-      {isLayingOut && (
+      {progress !== undefined && (
+        <div
+          className="embed-paper embed-status embed-progress"
+          data-testid={`${testId}-progress`}
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={progress.edgeCount}
+          aria-valuenow={progress.edgesDrawn}
+        >
+          Drawing interactions {progress.edgesDrawn.toLocaleString()} /{' '}
+          {progress.edgeCount.toLocaleString()}
+          <div className="embed-progress-track">
+            <div
+              className="embed-progress-bar"
+              style={{
+                width: `${(100 * progress.edgesDrawn) / progress.edgeCount}%`,
+              }}
+            />
+          </div>
+        </div>
+      )}
+      {isLayingOut && progress === undefined && (
         <div className="embed-paper embed-status">Applying layout…</div>
       )}
-      <div
-        className="embed-hint"
-        style={{ opacity: showHint ? 1 : 0 }}
-        aria-hidden={!showHint}
-      >
-        Use {ZOOM_KEY} + scroll to zoom
-      </div>
     </div>
   )
 }

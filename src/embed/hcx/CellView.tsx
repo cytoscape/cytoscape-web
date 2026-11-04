@@ -1,7 +1,7 @@
 import { HierarchyCircularNode } from 'd3-hierarchy'
 import * as d3Selection from 'd3-selection'
 import * as d3Zoom from 'd3-zoom'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 
 import {
   CpDefaults,
@@ -15,12 +15,10 @@ import { D3TreeNode } from '@/features/HierarchyViewer/components/CirclePackingL
 import { CirclePackingView } from '@/features/HierarchyViewer/model/CirclePackingView'
 import { IdType } from '@/models/IdType'
 
-import { ZOOM_KEY } from '../CyView'
 import { cellViewRoot } from './buildCellView'
 
 type Circle = HierarchyCircularNode<D3TreeNode>
 
-const HINT_DURATION_MS = 1500
 const FIT_PADDING = 10
 const colorScale = getColorMapper([0, 5])
 
@@ -59,7 +57,6 @@ export const CellView = ({
   )
   const zoomDepthRef = useRef(1)
   const selectedDepthRef = useRef(0)
-  const [showHint, setShowHint] = useState(false)
 
   const onSelectSubsystemRef = useRef(onSelectSubsystem)
   onSelectSubsystemRef.current = onSelectSubsystem
@@ -164,12 +161,7 @@ export const CellView = ({
     const zoom = d3Zoom
       .zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.1, 40])
-      // A plain wheel scrolls the host page, as in the network views.
-      .filter(
-        (event: any) =>
-          (event.type !== 'wheel' || event.ctrlKey || event.metaKey) &&
-          !event.button,
-      )
+      .filter((event: any) => !event.button)
       .on('zoom', (event: d3Zoom.D3ZoomEvent<SVGSVGElement, unknown>) => {
         wrapper.attr('transform', event.transform.toString())
         // Depth shown grows with zoom; the fitted view counts as 1.
@@ -184,22 +176,11 @@ export const CellView = ({
       return Math.min(width, height) / (root.r * 2 + FIT_PADDING * 2) || 1
     }
 
-    const onWheel = (e: WheelEvent): void => {
-      if (e.ctrlKey || e.metaKey) return
-      setShowHint(true)
-      clearTimeout(hintTimer)
-      hintTimer = setTimeout(() => setShowHint(false), HINT_DURATION_MS)
-    }
-    let hintTimer: ReturnType<typeof setTimeout> | undefined
-    svgElement.addEventListener('wheel', onWheel)
-
     const resizeObserver = new ResizeObserver(() => fit())
     resizeObserver.observe(svgElement)
     fit()
 
     return () => {
-      clearTimeout(hintTimer)
-      svgElement.removeEventListener('wheel', onWheel)
       resizeObserver.disconnect()
       svg.on('.zoom', null)
       svg.selectAll('*').remove()
@@ -262,13 +243,6 @@ export const CellView = ({
       >
         Fit
       </button>
-      <div
-        className="embed-hint"
-        style={{ opacity: showHint ? 1 : 0 }}
-        aria-hidden={!showHint}
-      >
-        Use {ZOOM_KEY} + scroll to zoom
-      </div>
     </div>
   )
 }
