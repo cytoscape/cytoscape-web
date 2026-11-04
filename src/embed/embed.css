@@ -1,0 +1,339 @@
+/* Embed viewer styles. Colours come from src/themePalette.ts through the
+   variables embedTheme.ts sets. Shapes follow MUI defaults: 4px radius,
+   elevation-1/2 shadows, 0.875rem body text. */
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--embed-font);
+  font-size: 0.875rem;
+  color: var(--embed-text);
+  overflow: hidden;
+}
+
+.embed-viewer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.embed-paper {
+  background: var(--embed-paper);
+  border-radius: 4px;
+  box-shadow:
+    0 2px 1px -1px rgba(0, 0, 0, 0.2),
+    0 1px 1px 0 rgba(0, 0, 0, 0.14),
+    0 1px 3px 0 rgba(0, 0, 0, 0.12);
+}
+
+.embed-toolbar {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.embed-toolbar > * {
+  pointer-events: auto;
+}
+
+.embed-title {
+  padding: 6px 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.embed-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  flex: 0 0 auto;
+}
+
+.embed-search input {
+  border: none;
+  outline: none;
+  font: inherit;
+  width: 12em;
+  padding: 4px 0;
+  background: transparent;
+  color: inherit;
+}
+
+.embed-search-count {
+  color: var(--embed-text-secondary);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.embed-spacer {
+  flex: 1 1 auto;
+}
+
+.embed-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  font: inherit;
+  font-weight: 500;
+  font-size: 0.8125rem;
+  letter-spacing: 0.02857em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.embed-button-contained {
+  background: var(--embed-primary);
+  color: #fff;
+  box-shadow:
+    0 3px 1px -2px rgba(0, 0, 0, 0.2),
+    0 2px 2px 0 rgba(0, 0, 0, 0.14),
+    0 1px 5px 0 rgba(0, 0, 0, 0.12);
+}
+
+.embed-button-contained:hover {
+  background: var(--embed-primary-dark);
+}
+
+.embed-button-text {
+  background: var(--embed-paper);
+  color: var(--embed-primary);
+}
+
+.embed-button-text:hover {
+  background: var(--embed-hover);
+}
+
+.embed-fit {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+}
+
+.embed-status {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 6px 10px;
+}
+
+.embed-attributes {
+  position: absolute;
+  right: 8px;
+  top: 52px;
+  max-width: 40%;
+  max-height: calc(100% - 110px);
+  overflow: auto;
+  padding: 8px;
+  font-size: 0.75rem;
+}
+
+.embed-attributes table {
+  border-collapse: collapse;
+}
+
+.embed-attributes th,
+.embed-attributes td {
+  text-align: left;
+  vertical-align: top;
+  padding: 2px 6px;
+  border-bottom: 1px solid var(--embed-subtle);
+  overflow-wrap: anywhere;
+}
+
+.embed-attributes th {
+  color: var(--embed-text-secondary);
+  font-weight: 500;
+}
+
+.embed-hint {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  padding: 10px 16px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  pointer-events: none;
+  transition: opacity 200ms;
+}
+
+.embed-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  height: 100%;
+  padding: 16px;
+  box-sizing: border-box;
+  text-align: center;
+  background: var(--embed-subtle);
+}
+
+.embed-message-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.embed-message-detail {
+  color: var(--embed-text-secondary);
+  max-width: 40em;
+  overflow-wrap: anywhere;
+}
+
+/* One Cytoscape.js or Cell View canvas filling its parent */
+.embed-cy {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* HCX viewer: toolbar on top, two panes below (stacked in narrow frames) */
+.embed-hcx {
+  display: flex;
+  flex-direction: column;
+  background: var(--embed-subtle);
+}
+
+.embed-hcx .embed-toolbar {
+  position: static;
+  padding: 8px;
+}
+
+.embed-hcx-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 0 8px 8px;
+}
+
+@media (max-width: 640px) {
+  .embed-hcx-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+}
+
+.embed-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--embed-paper);
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow:
+    0 2px 1px -1px rgba(0, 0, 0, 0.2),
+    0 1px 1px 0 rgba(0, 0, 0, 0.14),
+    0 1px 3px 0 rgba(0, 0, 0, 0.12);
+}
+
+.embed-pane-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--embed-subtle);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.embed-pane-body {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.embed-pane-body .embed-message {
+  background: transparent;
+}
+
+.embed-tab {
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-weight: 500;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02857em;
+  color: var(--embed-text-secondary);
+  padding: 8px 12px;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+
+.embed-tab[aria-selected='true'] {
+  color: var(--embed-primary);
+  border-bottom-color: var(--embed-primary);
+}
+
+.embed-pane .embed-attributes {
+  top: 8px;
+  max-height: calc(100% - 60px);
+}
+
+/* Subsystem filter, bottom-left of the subsystem pane */
+.embed-filter {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  max-width: 60%;
+  max-height: calc(100% - 16px);
+  overflow: auto;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+}
+
+.embed-filter-header,
+.embed-filter-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  cursor: pointer;
+}
+
+.embed-filter-header {
+  font-weight: 600;
+  border-bottom: 1px solid var(--embed-subtle);
+  margin-bottom: 2px;
+}
+
+.embed-filter input {
+  accent-color: var(--embed-primary);
+  margin: 0;
+}
+
+.embed-filter-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid var(--embed-text-secondary);
+  flex: 0 0 auto;
+}
