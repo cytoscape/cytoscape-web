@@ -39,7 +39,8 @@ export interface Renderer {
     network: Network,
 
     /**
-     * (Optional) Initial size of the renderer's container
+     * (Optional) Current size of the renderer's container. 0 x 0 until it has
+     * been laid out, and it changes whenever the container is resized.
      */
     initialSize?: { w: number; h: number },
 

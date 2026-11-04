@@ -7,7 +7,7 @@ import {
   installFixtureApp,
   test,
 } from './fixtures'
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 // Issue #630: a HCX hierarchy can contain edges that are not parent-child
 // relationships. The circle packing builder cannot interpret those, so:
@@ -144,6 +144,59 @@ const dragTableDividerUp = async (page: Page, by: number): Promise<void> => {
   await page.mouse.up()
 }
 
+/**
+ * Where the drawing sits in the SVG, in px: how far its center is from the SVG's
+ * center, how far it sticks out past any edge (0 when it fits), and how much
+ * of the SVG's shorter side it spans (0..1).
+ */
+const placement = (svg: Locator) =>
+  svg.evaluate((element) => {
+    const box = element.getBoundingClientRect()
+    const drawing = element
+      .querySelector('g.circle-packing-wrapper')
+      ?.getBoundingClientRect()
+    if (drawing === undefined || drawing.width === 0) return null
+    return {
+      offCenter: Math.round(
+        Math.max(
+          Math.abs(drawing.x + drawing.width / 2 - (box.x + box.width / 2)),
+          Math.abs(drawing.y + drawing.height / 2 - (box.y + box.height / 2)),
+        ),
+      ),
+      overflow: Math.round(
+        Math.max(
+          0,
+          box.left - drawing.left,
+          drawing.right - box.right,
+          box.top - drawing.top,
+          drawing.bottom - box.bottom,
+        ),
+      ),
+      coverage:
+        Math.max(drawing.width, drawing.height) /
+        Math.min(box.width, box.height),
+    }
+  })
+
+/** Poll until the drawing has stopped moving, then return its placement. */
+const settledPlacement = async (
+  svg: Locator,
+): Promise<{ offCenter: number; overflow: number; coverage: number }> => {
+  let previous = ''
+  await expect
+    .poll(
+      async () => {
+        const current = JSON.stringify(await placement(svg))
+        const stable = current !== 'null' && current === previous
+        previous = current
+        return stable
+      },
+      { intervals: [500], timeout: 20_000 },
+    )
+    .toBe(true)
+  return JSON.parse(previous)
+}
+
 test.describe('Hierarchy network view tabs', () => {
   // Regression: the box holding the Tree View / Cell View renderers is a flex
   // item, and its default `min-height: auto` kept it from shrinking below the
@@ -272,64 +325,11 @@ test.describe('Hierarchy network view tabs', () => {
     const cellViewTab = page.getByRole('tab', { name: 'Cell View' })
     const svg = page.locator('[data-testid="circle-packing-svg"]')
 
-    /**
-     * Where the drawing sits in the SVG, in px: how far its center is from the
-     * SVG's center, and how far it sticks out past any edge (0 when it fits).
-     * The stale layout was both shifted and drawn larger than the view.
-     */
-    const placement = () =>
-      svg.evaluate((element) => {
-        const box = element.getBoundingClientRect()
-        const drawing = element
-          .querySelector('g.circle-packing-wrapper')
-          ?.getBoundingClientRect()
-        if (drawing === undefined || drawing.width === 0) return null
-        return {
-          offCenter: Math.round(
-            Math.max(
-              Math.abs(drawing.x + drawing.width / 2 - (box.x + box.width / 2)),
-              Math.abs(
-                drawing.y + drawing.height / 2 - (box.y + box.height / 2),
-              ),
-            ),
-          ),
-          overflow: Math.round(
-            Math.max(
-              0,
-              box.left - drawing.left,
-              drawing.right - box.right,
-              box.top - drawing.top,
-              drawing.bottom - box.bottom,
-            ),
-          ),
-        }
-      })
-
-    /** Poll until the drawing has stopped moving, then return its placement. */
-    const settledPlacement = async (): Promise<{
-      offCenter: number
-      overflow: number
-    }> => {
-      let previous = ''
-      await expect
-        .poll(
-          async () => {
-            const current = JSON.stringify(await placement())
-            const stable = current !== 'null' && current === previous
-            previous = current
-            return stable
-          },
-          { intervals: [500], timeout: 20_000 },
-        )
-        .toBe(true)
-      return JSON.parse(previous)
-    }
-
     await workspaceItem('Test Network 15 nodes').click()
     await expect(cellViewTab).toBeVisible({ timeout: 15000 })
     await cellViewTab.click()
     await expect(svg).toBeVisible({ timeout: 15000 })
-    await settledPlacement()
+    await settledPlacement(svg)
 
     // On the regular network, narrow the left panel: the center pane gets
     // wider, so the size measured on the way back differs from the first one.
@@ -359,7 +359,7 @@ test.describe('Hierarchy network view tabs', () => {
     // The layout is rebuilt asynchronously after the switch; check the view
     // once the drawing has settled.
     await page.waitForTimeout(1500)
-    const { offCenter, overflow } = await settledPlacement()
+    const { offCenter, overflow } = await settledPlacement(svg)
     // Soft, so a failure reports both symptoms.
     expect
       .soft(offCenter, 'drawing center off the view center')
@@ -463,6 +463,111 @@ test.describe('Hierarchy network view tabs', () => {
 // Leaving a hierarchy closes the right panel only when the Sub Network Viewer
 // is the selected tab. An app tab the user chose is still there on the next
 // network, so the panel stays open on it (#881).
+const NETWORK_ROW_STORES = [
+  'cyNetworks',
+  'cyTables',
+  'cyVisualStyles',
+  'cyNetworkViews',
+]
+
+/** Whether every store a network is loaded from holds a row in cyweb-db. */
+const networkPersisted = (page: Page): Promise<boolean> =>
+  page.evaluate(
+    (stores) =>
+      new Promise<boolean>((resolve) => {
+        const open = indexedDB.open('cyweb-db')
+        open.onerror = () => resolve(false)
+        open.onsuccess = () => {
+          const db = open.result
+          // One transaction, so its completion means every count has finished
+          const transaction = db.transaction(stores, 'readonly')
+          const counts = stores.map((store) =>
+            transaction.objectStore(store).count(),
+          )
+          transaction.oncomplete = () => {
+            db.close()
+            resolve(counts.every((count) => count.result > 0))
+          }
+          transaction.onabort = () => {
+            db.close()
+            resolve(false)
+          }
+        }
+      }),
+    NETWORK_ROW_STORES,
+  )
+
+test.describe('Cell View after a reload (#935)', () => {
+  // The box holding the renderers can be 0 x 0 or at Allotment's 30 px pane
+  // minimum when it mounts, depending on timing. It used to be measured once,
+  // which left the Cell View blank or tiny. Hold the box in each state through
+  // the mount, then let it go, so the timing is the same on every run.
+  //
+  // The tiny view needs the Cell View showing while the box is held: it is then
+  // fitted to 30 px and the box grows around it. Showing it later fits it again.
+  for (const [state, css, heldWidth] of [
+    ['0 x 0', 'display: none', 0],
+    ['30 px wide', 'width: 30px', 30],
+  ] as const) {
+    for (const activeTab of ['Cell View', 'Tree View'] as const) {
+      test(`is fitted when the box is ${state} at mount with the ${activeTab} active`, async ({
+        page,
+      }) => {
+        await importNetworkFile(page, TREE_HCX, 'Test Network 15 nodes')
+        await expect(page.getByRole('tab', { name: 'Cell View' })).toBeVisible({
+          timeout: 15000,
+        })
+
+        // Store writes are coalesced: reloading before the network has landed
+        // in cyweb-db would lose it.
+        await expect
+          .poll(() => networkPersisted(page), { timeout: 15000 })
+          .toBe(true)
+
+        // There is no <head> yet when an init script runs. 'interactive' comes
+        // before the app's module scripts, so the rule precedes any mount.
+        await page.addInitScript((rule) => {
+          document.addEventListener(
+            'readystatechange',
+            () => {
+              const style = document.createElement('style')
+              style.id = 'hold-box'
+              style.textContent = `[data-testid="network-tabs-content"] { ${rule} !important; }`
+              document.head.appendChild(style)
+            },
+            { once: true },
+          )
+        }, css)
+        await page.reload()
+
+        const cellViewTab = page.getByRole('tab', { name: 'Cell View' })
+        await expect(cellViewTab).toBeVisible({ timeout: 15000 })
+        const box = page.locator('[data-testid="network-tabs-content"]')
+        expect(
+          await box.evaluate(
+            (element) => element.getBoundingClientRect().width,
+          ),
+          'the box is held while the renderers mount',
+        ).toBe(heldWidth)
+
+        await page.getByRole('tab', { name: activeTab }).click()
+        // Long enough for a one-shot measurement and a first build to run
+        await page.waitForTimeout(1000)
+        await page.evaluate(() => document.getElementById('hold-box')?.remove())
+
+        await cellViewTab.click()
+        const svg = page.locator('[data-testid="circle-packing-svg"]')
+        await expect(svg).toBeVisible({ timeout: 15000 })
+
+        const { offCenter, overflow, coverage } = await settledPlacement(svg)
+        expect.soft(offCenter, 'off the view center').toBeLessThanOrEqual(2)
+        expect.soft(overflow, 'sticking out of the view').toBeLessThanOrEqual(2)
+        expect.soft(coverage, 'share of the view').toBeGreaterThan(0.9)
+      })
+    }
+  }
+})
+
 test.describe('Right panel on leaving a hierarchy (#881)', () => {
   const sidePanel = '[data-testid="side-panel"]'
   const openButton = '[data-testid="side-panel-open-button"]'

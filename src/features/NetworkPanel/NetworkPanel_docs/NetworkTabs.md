@@ -26,6 +26,16 @@ When a tab is clicked, the component activates the network view:
 - If a user clicks an already-selected tab, `onChange` won't fire
 - The `onClick` handler on individual `Tab` components ensures activation happens even when clicking an already-selected tab
 
+### Box Size
+
+`useContainerSize` tracks the box that holds the renderers with a
+`ResizeObserver` and passes its size to each renderer through
+`Renderer.getComponent`. It starts at 0 x 0, follows every resize, and ignores
+0 x 0 readings, so it keeps the last real size while the box is hidden. A
+renderer must not start expensive work on every new size: the value changes on
+each frame of a pane drag. The Cell View uses it only for its first layout (see
+`HierarchyViewer_docs/HierarchyViewer.md`).
+
 ### Visual Feedback
 
 - The active state (orange border) is managed by the parent `NetworkPanel` component
