@@ -14,10 +14,11 @@ import { ensureTrailingSlash } from '@/utils/baseUrl'
  * scopes with client-side navigation would write half its session to each
  * database, so links between the manual and the editor are full page loads.
  */
-export type DbScope = 'app' | 'manual'
+export type DbScope = 'app' | 'manual' | 'embed'
 
 /** First path segment under the app's base URL that selects the manual. */
 export const MANUAL_ROUTE_SEGMENT = 'manual'
+export const EMBED_ROUTE_SEGMENT = 'embed'
 
 export const resolveDbScope = (pathname: string, baseUrl: string): DbScope => {
   const base = ensureTrailingSlash(baseUrl)
@@ -25,17 +26,34 @@ export const resolveDbScope = (pathname: string, baseUrl: string): DbScope => {
     return 'app'
   }
   const rest = pathname.slice(base.length)
-  return rest === MANUAL_ROUTE_SEGMENT ||
+  if (
+    rest === MANUAL_ROUTE_SEGMENT ||
     rest.startsWith(`${MANUAL_ROUTE_SEGMENT}/`)
-    ? 'manual'
-    : 'app'
+  ) {
+    return 'manual'
+  }
+
+  if (
+    rest === EMBED_ROUTE_SEGMENT ||
+    rest.startsWith(`${EMBED_ROUTE_SEGMENT}/`)
+  ) {
+    return 'embed'
+  }
+
+  return 'app'
 }
 
-export const dbNameFor = (scope: DbScope): string =>
-  scope === 'manual' ? 'cyweb-manual-db' : 'cyweb-db'
+export const dbNameFor = (scope: DbScope): string => {
+  if (scope === 'manual') return 'cyweb-manual-db'
+  if (scope === 'embed') return 'cyweb-embed-db'
+  return 'cyweb-db'
+}
 
-export const uiEventsChannelFor = (scope: DbScope): string =>
-  scope === 'manual' ? 'cyweb-manual-ui-events' : 'cyweb-ui-events'
+export const uiEventsChannelFor = (scope: DbScope): string => {
+  if (scope === 'manual') return 'cyweb-manual-ui-events'
+  if (scope === 'embed') return 'cyweb-embed-ui-events'
+  return 'cyweb-ui-events'
+}
 
 /**
  * The scope of this document. `import.meta.env.BASE_URL` is Vite's `base`,

@@ -91,16 +91,39 @@ const customGraphicPassthroughFn = (
         // Distinguish chart types by checking for chart-specific fields
         if (
           Array.isArray(parsed.cy_dataColumns) &&
-          Array.isArray(parsed.cy_colors)
+          parsed.cy_dataColumns.length > 0 &&
+          parsed.cy_dataColumns.every(
+            (column: unknown) => typeof column === 'string',
+          ) &&
+          Array.isArray(parsed.cy_colors) &&
+          parsed.cy_colors.length > 0 &&
+          parsed.cy_colors.every((color: unknown) => typeof color === 'string')
         ) {
-          const isRing = parsed.cy_holeSize !== undefined
-          return {
-            type: CustomGraphicsTypeType.Chart,
-            name: isRing
-              ? CustomGraphicsNameType.RingChart
-              : CustomGraphicsNameType.PieChart,
-            properties: parsed,
-          } as CustomGraphicsType
+          let chartName: string | undefined
+          if (
+            parsed.cy_lineWidth !== undefined ||
+            parsed.cy_showDomainAxis !== undefined ||
+            parsed.cy_showRangeAxis !== undefined ||
+            parsed.cy_axisColor !== undefined ||
+            parsed.cy_axisWidth !== undefined ||
+            parsed.cy_domainLabelPosition !== undefined ||
+            parsed.cy_showRangeZeroBaseline !== undefined ||
+            parsed.cy_itemLabelFontSize !== undefined ||
+            parsed.cy_showItemLabels !== undefined
+          ) {
+            chartName = CustomGraphicsNameType.LineChart
+          } else if (parsed.cy_holeSize !== undefined) {
+            chartName = CustomGraphicsNameType.RingChart
+          } else if (parsed.cy_orientation === undefined) {
+            chartName = CustomGraphicsNameType.PieChart
+          }
+          if (chartName !== undefined) {
+            return {
+              type: CustomGraphicsTypeType.Chart,
+              name: chartName,
+              properties: parsed,
+            } as CustomGraphicsType
+          }
         }
       } catch {
         // Malformed JSON — fall through to default

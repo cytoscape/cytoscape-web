@@ -13,6 +13,7 @@ export type CustomGraphicsTypeType =
 export const CustomGraphicsNameType = {
   PieChart: 'org.cytoscape.PieChart',
   RingChart: 'org.cytoscape.RingChart',
+  LineChart: 'org.cytoscape.LineChart',
   // Raster (PNG/JPEG/GIF/BMP) images. Cytoscape Desktop decodes these via ImageIO.
   Image: 'org.cytoscape.ding.customgraphics.bitmap.URLImageCustomGraphics',
   // Vector images. Cytoscape Desktop uses a SEPARATE custom-graphics factory for SVG;
@@ -66,6 +67,7 @@ export interface CustomGraphicsType {
   properties:
     | PieChartPropertiesType
     | RingChartPropertiesType
+    | LineChartPropertiesType
     | NonePropertiesType
     | ImagePropertiesType
 }
@@ -85,6 +87,26 @@ export interface RingChartPropertiesType {
   cy_startAngle: number
   cy_colors: ColorType[]
   cy_dataColumns: AttributeName[]
+}
+
+export interface LineChartPropertiesType {
+  readonly cy_dataColumns: AttributeName[]
+  readonly cy_colors: ColorType[]
+  readonly cy_range?: [number, number]
+  readonly cy_autoRange?: boolean
+  readonly cy_lineWidth?: number
+  readonly cy_showDomainAxis?: boolean
+  readonly cy_showRangeAxis?: boolean
+  readonly cy_axisColor?: string
+  readonly cy_axisWidth?: number
+  readonly cy_axisLabelFontSize?: number
+  readonly cy_domainLabelPosition?: string
+  readonly cy_showRangeZeroBaseline?: boolean
+  readonly cy_colorScheme?: string
+  readonly cy_itemLabelFontSize?: number
+  readonly cy_showItemLabels?: boolean
+  readonly cy_borderWidth?: number
+  readonly cy_borderColor?: string
 }
 
 export type NonePropertiesType = Record<string, never>

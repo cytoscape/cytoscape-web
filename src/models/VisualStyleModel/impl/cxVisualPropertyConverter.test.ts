@@ -341,6 +341,27 @@ describe('cxVisualPropertyConverter', () => {
       )
     })
 
+    it('should preserve LineChart properties for CX2 export', () => {
+      const converter = VPCustomGraphicsConverter('NODE_CUSTOMGRAPHICS_1')
+
+      const lineChart = {
+        type: 'chart',
+        name: 'org.cytoscape.LineChart',
+        properties: {
+          cy_dataColumns: ['gal1RGexp', 'gal4RGexp', 'gal80Rexp'],
+          cy_colors: ['#8DD3C7', '#FFFFB3', '#BEBADA'],
+          cy_lineWidth: 2.1,
+          cy_range: [-1.232, 0.895],
+          cy_showDomainAxis: true,
+          cy_showRangeAxis: true,
+          cy_axisColor: '#41AB5D',
+          cy_domainLabelPosition: 'DOWN_45',
+        },
+      }
+
+      expect(converter.valueConverter(lineChart as any)).toEqual(lineChart)
+    })
+
     it('should return default when value is undefined', () => {
       const converter = VPCustomGraphicsConverter('NODE_CUSTOMGRAPHICS_1')
 

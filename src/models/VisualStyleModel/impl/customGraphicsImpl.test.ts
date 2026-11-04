@@ -292,6 +292,31 @@ describe('CustomGraphicsImpl', () => {
       expect(result).toBeDefined()
     })
 
+    it('should return first valid custom graphic with LineChart', () => {
+      const vps: VisualProperty<VisualPropertyValueType>[] = [
+        {
+          name: NodeVisualPropertyName.NodeImageChart1,
+          group: 'node' as any,
+          displayName: 'Chart 1',
+          type: 'customGraphic' as any,
+          defaultValue: {
+            type: 'chart',
+            name: CustomGraphicsNameType.LineChart,
+            properties: {
+              cy_dataColumns: ['sampleA', 'sampleB'],
+              cy_colors: ['#8DD3C7', '#FFFFB3'],
+            },
+          } as CustomGraphicsType,
+          bypassMap: new Map(),
+        },
+      ]
+
+      const result = getFirstValidCustomGraphicVp(vps)
+
+      expect(result).toBeDefined()
+      expect(result?.name).toBe(NodeVisualPropertyName.NodeImageChart1)
+    })
+
     it('should return first valid custom graphic with image', () => {
       const vps: VisualProperty<VisualPropertyValueType>[] = [
         {
@@ -1231,6 +1256,63 @@ describe('CustomGraphicsImpl', () => {
 
       expect(Array.isArray(result)).toBe(true)
       expect(result.length).toBeGreaterThan(0)
+    })
+
+    it('should compute background image properties for a LineChart', () => {
+      const value: CustomGraphicsType = {
+        type: 'chart',
+        name: CustomGraphicsNameType.LineChart,
+        properties: {
+          cy_dataColumns: ['sampleA', 'sampleB', 'sampleC'],
+          cy_colors: ['#8DD3C7', '#FFFFB3', '#BEBADA'],
+          cy_range: [-1, 1],
+          cy_showDomainAxis: true,
+          cy_showRangeAxis: true,
+          cy_showRangeZeroBaseline: true,
+          cy_axisColor: '#41AB5D',
+        },
+      }
+
+      const sizeVp = (name: string) => ({
+        name: name as any,
+        group: 'node' as any,
+        displayName: name,
+        type: 'number' as any,
+        defaultValue: 100,
+        bypassMap: new Map(),
+      })
+
+      const result = computeCustomGraphicsProperties(
+        '1',
+        value,
+        { sampleA: -0.5, sampleB: 0.25, sampleC: 0.75 },
+        sizeVp('nodeWidth'),
+        sizeVp('nodeHeight'),
+        new Map(),
+      )
+
+      const bgImage = result.find(
+        ([name]) => name === SpecialPropertyName.BackgroundImage,
+      )
+
+      expect(bgImage).toBeDefined()
+      expect(bgImage?.[1]).toContain('data:image/svg+xml,')
+      const encodedSvg = String(bgImage?.[1]).split(',')[1]
+      const svg = decodeURIComponent(encodedSvg)
+
+      expect(svg).toContain('<svg')
+      expect(svg).toContain('<polyline')
+      expect(svg.match(/<polyline\b/g)).toHaveLength(1)
+      expect(svg).toContain('#8DD3C7')
+      expect(svg).toContain('#41AB5D')
+      expect(result).toContainEqual([
+        SpecialPropertyName.BackgroundFit,
+        'contain',
+      ])
+      expect(result).toContainEqual([
+        SpecialPropertyName.BackgroundImageCrossorigin,
+        'null',
+      ])
     })
   })
 })

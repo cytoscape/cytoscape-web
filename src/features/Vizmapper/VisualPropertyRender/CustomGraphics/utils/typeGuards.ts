@@ -1,5 +1,6 @@
 import {
   ImagePropertiesType,
+  LineChartPropertiesType,
   NonePropertiesType,
   PieChartPropertiesType,
   RingChartPropertiesType,
@@ -7,6 +8,7 @@ import {
 
 type AllPropertiesType =
   | PieChartPropertiesType
+  | LineChartPropertiesType
   | RingChartPropertiesType
   | NonePropertiesType
   | ImagePropertiesType
