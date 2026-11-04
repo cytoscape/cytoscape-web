@@ -72,9 +72,14 @@ const SVG_ID = 'cpView'
 // while the circle packing view model has not been built yet
 const EMPTY_SELECTION: IdType[] = []
 
-// A box smaller than this is not laid out yet: Allotment keeps a pane at its
-// 30 px minimum until it has sized the panes. A layout packed into that stays
-// tiny for good, because rebuilds reuse the size a layout was built for (#935).
+// A box smaller than this is treated as not laid out yet. After a reload the
+// box was once seen at 30 px wide, which is Allotment's default pane minimum and
+// probably a pane it had not sized yet. A layout packed into that stays tiny for
+// good, because rebuilds reuse the size a layout was built for (#935).
+//
+// 100 is a judgment call, not a measured limit: well above 30, and too small for
+// a useful Cell View. A larger mid-layout size would not be caught, and a real
+// box below this draws nothing until it is enlarged.
 const MIN_BOX_SIZE = 100
 
 // Color scale for the circles in the view
