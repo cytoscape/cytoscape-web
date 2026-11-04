@@ -13,10 +13,11 @@ import { prepare } from './preparer'
 
 /**
  * Above this node + edge count the embed shows the link-out instead.
- * `VITE_EMBED_MAX_ELEMENTS`, set at build time, overrides it.
+ * `VITE_EMBED_MAX_ELEMENTS`, set at build time, overrides it. At 20,000 a
+ * network is fully drawn in ~7 s on a laptop (embed_docs/performance.md).
  */
 export const EMBED_MAX_ELEMENTS =
-  Number(import.meta.env.VITE_EMBED_MAX_ELEMENTS) || 10_000
+  Number(import.meta.env.VITE_EMBED_MAX_ELEMENTS) || 20_000
 
 export type EmbedNetworkResult =
   | {

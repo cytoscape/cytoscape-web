@@ -12,7 +12,7 @@ node scripts/bench-embed.mjs --dist /tmp/embed-bench --runs 3
 
 - Machine: the author's MacBook, headed Chromium (real GPU), 1200 × 800 viewport.
 - Networks are public on `dev1.ndexbio.org`. NDEx latency varies between runs; the `fetch` column shows it.
-- `VITE_EMBED_MAX_ELEMENTS=200000` lifts the 10,000-element limit so the large networks draw.
+- `VITE_EMBED_MAX_ELEMENTS=200000` lifts the size limit (10,000 when measured, 20,000 now) so the large networks draw.
 
 ## Metrics
 
@@ -138,12 +138,12 @@ Against step 3: `blocked` falls 21% on `mouse`, 21% on `sars2`, 26% on `cytoplas
 ## Summary
 
 | Scenario | Step 0 done | Step 4 done | Change | Step 0 blocked | Step 4 blocked |
-| --- | --- | --- | --- | --- | --- |
-| das | 4,186 | 2,269 | −46% | 2,819 | 1,166 |
-| sars2 | 13,236 | 7,523 | −43% | 11,866 | 4,451 |
-| celegans | 30,903 | 10,300 | −67% | 29,517 | 7,898 |
-| mouse | 120,374 | 29,719 | −75% | 117,789 | 24,377 |
-| root | 8,327 | 4,036 | −52% | 7,556 | 2,319 |
+| -------- | ----------- | ----------- | ------ | -------------- | -------------- |
+| das      | 4,186       | 2,269       | −46%   | 2,819          | 1,166          |
+| sars2    | 13,236      | 7,523       | −43%   | 11,866         | 4,451          |
+| celegans | 30,903      | 10,300      | −67%   | 29,517         | 7,898          |
+| mouse    | 120,374     | 29,719      | −75%   | 117,789        | 24,377         |
+| root     | 8,327       | 4,036       | −52%   | 7,556          | 2,319          |
 
 Step 1 (element data and shared styles) gives most of the gain.
 
@@ -155,14 +155,14 @@ Step 1 (element data and shared styles) gives most of the gain.
 
 ## Size limit
 
-The default limit is 10,000 nodes and edges (`EMBED_MAX_ELEMENTS`); `VITE_EMBED_MAX_ELEMENTS` overrides it at build time.
+The default limit is 20,000 nodes and edges (`EMBED_MAX_ELEMENTS`), raised from 10,000 after these measurements; `VITE_EMBED_MAX_ELEMENTS` overrides it at build time.
 With step 4, measured on this machine:
 
-| Elements | Network | First paint | Fully drawn |
-| --- | --- | --- | --- |
-| 12,249 | das | 1.8 s | 2.3 s |
-| 25,269 | sars2 | 4.1 s | 7.5 s |
-| 48,306 | celegans | 4.3 s | 10.3 s |
-| 103,556 | mouse | 8.7 s | 29.7 s |
+| Elements | Network  | First paint | Fully drawn |
+| -------- | -------- | ----------- | ----------- |
+| 12,249   | das      | 1.8 s       | 2.3 s       |
+| 25,269   | sars2    | 4.1 s       | 7.5 s       |
+| 48,306   | celegans | 4.3 s       | 10.3 s      |
+| 103,556  | mouse    | 8.7 s       | 29.7 s      |
 
 Phones and slower laptops are untested and will be slower.

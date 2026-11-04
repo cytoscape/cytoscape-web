@@ -19,7 +19,7 @@
 //   node scripts/bench-embed.mjs --dist /tmp/embed-bench [--runs 3]
 //     [--headless] [--only root,das] [--json out.json]
 //
-// The scenarios marked `large` are over the embed's default 10,000-element
+// The scenarios marked `large` are over the embed's default 20,000-element
 // limit; build with VITE_EMBED_MAX_ELEMENTS raised to draw them.
 //
 // Headed by default: headless Chromium renders WebGL in software, which
