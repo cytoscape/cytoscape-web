@@ -12,6 +12,7 @@
 - Allows switching between different renderer views for the same network
 - Uses MUI `Tabs` component for the tab interface
 - Tab selection is managed via `activeTabIndex` in `UiStateStore`
+- The selected tab is not saved: every page load starts on the first tab (Tree View for a hierarchy), unless the URL names another with `activeNetworkViewTab`
 
 ### Network Activation
 

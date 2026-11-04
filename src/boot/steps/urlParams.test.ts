@@ -6,8 +6,9 @@
 // helpers lived in AppShell.tsx. The boot rework moved the logic into
 // src/boot/steps/, so the tests moved with it.
 
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
+import { TAB_VIEW_STATE_KEY } from '@/data/tabState/tabViewState'
 import { GraphObjectType } from '@/models/NetworkModel'
 import type { Ui } from '@/models/UiModel'
 import { Panel } from '@/models/UiModel/Panel'
@@ -17,6 +18,50 @@ import { mergeUiStateWithSearchParams } from './loadWorkspaceState'
 import { buildFilterConfigFromSearchParams } from './restoreUrlState'
 
 describe('mergeUiStateWithSearchParams', () => {
+  afterEach(() => {
+    window.sessionStorage.clear()
+  })
+
+  // The selected view tab used to be saved only as a side effect of saving
+  // something else, so a reload could bring back a tab left long ago.
+  it('starts on the first network view tab whatever this tab saved', () => {
+    window.sessionStorage.setItem(
+      TAB_VIEW_STATE_KEY,
+      JSON.stringify({ networkViewActiveTabIndex: 1 }),
+    )
+
+    const ui = mergeUiStateWithSearchParams(undefined, new URLSearchParams())
+
+    expect(ui.networkViewUi.activeTabIndex).toBe(0)
+  })
+
+  it('starts on the first network view tab whatever the shared row holds', () => {
+    const dbUiState = {
+      panels: {},
+      tableUi: { columnUiState: {}, activeTabIndex: 0 },
+      networkViewUi: { activeTabIndex: 1 },
+    } as unknown as Ui
+
+    const ui = mergeUiStateWithSearchParams(dbUiState, new URLSearchParams())
+
+    expect(ui.networkViewUi.activeTabIndex).toBe(0)
+  })
+
+  it('keeps the other tab indices this tab saved', () => {
+    window.sessionStorage.setItem(
+      TAB_VIEW_STATE_KEY,
+      JSON.stringify({
+        tableActiveTabIndex: 2,
+        networkBrowserPanelActiveTabIndex: 1,
+      }),
+    )
+
+    const ui = mergeUiStateWithSearchParams(undefined, new URLSearchParams())
+
+    expect(ui.tableUi.activeTabIndex).toBe(2)
+    expect(ui.networkBrowserPanelUi.activeTabIndex).toBe(1)
+  })
+
   it('falls back to the default UI state when nothing is persisted', () => {
     const ui = mergeUiStateWithSearchParams(undefined, new URLSearchParams())
 

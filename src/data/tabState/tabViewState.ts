@@ -3,7 +3,7 @@
  *
  * The `uiState` row in IndexedDB is shared by every tab on the origin, so any
  * field kept there is a field tabs fight over. Panel open/closed states and the
- * three active tab indices are *view* state — how this viewer is looking at the
+ * active tab indices are *view* state — how this viewer is looking at the
  * workspace — not document state, so they must never live in that shared row.
  *
  * Filtering them out at hydration time (the earlier approach) was not enough:
@@ -11,6 +11,9 @@
  * tab's private layout back into it, and a newly opened tab inherited whatever
  * tab happened to write last. They are stored here instead, in `sessionStorage`,
  * which is per-tab and survives reload.
+ *
+ * The network view tab (Tree View / Cell View) is not remembered: every load
+ * starts on the first one, unless the URL names another (`activeNetworkViewTab`).
  *
  * The tab's active network id is the other piece of per-tab view state; it lives
  * in `tabNetwork.ts`, which also owns the priority rules for resolving it.
@@ -31,7 +34,6 @@ export interface TabViewState {
   panels: Ui['panels']
   tableActiveTabIndex: number
   networkBrowserPanelActiveTabIndex: number
-  networkViewActiveTabIndex: number
 }
 
 export const DEFAULT_TAB_VIEW_STATE: TabViewState = {
@@ -42,7 +44,6 @@ export const DEFAULT_TAB_VIEW_STATE: TabViewState = {
   },
   tableActiveTabIndex: 0,
   networkBrowserPanelActiveTabIndex: 0,
-  networkViewActiveTabIndex: 0,
 }
 
 /**
@@ -105,10 +106,6 @@ const parseTabViewState = (raw: string): TabViewState => {
       parsed.networkBrowserPanelActiveTabIndex,
       DEFAULT_TAB_VIEW_STATE.networkBrowserPanelActiveTabIndex,
     ),
-    networkViewActiveTabIndex: asTabIndex(
-      parsed.networkViewActiveTabIndex,
-      DEFAULT_TAB_VIEW_STATE.networkViewActiveTabIndex,
-    ),
   }
 }
 
@@ -134,7 +131,6 @@ export const toTabViewState = (ui: Ui): TabViewState => ({
   tableActiveTabIndex: ui.tableUi?.activeTabIndex ?? 0,
   networkBrowserPanelActiveTabIndex:
     ui.networkBrowserPanelUi?.activeTabIndex ?? 0,
-  networkViewActiveTabIndex: ui.networkViewUi?.activeTabIndex ?? 0,
 })
 
 /** Remember this tab's view state across reloads. */
@@ -174,7 +170,8 @@ export const applyTabViewState = (ui: Ui, tabState: TabViewState): Ui => ({
   },
   networkViewUi: {
     ...ui.networkViewUi,
-    activeTabIndex: tabState.networkViewActiveTabIndex,
+    // Not view state to restore: always the first tab (see the file header).
+    activeTabIndex: 0,
   },
 })
 
