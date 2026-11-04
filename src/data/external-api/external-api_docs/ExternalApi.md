@@ -40,6 +40,7 @@ From `ndex/index.ts`:
 
 **Query Operations:**
 - `fetchGeneNamesFromIds(geneIds, accessToken?, ndexUrl?)`: Converts gene IDs to names
+- `fetchNodeNamesByIds(networkUUID, ids, accessToken?, ndexUrl?)`: Gets node names as a `Map` keyed by node id; validates the response shape and skips entries without a string name. The Cell View uses it to label protein rings
 - `fetchNdexInterconnectQuery(query, accessToken?, ndexUrl?)`: Performs interconnect queries
 
 **Workspace Operations:**

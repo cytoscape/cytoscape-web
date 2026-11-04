@@ -2,36 +2,16 @@ import { Core, NodeSingular } from 'cytoscape'
 import * as d3Hierarchy from 'd3-hierarchy'
 import { HierarchyNode } from 'd3-hierarchy'
 
-import { fetchGeneNamesFromIds } from '../../../../data/external-api/ndex'
 import { logUi } from '../../../../debug'
-import { IdType } from '../../../../models/IdType'
 import NetworkFn, { Network } from '../../../../models/NetworkModel'
 import { Table } from '../../../../models/TableModel'
 import { NetworkView, NodeView } from '../../../../models/ViewModel'
 import { CirclePackingView } from '../../model/CirclePackingView'
+import { SubsystemTag } from '../../model/HcxMetaTag'
 import { D3TreeNode } from './D3TreeNode'
-import { cyNetDag2tree2, findRoot, getMembers } from './DataBuilderUtil'
+import { cyNetDag2tree2, findRoot } from './DataBuilderUtil'
+import { resolveMemberNames } from './memberNames'
 
-/**
- *
- * @param getToken
- * @param uuid
- * @param nodeIds
- * @returns
- */
-export const getNames = async (
-  url: string,
-  getToken: () => Promise<string>,
-  uuid: string,
-  nodeIds: string[],
-): Promise<string[]> => {
-  const token: string = await getToken()
-
-  // TODO: move this function to the core??
-  const names: string[] = await fetchGeneNamesFromIds(uuid, nodeIds, token, url)
-
-  return names
-}
 /**
  * Return the branch of the network rooted at the given node
  *
@@ -42,15 +22,17 @@ export const getNames = async (
 export const createTreeLayout = async ({
   network,
   nodeTable,
-  rootNetworkHostUrl,
+  interactionNetworkId,
+  interactionNetworkHostUrl,
   getToken,
-  rootNetworkId,
 }: {
   network: Network
   nodeTable: Table
-  rootNetworkHostUrl: string
+  // Interaction network the member ids are looked up in, from this
+  // hierarchy's HCX metadata. Undefined when it names none.
+  interactionNetworkId: string | undefined
+  interactionNetworkHostUrl: string
   getToken: () => Promise<string>
-  rootNetworkId: IdType
 }): Promise<HierarchyNode<D3TreeNode>> => {
   // Get the internal data store. In this case, it is a cytoscape instance
   const cyNet: Core = NetworkFn.getInternalNetworkDataStore(network) as Core
@@ -68,35 +50,18 @@ export const createTreeLayout = async ({
 
   const allMembers = new Set<string>()
 
-  // Create ID to readable name map only when it is necessary
-  const rootMembers: string[] | number[] = getMembers(root.id(), nodeTable)
-  // test the first ID is a number or not
-  const firstMember: string = rootMembers[0]
-  const id2name: Map<string | number, string> = new Map<
-    string | number,
-    string
-  >()
-  if (Number.parseInt(firstMember)) {
-    // Member list is a list of numbers
-    try {
-      const names = await getNames(
-        rootNetworkHostUrl,
-        getToken,
-        rootNetworkId,
-        rootMembers,
-      )
-      rootMembers.forEach((member: string) => {
-        const memberId: number = Number.parseInt(member)
-        const memberName: string = names[memberId]
-        id2name.set(memberId, memberName)
-      })
-    } catch (e) {
-      logUi.warn(
-        `[${createTreeLayout.name}]: Failed to convert to ID to node names`,
-        e,
-      )
-    }
-  }
+  // Protein names of the member ids, keyed by id. Empty when the members are
+  // names already, or the lookup failed: the rings then show the ids. Only
+  // HCX::members holds ids; HCX::memberNames is shown as it is, even when a
+  // name looks like a number. A parent's list includes its descendants'
+  // members, so the root's list covers every ring.
+  const rootMembers = nodeTable.rows.get(root.id())?.[SubsystemTag.members]
+  const id2name: Map<string, string> = await resolveMemberNames({
+    members: Array.isArray(rootMembers) ? rootMembers : [],
+    interactionNetworkId,
+    interactionNetworkHostUrl,
+    getToken,
+  })
 
   cyNetDag2tree2(
     root,

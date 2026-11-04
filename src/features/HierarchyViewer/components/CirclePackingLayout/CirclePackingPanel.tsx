@@ -16,6 +16,8 @@ import {
 import { AppConfigContext } from '../../../../AppConfigContext'
 import { useCredentialStore } from '../../../../data/hooks/stores/CredentialStore'
 import { useFilterStore } from '../../../../data/hooks/stores/FilterStore'
+import { useNetworkStore } from '../../../../data/hooks/stores/NetworkStore'
+import { useNetworkSummaryStore } from '../../../../data/hooks/stores/NetworkSummaryStore'
 import { useRendererFunctionStore } from '../../../../data/hooks/stores/RendererFunctionStore'
 import { useTableStore } from '../../../../data/hooks/stores/TableStore'
 // Internal store imports
@@ -53,6 +55,7 @@ import {
 } from './CirclePackingUtils'
 import { D3TreeNode } from './D3TreeNode'
 import { findSearchMatchedRings } from './searchMatchedRings'
+import { interactionNetworkSource } from './memberNames'
 import { useCenterAnchoredZoom } from './useCenterAnchoredZoom'
 
 interface CirclePackingPanelProps {
@@ -96,6 +99,8 @@ export const CirclePackingPanel = ({
   const lastZoomLevelRef = useRef(0) // Keep the last zoom level for comparison
   const updatingNetworkIdRef = useRef<IdType | null>(null) // Track which network is currently being updated
   const hasInitialFitToSelectedLeaves = useRef(false) // Track if we've done initial fit to selected leaves
+  const latestBuildRef = useRef(0) // Only the latest layout build may register its view model
+  const initialExpansionPendingRef = useRef(false) // Selected leaves arrived before the view model
 
   // ===== LOCAL STATE =====
   const [lastNetworkId, setLastNetworkId] = useState<IdType>('')
@@ -145,11 +150,8 @@ export const CirclePackingPanel = ({
 
   // Credentials and network info
   const getToken = useCredentialStore((state) => state.getToken)
-  const rootNetworkId: IdType = useSubNetworkStore(
-    (state) => state.rootNetworkId,
-  )
-  const rootNetworkHost: string = useSubNetworkStore(
-    (state) => state.rootNetworkHost,
+  const networkSummary = useNetworkSummaryStore(
+    (state) => state.summaries[networkId],
   )
   const setSelectedNodes = useSubNetworkStore((state) => state.setSelectedNodes)
   const selectedHierarchyNodeNames = useSubNetworkStore(
@@ -157,8 +159,17 @@ export const CirclePackingPanel = ({
   )
 
   // ===== COMPUTED VALUES =====
-  const rootNetworkHostUrl: string =
-    rootNetworkHost === '' ? ndexBaseUrl : rootNetworkHost
+  // Protein names are looked up in the interaction network named by this
+  // hierarchy's own metadata. Undefined until the summary has loaded (#933).
+  const interactionSource = useMemo(
+    () => interactionNetworkSource(networkSummary, ndexBaseUrl),
+    [networkSummary, ndexBaseUrl],
+  )
+  const interactionSourceLoaded: boolean = interactionSource !== undefined
+  const interactionNetworkId: string | undefined = interactionSource?.id
+  const interactionNetworkHostUrl: string | undefined =
+    interactionSource?.hostUrl
+  const primaryViewLoaded: boolean = getViewModel(networkId) !== undefined
 
   const circlePackingView: CirclePackingView | undefined = views.find(
     (view) => view.type === CirclePackingType,
@@ -419,6 +430,10 @@ export const CirclePackingPanel = ({
       visualStyle === undefined
     )
       return
+    // Without the summary there is nowhere to look protein names up, and the
+    // rings would keep their numeric ids. onInitialSizeChange builds once it
+    // arrives.
+    if (interactionSource === undefined) return
     const primaryView = getViewModel(networkId)
 
     // Primary view is not ready yet.
@@ -444,14 +459,18 @@ export const CirclePackingPanel = ({
     let rootNode: d3Hierarchy.HierarchyNode<D3TreeNode> =
       circlePackingView?.hierarchy as d3Hierarchy.HierarchyNode<D3TreeNode>
 
+    // A slower, earlier build must not overwrite a later one
+    const buildId = ++latestBuildRef.current
+
     createTreeLayout({
       network,
       nodeTable,
-      rootNetworkHostUrl,
+      interactionNetworkId: interactionSource.id,
+      interactionNetworkHostUrl: interactionSource.hostUrl,
       getToken,
-      rootNetworkId,
     })
       .then((root) => {
+        if (buildId !== latestBuildRef.current) return
         rootNode = root
         if (rootNode && Object.keys(rootNode).length === 0) {
           // createTreeLayout could not build a tree from this hierarchy
@@ -475,11 +494,16 @@ export const CirclePackingPanel = ({
           height,
         )
 
+        // The network may have been deleted while this build was pending. The
+        // panel can outlive it, and a late write would recreate its view entry.
+        if (!useNetworkStore.getState().networks.has(network.id)) return
+
         // Register the new view model
         addViewModel(network.id, cpViewModel)
         setCpError(undefined)
       })
       .catch((error) => {
+        if (buildId !== latestBuildRef.current) return
         // Without this, a rejection here (e.g. a subsystem with no member list)
         // became an unhandled rejection and left this panel blank (issue #630).
         logUi.error(
@@ -649,6 +673,84 @@ export const CirclePackingPanel = ({
   useCenterAnchoredZoom(svgRef, zoomBehaviorRef)
 
   /**
+   * Expand to the subsystem containing the selected leaves and fit the viewport
+   * to it, once per selection. Requires the view model.
+   */
+  const expandToInitialSelection = (): void => {
+    const hierarchy =
+      circlePackingView?.hierarchy as d3Hierarchy.HierarchyCircularNode<D3TreeNode>
+    hasInitialFitToSelectedLeaves.current = true
+
+    // Determine which subsystem to expand to
+    let subsystemToExpand: IdType | undefined
+
+    // First, check if there's already a selected subsystem
+    if (selectedNodes.length > 0) {
+      subsystemToExpand = selectedNodes[0]
+    } else {
+      // Find the parent subsystem of the selected leaves
+      subsystemToExpand = findParentSubsystemOfLeaves(
+        selectedHierarchyNodeNames,
+      )
+
+      // If found, select it so it expands
+      if (subsystemToExpand !== undefined) {
+        exclusiveSelect(network.id, [subsystemToExpand], [])
+      }
+    }
+
+    if (subsystemToExpand === undefined) return
+
+    // Expand to the subsystem after a short delay to ensure rendering is complete
+    setTimeout(() => {
+      expandSelectedCircle(subsystemToExpand!)
+      // Also fit the viewport to show the selected subsystem
+      if (svgRef.current !== null && zoomBehaviorRef.current !== null) {
+        const wrapper = d3Selection.select(`g.${CP_WRAPPER_CLASS}`)
+        if (wrapper.node() !== null) {
+          const subsystemNode = findHierarchyNode(subsystemToExpand!, hierarchy)
+          if (subsystemNode !== undefined) {
+            const { width, height } = svgRef.current.getBoundingClientRect()
+            const scale =
+              Math.min(
+                width / (subsystemNode.r * 2),
+                height / (subsystemNode.r * 2),
+              ) * 0.5 // 0.5 for padding (zoom out more)
+            const translateX = width / 2 - subsystemNode.x * scale
+            const translateY = height / 2 - subsystemNode.y * scale
+            const newTransform = d3Zoom.zoomIdentity
+              .translate(translateX, translateY)
+              .scale(scale)
+            if (zoomBehaviorRef.current !== null) {
+              zoomBehaviorRef.current.transform(
+                d3Selection.select<SVGSVGElement, unknown>(svgRef.current),
+                newTransform,
+              )
+            }
+          }
+        }
+      }
+    }, 500)
+  }
+
+  /**
+   * Clear the failure state when the network changes, so a hierarchy that could
+   * not be built does not keep hiding the diagram of the next one. Same for an
+   * expansion waiting on the previous network's view model.
+   *
+   * Must precede onSelectedHierarchyNodeNamesChange: this also runs on mount,
+   * and declared after it would clear the wait that effect has just recorded
+   * for a selection that was there before the panel mounted.
+   */
+  useEffect(
+    function onNetworkIdChange() {
+      setCpError(undefined)
+      initialExpansionPendingRef.current = false
+    },
+    [networkId],
+  )
+
+  /**
    * Update selected leaf when hierarchy node names change
    * This syncs selections in the subnetwork view to this circle packing view
    */
@@ -659,6 +761,7 @@ export const CirclePackingPanel = ({
         setSelectedLeaves([])
         displaySelectedNodes(selectedNodeSet, [], searchMatchedRings)
         hasInitialFitToSelectedLeaves.current = false
+        initialExpansionPendingRef.current = false
       } else {
         setSelectedLeaves(selectedHierarchyNodeNames)
         displaySelectedNodes(
@@ -667,69 +770,14 @@ export const CirclePackingPanel = ({
           searchMatchedRings,
         )
 
-        // On initial load with selected leaves, expand to the subsystem containing them
+        // On initial load with selected leaves, expand to the subsystem
+        // containing them. It takes the view model, which may still be
+        // building: onViewModelReady runs it then, as this effect won't re-run.
         if (!hasInitialFitToSelectedLeaves.current && visible) {
-          hasInitialFitToSelectedLeaves.current = true
-
-          // Determine which subsystem to expand to
-          let subsystemToExpand: IdType | undefined
-
-          // First, check if there's already a selected subsystem
-          if (selectedNodes.length > 0) {
-            subsystemToExpand = selectedNodes[0]
+          if (circlePackingView?.hierarchy === undefined) {
+            initialExpansionPendingRef.current = true
           } else {
-            // Find the parent subsystem of the selected leaves
-            subsystemToExpand = findParentSubsystemOfLeaves(
-              selectedHierarchyNodeNames,
-            )
-
-            // If found, select it so it expands
-            if (subsystemToExpand !== undefined) {
-              exclusiveSelect(network.id, [subsystemToExpand], [])
-            }
-          }
-
-          // Expand to the subsystem after a short delay to ensure rendering is complete
-          if (
-            subsystemToExpand !== undefined &&
-            circlePackingView !== undefined &&
-            circlePackingView.hierarchy !== undefined
-          ) {
-            setTimeout(() => {
-              expandSelectedCircle(subsystemToExpand!)
-              // Also fit the viewport to show the selected subsystem
-              if (svgRef.current !== null && zoomBehaviorRef.current !== null) {
-                const wrapper = d3Selection.select(`g.${CP_WRAPPER_CLASS}`)
-                if (wrapper.node() !== null) {
-                  const subsystemNode = findHierarchyNode(
-                    subsystemToExpand!,
-                    circlePackingView.hierarchy as d3Hierarchy.HierarchyCircularNode<D3TreeNode>,
-                  )
-                  if (subsystemNode !== undefined) {
-                    const { width, height } =
-                      svgRef.current.getBoundingClientRect()
-                    const scale =
-                      Math.min(
-                        width / (subsystemNode.r * 2),
-                        height / (subsystemNode.r * 2),
-                      ) * 0.5 // 0.5 for padding (zoom out more)
-                    const translateX = width / 2 - subsystemNode.x * scale
-                    const translateY = height / 2 - subsystemNode.y * scale
-                    const newTransform = d3Zoom.zoomIdentity
-                      .translate(translateX, translateY)
-                      .scale(scale)
-                    if (zoomBehaviorRef.current !== null) {
-                      zoomBehaviorRef.current.transform(
-                        d3Selection.select<SVGSVGElement, unknown>(
-                          svgRef.current,
-                        ),
-                        newTransform,
-                      )
-                    }
-                  }
-                }
-              }
-            }, 500)
+            expandToInitialSelection()
           }
         }
       }
@@ -741,6 +789,26 @@ export const CirclePackingPanel = ({
     // would re-fire it constantly and fight the user's local selection.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- selection sync keyed on source-of-truth only
     [selectedHierarchyNodeNames],
+  )
+
+  /**
+   * Run the initial expansion that had to wait for the view model. It fits the
+   * viewport, which can't be measured while hidden, so it also waits to be shown.
+   */
+  useEffect(
+    function onViewModelReady() {
+      if (
+        !initialExpansionPendingRef.current ||
+        !visible ||
+        circlePackingView?.hierarchy === undefined
+      ) {
+        return
+      }
+      initialExpansionPendingRef.current = false
+      expandToInitialSelection()
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs when the view model arrives or the panel is shown; the pending flag makes it one-shot
+    [circlePackingView?.hierarchy, visible],
   )
 
   /**
@@ -1104,18 +1172,15 @@ export const CirclePackingPanel = ({
   )
 
   /**
-   * Clear the failure state when the network changes, so a hierarchy that could
-   * not be built does not keep hiding the diagram of the next one.
-   */
-  useEffect(
-    function onNetworkIdChange() {
-      setCpError(undefined)
-    },
-    [networkId],
-  )
-
-  /**
-   * Initialize view model when initial size is available
+   * Initialize view model when its inputs are available, and rebuild it when
+   * the interaction network its protein names come from is known or changes.
+   *
+   * The renderer mounts hidden at startup, often before the network summary
+   * has loaded. Building then looked names up nowhere and left the protein
+   * rings labelled with their numeric ids (#933), so the build waits for the
+   * summary and runs again once it arrives. The primary view can also arrive
+   * after mount. And NetworkTabs reuses this panel when switching directly
+   * between hierarchies, so a new networkId needs a build of its own.
    *
    * buildCirclePackingViewModel must NOT be a dependency: its identity changes
    * with every render caused by its own store write, so adding it would
@@ -1127,8 +1192,15 @@ export const CirclePackingPanel = ({
         buildCirclePackingViewModel()
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot build when the measured size arrives
-    [initialSize],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- build trigger only; rebuild writes the view model (loop)
+    [
+      initialSize,
+      networkId,
+      primaryViewLoaded,
+      interactionSourceLoaded,
+      interactionNetworkId,
+      interactionNetworkHostUrl,
+    ],
   )
 
   if (cpError !== undefined) {

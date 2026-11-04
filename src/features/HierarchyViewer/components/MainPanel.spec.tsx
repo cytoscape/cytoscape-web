@@ -140,8 +140,6 @@ const setupStores = ({
   }
   const visualStyleState = { visualStyles: {} }
   const subNetworkState = {
-    setRootNetworkId: vi.fn(),
-    setRootNetworkHost: vi.fn(),
     currentSubNetworkId,
   }
 
