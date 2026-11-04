@@ -215,6 +215,26 @@ startup build looked names up in network `''` and the rings showed numbers
 (#933). The lookup returns names keyed by id: reading them back by position
 only worked because MuSIC's ids happen to be `0..n-1`.
 
+### Cell View size
+
+`NetworkTabs` reports the size of the box that holds the renderers
+(`useContainerSize`), and `CirclePackingPanel` receives it as `initialSize`. The
+size follows the real box, but the panel uses it for one thing only: the first
+layout of a hierarchy.
+
+- A first build waits until the box is at least 100 px each way
+  (`MIN_BOX_SIZE`). After a reload the box can be 0 x 0, or at Allotment's 30 px
+  pane minimum, until the panes have been laid out. A smaller box builds nothing
+  and draws nothing, and the build runs as soon as the box is large enough.
+- A rebuild packs into the size the current layout was built for, so nothing
+  moves on screen.
+- Resizing a drawn view neither rebuilds nor fits it, because that would throw
+  away the user's zoom and pan. `useCenterAnchoredZoom` keeps its center instead.
+  The view is fitted again only when the box comes back from below the minimum.
+
+The box was measured only once on mount, so a box that was not laid out yet left
+the Cell View blank, or tiny, until the next reload (#935).
+
 ### Search and protein rings
 
 A protein ring is generated from a subsystem's member list (`HCX::members`

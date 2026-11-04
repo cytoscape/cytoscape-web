@@ -1,7 +1,8 @@
 import { Box, Tab, Tabs } from '@mui/material'
-import { useEffect, useRef, useState } from 'react'
+import { useRef } from 'react'
 
 import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
+import { useContainerSize } from '../../data/hooks/useContainerSize'
 import { Network } from '../../models/NetworkModel'
 import { Renderer } from '../../models/RendererModel/Renderer'
 import { NetworkView } from '../../models/ViewModel'
@@ -36,22 +37,7 @@ export const NetworkTabs = ({
   )
 
   const boxRef = useRef<HTMLDivElement>(null)
-  const [boxSize, setBoxSize] = useState<{ w: number; h: number }>({
-    w: 0,
-    h: 0,
-  })
-
-  useEffect(() => {
-    const boxElement = boxRef.current
-    if (boxElement) {
-      window.requestAnimationFrame(() => {
-        const rect = boxElement.getBoundingClientRect()
-        if (rect.width !== 0 && rect.height !== 0) {
-          setBoxSize({ w: rect.width, h: rect.height })
-        }
-      })
-    }
-  }, [])
+  const boxSize = useContainerSize(boxRef)
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     // When clicking a tab, always activate the renderer and switch to the clicked tab
@@ -129,7 +115,11 @@ export const NetworkTabs = ({
           shrinking below its content, and the renderers' canvases are sized in
           pixels — so the table panel growing would push the view out of the
           pane instead of shrinking it. */}
-      <Box ref={boxRef} sx={{ flexGrow: 1, minHeight: 0, width: '100%' }}>
+      <Box
+        ref={boxRef}
+        data-testid="network-tabs-content"
+        sx={{ flexGrow: 1, minHeight: 0, width: '100%' }}
+      >
         {rendererList.map((renderer: Renderer, index: number) => {
           return (
             <NetworkTab

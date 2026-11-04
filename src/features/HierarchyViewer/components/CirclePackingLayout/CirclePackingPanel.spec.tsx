@@ -153,26 +153,28 @@ const registeredHierarchyRootId = (networkId: string): string | undefined => {
     ?.data.id
 }
 
+const seedStores = (): void => {
+  vi.mocked(createTreeLayout).mockClear()
+  useTableStore.setState({
+    tables: { [NETWORK_ID]: { nodeTable, edgeTable } },
+  } as any)
+  useVisualStyleStore.setState({
+    visualStyles: { [NETWORK_ID]: visualStyle },
+  } as any)
+  useViewModelStore.setState({
+    viewModels: { [NETWORK_ID]: [primaryView] },
+  } as any)
+  useNetworkSummaryStore.setState({ summaries: {} } as any)
+  useNetworkStore.setState({
+    networks: new Map([
+      [NETWORK_ID, network],
+      [OTHER_NETWORK_ID, otherNetwork],
+    ]),
+  } as any)
+}
+
 describe('CirclePackingPanel name lookup source (#933)', () => {
-  beforeEach(() => {
-    vi.mocked(createTreeLayout).mockClear()
-    useTableStore.setState({
-      tables: { [NETWORK_ID]: { nodeTable, edgeTable } },
-    } as any)
-    useVisualStyleStore.setState({
-      visualStyles: { [NETWORK_ID]: visualStyle },
-    } as any)
-    useViewModelStore.setState({
-      viewModels: { [NETWORK_ID]: [primaryView] },
-    } as any)
-    useNetworkSummaryStore.setState({ summaries: {} } as any)
-    useNetworkStore.setState({
-      networks: new Map([
-        [NETWORK_ID, network],
-        [OTHER_NETWORK_ID, otherNetwork],
-      ]),
-    } as any)
-  })
+  beforeEach(seedStores)
 
   afterEach(() => {
     // Back to the default build that never settles
@@ -484,6 +486,170 @@ describe('CirclePackingPanel name lookup source (#933)', () => {
         } as any)
       })
       expect(exclusiveSelect).toHaveBeenCalledTimes(1)
+    })
+  })
+})
+
+// NetworkTabs reports the size of the box the renderers live in, and that box
+// can be 0 x 0 or mid-layout when the panel mounts after a reload. The first
+// layout has to wait for the real size. Later sizes must not touch a drawn
+// layout: a pane being resized is useCenterAnchoredZoom's business.
+describe('CirclePackingPanel box size (#935)', () => {
+  const sized = (size: { w: number; h: number }, visible = false) => (
+    <CirclePackingPanel
+      rendererId="circlePacking"
+      network={network}
+      initialSize={size}
+      visible={visible}
+    />
+  )
+
+  const packedSize = (): { w: number; h: number } | undefined => {
+    const view = useViewModelStore
+      .getState()
+      .viewModels[NETWORK_ID]?.find((v) => v.type === CirclePackingType) as
+      | CirclePackingView
+      | undefined
+    const root = view?.hierarchy as
+      | d3Hierarchy.HierarchyCircularNode<D3TreeNode>
+      | undefined
+    return root === undefined ? undefined : { w: root.x * 2, h: root.y * 2 }
+  }
+
+  beforeEach(() => {
+    seedStores()
+    useNetworkSummaryStore.setState({
+      summaries: { [NETWORK_ID]: hcxSummary() },
+    } as any)
+  })
+
+  afterEach(() => {
+    vi.mocked(createTreeLayout).mockImplementation(
+      () => new Promise(() => {}) as any,
+    )
+  })
+
+  it('waits for a box that is 0 x 0 at mount, then builds at its size', async () => {
+    const builds = deferBuilds()
+    const { rerender } = render(sized({ w: 0, h: 0 }))
+    expect(createTreeLayout).not.toHaveBeenCalled()
+
+    rerender(sized({ w: 422, h: 699 }))
+
+    expect(createTreeLayout).toHaveBeenCalledTimes(1)
+    await act(async () => {
+      builds[0].resolve(hierarchyOf('root'))
+    })
+    expect(packedSize()).toEqual({ w: 422, h: 699 })
+  })
+
+  // Allotment keeps a pane at its 30 px minimum until it has laid the panes
+  // out. A layout packed into that stays 30 px wide for good.
+  it('does not build for a pane that is still being laid out', async () => {
+    const builds = deferBuilds()
+    const { rerender } = render(sized({ w: 30, h: 658 }))
+    expect(createTreeLayout).not.toHaveBeenCalled()
+
+    rerender(sized({ w: 422, h: 699 }))
+
+    expect(createTreeLayout).toHaveBeenCalledTimes(1)
+    await act(async () => {
+      builds[0].resolve(hierarchyOf('root'))
+    })
+    expect(packedSize()).toEqual({ w: 422, h: 699 })
+  })
+
+  it('uses the latest size when the first build has to wait for more', async () => {
+    const builds = deferBuilds()
+    useNetworkSummaryStore.setState({ summaries: {} } as any)
+    const { rerender } = render(sized({ w: 422, h: 699 }))
+    rerender(sized({ w: 500, h: 699 }))
+
+    act(() => {
+      useNetworkSummaryStore.setState({
+        summaries: { [NETWORK_ID]: hcxSummary() },
+      } as any)
+    })
+
+    expect(builds).toHaveLength(1)
+    await act(async () => {
+      builds[0].resolve(hierarchyOf('root'))
+    })
+    expect(packedSize()).toEqual({ w: 500, h: 699 })
+  })
+
+  it('does not rebuild when the box is resized afterwards', async () => {
+    const builds = deferBuilds()
+    const { rerender } = render(sized({ w: 422, h: 699 }))
+    await act(async () => {
+      builds[0].resolve(hierarchyOf('root'))
+    })
+
+    rerender(sized({ w: 500, h: 600 }))
+
+    expect(createTreeLayout).toHaveBeenCalledTimes(1)
+    expect(packedSize()).toEqual({ w: 422, h: 699 })
+  })
+
+  describe('fitting', () => {
+    const getBBox = vi.fn(() => ({ x: 0, y: 0, width: 100, height: 100 }))
+
+    beforeEach(() => {
+      getBBox.mockClear()
+      // jsdom does no layout: give the SVG a box and the drawing a bounding box
+      vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
+        width: 422,
+        height: 699,
+      } as DOMRect)
+      ;(SVGElement.prototype as any).getBBox = getBBox
+      // d3 zoom's default extent reads these SVG lengths, which jsdom lacks
+      for (const [name, value] of [
+        ['width', 422],
+        ['height', 699],
+      ] as const) {
+        Object.defineProperty(SVGSVGElement.prototype, name, {
+          configurable: true,
+          value: { baseVal: { value } },
+        })
+      }
+    })
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+      delete (SVGElement.prototype as any).getBBox
+      delete (SVGSVGElement.prototype as any).width
+      delete (SVGSVGElement.prototype as any).height
+    })
+
+    const drawn = async () => {
+      const builds = deferBuilds()
+      const rendered = render(sized({ w: 422, h: 699 }, true))
+      await act(async () => {
+        builds[0].resolve(hierarchyOf('root'))
+      })
+      expect(getBBox).toHaveBeenCalled()
+      getBBox.mockClear()
+      return rendered
+    }
+
+    // A fit on every size would throw away the user's zoom and pan each time a
+    // pane moves.
+    it('does not fit again when the box is resized afterwards', async () => {
+      const { rerender } = await drawn()
+
+      rerender(sized({ w: 500, h: 600 }, true))
+
+      expect(getBBox).not.toHaveBeenCalled()
+    })
+
+    it('fits again when the box comes back from being laid out', async () => {
+      const { rerender } = await drawn()
+
+      rerender(sized({ w: 30, h: 658 }, true))
+      expect(getBBox).not.toHaveBeenCalled()
+      rerender(sized({ w: 422, h: 699 }, true))
+
+      expect(getBBox).toHaveBeenCalled()
     })
   })
 })
