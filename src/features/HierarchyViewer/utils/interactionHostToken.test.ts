@@ -55,12 +55,14 @@ interface RecordedRequest {
 
 const startServer = async (
   requests: RecordedRequest[],
+  status = 200,
 ): Promise<{ server: Server; url: string }> => {
   const server = createServer((req, res) => {
     requests.push({ method: req.method, url: req.url, headers: req.headers })
     req.resume()
     req.on('end', () => {
       const isNameLookup = req.url?.includes('/nodes') ?? false
+      res.statusCode = status
       res.setHeader('Content-Type', 'application/json')
       res.end(JSON.stringify(isNameLookup ? { 1: { name: 'TP53' } } : CX2))
     })
@@ -81,23 +83,29 @@ describe('the token and HCX::interactionNetworkHost', () => {
   const originalBaseUrl = getNDExBaseUrl()
   const configuredRequests: RecordedRequest[] = []
   const foreignRequests: RecordedRequest[] = []
+  const privateRequests: RecordedRequest[] = []
   let configured: { server: Server; url: string }
   let foreign: { server: Server; url: string }
+  // A foreign host holding a private network: it refuses an anonymous request
+  let foreignPrivate: { server: Server; url: string }
 
   beforeAll(async () => {
     configured = await startServer(configuredRequests)
     foreign = await startServer(foreignRequests)
+    foreignPrivate = await startServer(privateRequests, 403)
   })
 
   afterAll(async () => {
     await stopServer(configured.server)
     await stopServer(foreign.server)
+    await stopServer(foreignPrivate.server)
   })
 
   beforeEach(() => {
     setNDExBaseUrl(configured.url)
     configuredRequests.length = 0
     foreignRequests.length = 0
+    privateRequests.length = 0
   })
 
   afterEach(() => {
@@ -156,30 +164,75 @@ describe('the token and HCX::interactionNetworkHost', () => {
         `Bearer ${TOKEN}`,
       )
     })
+
+    it('yields no names when a foreign host refuses the anonymous request', async () => {
+      const names = await lookUpNames(foreignPrivate.url)
+
+      expect(privateRequests).toHaveLength(1)
+      expect(privateRequests[0].headers.authorization).toBeUndefined()
+      expect(names).toEqual(new Map())
+    })
   })
 
   describe.each([
-    ['by interaction network UUID', fetchByUuid],
-    ['by interconnect query', fetchByInterconnect],
-  ])('subnetwork fetch %s', (_label, fetchSubnetwork) => {
-    it('does not reach a foreign host with the token, and still gets the network', async () => {
-      const result = await fetchSubnetwork(foreign.url)
-
-      expect(foreignRequests.length).toBeGreaterThan(0)
-      for (const request of foreignRequests) {
-        expect(request.headers.authorization).toBeUndefined()
+    [
+      'by interaction network UUID',
+      fetchByUuid,
+      'GET',
+      `/v3/networks/${NETWORK_UUID}`,
+      'uuid',
+    ],
+    [
+      'by interconnect query',
+      fetchByInterconnect,
+      'POST',
+      `/v3/search/networks/${NETWORK_UUID}/interconnectquery`,
+      'interconnect',
+    ],
+  ])(
+    'subnetwork fetch %s',
+    (_label, fetchSubnetwork, method, path, fetchMethod) => {
+      const expectRoute = (requests: RecordedRequest[]): void => {
+        expect(requests.length).toBeGreaterThan(0)
+        for (const request of requests) {
+          expect(request.method).toBe(method)
+          expect(request.url?.split('?')[0]).toBe(path)
+        }
       }
-      expect(result.network.nodes).toHaveLength(2)
-    })
 
-    it('sends the token to the configured host', async () => {
-      await fetchSubnetwork(configured.url)
+      it('does not reach a foreign host with the token, and still gets the network', async () => {
+        const result = await fetchSubnetwork(foreign.url)
 
-      expect(foreignRequests).toHaveLength(0)
-      expect(configuredRequests.length).toBeGreaterThan(0)
-      for (const request of configuredRequests) {
-        expect(request.headers.authorization).toBe(`Bearer ${TOKEN}`)
-      }
-    })
-  })
+        expectRoute(foreignRequests)
+        for (const request of foreignRequests) {
+          expect(request.headers.authorization).toBeUndefined()
+        }
+        expect(result.network.nodes).toHaveLength(2)
+      })
+
+      it('sends the token to the configured host', async () => {
+        await fetchSubnetwork(configured.url)
+
+        expect(foreignRequests).toHaveLength(0)
+        expectRoute(configuredRequests)
+        for (const request of configuredRequests) {
+          expect(request.headers.authorization).toBe(`Bearer ${TOKEN}`)
+        }
+      })
+
+      it('rejects when a foreign host refuses the anonymous request', async () => {
+        await expect(fetchSubnetwork(foreignPrivate.url)).rejects.toMatchObject(
+          {
+            name: 'NdexSubnetworkFetchError',
+            fetchMethod,
+          },
+        )
+
+        expectRoute(privateRequests)
+        for (const request of privateRequests) {
+          expect(request.headers.authorization).toBeUndefined()
+        }
+      })
+    },
+  )
 })
