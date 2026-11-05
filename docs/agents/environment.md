@@ -24,6 +24,8 @@ Vite 8 with the Module Federation Vite plugin provides the microfrontend build:
 | `src/boot/`               | The entire startup path — boot shell, phase orchestrator, instrumentation. See `src/boot/boot_docs/boot.md`                                                                                                                                                                     |
 | `src/boot/bootstrap.tsx`  | Boot entry (calls `enableMapSet()`, sets up logging, renders)                                                                                                                                                                                                                   |
 
+`config.json` may also set `webglMinElements`: networks with at least that many nodes and edges draw with WebGL (unset by default, so never; `CyjsRenderer/cyjsWebgl.ts`).
+
 **Environment variables:** The `.env` file exists but is unused. Build-time metadata is injected through Vite's `define` option.
 
 ### Scripts
@@ -41,5 +43,6 @@ Vite 8 with the Module Federation Vite plugin provides the microfrontend build:
 | `scripts/check-embed-size.mjs`               | Report the gzipped size of what the embed (`embed.html`) loads before first paint                                 |
 | `scripts/compare-embed.mjs`                  | Compare how the embed and the full app draw the same NDEx networks                                                |
 | `scripts/bench-embed.mjs`                    | Measure the embed's load and draw times; results go in `src/embed/embed_docs/performance.md`                      |
+| `scripts/bench-full-app.mjs`                 | Measure the full app's load and draw times; results go in `CyjsRenderer_docs/performance.md`                      |
 
 ---
