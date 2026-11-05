@@ -185,10 +185,40 @@ export const SubNetworkPanel = ({
     (state) => state.setCurrentSubNetworkId,
   )
 
+  const selectedNodesPending: boolean = useSubNetworkStore(
+    (state) => state.selectedNodesPending,
+  )
+  const markSelectedNodesApplied: () => void = useSubNetworkStore(
+    (state) => state.markSelectedNodesApplied,
+  )
+
+  // What a click on a protein ring just selected in this subnetwork. The Cell
+  // View already outlines that ring, so the selection is not sent back to it.
+  const ringSelectionRef = useRef<IdType[] | null>(null)
+
   useEffect(() => {
     // Convert node IDs to names
     const tableRecord = tables[queryNetworkId]
     if (tableRecord === undefined) {
+      return
+    }
+
+    // A subnetwork that just arrived, with a click about to select in it. Its
+    // selection until then would clear the clicked ring's border.
+    if (selectedNodesPending) {
+      return
+    }
+
+    // Sending a ring's own selection back would start the Cell View's expansion
+    // to the initial selection. And when the protein has no node here, the empty
+    // selection would clear the border.
+    const ringSelection = ringSelectionRef.current
+    ringSelectionRef.current = null
+    if (
+      ringSelection !== null &&
+      ringSelection.length === selectedNodesInQueryNetwork.length &&
+      ringSelection.every((id) => selectedNodesInQueryNetwork.includes(id))
+    ) {
       return
     }
 
@@ -214,46 +244,6 @@ export const SubNetworkPanel = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- selection change is the trigger; a tables dep would churn on every table write
   }, [queryNetworkViewModel?.selectedNodes])
-
-  /**
-   * Selection based on the leaf node selection in the circle packing packing view
-   */
-  useEffect(() => {
-    if (queryNetworkId === undefined || queryNetworkId === '') {
-      return
-    }
-    const tableRecord = tables[queryNetworkId]
-    if (tableRecord === undefined) {
-      return
-    }
-
-    const { nodeTable } = tableRecord
-
-    const viewModel: NetworkView | undefined = getViewModel(queryNetworkId)
-    if (viewModel !== undefined) {
-      const { rows } = nodeTable
-      const nodeIds = [...rows.keys()]
-
-      const toBeSelected: IdType[] = []
-
-      //find matched nodes by name
-      selectedNodes.forEach((nodeName: string) => {
-        // Find the row index of the node with the given name
-        nodeIds.forEach((nodeId: IdType) => {
-          const row = rows.get(nodeId)
-          if (row === undefined) {
-            return
-          }
-          if (row.name === nodeName) {
-            toBeSelected.push(nodeId)
-          }
-        })
-      })
-
-      exclusiveSelect(queryNetworkId, toBeSelected, [])
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires only on CP selection; other values are fresh at trigger time
-  }, [selectedNodes])
 
   // For applying default layout
   const defaultLayout: LayoutAlgorithm = useLayoutStore(
@@ -347,6 +337,51 @@ export const SubNetworkPanel = ({
     // it even when the user hasn't clicked the subnetwork pane (CW-654).
     setCurrentSubNetworkId(shownSubNetworkId)
   }, [shownSubNetworkId, setCurrentSubNetworkId])
+
+  /**
+   * Select what the last click in the Cell View named, in the subnetwork of the
+   * subsystem it selected. That subnetwork is usually not there yet when the
+   * click happens, so this waits until it is shown. `queryNetworkId` would not
+   * do: it keeps naming the previous subnetwork while the next one loads.
+   *
+   * Only a click does this: with nothing pending, a subnetwork arriving keeps
+   * the selection it has, such as one restored from the URL.
+   */
+  useEffect(() => {
+    if (!selectedNodesPending || shownSubNetworkId === '') {
+      return
+    }
+    const tableRecord = tables[shownSubNetworkId]
+    if (tableRecord === undefined) {
+      return
+    }
+
+    const { rows } = tableRecord.nodeTable
+    const nodeIds = [...rows.keys()]
+
+    const toBeSelected: IdType[] = []
+
+    //find matched nodes by name
+    selectedNodes.forEach((nodeName: string) => {
+      // Find the row index of the node with the given name
+      nodeIds.forEach((nodeId: IdType) => {
+        const row = rows.get(nodeId)
+        if (row === undefined) {
+          return
+        }
+        if (row.name === nodeName) {
+          toBeSelected.push(nodeId)
+        }
+      })
+    })
+
+    // A click on a subsystem ring names nothing. It clears the viewer, and the
+    // Cell View is told so as with any selection made there.
+    ringSelectionRef.current = selectedNodes.length > 0 ? toBeSelected : null
+    exclusiveSelect(shownSubNetworkId, toBeSelected, [])
+    markSelectedNodesApplied()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires on a click or when its subnetwork is shown; the rest is fresh at trigger time
+  }, [selectedNodes, selectedNodesPending, shownSubNetworkId])
 
   useEffect(() => {
     // Clear the shown subnetwork when the viewer unmounts so it can't leak into

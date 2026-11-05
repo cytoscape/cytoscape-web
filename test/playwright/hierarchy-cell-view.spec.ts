@@ -744,6 +744,52 @@ const ringCenter = (svg: Locator, ringId: string) =>
     }
   }, ringId)
 
+const strokeOf = (svg: Locator, ringId: string) =>
+  svg.evaluate(
+    (element, id) =>
+      [...element.querySelectorAll('circle')]
+        .find(
+          (circle) =>
+            (circle as unknown as { __data__?: { data: { id: string } } })
+              .__data__?.data.id === id,
+        )
+        ?.getAttribute('stroke'),
+    ringId,
+  )
+
+/** The label's on-screen box, or undefined while the zoom level hides it */
+const labelBox = (svg: Locator, ringId: string) =>
+  svg.evaluate((element, id) => {
+    const label = [...element.querySelectorAll('text')].find(
+      (text) =>
+        (text as unknown as { __data__?: { data: { id: string } } }).__data__
+          ?.data.id === id,
+    )
+    if (label === undefined) return undefined
+    const { x, y, width, height } = label.getBoundingClientRect()
+    return width > 0 && height > 0 ? { x, y, width, height } : undefined
+  }, ringId)
+
+/** Zoom in on the ring until its label shows, then click the label's center */
+const clickLabel = async (
+  page: Page,
+  svg: Locator,
+  ringId: string,
+): Promise<void> => {
+  await expect(async () => {
+    const box = await labelBox(svg, ringId)
+    if (box === undefined) {
+      const center = await ringCenter(svg, ringId)
+      await page.mouse.move(center.x, center.y)
+      await page.mouse.wheel(0, -100)
+    }
+    expect(box).toBeDefined()
+  }).toPass({ timeout: 15000 })
+
+  const box = await labelBox(svg, ringId)
+  await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2)
+}
+
 test.describe('Searching a hierarchy in the Cell View (#930)', () => {
   test('highlights the protein rings the search matched', async ({ page }) => {
     // Nothing here needs NDEx; keep any request from reaching it.
@@ -904,10 +950,6 @@ test.describe('Searching a hierarchy in the Cell View (#930)', () => {
 // click on a label did nothing. On a small protein ring the label covers most
 // of the ring. The clicks are real mouse clicks: a click dispatched on the
 // circle, or one Playwright aims at the circle, would not go through the label.
-//
-// NDEx requests hang here, so the Sub Network Viewer never loads and never
-// echoes the selection back. The red border of a clicked protein ring therefore
-// holds with the viewer open.
 test.describe('Clicking a ring label in the Cell View (#931)', () => {
   /** Open the Cell View of a hierarchy whose rings are labelled without NDEx */
   const openCellView = async (page: Page): Promise<Locator> => {
@@ -917,52 +959,6 @@ test.describe('Clicking a ring label in the Cell View (#931)', () => {
     const svg = page.locator('[data-testid="circle-packing-svg"]')
     await expect(svg.locator('circle')).toHaveCount(10)
     return svg
-  }
-
-  const strokeOf = (svg: Locator, ringId: string) =>
-    svg.evaluate(
-      (element, id) =>
-        [...element.querySelectorAll('circle')]
-          .find(
-            (circle) =>
-              (circle as unknown as { __data__?: { data: { id: string } } })
-                .__data__?.data.id === id,
-          )
-          ?.getAttribute('stroke'),
-      ringId,
-    )
-
-  /** The label's on-screen box, or undefined while the zoom level hides it */
-  const labelBox = (svg: Locator, ringId: string) =>
-    svg.evaluate((element, id) => {
-      const label = [...element.querySelectorAll('text')].find(
-        (text) =>
-          (text as unknown as { __data__?: { data: { id: string } } }).__data__
-            ?.data.id === id,
-      )
-      if (label === undefined) return undefined
-      const { x, y, width, height } = label.getBoundingClientRect()
-      return width > 0 && height > 0 ? { x, y, width, height } : undefined
-    }, ringId)
-
-  /** Zoom in on the ring until its label shows, then click the label's center */
-  const clickLabel = async (
-    page: Page,
-    svg: Locator,
-    ringId: string,
-  ): Promise<void> => {
-    await expect(async () => {
-      const box = await labelBox(svg, ringId)
-      if (box === undefined) {
-        const center = await ringCenter(svg, ringId)
-        await page.mouse.move(center.x, center.y)
-        await page.mouse.wheel(0, -100)
-      }
-      expect(box).toBeDefined()
-    }).toPass({ timeout: 15000 })
-
-    const box = await labelBox(svg, ringId)
-    await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2)
   }
 
   test('selects a protein ring', async ({ page }) => {
@@ -983,5 +979,191 @@ test.describe('Clicking a ring label in the Cell View (#931)', () => {
     await clickLabel(page, svg, '2')
 
     await expect.poll(() => strokeOf(svg, '2')).toBe('orange')
+  })
+})
+
+// #931: with the Sub Network Viewer open, clicking a protein ring lost its red
+// border, and selected the protein in the viewer only if its subnetwork was
+// already rendered. This fixture lists members by node id, as MuSIC does, and
+// lists one of them (DR1) in two subsystems. NDEx is mocked, so the subnetwork
+// really is fetched, laid out and rendered.
+const SHARED_MEMBERS_HCX = path.resolve(
+  __dirname,
+  '../fixtures/hcx/valid/shared-members.valid.cx2',
+)
+
+test.describe('Selecting a protein ring with the Sub Network Viewer (#931)', () => {
+  const PROTEIN_NAMES: Record<number, string> = {
+    1: 'DR1',
+    2: 'TAF11',
+    3: 'MYC',
+    4: 'ACTB',
+  }
+
+  // Ring ids are `<subsystem node id>-<member id>`
+  const DR1_IN_NUCLEOPLASM = '1-1'
+  const TAF11_IN_NUCLEOPLASM = '1-2'
+  const DR1_IN_CYTOPLASM = '2-1'
+  const MYC_IN_CYTOPLASM = '2-3'
+  const NUCLEOPLASM = '1'
+  const CYTOPLASM = '2'
+
+  const interactionNetworkCx2 = (nodeIds: number[]) => [
+    { CXVersion: '2.0', hasFragments: false },
+    {
+      metaData: [
+        { name: 'attributeDeclarations', elementCount: 1 },
+        { name: 'networkAttributes', elementCount: 1 },
+        { name: 'nodes', elementCount: nodeIds.length },
+        { name: 'edges', elementCount: 0 },
+      ],
+    },
+    {
+      attributeDeclarations: [
+        {
+          networkAttributes: { name: { d: 'string' } },
+          nodes: { name: { d: 'string' } },
+          edges: {},
+        },
+      ],
+    },
+    { networkAttributes: [{ name: 'Interactions' }] },
+    {
+      nodes: nodeIds.map((id) => ({
+        id,
+        x: id * 50,
+        y: 0,
+        v: { name: PROTEIN_NAMES[id] },
+      })),
+    },
+    { edges: [] },
+    { status: [{ error: '', success: true }] },
+  ]
+
+  const mockNdex = async (page: Page): Promise<void> => {
+    await page.route('**/*ndexbio.org/**', async (route) => {
+      const request = route.request()
+      const headers = {
+        'access-control-allow-origin': '*',
+        'access-control-allow-headers': '*',
+        'access-control-allow-methods': '*',
+      }
+      if (request.method() === 'OPTIONS') {
+        await route.fulfill({ status: 204, headers })
+        return
+      }
+      const url = request.url()
+      const answer = (body: unknown) =>
+        route.fulfill({ status: 200, headers, json: body })
+      if (url.includes('/interconnectquery')) {
+        await answer(interactionNetworkCx2(request.postDataJSON().nodeIds))
+      } else if (url.includes('/search/networks/') && url.includes('/nodes')) {
+        const ids: number[] = request.postDataJSON().ids
+        await answer(
+          Object.fromEntries(
+            ids.map((id) => [id, { name: PROTEIN_NAMES[id] }]),
+          ),
+        )
+      } else {
+        await route.abort()
+      }
+    })
+  }
+
+  const openCellView = async (page: Page): Promise<Locator> => {
+    await mockNdex(page)
+    await importNetworkFile(
+      page,
+      SHARED_MEMBERS_HCX,
+      'Shared Members Hierarchy',
+    )
+    await page.getByRole('tab', { name: 'Cell View' }).click()
+    const svg = page.locator('[data-testid="circle-packing-svg"]')
+    await expect(svg.locator('circle')).toHaveCount(8)
+    // Labelled with the names from the lookup, not the ids
+    await expect(svg.locator('text', { hasText: 'DR1' })).toHaveCount(2)
+    return svg
+  }
+
+  const subNetworkIdOf = (page: Page, subsystemId: string): string => {
+    const hierarchyId = /\/networks\/([^/?]+)/.exec(page.url())?.[1]
+    return `${hierarchyId}_${subsystemId}`
+  }
+
+  const selectedInViewer = (page: Page, subNetworkId: string) =>
+    page.evaluate((id) => {
+      const result = (window as any).CyWebApi.selection.getSelection(id)
+      return result.success ? result.data.selectedNodes : undefined
+    }, subNetworkId)
+
+  const wrapperTransform = (svg: Locator) =>
+    svg.evaluate((element) =>
+      element
+        .querySelector('g.circle-packing-wrapper')
+        ?.getAttribute('transform'),
+    )
+
+  test('the first click selects the protein once its subnetwork renders, and the border stays', async ({
+    page,
+  }) => {
+    const svg = await openCellView(page)
+
+    await clickLabel(page, svg, DR1_IN_NUCLEOPLASM)
+    const transform = await wrapperTransform(svg)
+
+    await expect(page.getByTestId('subnetwork-panel')).toBeVisible({
+      timeout: 15000,
+    })
+    const nucleoplasm = subNetworkIdOf(page, NUCLEOPLASM)
+    await expect.poll(() => selectedInViewer(page, nucleoplasm)).toEqual(['1'])
+
+    // Past the 100 ms the border used to last, and the Cell View's 500 ms
+    // expansion to an initial selection, which a click must not start.
+    await page.waitForTimeout(800)
+
+    expect(await strokeOf(svg, NUCLEOPLASM)).toBe('orange')
+    expect(await strokeOf(svg, DR1_IN_NUCLEOPLASM)).toBe('red')
+    expect(await strokeOf(svg, DR1_IN_CYTOPLASM)).toBe('red')
+    expect(await strokeOf(svg, TAF11_IN_NUCLEOPLASM)).toBe('#666')
+    expect(await wrapperTransform(svg)).toBe(transform)
+  })
+
+  test('a click in another subsystem selects there, not in the one on screen', async ({
+    page,
+  }) => {
+    const svg = await openCellView(page)
+    await clickLabel(page, svg, DR1_IN_NUCLEOPLASM)
+    const nucleoplasm = subNetworkIdOf(page, NUCLEOPLASM)
+    await expect.poll(() => selectedInViewer(page, nucleoplasm)).toEqual(['1'])
+
+    await clickLabel(page, svg, MYC_IN_CYTOPLASM)
+
+    const cytoplasm = subNetworkIdOf(page, CYTOPLASM)
+    await expect
+      .poll(() => selectedInViewer(page, cytoplasm), { timeout: 15000 })
+      .toEqual(['3'])
+    expect(await selectedInViewer(page, nucleoplasm)).toEqual(['1'])
+
+    await page.waitForTimeout(300)
+    expect(await strokeOf(svg, CYTOPLASM)).toBe('orange')
+    expect(await strokeOf(svg, MYC_IN_CYTOPLASM)).toBe('red')
+    expect(await strokeOf(svg, DR1_IN_NUCLEOPLASM)).toBe('#666')
+  })
+
+  test('a selection made in the viewer outlines its rings, by name', async ({
+    page,
+  }) => {
+    const svg = await openCellView(page)
+    await clickLabel(page, svg, DR1_IN_NUCLEOPLASM)
+    const nucleoplasm = subNetworkIdOf(page, NUCLEOPLASM)
+    await expect.poll(() => selectedInViewer(page, nucleoplasm)).toEqual(['1'])
+
+    await page.evaluate((id) => {
+      ;(window as any).CyWebApi.selection.exclusiveSelect(id, ['2'], [])
+    }, nucleoplasm)
+
+    await expect.poll(() => strokeOf(svg, TAF11_IN_NUCLEOPLASM)).toBe('red')
+    await expect.poll(() => strokeOf(svg, DR1_IN_NUCLEOPLASM)).toBe('#666')
+    await expect.poll(() => strokeOf(svg, DR1_IN_CYTOPLASM)).toBe('#666')
   })
 })

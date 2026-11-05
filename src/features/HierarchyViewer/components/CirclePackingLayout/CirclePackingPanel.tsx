@@ -52,6 +52,7 @@ import {
   getFontSize,
   getLabel,
   getWordLines,
+  terminalRingKey,
 } from './CirclePackingUtils'
 import { D3TreeNode } from './D3TreeNode'
 import { findSearchMatchedRings } from './searchMatchedRings'
@@ -259,8 +260,7 @@ export const CirclePackingPanel = ({
         const { parent } = d
         if (parent === null || parent === undefined) return
 
-        const selectedChild = d.data.originalId ?? d.data.id
-        setSelectedLeaves([selectedChild])
+        setSelectedLeaves([terminalRingKey(d.data)])
 
         if (parent.data.originalId !== undefined) {
           exclusiveSelect(network.id, [parent.data.originalId], [])

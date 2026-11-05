@@ -88,7 +88,7 @@ A D3.js-based visualization component that renders hierarchical structures as ne
 - Dynamically shows/hides labels based on zoom level
 - Handles node selection (subsystems and leaf nodes). Labels are drawn over the rings with `pointer-events: none`, so a click or hover on a label reaches the ring underneath
 - Supports multi-selection of leaf nodes (enables selecting multiple leaves simultaneously)
-- Synchronizes selection with SubNetworkPanel (bidirectional sync between subnetwork view and circle packing view)
+- Synchronizes selection with SubNetworkPanel (see [Selecting protein rings](#selecting-protein-rings))
 - Highlights the protein rings a search matched (see [Search and protein rings](#search-and-protein-rings))
 - Applies visual styles from the visual style store
 - Provides fit-to-viewport functionality
@@ -234,6 +234,32 @@ layout of a hierarchy.
 
 The box was measured only once on mount, so a box that was not laid out yet left
 the Cell View blank, or tiny, until the next reload (#935).
+
+### Selecting protein rings
+
+A protein ring is selected by its protein's name (`terminalRingKey`), the one
+key the Sub Network Viewer shares with the Cell View. So a click outlines in red
+every ring of that protein, in whichever subsystems list it, whether the viewer
+is open or not. Only the clicked ring's parent is selected (orange), and that
+alone decides which subnetwork is shown. `originalId` is no use as the key: for
+a protein ring it is the member id, which the viewer never sees (#931).
+
+The click and the viewer talk through `SubNetworkStore`:
+
+- A click names the protein (`selectedNodes`) and marks it pending
+  (`selectedNodesPending`). `SubNetworkPanel` selects it once
+  `shownSubNetworkId` names the subnetwork of the subsystem the click selected,
+  then clears the mark. That subnetwork usually has yet to load, and may not
+  even be mounted, so the mark lives in the store. Waiting on `queryNetworkId`
+  instead would write into the previous subnetwork, which it keeps naming during
+  the load.
+- With nothing pending, a subnetwork arriving keeps the selection it has, such as
+  one restored from `selectedSubnetworkNodes` in the URL.
+- A ring's own selection is not sent back (`selectedHierarchyNodeNames`). The Cell
+  View already shows it, an empty one would clear the border of a protein with no
+  node in the subnetwork, and any other would start the expansion meant for an
+  initial selection from the URL. A selection made in the viewer itself is sent,
+  and outlines the rings of those names.
 
 ### Search and protein rings
 

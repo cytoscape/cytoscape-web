@@ -195,11 +195,23 @@ export const CpDefaults = {
 } as const
 
 /**
+ * What a ring with no rings inside it is selected by.
+ *
+ * A protein ring goes by its protein's name, the one key the Sub Network Viewer
+ * shares with the Cell View. So selecting a protein outlines every ring of it,
+ * in whichever subsystems list it. Its `originalId` is no use here: that is the
+ * member id, which the viewer never sees (#931). A subsystem with no members
+ * has no name to rely on, so it goes by its node id.
+ */
+export const terminalRingKey = (ring: D3TreeNode): string =>
+  ring.isMember === true ? ring.name : (ring.originalId ?? ring.id)
+
+/**
  * Paint the selection borders of the Cell View's circles: orange for a
  * selected subsystem, red for a selected protein ring.
  *
  * @param selectedNodeSet Subsystems selected in the hierarchy
- * @param selectedLeaves Protein rings the user selected, by member
+ * @param selectedLeaves Terminal rings the user selected, by `terminalRingKey`
  * @param searchMatchedRings Protein rings the last search matched, by ring id
  *   (`D3TreeNode.id`, see `findSearchMatchedRings`)
  */
@@ -209,7 +221,7 @@ export const displaySelectedNodes = (
   searchMatchedRings: ReadonlySet<string> = new Set(),
 ) => {
   const isSelectedRing = (d: d3Hierarchy.HierarchyNode<D3TreeNode>): boolean =>
-    selectedLeaves.includes(d.data.originalId ?? d.data.id) ||
+    (d.height === 0 && selectedLeaves.includes(terminalRingKey(d.data))) ||
     searchMatchedRings.has(d.data.id)
 
   d3Selection
