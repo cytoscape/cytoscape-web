@@ -20,6 +20,8 @@ import { cellViewRoot } from './buildCellView'
 type Circle = HierarchyCircularNode<D3TreeNode>
 
 const FIT_PADDING = 10
+/** Share of the view's shorter side a focused subsystem's circle spans, as in CirclePackingPanel.tsx. */
+const FOCUS_FILL = 0.5
 /** How long a pointer rests on a subsystem before its network is prefetched. */
 const HOVER_PREFETCH_MS = 150
 const colorScale = getColorMapper([0, 5])
@@ -31,6 +33,11 @@ export const subsystemIdOf = (circle: Circle): IdType =>
 interface CellViewProps {
   cellView: CirclePackingView
   selectedSubsystemId?: IdType
+  /**
+   * Subsystem the view opens zoomed to, read once when the view mounts.
+   * Resizing keeps it framed until Fit is pressed.
+   */
+  focusSubsystemId?: IdType
   /** Leaf names to outline, from the subsystem view's selection. */
   highlightedLeafNames: ReadonlySet<string>
   onSelectSubsystem: (subsystemId: IdType | undefined) => void
@@ -51,6 +58,7 @@ interface CellViewProps {
 export const CellView = ({
   cellView,
   selectedSubsystemId,
+  focusSubsystemId,
   highlightedLeafNames,
   onSelectSubsystem,
   onHoverSubsystem,
@@ -64,6 +72,7 @@ export const CellView = ({
   const selectedDepthRef = useRef(0)
   // Depth the circles and labels show now; -1 after a redraw
   const shownDepthRef = useRef(-1)
+  const focusIdRef = useRef(focusSubsystemId)
 
   const onSelectSubsystemRef = useRef(onSelectSubsystem)
   onSelectSubsystemRef.current = onSelectSubsystem
@@ -106,6 +115,38 @@ export const CellView = ({
         .translate(width / 2 - root.x * scale, height / 2 - root.y * scale)
         .scale(scale),
     )
+  }
+
+  /** Centre `circle`, scaled to span FOCUS_FILL of the view. */
+  const zoomTo = (circle: Circle): void => {
+    const svg = svgRef.current
+    const zoom = zoomRef.current
+    if (svg === null || zoom === null) return
+    const { width, height } = svg.getBoundingClientRect()
+    if (width === 0 || height === 0 || circle.r === 0) return
+    const scale = (Math.min(width, height) / (circle.r * 2)) * FOCUS_FILL
+    zoom.transform(
+      d3Selection.select(svg),
+      d3Zoom.zoomIdentity
+        .translate(width / 2 - circle.x * scale, height / 2 - circle.y * scale)
+        .scale(scale),
+    )
+  }
+
+  /** Zoom to the focused subsystem, or fit the whole view without one. */
+  const frame = (): void => {
+    const focusId = focusIdRef.current
+    const circle =
+      focusId === undefined
+        ? undefined
+        : findHierarchyNode(focusId, cellViewRoot(cellView))
+    if (circle === undefined) fit()
+    else zoomTo(circle)
+  }
+
+  const fitAll = (): void => {
+    focusIdRef.current = undefined
+    fit()
   }
 
   useEffect(() => {
@@ -201,9 +242,9 @@ export const CellView = ({
       return Math.min(width, height) / (root.r * 2 + FIT_PADDING * 2) || 1
     }
 
-    const resizeObserver = new ResizeObserver(() => fit())
+    const resizeObserver = new ResizeObserver(() => frame())
     resizeObserver.observe(svgElement)
-    fit()
+    frame()
 
     return () => {
       clearTimeout(hoverTimer)
@@ -211,7 +252,7 @@ export const CellView = ({
       svg.on('.zoom', null)
       svg.selectAll('*').remove()
     }
-    // fit and showDepth read only refs and cellView
+    // frame and showDepth read only refs and cellView
     // eslint-disable-next-line react-hooks/exhaustive-deps -- redraw per Cell View model only
   }, [cellView])
 
@@ -265,7 +306,7 @@ export const CellView = ({
         type="button"
         className="embed-button embed-button-text embed-paper embed-fit"
         data-testid="embed-cell-view-fit"
-        onClick={fit}
+        onClick={fitAll}
       >
         Fit
       </button>

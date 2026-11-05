@@ -28,4 +28,32 @@ describe('fullAppUrl', () => {
       'https://example.org/cytoscape/0/networks/a%20b',
     )
   })
+
+  it('carries a hierarchy selection as the full app deep-link parameters', () => {
+    vi.stubEnv('DEV', false)
+    vi.stubEnv('VITE_EMBED_APP_URL', 'https://web.cytoscape.org/')
+    const url = new URL(
+      fullAppUrl('h1', {
+        nodeIds: ['134'],
+        subsystemId: '134',
+        subnetworkNodeIds: ['482', '483'],
+        networkViewTab: 1,
+      }),
+    )
+    expect(url.pathname).toBe('/0/networks/h1')
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      selectednodes: '134',
+      activeNetworkView: 'h1_134',
+      selectedSubnetworkNodes: '482 483',
+      activeNetworkViewTab: '1',
+    })
+  })
+
+  it('adds no parameters for an empty selection', () => {
+    vi.stubEnv('DEV', false)
+    vi.stubEnv('VITE_EMBED_APP_URL', 'https://web.cytoscape.org/')
+    expect(fullAppUrl('h1', { nodeIds: [], subnetworkNodeIds: ['482'] })).toBe(
+      'https://web.cytoscape.org/0/networks/h1',
+    )
+  })
 })

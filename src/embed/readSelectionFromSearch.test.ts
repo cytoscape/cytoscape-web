@@ -20,6 +20,21 @@ describe('readSelectionFromSearch', () => {
     ).toEqual({ nodeIds: ['1', '2', '3'], subnetworkNodeIds: [] })
   })
 
+  it('reads the network view tab, ignoring a value that is not an index', () => {
+    expect(
+      readSelectionFromSearch('?activeNetworkViewTab=0').networkViewTab,
+    ).toBe(0)
+    expect(
+      readSelectionFromSearch('?activeNetworkViewTab=1').networkViewTab,
+    ).toBe(1)
+    expect(
+      readSelectionFromSearch('?activeNetworkViewTab=x').networkViewTab,
+    ).toBeUndefined()
+    expect(
+      readSelectionFromSearch('?activeNetworkViewTab=-1').networkViewTab,
+    ).toBeUndefined()
+  })
+
   it('returns empty selections when the parameters are absent', () => {
     expect(readSelectionFromSearch('')).toEqual({
       nodeIds: [],

@@ -22,6 +22,13 @@ import { SubsystemPane } from './SubsystemPane'
 
 type Tab = 'cell' | 'tree'
 
+/**
+ * The full app's tab indexes for a hierarchy (`activeNetworkViewTab`): the
+ * Cytoscape.js renderer first, then the Cell View that MainPanel.tsx adds.
+ */
+const HIERARCHY_TAB_INDEX = 0
+const CELL_VIEW_TAB_INDEX = 1
+
 type Loadable<T> =
   | { kind: 'idle' }
   | { kind: 'loading' }
@@ -40,7 +47,8 @@ interface HcxViewerProps {
   metadata: HcxMetaData
   /**
    * Selection from the URL: the first id in `nodeIds` that is a subsystem
-   * opens it, and `subnetworkNodeIds` are selected in its network.
+   * opens it, the Cell View opens zoomed to it, and `subnetworkNodeIds` are
+   * selected in its network. `networkViewTab` 0 opens the Hierarchy tab.
    */
   initialSelection: EmbedSelection
 }
@@ -66,13 +74,18 @@ export const HcxViewer = ({
       : getNDExBaseUrl()
   const rootNetworkId = metadata.interactionNetworkUUID
 
-  const [tab, setTab] = useState<Tab>('cell')
+  const [tab, setTab] = useState<Tab>(
+    initialSelection.networkViewTab === HIERARCHY_TAB_INDEX ? 'tree' : 'cell',
+  )
   const [cellView, setCellView] = useState<Loadable<CirclePackingView>>({
     kind: 'loading',
   })
   const [subsystemId, setSubsystemId] = useState<IdType | undefined>(() =>
     initialSelection.nodeIds.find((id) => hierarchy.nodeTable.rows.has(id)),
   )
+  // The URL's subsystem, until another is selected: the Cell View zooms to
+  // it each time it mounts
+  const [focusId, setFocusId] = useState(subsystemId)
   const [subsystem, setSubsystem] = useState<Loadable<Subsystem>>({
     kind: 'idle',
   })
@@ -175,12 +188,14 @@ export const HcxViewer = ({
     if (id === subsystemId) return
     setSelectedSubNodeIds([])
     setSubsystemId(id)
+    setFocusId(undefined)
   }
 
   const selectLeaf = (leafName: string, parentId: IdType): void => {
     if (parentId !== subsystemId) {
       pendingLeafNameRef.current = leafName
       setSubsystemId(parentId)
+      setFocusId(undefined)
       return
     }
     if (subsystem.kind === 'ready') {
@@ -218,7 +233,17 @@ export const HcxViewer = ({
 
   return (
     <div className="embed-viewer embed-hcx" data-testid="embed-hcx">
-      <Toolbar networkId={networkId} name={summary.name} />
+      <Toolbar
+        networkId={networkId}
+        name={summary.name}
+        selection={{
+          nodeIds: treeSelection,
+          subsystemId,
+          subnetworkNodeIds: selectedSubNodeIds,
+          networkViewTab:
+            tab === 'tree' ? HIERARCHY_TAB_INDEX : CELL_VIEW_TAB_INDEX,
+        }}
+      />
       <div className="embed-hcx-body">
         <section className="embed-pane">
           <div className="embed-pane-header" role="tablist">
@@ -249,6 +274,7 @@ export const HcxViewer = ({
                 <CellView
                   cellView={cellView.value}
                   selectedSubsystemId={subsystemId}
+                  focusSubsystemId={focusId}
                   highlightedLeafNames={highlightedLeafNames}
                   onSelectSubsystem={selectSubsystem}
                   onHoverSubsystem={prefetchSubsystem}
