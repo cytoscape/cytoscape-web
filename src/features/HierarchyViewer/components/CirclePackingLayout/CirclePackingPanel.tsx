@@ -52,6 +52,7 @@ import {
   getFontSize,
   getLabel,
   getWordLines,
+  subsystemSelection,
   terminalRingKey,
 } from './CirclePackingUtils'
 import { D3TreeNode } from './D3TreeNode'
@@ -240,12 +241,7 @@ export const CirclePackingPanel = ({
 
       if (d.height !== 0) {
         // Selected item is a subsystem
-        if (d.data.originalId !== undefined) {
-          // Select both current and original branch
-          exclusiveSelect(network.id, [d.data.originalId, d.data.id], [])
-        } else {
-          exclusiveSelect(network.id, [d.data.id], [])
-        }
+        exclusiveSelect(network.id, subsystemSelection(d.data), [])
 
         // Clear the selection in leafs in the selected node
         setSelectedLeaves([])
@@ -262,11 +258,7 @@ export const CirclePackingPanel = ({
 
         setSelectedLeaves([terminalRingKey(d.data)])
 
-        if (parent.data.originalId !== undefined) {
-          exclusiveSelect(network.id, [parent.data.originalId], [])
-        } else {
-          exclusiveSelect(network.id, [parent.data.id], [])
-        }
+        exclusiveSelect(network.id, subsystemSelection(parent.data), [])
       }
     },
     [

@@ -244,6 +244,14 @@ is open or not. Only the clicked ring's parent is selected (orange), and that
 alone decides which subnetwork is shown. `originalId` is no use as the key: for
 a protein ring it is the member id, which the viewer never sees (#931).
 
+A subsystem with several parents is drawn once per path, and only its first
+drawing has the node's id. The others are copies, with an id like `110-2d` and
+`originalId` set. Clicking a copy, or a ring inside one, selects both ids
+(`subsystemSelection`): the original first, since the viewer needs a table row,
+and the copy so that the clicked ring's parent gets its orange border. So the
+first drawing is orange as well, and the selected node count includes the copy,
+which has no row of its own.
+
 The click and the viewer talk through `SubNetworkStore`:
 
 - A click names the protein (`selectedNodes`) and marks it pending

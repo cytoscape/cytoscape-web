@@ -646,11 +646,11 @@ describe('CirclePackingPanel protein ring selection (#931)', () => {
     })
   }
 
-  const drawn = async (): Promise<Element> => {
+  const drawn = async (root = sharedProtein()): Promise<Element> => {
     const builds = deferBuilds()
     const { container } = render(panel())
     await act(async () => {
-      builds[0].resolve(sharedProtein())
+      builds[0].resolve(root)
     })
     return container
   }
@@ -733,6 +733,61 @@ describe('CirclePackingPanel protein ring selection (#931)', () => {
     echo(['DR1'])
 
     expect(strokes(container).C).toBe(GREY)
+  })
+
+  // A subsystem with several parents is drawn once per path. Its first drawing
+  // has the node id, and the others are copies with an `originalId`.
+  describe('inside a subsystem drawn more than once', () => {
+    const withCopy = () =>
+      d3Hierarchy
+        .stratify<D3TreeNode>()([
+          subsystem('root', '', 'Cell'),
+          subsystem('P1', 'root', 'Parent 1'),
+          subsystem('P2', 'root', 'Parent 2'),
+          subsystem('A', 'P1', 'Complex'),
+          ring('A-366', 'A', 366, 'RPL19'),
+          { ...subsystem('A-2d', 'P2', 'Complex'), originalId: 'A' },
+          ring('A-2d-366', 'A-2d', 366, 'RPL19'),
+        ] as unknown as D3TreeNode[])
+        .sum(() => 1)
+
+    const hierarchySelection = (): string[] =>
+      useViewModelStore.getState().viewModels[NETWORK_ID][0].selectedNodes
+
+    const strokeOf = (container: Element, id: string): string | null =>
+      circleOf(container, id).getAttribute('stroke')
+
+    it('outlines the parent of a ring clicked in a copy', async () => {
+      const container = await drawn(withCopy())
+
+      click(container, 'A-2d-366')
+
+      expect(strokeOf(container, 'A-2d')).toBe(ORANGE)
+      expect(strokeOf(container, 'A-2d-366')).toBe(RED)
+      expect(strokeOf(container, 'A-366')).toBe(RED)
+    })
+
+    // The viewer shows the first id's subsystem, which must have a table row
+    it('selects as a click on the copy itself does, original first', async () => {
+      const container = await drawn(withCopy())
+
+      click(container, 'A-2d-366')
+      const fromRing = hierarchySelection()
+      click(container, 'A-2d')
+
+      expect(fromRing).toEqual(['A', 'A-2d'])
+      expect(hierarchySelection()).toEqual(fromRing)
+    })
+
+    it('selects only the first drawing for a ring clicked in it', async () => {
+      const container = await drawn(withCopy())
+
+      click(container, 'A-366')
+
+      expect(hierarchySelection()).toEqual(['A'])
+      expect(strokeOf(container, 'A')).toBe(ORANGE)
+      expect(strokeOf(container, 'A-2d')).toBe(GREY)
+    })
   })
 
   it('clears the outline when a subsystem ring is clicked', async () => {

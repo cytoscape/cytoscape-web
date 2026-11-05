@@ -207,6 +207,20 @@ export const terminalRingKey = (ring: D3TreeNode): string =>
   ring.isMember === true ? ring.name : (ring.originalId ?? ring.id)
 
 /**
+ * The hierarchy nodes to select for a subsystem ring, or for a ring inside it.
+ *
+ * A subsystem with several parents is drawn once per path, and only its first
+ * drawing has the node's id. A copy selects that id, first because the Sub
+ * Network Viewer needs a table row, and its own id, because borders are painted
+ * by a circle's own id. Without it, the first drawing lights up instead of the
+ * ring the user clicked in (#931).
+ */
+export const subsystemSelection = (subsystem: D3TreeNode): IdType[] =>
+  subsystem.originalId !== undefined
+    ? [subsystem.originalId, subsystem.id]
+    : [subsystem.id]
+
+/**
  * Paint the selection borders of the Cell View's circles: orange for a
  * selected subsystem, red for a selected protein ring.
  *
