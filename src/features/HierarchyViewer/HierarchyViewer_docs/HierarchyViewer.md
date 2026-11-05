@@ -68,6 +68,7 @@ The main orchestrator component that manages the hierarchy viewer layout and sta
 - Manages selection state and extracts subsystem information from selected nodes
 - Names the selected subsystem (`getSubsystemName`) by the attribute the node label is mapped to, else its `name` column, else its node id: HCX files need not have a `name` column (the test fixtures name nodes with `n`), and a null, absent or blank value, or a list with no non-blank item, counts as none
 - Coordinates between Circle Packing view and SubNetwork view
+- Derives the subsystem's name, members and interaction network during render, so `SubNetworkPanel` never gets a subsystem with another's members. A fetch started from such a pair could be stored as that subsystem's network for good (#931)
 - Handles multiple node selection and validates that selections are from the same branch
 - Displays appropriate messages when hierarchy is not detected or no subsystem is selected
 
@@ -262,15 +263,19 @@ The click and the viewer talk through `SubNetworkStore`:
   subnetwork usually has yet to load, and may not even be mounted, so the target
   lives in the store. Waiting on `queryNetworkId` instead would write into the
   previous subnetwork, which it keeps naming during the load. Selecting another
-  subsystem first cancels the click, so it can't land in the wrong subnetwork. A
-  click on the background selects no subsystem, and has no target.
+  subsystem first cancels the click, so it can't land in the wrong subnetwork.
+  The Cell View does the cancelling, because it stays mounted while the viewer
+  comes and goes with its tab or the right panel. A click on the background
+  selects no subsystem, and has no target.
 - With nothing pending, a subnetwork arriving keeps the selection it has, such as
   one restored from `selectedSubnetworkNodes` in the URL.
 - A ring's own selection is not sent back (`selectedHierarchyNodeNames`). The Cell
   View already shows it, an empty one would clear the border of a protein with no
   node in the subnetwork, and any other would start the expansion meant for an
-  initial selection from the URL. A selection made in the viewer itself is sent,
-  and outlines the rings of those names.
+  initial selection from the URL. The store remembers it (`ringSelection`), so a
+  viewer that unmounted and came back does not send it either, until the selection
+  changes or another click replaces it. A selection made in the viewer itself is
+  sent, and outlines the rings of those names.
 
 ### Search and protein rings
 

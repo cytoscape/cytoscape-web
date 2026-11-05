@@ -287,6 +287,86 @@ describe('MainPanel subsystem without a name', () => {
   })
 })
 
+// The subsystem, its members and its name used to reach SubNetworkPanel a render
+// apart. The panel fetched the new subsystem with the previous one's members, and
+// when that answer came first it was stored for good: a viewer titled Cytoplasm
+// holding Nucleoplasm's proteins (#931).
+describe('MainPanel subsystem handed to the viewer', () => {
+  const nodeTable = {
+    columns: [],
+    rows: new Map<string, Record<string, unknown>>([
+      ['A', { name: 'Nucleoplasm', [SubsystemTag.members]: [1, 2] }],
+      ['B', { name: 'Cytoplasm', [SubsystemTag.members]: [1, 3] }],
+      [
+        'C',
+        {
+          name: 'Own network',
+          [SubsystemTag.members]: [4],
+          [SubsystemTag.interactionNetworkUuid]: 'c-uuid',
+        },
+      ],
+    ]),
+  } as unknown as Table
+
+  const select = (subsystem: string): void => {
+    setupStores({
+      edgeTable: edgeTableWith(['interacts']),
+      nodeTable,
+      selectedNodes: [subsystem],
+    })
+  }
+
+  // Every render counts: one stale render is enough to start the wrong fetch
+  const rendersFor = (subsystem: string): any[] =>
+    SubNetworkPanelMock.mock.calls
+      .map(([props]) => props as any)
+      .filter((props) => props.subsystemNodeId === subsystem)
+
+  it('gives a newly selected subsystem its own members in every render', () => {
+    select('A')
+    const { rerender } = render(<MainPanel />)
+    SubNetworkPanelMock.mockClear()
+
+    select('B')
+    rerender(<MainPanel />)
+
+    const renders = rendersFor('B')
+    expect(renders.length).toBeGreaterThan(0)
+    for (const props of renders) {
+      expect(props.query.nodeIds).toEqual([1, 3])
+      expect(props.subNetworkName).toBe('Cytoplasm')
+    }
+  })
+
+  it('gives a newly selected subsystem its own interaction network in every render', () => {
+    select('A')
+    const { rerender } = render(<MainPanel />)
+    SubNetworkPanelMock.mockClear()
+
+    select('C')
+    rerender(<MainPanel />)
+
+    const renders = rendersFor('C')
+    expect(renders.length).toBeGreaterThan(0)
+    for (const props of renders) {
+      expect(props.interactionNetworkId).toBe('c-uuid')
+    }
+  })
+
+  it('does not keep a previous interaction network for the next subsystem', () => {
+    select('C')
+    const { rerender } = render(<MainPanel />)
+    SubNetworkPanelMock.mockClear()
+
+    select('A')
+    rerender(<MainPanel />)
+
+    for (const props of rendersFor('A')) {
+      expect(props.interactionNetworkId ?? '').toBe('')
+    }
+  })
+})
+
 // #766: the property/filter split exists only when the shown subnetwork has a
 // filter; otherwise PropertyPanel (or its message) takes the whole width.
 describe('MainPanel property/filter layout', () => {
