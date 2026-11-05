@@ -95,7 +95,14 @@ export const navigateToNetwork = (
   config: NavigationConfig,
   navigate: (path: string, options?: NavigateOptions) => void,
 ): void => {
-  const { workspaceId, networkId, searchParams, replace, force } = config
+  const {
+    workspaceId,
+    networkId,
+    searchParams,
+    replace,
+    force,
+    userInitiated,
+  } = config
   navigationCount++
 
   // 0. A manual tab never navigates into the editor, not even when forced.
@@ -125,10 +132,13 @@ export const navigateToNetwork = (
   // Guards 1-4 drop the call; history operations and forced navigations
   // are exceptions
   const bypassGuards = isHistoryNavigation || force === true
+  // Guards 1-3 and 5 go by what this module remembers, which Back and Forward
+  // do not update. A direct click is checked against the real URL only (guard 4)
+  const trustsRememberedState = !bypassGuards && userInitiated !== true
 
   // 1. Control frequent navigation calls
   const now = Date.now()
-  if (now - lastNavigationTime < 300 && !bypassGuards) {
+  if (now - lastNavigationTime < 300 && trustsRememberedState) {
     logHistory.info(
       `[URLManager:${navigationCount}] Navigation throttled - too frequent calls`,
     )
@@ -136,7 +146,7 @@ export const navigateToNetwork = (
   }
 
   // 2. Ignore if already handling navigation
-  if (isHandlingNavigation && !bypassGuards) {
+  if (isHandlingNavigation && trustsRememberedState) {
     logHistory.info(
       `[URLManager:${navigationCount}] Already handling navigation, skipping`,
     )
@@ -144,7 +154,7 @@ export const navigateToNetwork = (
   }
 
   // 3. Ignore if path is exactly the same
-  if (path === lastUrlPath && !bypassGuards) {
+  if (path === lastUrlPath && trustsRememberedState) {
     logHistory.info(
       `[URLManager:${navigationCount}] Skipping navigation to same path: ${path}`,
     )
@@ -169,7 +179,11 @@ export const navigateToNetwork = (
 
   // 5. Force replace for navigation to the same network ID
   let shouldReplace = replace
-  if (safeNetworkId !== '' && safeNetworkId === lastNetworkId) {
+  if (
+    safeNetworkId !== '' &&
+    safeNetworkId === lastNetworkId &&
+    userInitiated !== true
+  ) {
     logHistory.info(
       `[URLManager:${navigationCount}] Same network ID detected: ${safeNetworkId}, forcing replace=true`,
     )

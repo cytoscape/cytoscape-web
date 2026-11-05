@@ -376,6 +376,7 @@ export const NetworkPropertyPanel = ({
             networkId: id,
             searchParams: new URLSearchParams(location.search),
             replace: false,
+            userInitiated: true,
           })
           if (anchorEl !== null) {
             showEditNetworkSummaryForm(anchorEl)
@@ -524,6 +525,7 @@ export const NetworkPropertyPanel = ({
             networkId: id,
             searchParams: new URLSearchParams(location.search),
             replace: false,
+            userInitiated: true,
           })
         }}
       >
