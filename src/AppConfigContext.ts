@@ -23,6 +23,11 @@ export interface AppConfig {
   maxNetworkElementsThreshold: number
   maxEdgeCountThreshold: number
   maxNetworkFileSize: number
+  /**
+   * Networks with at least this many nodes and edges draw with WebGL
+   * (cyjsWebgl.ts). Unset or 0, the default, never uses WebGL.
+   */
+  webglMinElements?: number
   testNetworks: IdType[]
   urlBaseName: string
   openAIAPIKey: string

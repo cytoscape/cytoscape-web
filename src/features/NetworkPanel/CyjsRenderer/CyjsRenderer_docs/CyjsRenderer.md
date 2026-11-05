@@ -115,16 +115,16 @@ The core **`renderNetwork(forceFit = true)`** function is responsible for:
 
 4. **Apply visual style**
    - Call `VisualStyleFn.applyVisualStyle` to produce an updated `NetworkView`
-   - Extract `nodeViews` and `edgeViews`
 
-5. **Add elements**
-   - Use `addCyElements` (from `cyjsFactoryUtil.ts`) to convert `NetworkView` into Cytoscape nodes/edges
-   - Apply transformed node/edge properties (shape, label rotation, etc.)
+5. **Build elements and stylesheet**
+   - `createCyElements` (`cyjsFactoryUtil.ts`) builds every node and edge with its final data,
+     selected as the view says, and the stylesheet that reads it
+   - A value every element of a group shares moves into the stylesheet's base `node` / `edge`
+     rule instead of each element's data (see `cyjsFactoryUtil.ts`)
 
-6. **Apply view model**
-   - Use `createCyjsDataMapper` and `applyViewModel` (from `cyjsRenderUtil.ts`) to
-     - Map view model properties to Cytoscape data fields
-     - Ensure calculated properties (label positions, arrow shapes) are represented
+6. **Add elements**
+   - Install the stylesheet, then add the nodes and edges, inside the batch
+   - `endBatch` styles each element once, from the new stylesheet
 
 7. **Viewport handling**
    - Restore saved viewport from `RendererStore` when available
@@ -247,8 +247,11 @@ written then may still hold those copies; removing them is tracked in #860.
 The effect is the only path for these changes once the network is on screen.
 It runs as soon as `renderedRef` names the current network, and skips inputs
 identical to `appliedStyleInputsRef` — the ones the render that put the network
-on screen already applied in the same commit. The stylesheet is rebuilt from the
-current style with `createCyjsDataMapper`.
+on screen already applied in the same commit. It rebuilds the elements and
+stylesheet with `createCyElements`, installs the stylesheet, and gives the
+elements on screen their new data with `applyCyElementData`, which also removes
+keys the new data lacks: a custom graphic the view no longer has, or a value that
+moved into a base rule.
 
 Before #861 the effect waited on `isViewCreated`, which every full render cleared
 and a 1000 ms timer set again, and every style or table change also caused a
@@ -261,42 +264,49 @@ but never written back.
 
 ### `cyjsFactoryUtil.ts`
 
-- **NodeShapeMapping**
-  - Maps application-level `NodeShapeType` values to Cytoscape.js shape strings (e.g., `RoundRectangle → roundrectangle`)
-
-- **Transform functions**
-  - `transformNodeProperties`
-    - Converts node visual properties to Cytoscape-friendly values
-    - Special cases:
-      - Label rotation: degrees → radians
-      - Node shape: mapped via `NodeShapeMapping`
-  - `transformEdgeProperties`
-    - Converts edge visual properties
-    - Special cases:
-      - Edge label rotation: degrees → radians
-
-- **Element creation**
-  - Builds `CyNode` and `CyEdge` objects from `NodeView` and `EdgeView`
-  - Includes view model and visual properties in `data` payload
-  - Adds nodes/edges to the Cytoscape instance
+- **`createCyElements`**
+  - Builds the Cytoscape.js nodes, edges and stylesheet that draw a styled `NetworkView`
+  - Takes optional `positions` (replace the view's) and `selection` (elements created selected)
+  - Moves each value every element of a group shares into a base `node` / `edge` rule, unless
+    another rule (such as `node:selected`) reads the same data key
+  - Draws only bundled edges (`BUNDLED_EDGE_CLASS`: edges sharing their two nodes with another
+    edge, in either direction, and self-loops) as `bezier`, every other edge as `straight`. A lone
+    `bezier` edge draws the same as a `straight` one, but Cytoscape.js 3.34 looks up its parallel
+    edges by scanning every edge of its source node, which around a hub node with thousands of
+    edges is quadratic
+  - The full app, the style previews (`renderStylePreview.ts`) and the embed all draw through it
+- **`viewToCyData`**
+  - One element's data: each view value through its Cytoscape.js transform (node shape names,
+    label rotation in radians, `Arrow` → `Triangle` with its fill, label position), then the
+    visual editor overrides (node size lock, arrow colour matches edge)
 
 ### `cyjsRenderUtil.ts`
 
-- **Special visual property handlers** (`vpHandlers`)
-  - Node label position
-    - Computes alignment, margins, and justification via `computeNodeLabelPosition`
-    - Stores them as special data fields for Cytoscape style
-  - Edge arrow shapes
-    - Handles source/target arrow shape and fill
-    - Maps unsupported `Arrow` shape to `Triangle` for Cytoscape
-
 - **`createCyjsDataMapper`**
-  - Iterates visual properties and applies `vpHandlers` and default mappings
-  - Produces style data that Cytoscape.js can consume
+  - One `node[vp]` / `edge[vp]` data rule per visual property, plus the selection, hover and
+    custom graphics rules
+- **`applyCyElementData`**
+  - Gives the elements on screen the data of new element definitions, removing keys the new
+    data lacks
 
-- **`applyViewModel`**
-  - Applies `NetworkView` properties (positions, data) onto Cytoscape elements
-  - Ensures that view-level properties (e.g., visibility, selection) are reflected in the Cytoscape graph
+### `cyjsWebgl.ts`
+
+- **`usesWebgl`**
+  - Networks with at least `webglMinElements` nodes and edges (config.json) draw with
+    Cytoscape.js's WebGL renderer. Unset by default, so the full app never uses it: WebGL draws
+    dashed edges solid, `tee` arrows as triangles, and node borders and labels differently, and it
+    gained nothing at load (`performance.md`, step 3). The embed uses it from 10,000.
+  - The renderer is fixed when an instance is created, so CyjsRenderer recreates its instance
+    when a network crosses the threshold.
+- **`releaseWebglContext`**
+  - Releases an instance's WebGL context: before destroying a WebGL instance, and right after
+    creating a canvas instance, which Cytoscape.js 3.34 also gives a WebGL canvas once any
+    instance has used WebGL.
+
+### Performance
+
+`performance.md` records what each change to the draw path measured
+(`scripts/bench-full-app.mjs`).
 
 ## Design Decisions
 

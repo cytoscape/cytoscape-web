@@ -2,6 +2,10 @@ import cytoscape, { Core, EventObject } from 'cytoscape'
 import { useEffect, useRef, useState } from 'react'
 
 import config from '@/assets/config.json'
+import {
+  releaseWebglContext,
+  usesWebgl,
+} from '@/features/NetworkPanel/CyjsRenderer/cyjsWebgl'
 import { logUi } from '@/debug'
 import { CyNetwork } from '@/models/CyNetworkModel'
 import { IdType } from '@/models/IdType'
@@ -20,7 +24,8 @@ const FILTER_HIDDEN_CLASS = 'embed-filter-hidden'
 /**
  * Networks with at least this many nodes and edges draw with Cytoscape.js's
  * WebGL renderer. The canvas renderer redraws every edge each frame, which
- * blocks for hundreds of milliseconds per frame at ~20,000 edges.
+ * blocks for hundreds of milliseconds per frame at ~20,000 edges while edges
+ * stream in.
  */
 const WEBGL_MIN_ELEMENTS = 10000
 
@@ -81,9 +86,10 @@ export const CyView = ({
     const container = containerRef.current
     if (container === null) return
 
-    const useWebgl =
-      cyNetwork.network.nodes.length + cyNetwork.network.edges.length >=
-      WEBGL_MIN_ELEMENTS
+    const useWebgl = usesWebgl(
+      cyNetwork.network.nodes.length + cyNetwork.network.edges.length,
+      WEBGL_MIN_ELEMENTS,
+    )
     const cy = cytoscape({
       container,
       webgl: useWebgl,
@@ -92,6 +98,7 @@ export const CyView = ({
       // Wheel zoom is handled below, at a steadier rate than Cytoscape.js's.
       userZoomingEnabled: false,
     })
+    if (!useWebgl) releaseWebglContext(cy)
     cyRef.current = cy
     let disposed = false
     if (import.meta.env.DEV) {
@@ -191,6 +198,7 @@ export const CyView = ({
       container.removeEventListener('wheel', onWheel)
       removeAnnotations()
       onReadyRef.current?.(null)
+      releaseWebglContext(cy)
       cy.destroy()
       cyRef.current = null
     }

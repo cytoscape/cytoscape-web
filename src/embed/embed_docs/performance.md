@@ -61,6 +61,7 @@ Edges stream in 12 ms batches; networks of 10,000+ elements use WebGL.
 - `embedElements.ts` builds each element's final data in one pass and adds it with one `cy.add`, instead of adding raw data and then rewriting every key (`applyViewModel`).
 - A property every element of a group shares moves into a base `node` / `edge` rule; only elements with another value keep it in their data.
 - `embedElements.test.ts` checks every element's computed style against the full app's pipeline.
+- Later moved into the full app: `createCyElements` in `features/NetworkPanel/CyjsRenderer/cyjsFactoryUtil.ts` now builds the elements for the embed, the full app and the style previews (`CyjsRenderer_docs/performance.md`).
 
 | Scenario  | visible | done   | blocked | p95 | max   | fetch |
 | --------- | ------- | ------ | ------- | --- | ----- | ----- |

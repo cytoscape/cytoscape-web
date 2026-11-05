@@ -11,10 +11,10 @@
 //      style has a usable custom-graphics slot (`getFirstValidCustomGraphicVp`
 //      gate, cyjsRenderUtil.ts:291). A hook must work regardless of the user's
 //      Vizmapper setup, so it cannot depend on that mapper existing.
-//   2. `updateCyElements` removes stale custom-graphics keys on every pass
-//      (cyjsRenderUtil.ts:528-533), and `SpecialPropertyName.BackgroundImage` is
-//      in that list. A hook-written `data('backgroundImage', …)` would be wiped
-//      by the next `applyViewModel`.
+//   2. `applyCyElementData` (cyjsRenderUtil.ts) removes every data key the
+//      view model does not give an element, on every style update. A
+//      hook-written `data('backgroundImage', …)` would be wiped by the next
+//      one.
 //
 // A bypass avoids both by not participating in either mechanism, and it survives
 // a stylesheet swap. Verified in node_modules/cytoscape/dist/cytoscape.cjs.js:

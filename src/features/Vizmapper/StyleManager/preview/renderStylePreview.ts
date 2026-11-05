@@ -2,7 +2,7 @@
  * Renders a visual style to a PNG data URL for the style picker's thumbnails.
  *
  * Deliberately goes through the SAME pipeline as the real canvas —
- * applyVisualStyle -> addCyElements -> createCyjsDataMapper -> applyViewModel —
+ * applyVisualStyle -> createCyElements —
  * so a thumbnail cannot drift from what the network will actually look like.
  * A hand-drawn SVG swatch would be cheaper and would silently become a lie the
  * first time the renderer changed.
@@ -18,11 +18,7 @@ import { VisualStyle } from '../../../../models/VisualStyleModel'
 import VisualStyleFn from '../../../../models/VisualStyleModel'
 import { stripBypasses } from '../../../../models/VisualStyleModel/impl/visualStyleSetImpl'
 import { VisualEditorProperties } from '../../../../models/VisualStyleModel/VisualStyleOptions'
-import { addCyElements } from '../../../NetworkPanel/CyjsRenderer/cyjsFactoryUtil'
-import {
-  applyViewModel,
-  createCyjsDataMapper,
-} from '../../../NetworkPanel/CyjsRenderer/cyjsRenderUtil'
+import { createCyElements } from '../../../NetworkPanel/CyjsRenderer/cyjsFactoryUtil'
 import { previewBackgroundColor } from './previewBackground'
 import { PreviewSample } from './previewSample'
 
@@ -182,15 +178,16 @@ export const renderStylePreview = async (
     const previewStyle = stripBypasses(visualStyle)
     const view = buildPreviewView(sample, previewStyle)
 
-    cy.elements().remove()
-    addCyElements(
-      cy,
-      Object.values(view.nodeViews),
+    const { nodes, edges, stylesheet } = createCyElements(
       sample.network.edges,
-      view.edgeViews,
+      view,
+      previewStyle,
+      PREVIEW_EDITOR_PROPERTIES,
     )
-    cy.style(createCyjsDataMapper(previewStyle) as any)
-    applyViewModel(cy, view, PREVIEW_EDITOR_PROPERTIES)
+    cy.elements().remove()
+    cy.style(stylesheet as any)
+    cy.add(nodes)
+    cy.add(edges)
     // Fit into the container and export the VIEWPORT, not `full: true`. A full
     // export sizes itself from the element bounding box, which clips a label
     // that overhangs its node — the reason several Cytoscape Desktop thumbnails

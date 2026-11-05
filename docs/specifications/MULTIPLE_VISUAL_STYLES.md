@@ -334,9 +334,8 @@ how many it hid rather than filtering silently. Notes:
 ### Thumbnails
 
 `StyleManager/preview/` renders each thumbnail through the **same pipeline as the
-canvas** — `applyVisualStyle` → `addCyElements` → `createCyjsDataMapper` →
-`applyViewModel` → `cy.png()` — so a preview cannot drift from what the network
-will actually look like.
+canvas** — `applyVisualStyle` → `createCyElements` → `cy.png()` — so a preview
+cannot drift from what the network will actually look like.
 
 - **Drawn on a sample of the network being viewed** (`sampleFromNetwork`, ~8
   nodes, reusing existing view positions so no layout runs), not on a fixed

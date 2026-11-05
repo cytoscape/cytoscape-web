@@ -11,12 +11,15 @@ import type { DebouncedFunc } from 'lodash'
 import debounce from 'lodash/debounce'
 import {
   ReactElement,
+  useContext,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react'
 
+import { AppConfigContext } from '../../../AppConfigContext'
 import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
@@ -48,8 +51,9 @@ import type {
   PaperSize,
 } from '../../ToolBar/DataMenu/ExportNetworkToImage/PdfExportForm'
 import { createAnnotationLayers } from './annotations/cyjsAnnotationRenderer'
-import { addCyElements } from './cyjsFactoryUtil'
-import { applyViewModel, createCyjsDataMapper } from './cyjsRenderUtil'
+import { createCyElements } from './cyjsFactoryUtil'
+import { applyCyElementData } from './cyjsRenderUtil'
+import { releaseWebglContext, usesWebgl } from './cyjsWebgl'
 import {
   EDGE_CREATION_MODE_OFF,
   EDGE_CREATION_ATTR,
@@ -319,6 +323,18 @@ const CyjsRenderer = ({
     state.topologyVersions.get(id),
   )
 
+  // Networks of config.json's webglMinElements or more draw with WebGL
+  // (cyjsWebgl.ts; off unless set). The renderer is chosen when the instance
+  // is created, so crossing the threshold recreates it.
+  const { webglMinElements } = useContext(AppConfigContext)
+  const elementCount: number = useMemo(
+    () =>
+      network === undefined ? 0 : network.nodes.length + network.edges.length,
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- networks are mutated in place; the topology version marks a change
+    [network, topologyVersion],
+  )
+  const webgl: boolean = usesWebgl(elementCount, webglMinElements)
+
   // Leave edge creation mode once its source node is gone, whatever removed
   // it (a menu, an undo, an app). Keyed on the topology version, which every
   // node or edge change bumps.
@@ -496,31 +512,26 @@ const CyjsRenderer = ({
 
     // Apply the visual style to the network view model
     const updatedNetworkView: NetworkView = VisualStyleFn.applyVisualStyle(data)
-    const { nodeViews, edgeViews } = updatedNetworkView
 
-    // Add nodes and edges to Cytoscape.js (with raw data)
-    addCyElements(cy, Object.values(nodeViews), network.edges, edgeViews)
+    // Every element with its final data, selected as the view says
+    const { nodes, edges, stylesheet } = createCyElements(
+      network.edges,
+      updatedNetworkView,
+      vs,
+      visualEditorProperties,
+      {
+        selection: {
+          nodes: networkView?.selectedNodes ?? [],
+          edges: networkView?.selectedEdges ?? [],
+        },
+      },
+    )
 
-    // Apply transformations and visual editor property overrides via view model
-    applyViewModel(cy, updatedNetworkView, visualEditorProperties)
-
-    // Generate the Cytoscape.js style
-    const newStyle = createCyjsDataMapper(vs)
-
-    // Restore selection state for nodes and edges
-    const selectedNodes = networkView?.selectedNodes ?? []
-    const selectedEdges = networkView?.selectedEdges ?? []
-
-    cy.nodes()
-      .filter((ele: SingularElementArgument) => {
-        return selectedNodes.includes(ele.data('id'))
-      })
-      .select()
-    cy.edges()
-      .filter((ele: SingularElementArgument) => {
-        return selectedEdges.includes(ele.data('id'))
-      })
-      .select()
+    // The stylesheet goes in before the elements, so endBatch styles each
+    // element once, from the new stylesheet
+    cy.style(stylesheet as any)
+    cy.add(nodes)
+    cy.add(edges)
 
     // --- Event Listeners ---
 
@@ -530,19 +541,16 @@ const CyjsRenderer = ({
       debounce(() => {
         const selectedNodes: IdType[] = []
         const selectedEdges: IdType[] = []
-        cy.elements()
-          .filter((e: SingularElementArgument) => e.selected())
-          .forEach((ele: SingularElementArgument) => {
-            const eleId: string = ele.data('id')
-            if (ele.isNode()) {
-              selectedNodes.push(eleId)
-            } else {
-              selectedEdges.push(eleId)
-            }
-          })
+        cy.elements(':selected').forEach((ele: SingularElementArgument) => {
+          const eleId: string = ele.data('id')
+          if (ele.isNode()) {
+            selectedNodes.push(eleId)
+          } else {
+            selectedEdges.push(eleId)
+          }
+        })
         exclusiveSelect(id, selectedNodes, selectedEdges)
-      }),
-      100,
+      }, 100),
     )
 
     // --- Edge Creation Mode: Handle clicks when in creation mode ---
@@ -902,14 +910,11 @@ const CyjsRenderer = ({
 
     // --- Finalize Rendering ---
 
-    // End Cytoscape.js batch operation
+    // End Cytoscape.js batch operation: styles every element
     cy.endBatch()
 
-    // Apply the computed style to Cytoscape.js
-    cy.style(newStyle)
-
-    // Must follow cy.style(): node.width()/height() feed the SVG size wrapper
-    // and only report correct values once the new stylesheet is installed.
+    // Must follow endBatch(): node.width()/height() feed the SVG size wrapper
+    // and only report correct values once the elements are styled.
     applyNodeGraphics(cy, nodeGraphicsRef.current)
 
     // Both the restore and the fit compute with cy's cached canvas size, which
@@ -1032,8 +1037,6 @@ const CyjsRenderer = ({
       }
       appliedStyleInputsRef.current = inputs
 
-      cy.startBatch()
-
       const data: NetworkViewSources = {
         network,
         networkView,
@@ -1043,13 +1046,20 @@ const CyjsRenderer = ({
       }
       const updatedNetworkView: NetworkView =
         VisualStyleFn.applyVisualStyle(data)
-      // Apply style from view model
-      applyViewModel(cy, updatedNetworkView, visualEditorProperties)
-
-      cy.endBatch()
       // Built from the current style: which visual properties it maps decides
-      // the stylesheet's selectors.
-      cy.style(createCyjsDataMapper(vs))
+      // the stylesheet's selectors, and which values its base rules hold
+      const { nodes, edges, stylesheet } = createCyElements(
+        network.edges,
+        updatedNetworkView,
+        vs,
+        visualEditorProperties,
+      )
+
+      cy.startBatch()
+      cy.style(stylesheet as any)
+      applyCyElementData(cy, nodes)
+      applyCyElementData(cy, edges)
+      cy.endBatch()
 
       // Reapplying the stylesheet does not clear element bypasses, but it does
       // reset node sizes, so re-run the apply to resize any SVG images.
@@ -1075,7 +1085,8 @@ const CyjsRenderer = ({
    */
   useEffect(
     function onNodeGraphicsChange() {
-      if (cy === null) return
+      // An instance replaced for WebGL is destroyed until setCy lands
+      if (cy === null || cy.destroyed()) return
       applyNodeGraphics(cy, nodeGraphics)
     },
     [nodeGraphics, cy],
@@ -1112,17 +1123,21 @@ const CyjsRenderer = ({
       const { nodeViews } = viewModel
       const viewCount = Object.keys(nodeViews).length
       const cyNodeCount = cy.nodes().length
+      // Every style change writes a new view model and re-runs this, so
+      // only nodes whose position differs are moved
+      cy.startBatch()
       cy.nodes().forEach((cyNode: NodeSingular) => {
-        const cyNodeId = cyNode.data('id')
-        if (nodeViews[cyNodeId] === undefined) {
+        const nodeView = nodeViews[cyNode.id()]
+        if (nodeView === undefined) {
           cy.remove(cyNode)
-        } else {
-          cyNode.position({
-            x: nodeViews[cyNodeId].x,
-            y: nodeViews[cyNodeId].y,
-          })
+          return
+        }
+        const { x, y } = cyNode.position()
+        if (x !== nodeView.x || y !== nodeView.y) {
+          cyNode.position({ x: nodeView.x, y: nodeView.y })
         }
       })
+      cy.endBatch()
       if (viewCount === cyNodeCount) {
         // Only fit if no saved viewport exists, otherwise preserve the current
         // viewport — unless the new positions have moved the graph completely
@@ -1146,7 +1161,7 @@ const CyjsRenderer = ({
   useEffect(
     function onEdgeDeletion() {
       const viewModel = getViewModel(id)
-      if (viewModel === undefined || cy === null) {
+      if (viewModel === undefined || cy === null || cy.destroyed()) {
         return
       }
 
@@ -1199,7 +1214,12 @@ const CyjsRenderer = ({
    */
   useEffect(
     function onElementSelection() {
-      if (cy === null || networkView === undefined || networkView === null) {
+      if (
+        cy === null ||
+        cy.destroyed() ||
+        networkView === undefined ||
+        networkView === null
+      ) {
         return
       }
 
@@ -1209,46 +1229,63 @@ const CyjsRenderer = ({
     [networkView?.selectedNodes, networkView?.selectedEdges],
   )
 
+  /** Destroy the instance, releasing its WebGL context first. */
+  const destroyInstance = (): void => {
+    if (cyInstance.current !== null) {
+      releaseWebglContext(cyInstance.current)
+      cyInstance.current.destroy()
+    }
+    cyInstance.current = null
+  }
+
   /**
-   * Initialize Cytoscape.js instance on mount and clean up on unmount.
+   * Initialize Cytoscape.js instance on mount and clean up on unmount, and
+   * recreate it when the network crosses the WebGL threshold.
    */
-  useEffect(function initializeCyjsRenderer() {
-    if (!isInitialized.current) {
-      isInitialized.current = true
-      const cy: Core = Cytoscape({
-        container: cyContainer.current,
-        hideEdgesOnViewport: true,
-        boxSelectionEnabled: true,
-      })
-      cyInstance.current = cy
+  useEffect(
+    function initializeCyjsRenderer() {
+      if (!isInitialized.current) {
+        isInitialized.current = true
+        const cy: Core = Cytoscape({
+          container: cyContainer.current,
+          hideEdgesOnViewport: true,
+          boxSelectionEnabled: true,
+          webgl,
+        } as Cytoscape.CytoscapeOptions)
+        if (!webgl) {
+          releaseWebglContext(cy)
+        }
+        cyInstance.current = cy
 
-      // One annotation canvas set per instance, reused by every render.
-      annotationLayersRef.current = createAnnotationLayers(cy)
+        // One annotation canvas set per instance, reused by every render.
+        annotationLayersRef.current = createAnnotationLayers(cy)
 
-      const unregisterDebugTool = registerDebugTool('cy', cy)
-      setCy(cy)
+        const unregisterDebugTool = registerDebugTool('cy', cy)
+        setCy(cy)
+
+        return () => {
+          flushPendingViewportSave()
+          unregisterDebugTool()
+          annotationLayersRef.current?.dispose()
+          annotationLayersRef.current = null
+          destroyInstance()
+          isInitialized.current = false
+        }
+      }
 
       return () => {
+        // Reset the guard so a StrictMode remount recreates the instance.
         flushPendingViewportSave()
-        unregisterDebugTool()
         annotationLayersRef.current?.dispose()
         annotationLayersRef.current = null
-        cyInstance.current?.destroy()
-        cyInstance.current = null
+        destroyInstance()
         isInitialized.current = false
       }
-    }
-
-    return () => {
-      // Reset the guard so a StrictMode remount recreates the instance.
-      flushPendingViewportSave()
-      annotationLayersRef.current?.dispose()
-      annotationLayersRef.current = null
-      cyInstance.current?.destroy()
-      cyInstance.current = null
-      isInitialized.current = false
-    }
-  }, [])
+    },
+    // A network crossing the WebGL threshold needs a new instance
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- destroyInstance and flushPendingViewportSave read refs only
+    [webgl],
+  )
 
   /**
    * Re-render network when Cytoscape instance changes.

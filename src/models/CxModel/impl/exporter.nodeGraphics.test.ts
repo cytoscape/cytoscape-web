@@ -178,8 +178,9 @@ describe('CX2 export and node-graphics render hooks', () => {
   it('keeps the hook’s cy property names out of the custom-graphics key list', () => {
     // Structural guard. The apply layer uses element style bypasses, not element
     // data — but if anyone reimplements it with data keys, those keys must not
-    // join this list, or applyViewModel's stale-key sweep would fight them and
-    // serialization paths could pick them up.
+    // join this list, or serialization paths could pick them up. (The
+    // renderer's applyCyElementData would also remove them on every style
+    // update.)
     const keys = getCustomGraphicsPropertyKeys()
 
     expect(keys).not.toContain('background-image-containment')

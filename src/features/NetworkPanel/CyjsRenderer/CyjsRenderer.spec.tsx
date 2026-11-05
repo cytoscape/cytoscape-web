@@ -2,6 +2,7 @@ import { act, render, waitFor } from '@testing-library/react'
 import type { Core } from 'cytoscape'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { AppConfigContext, defaultAppConfig } from '@/AppConfigContext'
 import { useNetworkStore } from '@/data/hooks/stores/NetworkStore'
 import { useTableStore } from '@/data/hooks/stores/TableStore'
 import { useUiStateStore } from '@/data/hooks/stores/UiStateStore'
@@ -32,7 +33,10 @@ import { CyjsRenderer } from './CyjsRenderer'
 // values: a failing matcher would try to print a Cytoscape.js collection,
 // which references the whole instance and exhausts the heap.
 
-const created = vi.hoisted(() => ({ instances: [] as Core[] }))
+const created = vi.hoisted(() => ({
+  instances: [] as Core[],
+  options: [] as Record<string, unknown>[],
+}))
 
 vi.mock('cytoscape', async (importOriginal) => {
   // `export =` module: its namespace's `default` is the factory itself.
@@ -49,6 +53,7 @@ vi.mock('cytoscape', async (importOriginal) => {
     })
     if (options.container !== undefined) {
       created.instances.push(cy)
+      created.options.push(options)
     }
     return cy
   }
@@ -194,10 +199,10 @@ describe('CyjsRenderer style and table updates (regression: #861)', () => {
     // A full render removes every element and adds a new one in its place.
     expect(cy.getElementById('n1')[0] === n1).toBe(true)
     expect(cy.getElementById('e1')[0] === e1).toBe(true)
-    expect(cy.getElementById('n1').data(VisualPropertyName.NodeWidth)).toBe(40)
-    expect(cy.getElementById('n1').data(VisualPropertyName.NodeLabel)).toBe(
-      'renamed',
-    )
+    // Read the computed style: a value every node shares sits in the
+    // stylesheet's base node rule, not in the element data
+    expect(cy.getElementById('n1').style('width')).toBe('40px')
+    expect(cy.getElementById('n1').style('label')).toBe('renamed')
   })
 
   it('writes back every change, however quickly they follow each other', async () => {
@@ -214,7 +219,7 @@ describe('CyjsRenderer style and table updates (regression: #861)', () => {
     setName('n1', 'renamed')
     expect(storedNodeValue('n1', VisualPropertyName.NodeLabel)).toBe('renamed')
     expect(storedNodeValue('n1', VisualPropertyName.NodeWidth)).toBe(40)
-    expect(cy.getElementById('n1').data(VisualPropertyName.NodeHeight)).toBe(70)
+    expect(cy.getElementById('n1').style('height')).toBe('70px')
   })
 
   it('still draws nodes and edges added to the network', async () => {
@@ -271,7 +276,7 @@ describe('CyjsRenderer style and table updates (regression: #861)', () => {
     expect(
       storedNodeValue('m1', VisualPropertyName.NodeWidth, 'other-net'),
     ).toBe(55)
-    expect(cy.getElementById('m1').data(VisualPropertyName.NodeWidth)).toBe(55)
+    expect(cy.getElementById('m1').style('width')).toBe('55px')
   })
 })
 
@@ -352,5 +357,48 @@ describe('CyjsRenderer tap on an inactive view (regression: #921)', () => {
       expect(selectedNodeIds(cy)).toEqual(['n1'])
     })
     expect(cy.autounselectify()).toBe(false)
+  })
+})
+
+describe('CyjsRenderer WebGL threshold', () => {
+  beforeEach(() => {
+    created.instances.length = 0
+    created.options.length = 0
+    useNetworkStore.setState({
+      networks: new Map(),
+      topologyVersions: new Map(),
+    } as any)
+    useTableStore.setState({ tables: {} } as any)
+    useVisualStyleStore.setState({ visualStyles: {} } as any)
+    useViewModelStore.setState({ viewModels: {} } as any)
+  })
+
+  it('recreates the instance with WebGL for a network at the threshold', async () => {
+    // Threshold 4: n1, n2 and e1 are 3 elements; m1 to m3 and e1 are 4
+    const config = { ...defaultAppConfig, webglMinElements: 4 }
+    const small = seed()
+    const view = render(
+      <AppConfigContext.Provider value={config}>
+        <CyjsRenderer network={small} />
+      </AppConfigContext.Provider>,
+    )
+    await waitFor(() => {
+      expect(created.instances.at(-1)?.nodes().length).toBe(2)
+    })
+    const first = created.instances.at(-1)!
+    expect(created.options.at(-1)?.webgl).toBe(false)
+
+    const large = seed('large-net', ['m1', 'm2', 'm3'])
+    view.rerender(
+      <AppConfigContext.Provider value={config}>
+        <CyjsRenderer network={large} />
+      </AppConfigContext.Provider>,
+    )
+
+    await waitFor(() => {
+      expect(created.instances.at(-1)?.nodes().length).toBe(3)
+    })
+    expect(created.options.at(-1)?.webgl).toBe(true)
+    expect(first.destroyed()).toBe(true)
   })
 })

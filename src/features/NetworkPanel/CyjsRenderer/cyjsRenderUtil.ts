@@ -3,32 +3,25 @@
  *
  * Utility functions and mappings for integrating Cytoscape.js with the application's
  * visual style and view model system. This module provides:
- *   - Handlers for mapping application visual properties to Cytoscape.js data fields.
+ *   - Transforms from application visual property values to Cytoscape.js values.
  *   - Functions to generate Cytoscape.js style objects from the application's visual style model.
- *   - Functions to apply view model data to Cytoscape.js elements.
+ *   - A function to update the data of elements on screen.
  *
  * The main entry points are:
  *   - createCyjsDataMapper: Generates Cytoscape.js style mappings from a VisualStyle.
- *   - applyViewModel: Applies the current view model to Cytoscape.js elements.
+ *   - applyCyElementData: Updates the data of the elements on screen.
  */
 
-import { Collection, Core, SingularElementArgument } from 'cytoscape'
+import { Core, ElementDefinition } from 'cytoscape'
 
-import { IdType } from '../../../models/IdType'
-import { EdgeView, NetworkView, NodeView } from '../../../models/ViewModel'
-import { View } from '../../../models/ViewModel/View'
 import VisualStyleFn, {
-  EdgeArrowShapeType,
-  EdgeVisualPropertyName,
   NodeShapeType,
-  NodeVisualPropertyName,
   VisualProperty,
   VisualPropertyName,
   VisualPropertyValueType,
   VisualStyle,
 } from '../../../models/VisualStyleModel'
 import {
-  getCustomGraphicsPropertyKeys,
   getFirstValidCustomGraphicVp,
   getNonCustomGraphicVps,
   getPieBackgroundColorViewModelProp,
@@ -46,8 +39,6 @@ import {
   getPieBackgroundColorCyJsProp,
   getPieBackgroundSizeCyJsProp,
 } from '../../../models/VisualStyleModel/impl/cyJsVisualPropertyConverter'
-import { computeNodeLabelPosition } from '../../../models/VisualStyleModel/impl/nodeLabelPositionMap'
-import { VisualEditorProperties } from '../../../models/VisualStyleModel/VisualStyleOptions'
 
 /**
  * Maps application node shape types to Cytoscape.js node shape strings.
@@ -77,102 +68,6 @@ export const transformNodeShape = (value: NodeShapeType): string => {
 export const transformRotation = (degrees: number): number => {
   return (degrees * Math.PI) / 180
 }
-
-/**
- * Helper to update edge arrow shape and fill properties on a Cytoscape.js element.
- * Handles special case for 'Arrow' shape, mapping it to 'Triangle' for Cytoscape.js.
- *
- * @param obj - Cytoscape.js element
- * @param key - Visual property name (arrow shape)
- * @param value - Value for the arrow shape
- * @param view - The view model for the element
- * @param arrowFillProperty - The fill property name (source/target)
- */
-function updateEdgeArrowShape(
-  obj: SingularElementArgument,
-  key: VisualPropertyName,
-  value: any,
-  view: View,
-  arrowFillProperty: SpecialPropertyName,
-) {
-  const arrowFillValue = view.values.get(
-    arrowFillProperty as VisualPropertyName,
-  )
-  obj.data(key, value)
-  obj.data(arrowFillProperty, arrowFillValue)
-  // Cytoscape.js does not support 'arrow', so map to 'triangle'
-  if (obj.data(key) === EdgeArrowShapeType.Arrow) {
-    obj.data(key, EdgeArrowShapeType.Triangle)
-  }
-}
-
-/**
- * Map of visual property handlers for special-case property conversions.
- * Each handler is responsible for mapping a specific visual property from the view model
- * to the appropriate Cytoscape.js data fields.
- */
-const vpHandlers = new Map<
-  VisualPropertyName,
-  (
-    obj: SingularElementArgument,
-    key: VisualPropertyName,
-    value: any,
-    view: View,
-  ) => void
->()
-
-// Handler for node label position: computes and sets alignment, margin, and justification.
-vpHandlers.set(VisualPropertyName.NodeLabelPosition, (obj, key, value) => {
-  const { horizontalAlign, verticalAlign } = computeNodeLabelPosition(value)
-  obj.data(SpecialPropertyName.NodeLabelHorizontalAlign, horizontalAlign)
-  obj.data(SpecialPropertyName.NodeLabelVerticalAlign, verticalAlign)
-  obj.data(SpecialPropertyName.NodeLabelMarginX, value.MARGIN_X)
-  obj.data(SpecialPropertyName.NodeLabelMarginY, value.MARGIN_Y)
-  obj.data(SpecialPropertyName.NodeLabelJustification, value.JUSTIFICATION)
-})
-
-// Handler for edge target arrow shape and fill.
-vpHandlers.set(
-  VisualPropertyName.EdgeTargetArrowShape,
-  (obj, key, value, view) => {
-    updateEdgeArrowShape(
-      obj,
-      key,
-      value,
-      view,
-      SpecialPropertyName.TargetArrowFill,
-    )
-  },
-)
-
-// Handler for edge source arrow shape and fill.
-vpHandlers.set(
-  VisualPropertyName.EdgeSourceArrowShape,
-  (obj, key, value, view) => {
-    updateEdgeArrowShape(
-      obj,
-      key,
-      value,
-      view,
-      SpecialPropertyName.SourceArrowFill,
-    )
-  },
-)
-
-// Handler for node shape: maps application node shape to Cytoscape.js node shape.
-vpHandlers.set(VisualPropertyName.NodeShape, (obj, key, value) => {
-  obj.data(key, transformNodeShape(value as NodeShapeType))
-})
-
-// Handler for node label rotation: converts degrees to radians for Cytoscape.js.
-vpHandlers.set(VisualPropertyName.NodeLabelRotation, (obj, key, value) => {
-  obj.data(key, transformRotation(value))
-})
-
-// Handler for edge label rotation: converts degrees to radians for Cytoscape.js.
-vpHandlers.set(VisualPropertyName.EdgeLabelRotation, (obj, key, value) => {
-  obj.data(key, transformRotation(value))
-})
 
 /**
  * Generates an array of Cytoscape.js style mappings (CyjsDirectMapper) from the application's VisualStyle.
@@ -485,99 +380,33 @@ export const createCyjsDataMapper = (vs: VisualStyle): CyjsDirectMapper[] => {
   return cyStyle
 }
 
-/**
- * Updates Cytoscape.js elements with data from the application's view model.
- * Handles special-case property handlers and visual editor property overrides.
- *
- * @param views - Map of element IDs to view models
- * @param cyObjects - Cytoscape.js collection of elements (nodes or edges)
- * @param visualEditorProperties - Visual editor options
- */
-const updateCyElements = <T extends View>(
-  views: Record<IdType, T>,
-  cyObjects: Collection<SingularElementArgument>,
-  visualEditorProperties: VisualEditorProperties,
-): void => {
-  cyObjects.forEach((obj: SingularElementArgument) => {
-    const cyId = obj.data('id')
-
-    const view: View = views[cyId]
-    if (view !== undefined) {
-      view.values.forEach((value, key) => {
-        const vpHandler = vpHandlers.get(key)
-        if (vpHandler) {
-          vpHandler(obj, key, value, view)
-        } else {
-          obj.data(key, value)
-        }
-      })
-
-      // Update the cyObject with the custom graphics properties
-      // Custom graphics properties are different from other properties
-      // In between updates, the keys may be removed from the view model
-      // So we need to remove the data from the cyObject
-      const customGraphicsPropertyKeys = getCustomGraphicsPropertyKeys()
-      customGraphicsPropertyKeys.forEach((key) => {
-        if (!view.values.has(key as any)) {
-          obj.removeData(key as any)
-        }
-      })
-
-      // If node size is locked, set width equal to height.
-      if (visualEditorProperties?.nodeSizeLocked) {
-        obj.data(
-          NodeVisualPropertyName.NodeWidth,
-          obj.data(NodeVisualPropertyName.NodeHeight),
-        )
-      }
-      // If arrow color should match edge color, set arrow colors to edge line color.
-      if (visualEditorProperties?.arrowColorMatchesEdge) {
-        const color = obj.data(EdgeVisualPropertyName.EdgeLineColor)
-        obj.data(EdgeVisualPropertyName.EdgeSourceArrowColor, color)
-        obj.data(EdgeVisualPropertyName.EdgeTargetArrowColor, color)
-      }
-    }
-  })
-}
+/** Data keys Cytoscape.js fixes when an element is created. */
+const FIXED_DATA_KEYS = new Set(['id', 'source', 'target', 'parent'])
 
 /**
- * Applies the current view model (node and edge views) to the Cytoscape.js instance.
- * This updates Cytoscape.js element data fields to match the application's view model,
- * including any visual editor property overrides.
+ * Give the elements on screen the data of `definitions` (createCyElements in
+ * cyjsFactoryUtil.ts): set every key they carry and remove every other key,
+ * such as a custom graphic the view no longer has, or a value that moved
+ * into the stylesheet's base `node` / `edge` rule.
  *
- * @param cy - Cytoscape.js core instance
- * @param networkView - The application's network view (nodeViews, edgeViews)
- * @param visualEditorProperties - Visual editor options (e.g. node size lock)
+ * Elements without a definition, and definitions without an element, are
+ * left alone. Call inside cy.startBatch() / cy.endBatch().
  */
-export const applyViewModel = (
+export const applyCyElementData = (
   cy: Core,
-  networkView: NetworkView,
-  visualEditorProperties: VisualEditorProperties,
+  definitions: ElementDefinition[],
 ): void => {
-  applyViewModelTo(cy.elements(), networkView, visualEditorProperties)
-}
-
-/**
- * applyViewModel for some elements only, such as a batch just added.
- *
- * @param elements - The elements to update
- * @param networkView - The application's network view (nodeViews, edgeViews)
- * @param visualEditorProperties - Visual editor options (e.g. node size lock)
- */
-export const applyViewModelTo = (
-  elements: Collection,
-  networkView: NetworkView,
-  visualEditorProperties: VisualEditorProperties,
-): void => {
-  const { nodeViews, edgeViews } = networkView
-  updateCyElements<NodeView>(
-    nodeViews,
-    elements.nodes(),
-    visualEditorProperties,
-  )
-  updateCyElements<EdgeView>(
-    edgeViews,
-    elements.edges(),
-    visualEditorProperties,
-  )
+  definitions.forEach(({ data }) => {
+    const ele = cy.getElementById(data.id as string)
+    if (ele.empty()) return
+    const stale = Object.keys(ele.data()).filter(
+      (key) => !FIXED_DATA_KEYS.has(key) && !(key in data),
+    )
+    if (stale.length > 0) ele.removeData(stale.join(' '))
+    const values: Record<string, unknown> = {}
+    Object.keys(data).forEach((key) => {
+      if (!FIXED_DATA_KEYS.has(key)) values[key] = data[key]
+    })
+    ele.data(values)
+  })
 }

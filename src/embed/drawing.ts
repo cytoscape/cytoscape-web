@@ -1,11 +1,10 @@
 import { ElementDefinition } from 'cytoscape'
 
+import { createCyElements } from '@/features/NetworkPanel/CyjsRenderer/cyjsFactoryUtil'
 import { CyNetwork } from '@/models/CyNetworkModel'
 import { IdType } from '@/models/IdType'
 import VisualStyleFn from '@/models/VisualStyleModel'
 import { VisualEditorProperties } from '@/models/VisualStyleModel/VisualStyleOptions'
-
-import { buildEmbedElements } from './embedElements'
 
 const DEFAULT_BACKGROUND = '#ffffff'
 
@@ -47,12 +46,13 @@ export const buildDrawing = (
     edgeTable,
     visualStyle,
   })
-  const { nodes, edges, stylesheet } = buildEmbedElements(
-    cyNetwork,
+  const { nodes, edges, stylesheet } = createCyElements(
+    network.edges,
     view,
+    visualStyle,
     cyNetwork.visualStyleOptions?.visualEditorProperties ??
       DEFAULT_EDITOR_PROPERTIES,
-    positions,
+    { positions },
   )
   return {
     nodes,
