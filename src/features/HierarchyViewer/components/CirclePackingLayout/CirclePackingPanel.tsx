@@ -86,6 +86,16 @@ const MIN_BOX_SIZE = 100
 const colorScale = getColorMapper([0, 5])
 
 /**
+ * Add the group that holds the ring labels. It is drawn over the rings, and only
+ * the rings handle clicks and hovers, so the pointer has to pass through the
+ * labels. Otherwise a click on a label does nothing, and on a small protein ring
+ * the label covers most of the ring (#931).
+ */
+const appendLabelGroup = <PElement extends d3Selection.BaseType, PDatum>(
+  wrapper: d3Selection.Selection<SVGGElement, unknown, PElement, PDatum>,
+) => wrapper.append('g').style('pointer-events', 'none')
+
+/**
  * Circle Packing renderer as a variant of the network viewer
  *
  *
@@ -887,8 +897,7 @@ export const CirclePackingPanel = ({
       .on('mousemove', handleCircleMouseMove)
 
     // Add the text labels
-    wrapper
-      .append('g')
+    appendLabelGroup(wrapper)
       .selectAll<SVGTextElement, d3Hierarchy.HierarchyCircularNode<D3TreeNode>>(
         'text',
       )
@@ -1086,7 +1095,7 @@ export const CirclePackingPanel = ({
         // Get or create the text container <g>
         const existingTextGroup = wrapper.select<SVGGElement>('g:nth-child(2)')
         const textGroup = existingTextGroup.empty()
-          ? wrapper.append('g')
+          ? appendLabelGroup(wrapper)
           : existingTextGroup
 
         // Update text labels

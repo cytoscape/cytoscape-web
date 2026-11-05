@@ -86,7 +86,7 @@ A D3.js-based visualization component that renders hierarchical structures as ne
 - Renders hierarchy as nested circles using D3.js circle packing algorithm
 - Supports zoom and pan interactions
 - Dynamically shows/hides labels based on zoom level
-- Handles node selection (subsystems and leaf nodes)
+- Handles node selection (subsystems and leaf nodes). Labels are drawn over the rings with `pointer-events: none`, so a click or hover on a label reaches the ring underneath
 - Supports multi-selection of leaf nodes (enables selecting multiple leaves simultaneously)
 - Synchronizes selection with SubNetworkPanel (bidirectional sync between subnetwork view and circle packing view)
 - Highlights the protein rings a search matched (see [Search and protein rings](#search-and-protein-rings))

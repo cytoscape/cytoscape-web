@@ -721,6 +721,29 @@ const MEMBER_NAMES_HCX = path.resolve(
   '../fixtures/hcx/valid/member-names.valid.cx2',
 )
 
+/**
+ * A ring's center on screen. Read through the wrapper's transform, since a ring
+ * the zoom level hides is `display: none` and has no box of its own.
+ */
+const ringCenter = (svg: Locator, ringId: string) =>
+  svg.evaluate((element, id) => {
+    const ring = [...element.querySelectorAll('circle')].find(
+      (circle) =>
+        (circle as unknown as { __data__?: { data: { id: string } } }).__data__
+          ?.data.id === id,
+    )
+    const ctm = element
+      .querySelector<SVGGElement>('g.circle-packing-wrapper')
+      ?.getScreenCTM()
+    if (ring === undefined || ctm === undefined || ctm === null) {
+      throw new Error(`Ring ${id} is not drawn`)
+    }
+    return {
+      x: ctm.a * Number(ring.getAttribute('cx')) + ctm.e,
+      y: ctm.d * Number(ring.getAttribute('cy')) + ctm.f,
+    }
+  }, ringId)
+
 test.describe('Searching a hierarchy in the Cell View (#930)', () => {
   test('highlights the protein rings the search matched', async ({ page }) => {
     // Nothing here needs NDEx; keep any request from reaching it.
@@ -868,16 +891,97 @@ test.describe('Searching a hierarchy in the Cell View (#930)', () => {
     await expect(page.getByTestId('search-result-count')).toHaveText('1 node')
     await expect.poll(() => strokeOf('2-DR1')).toBe('red')
 
-    // Click TAF11, inside Nucleoplasm. The click handler is d3's; dispatch it
-    // on the circle itself, since the ring's label lies over it (#931).
-    await svg.evaluate((element) => {
-      const ring = [...element.querySelectorAll('circle')].find(
-        (circle) =>
-          (circle as unknown as { __data__?: { data: { id: string } } })
-            .__data__?.data.id === '2-TAF11',
-      )
-      ring?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    // Click TAF11, inside Nucleoplasm. The settings popover's invisible backdrop
+    // would catch the click until its exit transition has finished.
+    await expect(page.getByTestId('search-settings-popover')).toHaveCount(0)
+    const taf11 = await ringCenter(svg, '2-TAF11')
+    await page.mouse.click(taf11.x, taf11.y)
     await expect.poll(() => strokeOf('2-DR1')).not.toBe('red')
+  })
+})
+
+// #931: the labels are drawn over the rings and used to catch the click, so a
+// click on a label did nothing. On a small protein ring the label covers most
+// of the ring. The clicks are real mouse clicks: a click dispatched on the
+// circle, or one Playwright aims at the circle, would not go through the label.
+//
+// NDEx requests hang here, so the Sub Network Viewer never loads and never
+// echoes the selection back. The red border of a clicked protein ring therefore
+// holds with the viewer open.
+test.describe('Clicking a ring label in the Cell View (#931)', () => {
+  /** Open the Cell View of a hierarchy whose rings are labelled without NDEx */
+  const openCellView = async (page: Page): Promise<Locator> => {
+    await page.route('**/*ndexbio.org/**', () => {})
+    await importNetworkFile(page, MEMBER_NAMES_HCX, 'Member Names Hierarchy')
+    await page.getByRole('tab', { name: 'Cell View' }).click()
+    const svg = page.locator('[data-testid="circle-packing-svg"]')
+    await expect(svg.locator('circle')).toHaveCount(10)
+    return svg
+  }
+
+  const strokeOf = (svg: Locator, ringId: string) =>
+    svg.evaluate(
+      (element, id) =>
+        [...element.querySelectorAll('circle')]
+          .find(
+            (circle) =>
+              (circle as unknown as { __data__?: { data: { id: string } } })
+                .__data__?.data.id === id,
+          )
+          ?.getAttribute('stroke'),
+      ringId,
+    )
+
+  /** The label's on-screen box, or undefined while the zoom level hides it */
+  const labelBox = (svg: Locator, ringId: string) =>
+    svg.evaluate((element, id) => {
+      const label = [...element.querySelectorAll('text')].find(
+        (text) =>
+          (text as unknown as { __data__?: { data: { id: string } } }).__data__
+            ?.data.id === id,
+      )
+      if (label === undefined) return undefined
+      const { x, y, width, height } = label.getBoundingClientRect()
+      return width > 0 && height > 0 ? { x, y, width, height } : undefined
+    }, ringId)
+
+  /** Zoom in on the ring until its label shows, then click the label's center */
+  const clickLabel = async (
+    page: Page,
+    svg: Locator,
+    ringId: string,
+  ): Promise<void> => {
+    await expect(async () => {
+      const box = await labelBox(svg, ringId)
+      if (box === undefined) {
+        const center = await ringCenter(svg, ringId)
+        await page.mouse.move(center.x, center.y)
+        await page.mouse.wheel(0, -100)
+      }
+      expect(box).toBeDefined()
+    }).toPass({ timeout: 15000 })
+
+    const box = await labelBox(svg, ringId)
+    await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2)
+  }
+
+  test('selects a protein ring', async ({ page }) => {
+    const svg = await openCellView(page)
+    await expect.poll(() => strokeOf(svg, '2-DR1')).toBe('#666')
+
+    await clickLabel(page, svg, '2-DR1')
+
+    // A protein has no row in the node table, so its subsystem gets selected.
+    await expect.poll(() => strokeOf(svg, '2')).toBe('orange')
+    await expect.poll(() => strokeOf(svg, '2-DR1')).toBe('red')
+  })
+
+  test('selects a subsystem ring', async ({ page }) => {
+    const svg = await openCellView(page)
+    await expect.poll(() => strokeOf(svg, '2')).toBe('#666')
+
+    await clickLabel(page, svg, '2')
+
+    await expect.poll(() => strokeOf(svg, '2')).toBe('orange')
   })
 })

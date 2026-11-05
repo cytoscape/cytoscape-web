@@ -490,6 +490,82 @@ describe('CirclePackingPanel name lookup source (#933)', () => {
   })
 })
 
+// The labels are drawn over the rings, and only the rings have a click handler.
+// A label that catches the pointer swallows the click: the ring's handler never
+// runs and the background handler ignores it. jsdom cannot hit-test, so this
+// pins the property; hierarchy-cell-view.spec.ts clicks a label for real.
+describe('CirclePackingPanel ring labels (#931)', () => {
+  beforeEach(() => {
+    seedStores()
+    useNetworkSummaryStore.setState({
+      summaries: { [NETWORK_ID]: hcxSummary() },
+    } as any)
+  })
+
+  afterEach(() => {
+    vi.mocked(createTreeLayout).mockImplementation(
+      () => new Promise(() => {}) as any,
+    )
+  })
+
+  const pointerEventsOf = (container: Element, selector: string): string[] => {
+    const elements = [...container.querySelectorAll(selector)]
+    expect(elements.length).toBeGreaterThan(0)
+    return [...new Set(elements.map((e) => getComputedStyle(e).pointerEvents))]
+  }
+
+  const drawn = async () => {
+    const builds = deferBuilds()
+    const rendered = render(panel())
+    await act(async () => {
+      builds[0].resolve(hierarchyOf('root'))
+    })
+    return { builds, ...rendered }
+  }
+
+  /** A new visual style rebuilds the layout over the existing drawing */
+  const rebuild = async (
+    builds: ReturnType<typeof deferBuilds>,
+  ): Promise<void> => {
+    act(() => {
+      useVisualStyleStore.setState({
+        visualStyles: { [NETWORK_ID]: { ...visualStyle } },
+      } as any)
+    })
+    expect(builds).toHaveLength(2)
+    await act(async () => {
+      builds[1].resolve(hierarchyOf('root'))
+    })
+  }
+
+  it('lets the pointer through the labels to the rings', async () => {
+    const { container } = await drawn()
+
+    expect(pointerEventsOf(container, 'text, tspan')).toEqual(['none'])
+    expect(pointerEventsOf(container, 'circle')).not.toContain('none')
+  })
+
+  it('still does after a rebuild over the same drawing', async () => {
+    const { builds, container } = await drawn()
+
+    await rebuild(builds)
+
+    expect(pointerEventsOf(container, 'text, tspan')).toEqual(['none'])
+  })
+
+  it('still does when a rebuild has to recreate the label group', async () => {
+    const { builds, container } = await drawn()
+    container
+      .querySelector('.circle-packing-wrapper > g:nth-child(2)')
+      ?.remove()
+    expect(container.querySelector('text')).toBeNull()
+
+    await rebuild(builds)
+
+    expect(pointerEventsOf(container, 'text, tspan')).toEqual(['none'])
+  })
+})
+
 // NetworkTabs reports the size of the box the renderers live in, and that box
 // can be 0 x 0 or mid-layout when the panel mounts after a reload. The first
 // layout has to wait for the real size. Later sizes must not touch a drawn
