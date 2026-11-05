@@ -23,4 +23,16 @@ export interface NavigationConfig {
    * naming state that no longer exists, e.g. a network that was just deleted.
    */
   force?: boolean
+  /**
+   * The call answers a direct click that names this network. urlManager then
+   * checks it only against the real URL, not against what it remembers (the
+   * throttle, the last path), because the caller has already made the network
+   * current and a dropped call would leave the URL on another one. Unlike
+   * `force`, a click on the network the URL already names adds no history entry.
+   *
+   * Leave it off for programmatic calls: some flows navigate twice in a burst
+   * and rely on the throttle dropping the second call (see the first upload in
+   * `useSaveCyNetworkCopyToNDEx`, which stays on the uploaded network that way).
+   */
+  userInitiated?: boolean
 }

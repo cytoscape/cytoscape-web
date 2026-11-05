@@ -136,6 +136,59 @@ describe('urlManager', () => {
       })
     })
 
+    describe('userInitiated (a click on a network row)', () => {
+      const config = (networkId: string, userInitiated?: boolean) => ({
+        workspaceId: 'ws-1',
+        networkId,
+        searchParams: new URLSearchParams(),
+        replace: false,
+        userInitiated,
+      })
+
+      afterEach(() => {
+        window.history.replaceState(null, '', '/')
+      })
+
+      it('is not dropped within the throttle and in-progress windows', () => {
+        const navigate = vi.fn()
+
+        navigateToNetwork(config('net-1'), navigate)
+        navigateToNetwork(config('net-2', true), navigate)
+
+        expect(navigate).toHaveBeenCalledTimes(2)
+        expect(navigate).toHaveBeenLastCalledWith('/ws-1/networks/net-2', {
+          replace: false,
+        })
+      })
+
+      it('lands after Back, when only the remembered path matches it', () => {
+        const navigate = vi.fn()
+        navigateToNetwork(config('net-1'), navigate)
+        advance(400)
+        navigateToNetwork(config('net-2'), navigate)
+        advance(400)
+        // Back: the address bar names net-1, urlManager still remembers net-2
+        window.history.replaceState(null, '', '/ws-1/networks/net-1')
+
+        navigateToNetwork(config('net-2', true), navigate)
+
+        expect(navigate).toHaveBeenCalledTimes(3)
+        // A new entry, or Back could no longer return to net-1
+        expect(navigate).toHaveBeenLastCalledWith('/ws-1/networks/net-2', {
+          replace: false,
+        })
+      })
+
+      it('adds no history entry when the URL already names the network', () => {
+        const navigate = vi.fn()
+        window.history.replaceState(null, '', '/ws-1/networks/net-1')
+
+        navigateToNetwork(config('net-1', true), navigate)
+
+        expect(navigate).not.toHaveBeenCalled()
+      })
+    })
+
     it('force also navigates when the tracked path is unchanged', () => {
       const navigate = vi.fn()
       const config = {
