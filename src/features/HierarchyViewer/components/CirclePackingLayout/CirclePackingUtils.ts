@@ -207,18 +207,27 @@ export const terminalRingKey = (ring: D3TreeNode): string =>
   ring.isMember === true ? ring.name : (ring.originalId ?? ring.id)
 
 /**
- * The hierarchy nodes to select for a subsystem ring, or for a ring inside it.
+ * The hierarchy node a subsystem ring draws.
  *
  * A subsystem with several parents is drawn once per path, and only its first
- * drawing has the node's id. A copy selects that id, first because the Sub
- * Network Viewer needs a table row, and its own id, because borders are painted
- * by a circle's own id. Without it, the first drawing lights up instead of the
- * ring the user clicked in (#931).
+ * drawing has the node's id. The others are copies with an `originalId`. They all
+ * stand for one node, so a click on any of them, or on a ring inside one, selects
+ * that one id: a copy's own id has no table row, and would count as a selected
+ * node with nothing behind it (#931).
  */
-export const subsystemSelection = (subsystem: D3TreeNode): IdType[] =>
-  subsystem.originalId !== undefined
-    ? [subsystem.originalId, subsystem.id]
-    : [subsystem.id]
+export const subsystemNodeId = (subsystem: D3TreeNode): IdType =>
+  subsystem.originalId ?? subsystem.id
+
+/**
+ * Whether a circle is a drawing of a selected subsystem. Every drawing of the
+ * node counts, however it was selected. A protein ring never does: its
+ * `originalId` is a member id, not a hierarchy node.
+ */
+export const isSelectedSubsystem = (
+  circle: D3TreeNode,
+  selectedNodeSet: ReadonlySet<string>,
+): boolean =>
+  circle.isMember !== true && selectedNodeSet.has(subsystemNodeId(circle))
 
 /**
  * Paint the selection borders of the Cell View's circles: orange for a
@@ -244,7 +253,7 @@ export const displaySelectedNodes = (
       'circle',
     )
     .attr('stroke', (d) => {
-      if (selectedNodeSet.has(d.data.id)) {
+      if (isSelectedSubsystem(d.data, selectedNodeSet)) {
         return CpDefaults.selectedBorderColor
       } else if (isSelectedRing(d)) {
         return CpDefaults.leafBorderColor
@@ -253,7 +262,7 @@ export const displaySelectedNodes = (
       }
     })
     .attr('stroke-width', (d) =>
-      selectedNodeSet.has(d.data.id) || isSelectedRing(d)
+      isSelectedSubsystem(d.data, selectedNodeSet) || isSelectedRing(d)
         ? CpDefaults.borderWidthHover
         : CpDefaults.borderWidth,
     )

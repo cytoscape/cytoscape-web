@@ -246,11 +246,12 @@ a protein ring it is the member id, which the viewer never sees (#931).
 
 A subsystem with several parents is drawn once per path, and only its first
 drawing has the node's id. The others are copies, with an id like `110-2d` and
-`originalId` set. Clicking a copy, or a ring inside one, selects both ids
-(`subsystemSelection`): the original first, since the viewer needs a table row,
-and the copy so that the clicked ring's parent gets its orange border. So the
-first drawing is orange as well, and the selected node count includes the copy,
-which has no row of its own.
+`originalId` set. They all stand for one node. Clicking any of them, or a ring
+inside one, selects only that node's id (`subsystemNodeId`), since a copy has no
+table row and would count as a selected node with nothing behind it. Every
+drawing of a selected subsystem gets the orange border, however it was selected,
+Tree View and search included (`isSelectedSubsystem`). `MainPanel` still strips
+copy ids, because older shared URLs and saved selections can hold them.
 
 The click and the viewer talk through `SubNetworkStore`:
 

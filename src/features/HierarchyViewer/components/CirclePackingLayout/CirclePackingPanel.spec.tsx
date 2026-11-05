@@ -757,36 +757,103 @@ describe('CirclePackingPanel protein ring selection (#931)', () => {
     const strokeOf = (container: Element, id: string): string | null =>
       circleOf(container, id).getAttribute('stroke')
 
-    it('outlines the parent of a ring clicked in a copy', async () => {
+    const drawings = (container: Element): (string | null)[] => [
+      strokeOf(container, 'A'),
+      strokeOf(container, 'A-2d'),
+    ]
+
+    it('outlines every drawing for a ring clicked in a copy', async () => {
       const container = await drawn(withCopy())
 
       click(container, 'A-2d-366')
 
-      expect(strokeOf(container, 'A-2d')).toBe(ORANGE)
+      expect(drawings(container)).toEqual([ORANGE, ORANGE])
       expect(strokeOf(container, 'A-2d-366')).toBe(RED)
       expect(strokeOf(container, 'A-366')).toBe(RED)
     })
 
-    // The viewer shows the first id's subsystem, which must have a table row
-    it('selects as a click on the copy itself does, original first', async () => {
-      const container = await drawn(withCopy())
-
-      click(container, 'A-2d-366')
-      const fromRing = hierarchySelection()
-      click(container, 'A-2d')
-
-      expect(fromRing).toEqual(['A', 'A-2d'])
-      expect(hierarchySelection()).toEqual(fromRing)
-    })
-
-    it('selects only the first drawing for a ring clicked in it', async () => {
+    it('outlines every drawing for a ring clicked in the first one', async () => {
       const container = await drawn(withCopy())
 
       click(container, 'A-366')
 
-      expect(hierarchySelection()).toEqual(['A'])
-      expect(strokeOf(container, 'A')).toBe(ORANGE)
-      expect(strokeOf(container, 'A-2d')).toBe(GREY)
+      expect(drawings(container)).toEqual([ORANGE, ORANGE])
+    })
+
+    it('outlines every drawing when a copy itself is clicked', async () => {
+      const container = await drawn(withCopy())
+
+      click(container, 'A-2d')
+
+      expect(drawings(container)).toEqual([ORANGE, ORANGE])
+    })
+
+    it('outlines every drawing of a subsystem selected elsewhere', async () => {
+      const container = await drawn(withCopy())
+
+      act(() => {
+        useViewModelStore.getState().exclusiveSelect(NETWORK_ID, ['A'], [])
+      })
+
+      expect(drawings(container)).toEqual([ORANGE, ORANGE])
+    })
+
+    // A copy has no table row, so its id would count as a selected node with
+    // nothing behind it
+    it.each(['A-2d-366', 'A-366', 'A-2d', 'A'])(
+      'selects only the node itself for a click on %s',
+      async (id) => {
+        const container = await drawn(withCopy())
+
+        click(container, id)
+
+        expect(hierarchySelection()).toEqual(['A'])
+      },
+    )
+
+    it('keeps every drawing outlined after a rebuild', async () => {
+      const builds = deferBuilds()
+      const { container } = render(panel())
+      await act(async () => {
+        builds[0].resolve(withCopy())
+      })
+      click(container, 'A-2d-366')
+
+      act(() => {
+        useVisualStyleStore.setState({
+          visualStyles: { [NETWORK_ID]: { ...visualStyle } },
+        } as any)
+      })
+      expect(builds).toHaveLength(2)
+      await act(async () => {
+        builds[1].resolve(withCopy())
+      })
+
+      expect(drawings(container)).toEqual([ORANGE, ORANGE])
+    })
+
+    // A protein ring's `originalId` is a member id, not a hierarchy node
+    it('does not take a member id for the selected subsystem', async () => {
+      const container = await drawn(
+        d3Hierarchy
+          .stratify<D3TreeNode>()([
+            subsystem('root', '', 'Cell'),
+            subsystem('A', 'root', 'Complex'),
+            ring('A-x', 'A', 1, 'X'),
+            subsystem('B', 'root', 'Other'),
+            {
+              ...ring('B-A', 'B', 1, 'Y'),
+              originalId: 'A',
+            },
+          ] as unknown as D3TreeNode[])
+          .sum(() => 1),
+      )
+
+      act(() => {
+        useViewModelStore.getState().exclusiveSelect(NETWORK_ID, ['A'], [])
+      })
+
+      expect(strokeOf(container, 'B-A')).toBe(GREY)
     })
   })
 

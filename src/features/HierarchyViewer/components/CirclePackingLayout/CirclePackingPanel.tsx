@@ -52,7 +52,8 @@ import {
   getFontSize,
   getLabel,
   getWordLines,
-  subsystemSelection,
+  isSelectedSubsystem,
+  subsystemNodeId,
   terminalRingKey,
 } from './CirclePackingUtils'
 import { D3TreeNode } from './D3TreeNode'
@@ -241,7 +242,7 @@ export const CirclePackingPanel = ({
 
       if (d.height !== 0) {
         // Selected item is a subsystem
-        exclusiveSelect(network.id, subsystemSelection(d.data), [])
+        exclusiveSelect(network.id, [subsystemNodeId(d.data)], [])
 
         // Clear the selection in leafs in the selected node
         setSelectedLeaves([])
@@ -258,7 +259,7 @@ export const CirclePackingPanel = ({
 
         setSelectedLeaves([terminalRingKey(d.data)])
 
-        exclusiveSelect(network.id, subsystemSelection(parent.data), [])
+        exclusiveSelect(network.id, [subsystemNodeId(parent.data)], [])
       }
     },
     [
@@ -869,15 +870,12 @@ export const CirclePackingPanel = ({
       .attr('cy', (d) => d.y)
       .attr('r', (d) => d.r)
       .attr('stroke', (d) =>
-        selectedNodeSet.has(d.data.id)
+        isSelectedSubsystem(d.data, selectedNodeSet)
           ? CpDefaults.selectedBorderColor
           : CpDefaults.borderColor,
       )
       .attr('stroke-width', (d) => {
-        // return d.data.id === selected || d.data.originalId === selected
-        return selectedNodeSet.has(d.data.id) ||
-          (d.data.originalId !== undefined &&
-            selectedNodeSet.has(d.data.originalId))
+        return isSelectedSubsystem(d.data, selectedNodeSet)
           ? CpDefaults.borderWidthHover
           : CpDefaults.borderWidth
       })
@@ -1040,14 +1038,12 @@ export const CirclePackingPanel = ({
             return colorScale(d.depth)
           })
           .attr('stroke', (d) =>
-            selectedNodeSet.has(d.data.id)
+            isSelectedSubsystem(d.data, selectedNodeSet)
               ? CpDefaults.selectedBorderColor
               : CpDefaults.borderColor,
           )
           .attr('stroke-width', (d) => {
-            return selectedNodeSet.has(d.data.id) ||
-              (d.data.originalId !== undefined &&
-                selectedNodeSet.has(d.data.originalId))
+            return isSelectedSubsystem(d.data, selectedNodeSet)
               ? CpDefaults.borderWidthHover
               : CpDefaults.borderWidth
           })
@@ -1063,14 +1059,12 @@ export const CirclePackingPanel = ({
             return colorScale(d.depth)
           })
           .attr('stroke', (d) =>
-            selectedNodeSet.has(d.data.id)
+            isSelectedSubsystem(d.data, selectedNodeSet)
               ? CpDefaults.selectedBorderColor
               : CpDefaults.borderColor,
           )
           .attr('stroke-width', (d) => {
-            return selectedNodeSet.has(d.data.id) ||
-              (d.data.originalId !== undefined &&
-                selectedNodeSet.has(d.data.originalId))
+            return isSelectedSubsystem(d.data, selectedNodeSet)
               ? CpDefaults.borderWidthHover
               : CpDefaults.borderWidth
           })

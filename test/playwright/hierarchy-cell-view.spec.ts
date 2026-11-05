@@ -1167,3 +1167,72 @@ test.describe('Selecting a protein ring with the Sub Network Viewer (#931)', () 
     await expect.poll(() => strokeOf(svg, DR1_IN_CYTOPLASM)).toBe('#666')
   })
 })
+
+// #931: a subsystem with several parents is drawn once per path, and only its
+// first drawing has the node's id. A click on a ring inside a copy lit up the
+// first drawing and not the ring's own parent.
+const SHARED_SUBSYSTEM_HCX = path.resolve(
+  __dirname,
+  '../fixtures/hcx/valid/shared-subsystem.valid.cx2',
+)
+
+test.describe('A subsystem drawn more than once in the Cell View (#931)', () => {
+  // Node 3 has two parents. Ring ids are `<subsystem drawing>-<member>`.
+  const FIRST_DRAWING = '3'
+  const COPY = '3-2d'
+  const DR1_IN_COPY = '3-2d-DR1'
+  const DR1_IN_FIRST_DRAWING = '3-DR1'
+
+  const openCellView = async (page: Page): Promise<Locator> => {
+    await page.route('**/*ndexbio.org/**', () => {})
+    await importNetworkFile(
+      page,
+      SHARED_SUBSYSTEM_HCX,
+      'Shared Subsystem Hierarchy',
+    )
+    await page.getByRole('tab', { name: 'Cell View' }).click()
+    const svg = page.locator('[data-testid="circle-packing-svg"]')
+    await expect(svg.locator('circle')).toHaveCount(11)
+    return svg
+  }
+
+  const hierarchySelection = (page: Page) =>
+    page.evaluate(
+      (id) => {
+        const result = (window as any).CyWebApi.selection.getSelection(id)
+        return result.success ? result.data.selectedNodes : undefined
+      },
+      /\/networks\/([^/?]+)/.exec(page.url())?.[1],
+    )
+
+  test('a ring clicked in a copy outlines every drawing and selects one node', async ({
+    page,
+  }) => {
+    const svg = await openCellView(page)
+    await expect.poll(() => strokeOf(svg, COPY)).toBe('#666')
+
+    await clickLabel(page, svg, DR1_IN_COPY)
+
+    await expect.poll(() => strokeOf(svg, COPY)).toBe('orange')
+    expect(await strokeOf(svg, FIRST_DRAWING)).toBe('orange')
+    expect(await strokeOf(svg, DR1_IN_COPY)).toBe('red')
+    expect(await strokeOf(svg, DR1_IN_FIRST_DRAWING)).toBe('red')
+    expect(await hierarchySelection(page)).toEqual([FIRST_DRAWING])
+  })
+
+  test('a subsystem selected outside the Cell View outlines every drawing', async ({
+    page,
+  }) => {
+    const svg = await openCellView(page)
+
+    await page.evaluate(
+      ([id, node]) => {
+        ;(window as any).CyWebApi.selection.exclusiveSelect(id, [node], [])
+      },
+      [/\/networks\/([^/?]+)/.exec(page.url())?.[1], FIRST_DRAWING],
+    )
+
+    await expect.poll(() => strokeOf(svg, FIRST_DRAWING)).toBe('orange')
+    await expect.poll(() => strokeOf(svg, COPY)).toBe('orange')
+  })
+})

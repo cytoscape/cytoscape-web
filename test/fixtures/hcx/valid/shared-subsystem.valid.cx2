@@ -1,0 +1,177 @@
+[
+  {
+    "CXVersion": "2.0",
+    "hasFragments": false
+  },
+  {
+    "metaData": [
+      {
+        "name": "attributeDeclarations",
+        "elementCount": 1
+      },
+      {
+        "name": "networkAttributes",
+        "elementCount": 1
+      },
+      {
+        "name": "nodes",
+        "elementCount": 4
+      },
+      {
+        "name": "edges",
+        "elementCount": 4
+      }
+    ]
+  },
+  {
+    "attributeDeclarations": [
+      {
+        "networkAttributes": {
+          "name": {
+            "d": "string"
+          },
+          "description": {
+            "d": "string"
+          },
+          "ndexSchema": {
+            "d": "string"
+          },
+          "HCX::modelFileCount": {
+            "d": "integer"
+          },
+          "HCX::interactionNetworkUUID": {
+            "d": "string"
+          },
+          "HCX::interactionNetworkHost": {
+            "d": "string"
+          }
+        },
+        "nodes": {
+          "name": {
+            "d": "string"
+          },
+          "HCX::memberNames": {
+            "d": "list_of_string"
+          }
+        },
+        "edges": {
+          "interaction": {
+            "d": "string"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "networkAttributes": [
+      {
+        "name": "Shared Subsystem Hierarchy",
+        "description": "A hierarchy with a subsystem that has two parents, so the Cell View draws it twice. Members are listed by name, so no NDEx lookup is needed",
+        "ndexSchema": "hierarchy_v0.1",
+        "HCX::modelFileCount": 1,
+        "HCX::interactionNetworkUUID": "test-uuid-123",
+        "HCX::interactionNetworkHost": "dev1.ndexbio.org"
+      }
+    ]
+  },
+  {
+    "nodes": [
+      {
+        "id": 0,
+        "x": 0,
+        "y": 50,
+        "v": {
+          "name": "Cell",
+          "HCX::memberNames": [
+            "DR1",
+            "TAF11",
+            "MYC",
+            "ACTB"
+          ]
+        }
+      },
+      {
+        "id": 1,
+        "x": 100,
+        "y": 50,
+        "v": {
+          "name": "Nucleoplasm",
+          "HCX::memberNames": [
+            "DR1",
+            "TAF11",
+            "MYC"
+          ]
+        }
+      },
+      {
+        "id": 2,
+        "x": 200,
+        "y": 50,
+        "v": {
+          "name": "Cytoplasm",
+          "HCX::memberNames": [
+            "DR1",
+            "TAF11",
+            "ACTB"
+          ]
+        }
+      },
+      {
+        "id": 3,
+        "x": 300,
+        "y": 50,
+        "v": {
+          "name": "Shared Complex",
+          "HCX::memberNames": [
+            "DR1",
+            "TAF11"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "edges": [
+      {
+        "id": 0,
+        "s": 0,
+        "t": 1,
+        "v": {
+          "interaction": "contains"
+        }
+      },
+      {
+        "id": 1,
+        "s": 0,
+        "t": 2,
+        "v": {
+          "interaction": "contains"
+        }
+      },
+      {
+        "id": 2,
+        "s": 1,
+        "t": 3,
+        "v": {
+          "interaction": "contains"
+        }
+      },
+      {
+        "id": 3,
+        "s": 2,
+        "t": 3,
+        "v": {
+          "interaction": "contains"
+        }
+      }
+    ]
+  },
+  {
+    "status": [
+      {
+        "error": "",
+        "success": true
+      }
+    ]
+  }
+]
