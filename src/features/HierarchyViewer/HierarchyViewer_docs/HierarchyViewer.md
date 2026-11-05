@@ -21,6 +21,7 @@ HierarchyViewer/
 │   ├── MainPanel.tsx                    # Main orchestrator component
 │   ├── CirclePackingLayout/              # Circle packing visualization
 │   │   ├── CirclePackingPanel.tsx       # D3.js-based circle packing renderer
+│   │   ├── useSubsystemPrefetch.ts      # Download a hovered subsystem's network
 │   │   └── ...
 │   ├── SubNetworkPanel.tsx              # Interaction network viewer
 │   ├── FilterPanel/                     # Network filtering controls
@@ -95,7 +96,8 @@ A D3.js-based visualization component that renders hierarchical structures as ne
 
 **Key Features:**
 
-- Zoom-based visibility control (shows labels at appropriate zoom levels)
+- Zoom-based visibility control (shows labels at appropriate zoom levels). Every zoom frame computes the depth to show, but circles and labels are restyled only when that depth changes, and only those in this panel's SVG
+- Hover prefetch: resting the pointer on a subsystem circle for 150 ms (`SUBSYSTEM_PREFETCH_DELAY_MS`) starts downloading the network a click would open (`useSubsystemPrefetch`, `prefetchSubnetworkCx2`). Not for the root, which holds every gene and which the pointer enters on its way to any circle, nor for genes
 - Interactive selection (click subsystems to view interactions, click leaf nodes to select)
 - Multi-selection support for leaf nodes (stores selected leaves as an array)
 - Search state integration (expands all when search is active)
@@ -124,6 +126,7 @@ Displays the interaction network associated with a selected subsystem.
 **Key Features:**
 
 - Async network fetching with React Query
+- Reuses a download the Cell View started on hover (`prefetchSubnetworkCx2` in `subnetworkQueryUtil.ts`): the last 4, each for 60 s and once. A failed prefetch is downloaded again. Only the download is prefetched; converting a network that may never be opened would block the page
 - Progress tracking during network registration
 - Web Worker support for layout calculations (with fallback)
 - Filter configuration extraction from interaction network's `filterWidgets` opaque aspect

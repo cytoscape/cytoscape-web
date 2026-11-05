@@ -129,13 +129,12 @@ The WorkspaceEditor integrates with the following stores and services:
 
 1. **URL Parameter Change:** React Router detects network ID change in URL
 2. **Loading Check:** Check if already loading (prevent concurrent loads)
-3. **Load Summary:** Fetch network summary from NDEx or cache
-4. **Load Network Data:** Fetch full network data (network, tables, styles, views)
-5. **Populate Stores:** Update all stores with loaded data
-6. **Validate HCX:** If HCX network, validate and store result
-7. **Apply Layout:** If no layout, apply default layout
-8. **Update Current Network:** Set current network ID in workspace
-9. **Error Handling:** Set error state if loading fails
+3. **Load Summary and Network Data:** Fetch the network summary and the full network data (network, tables, styles, views) at once, each from cache or NDEx. The network loader does not need the summary first, so on a cache miss both downloads run together.
+4. **Populate Stores:** Update all stores with loaded data
+5. **Validate HCX:** If HCX network, validate and store result
+6. **Apply Layout:** If no layout, apply default layout
+7. **Update Current Network:** Set current network ID in workspace
+8. **Error Handling:** Set error state if loading fails
 
 ## Modification Detection Flow
 
@@ -200,4 +199,3 @@ operations that are not undoable.
 6. **Concurrent Load Handling:** Better handling of rapid network switches (debouncing, cancellation)
 
 7. **Network Preloading:** Preload adjacent networks for faster switching
-

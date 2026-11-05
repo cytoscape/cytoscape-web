@@ -53,6 +53,7 @@ import {
 } from './CirclePackingUtils'
 import { D3TreeNode } from './D3TreeNode'
 import { useCenterAnchoredZoom } from './useCenterAnchoredZoom'
+import { useSubsystemPrefetch } from './useSubsystemPrefetch'
 
 interface CirclePackingPanelProps {
   rendererId: string
@@ -93,6 +94,9 @@ export const CirclePackingPanel = ({
   > | null>(null) // Keep the zoom behavior as a state
   const selectedDepthRef = useRef(0) // For keeping track of the selected node's depth in the hierarchy
   const lastZoomLevelRef = useRef(0) // Keep the last zoom level for comparison
+  // Depth the circles and labels currently show; undefined after new
+  // circles join, which start without a display style
+  const shownDepthRef = useRef<number | undefined>(undefined)
   const updatingNetworkIdRef = useRef<IdType | null>(null) // Track which network is currently being updated
   const hasInitialFitToSelectedLeaves = useRef(false) // Track if we've done initial fit to selected leaves
 
@@ -173,11 +177,17 @@ export const CirclePackingPanel = ({
   /**
    * Memoized event handlers to avoid re-attaching on every update
    */
+  const hoverSubsystem = useSubsystemPrefetch(network.id)
+
   const handleCircleMouseEnter = useCallback(
     (e: any, d: d3Hierarchy.HierarchyCircularNode<D3TreeNode>) => {
       setHoveredEnter(d.data)
+      // Download the subsystem a click would open. The root holds every
+      // gene and a leaf is a gene, so neither is worth it.
+      const isSubsystem = d.depth !== 0 && d.height !== 0
+      hoverSubsystem(isSubsystem ? (d.data.originalId ?? d.data.id) : undefined)
     },
-    [],
+    [hoverSubsystem],
   )
 
   const handleCircleClick = useCallback(
@@ -225,7 +235,8 @@ export const CirclePackingPanel = ({
    * Update visibility of circles and text elements based on zoom level
    */
   const updateVisibilityForZoom = (maxDepth: number): void => {
-    const circles = d3Selection.selectAll<
+    const svg = d3Selection.select(svgRef.current)
+    const circles = svg.selectAll<
       SVGCircleElement,
       d3Hierarchy.HierarchyCircularNode<D3TreeNode>
     >('circle')
@@ -244,7 +255,7 @@ export const CirclePackingPanel = ({
       }
     })
 
-    const textElements = d3Selection.selectAll<
+    const textElements = svg.selectAll<
       SVGTextElement,
       d3Hierarchy.HierarchyCircularNode<D3TreeNode>
     >('text')
@@ -269,6 +280,7 @@ export const CirclePackingPanel = ({
         return 'none'
       }
     })
+    shownDepthRef.current = maxDepth
   }
 
   /**
@@ -610,7 +622,11 @@ export const CirclePackingPanel = ({
           lastZoomLevelRef.current = selectedDepthRef.current
         } else {
           lastZoomLevelRef.current = maxDepth
-          updateVisibilityForZoomRef.current(maxDepth)
+          // Every zoom frame lands here; restyling every circle and label
+          // only pays when the depth changes
+          if (shownDepthRef.current !== maxDepth) {
+            updateVisibilityForZoomRef.current(maxDepth)
+          }
         }
       })
 
@@ -972,6 +988,8 @@ export const CirclePackingPanel = ({
 
         // Remove old circles
         circles.exit().remove()
+        // New circles show whatever the depth; the next zoom frame hides them
+        shownDepthRef.current = undefined
 
         // Only attach handlers to new circles (existing ones keep their handlers)
         // Note: D3 doesn't automatically update handlers, so we only set them on enter

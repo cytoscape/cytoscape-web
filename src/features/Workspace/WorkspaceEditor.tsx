@@ -52,7 +52,6 @@ import { useOpaqueAspectStore } from '../../data/hooks/stores/OpaqueAspectStore'
 import { useRendererFunctionStore } from '../../data/hooks/stores/RendererFunctionStore'
 import { useUndoStore } from '../../data/hooks/stores/UndoStore'
 import { logUi } from '../../debug'
-import { CyNetwork } from '../../models'
 import { getDefaultLayout } from '../../models/LayoutModel/impl/layoutSelection'
 import { useCreateNetworkFromTableStore } from '../TableDataLoader/store/createNetworkFromTableStore'
 import { useJoinTableToNetworkStore } from '../TableDataLoader/store/joinTableToNetworkStore'
@@ -215,9 +214,13 @@ const WorkSpaceEditor = (): JSX.Element => {
     try {
       // Cached summaries/content resolve immediately; the loaders only wait
       // for the auth token when they actually fetch from NDEx (cache miss).
-      const summaryMap = await loadNetworkSummaries([networkId])
+      // From NDEx, the summary and the network download together: the
+      // network loader does not need the summary first.
+      const [summaryMap, cyNetworkData] = await Promise.all([
+        loadNetworkSummaries([networkId]),
+        loadCyNetwork(networkId),
+      ])
       const summary = summaryMap[networkId]
-      const cyNetworkData: CyNetwork = await loadCyNetwork(networkId)
       // Deleted while it loaded: adding it now would bring it back
       if (isRemoved()) {
         return false

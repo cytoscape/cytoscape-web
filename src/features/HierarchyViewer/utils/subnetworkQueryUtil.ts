@@ -13,9 +13,128 @@ import { getCyNetworkFromCx2 } from '../../../models/CxModel/impl'
 import { CyNetwork } from '../../../models/CyNetworkModel'
 import { IdType } from '../../../models/IdType'
 import { Network } from '../../../models/NetworkModel'
+import { ValueType } from '../../../models/TableModel'
 import { NetworkView } from '../../../models/ViewModel'
+import { HcxMetaData } from '../model/HcxMetaData'
+import { SubsystemTag } from '../model/HcxMetaTag'
 
 const MAX_RETRY_COUNT = 1
+
+/** Subsystem downloads kept from hovering, oldest dropped first. */
+const MAX_PREFETCHED = 4
+/** A prefetched download older than this is fetched again on click. */
+const PREFETCH_MAX_AGE_MS = 60_000
+
+/** What fetchNdexSubnetwork downloads for one subsystem. */
+export interface SubnetworkRequest {
+  /** The subsystem's own interaction network, fetched by UUID when set. */
+  interactionNetworkUuid: IdType
+  /** Otherwise an interconnect query of `query` on this network. */
+  rootNetworkUuid: IdType
+  /** Comma-separated member node IDs. */
+  query: string
+  ndexUrl?: string
+}
+
+const prefetched = new Map<string, { cx2: Promise<Cx2>; startedAt: number }>()
+
+const requestKey = ({
+  interactionNetworkUuid,
+  rootNetworkUuid,
+  query,
+  ndexUrl,
+}: SubnetworkRequest): string =>
+  interactionNetworkUuid !== undefined && interactionNetworkUuid !== ''
+    ? `${ndexUrl ?? ''}|uuid|${interactionNetworkUuid}`
+    : `${ndexUrl ?? ''}|query|${rootNetworkUuid}|${query}`
+
+const downloadSubnetworkCx2 = (
+  {
+    interactionNetworkUuid,
+    rootNetworkUuid,
+    query,
+    ndexUrl,
+  }: SubnetworkRequest,
+  accessToken?: string,
+): Promise<Cx2> =>
+  interactionNetworkUuid !== undefined && interactionNetworkUuid !== ''
+    ? fetchNdexNetwork(interactionNetworkUuid, accessToken, ndexUrl)
+    : fetchNdexInterconnectQuery(rootNetworkUuid, query, accessToken, ndexUrl)
+
+/**
+ * Start downloading a subsystem's network before it is clicked, so the
+ * click (fetchNdexSubnetworkByQuery) finds the download under way or done.
+ * Only the download: converting it would block the page for a network that
+ * may never be opened. Does nothing when the same download is fresh.
+ */
+export const prefetchSubnetworkCx2 = (
+  request: SubnetworkRequest,
+  accessToken?: string,
+): void => {
+  const key = requestKey(request)
+  const existing = prefetched.get(key)
+  if (
+    existing !== undefined &&
+    Date.now() - existing.startedAt < PREFETCH_MAX_AGE_MS
+  ) {
+    return
+  }
+  const cx2 = downloadSubnetworkCx2(request, accessToken)
+  // A failed prefetch is retried by the click, not reported here
+  cx2.catch(() => {})
+  prefetched.delete(key)
+  prefetched.set(key, { cx2, startedAt: Date.now() })
+  if (prefetched.size > MAX_PREFETCHED) {
+    prefetched.delete(prefetched.keys().next().value as string)
+  }
+}
+
+/** A fresh prefetched download of `request`, taken out of the cache. */
+const takePrefetchedCx2 = (
+  request: SubnetworkRequest,
+): Promise<Cx2> | undefined => {
+  const key = requestKey(request)
+  const entry = prefetched.get(key)
+  prefetched.delete(key)
+  if (
+    entry === undefined ||
+    Date.now() - entry.startedAt >= PREFETCH_MAX_AGE_MS
+  ) {
+    return undefined
+  }
+  return entry.cx2
+}
+
+/**
+ * The download that opens a subsystem, from its hierarchy node table row:
+ * its own interaction network when the row names one, else an interconnect
+ * query of its members on the hierarchy's interaction network. Mirrors
+ * MainPanel and SubNetworkPanel. Undefined when the row gives neither.
+ */
+export const subsystemRequest = (
+  row: Record<string, ValueType> | undefined,
+  metadata: HcxMetaData | undefined,
+  ndexBaseUrl: string,
+): SubnetworkRequest | undefined => {
+  if (row === undefined || metadata === undefined) return undefined
+  const uuid = row[SubsystemTag.interactionNetworkUuid]
+  const members = row[SubsystemTag.members]
+  const interactionNetworkUuid = typeof uuid === 'string' ? uuid : ''
+  const query = Array.isArray(members) ? members.join(',') : ''
+  if (interactionNetworkUuid === '' && query === '') return undefined
+  const host = metadata.interactionNetworkHost ?? ''
+  return {
+    interactionNetworkUuid,
+    rootNetworkUuid: metadata.interactionNetworkUUID ?? '',
+    query,
+    ndexUrl: host === '' ? ndexBaseUrl : host,
+  }
+}
+
+/** Drop every prefetched download. For tests. */
+export const clearPrefetchedSubnetworks = (): void => {
+  prefetched.clear()
+}
 
 /**
  * ID a hierarchy's subnetwork is stored under in the network, table and view
@@ -135,14 +254,17 @@ const fetchNdexSubnetwork = async (
     interactionNetworkUuid !== undefined && interactionNetworkUuid !== ''
 
   try {
-    const cxData: Cx2 = interactionNetworkUuidExists
-      ? await fetchNdexNetwork(interactionNetworkUuid, accessToken, ndexUrl)
-      : await fetchNdexInterconnectQuery(
-          rootNetworkUuid,
-          query,
-          accessToken,
-          ndexUrl,
-        )
+    const request: SubnetworkRequest = {
+      interactionNetworkUuid,
+      rootNetworkUuid,
+      query,
+      ndexUrl,
+    }
+    // A hover may have started this download; if it failed, download again
+    const download = (): Promise<Cx2> =>
+      downloadSubnetworkCx2(request, accessToken)
+    const cxData: Cx2 = await (takePrefetchedCx2(request)?.catch(download) ??
+      download())
     // getCyNetworkFromCx2 validates the CX2 data before processing
     return getCyNetworkFromCx2(interactionNetworkId, cxData)
   } catch (error) {
