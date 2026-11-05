@@ -322,6 +322,62 @@ describe('SubNetworkPanel selection sync with the Cell View (#931)', () => {
     })
   })
 
+  // The viewer unmounts with its tab, or when the right panel closes, while the
+  // Cell View stays and keeps outlining the ring. A viewer that comes back must not
+  // report a selection the Cell View already knows about.
+  describe('a ring click across a remount of the viewer', () => {
+    const remounted = async (...names: string[]) => {
+      const first = render(panel(SUBSYSTEM_A))
+      await shown(SUB_A)
+      selectInViewer(SUB_A, ['a2'])
+      clickRing(...names)
+      first.unmount()
+      echoes.length = 0
+
+      render(panel(SUBSYSTEM_A))
+      await shown(SUB_A)
+    }
+
+    it('is not echoed back', async () => {
+      await remounted('DR1')
+
+      expect(selectedIn(SUB_A)).toEqual(['a1'])
+      expect(echoes).toEqual([])
+    })
+
+    it('keeps its border when the subnetwork has no node for its protein', async () => {
+      await remounted('NOT-IN-THE-SUBNETWORK')
+
+      expect(selectedIn(SUB_A)).toEqual([])
+      expect(echoes).toEqual([])
+    })
+
+    it('does not stop the next viewer selection from being sent', async () => {
+      await remounted('DR1')
+
+      selectInViewer(SUB_A, ['a2'])
+
+      expect(echoes).toEqual([['TAF11']])
+    })
+
+    // The background click cleared the Cell View, so it no longer shows this
+    it('is sent again once another click has cleared the Cell View', async () => {
+      const first = render(panel(SUBSYSTEM_A))
+      await shown(SUB_A)
+      clickRing('DR1')
+      first.unmount()
+      act(() => {
+        useSubNetworkStore.getState().setSelectedNodes([], null)
+      })
+      echoes.length = 0
+
+      render(panel(SUBSYSTEM_A))
+      await shown(SUB_A)
+
+      await waitFor(() => expect(echoes).toEqual([['DR1']]))
+    })
+  })
+
   // A click is for the subnetwork of the subsystem it selected. Another subsystem
   // can be selected before that one arrives, in the Tree View for example.
   describe('a click overtaken by another selection', () => {
@@ -353,22 +409,6 @@ describe('SubNetworkPanel selection sync with the Cell View (#931)', () => {
       await overtaken()
 
       expect(selectedIn(SUB_A)).toEqual([])
-    })
-
-    it('is forgotten, so its own subnetwork does not get it later', async () => {
-      const fetches = await overtaken()
-      expect(useSubNetworkStore.getState().selectedNodesTarget).toBeNull()
-      vi.mocked(fetchNdexSubnetworkByQuery).mockImplementation(fetchAtOnce)
-
-      act(() => {
-        selectInHierarchy(SUBSYSTEM_B)
-      })
-      await act(async () => {
-        fetches.get(SUB_B)?.()
-      })
-      await shown(SUB_B)
-
-      expect(selectedIn(SUB_B)).toEqual([])
     })
 
     it('does not stop viewer selections from reaching the Cell View', async () => {

@@ -41,7 +41,6 @@ import {
 } from '../utils/resolveShownSubNetworkId'
 import {
   fetchNdexSubnetworkByQuery,
-  getSubNetworkId,
   NdexSubnetworkFetchError,
 } from '../utils/subnetworkQueryUtil'
 import { CirclePackingType } from './CirclePackingLayout/CirclePackingLayout'
@@ -189,13 +188,12 @@ export const SubNetworkPanel = ({
   const selectedNodesTarget: IdType | null = useSubNetworkStore(
     (state) => state.selectedNodesTarget,
   )
-  const clearSelectedNodesTarget: () => void = useSubNetworkStore(
-    (state) => state.clearSelectedNodesTarget,
+  const markSelectedNodesApplied = useSubNetworkStore(
+    (state) => state.markSelectedNodesApplied,
   )
-
-  // What a click on a protein ring just selected in this subnetwork. The Cell
-  // View already outlines that ring, so the selection is not sent back to it.
-  const ringSelectionRef = useRef<IdType[] | null>(null)
+  const clearRingSelection: () => void = useSubNetworkStore(
+    (state) => state.clearRingSelection,
+  )
 
   useEffect(() => {
     // Convert node IDs to names
@@ -213,14 +211,18 @@ export const SubNetworkPanel = ({
     // Sending a ring's own selection back would start the Cell View's expansion
     // to the initial selection. And when the protein has no node here, the empty
     // selection would clear the border.
-    const ringSelection = ringSelectionRef.current
-    ringSelectionRef.current = null
-    if (
-      ringSelection !== null &&
-      ringSelection.length === selectedNodesInQueryNetwork.length &&
-      ringSelection.every((id) => selectedNodesInQueryNetwork.includes(id))
-    ) {
-      return
+    const { ringSelection } = useSubNetworkStore.getState()
+    if (ringSelection !== null) {
+      if (
+        ringSelection.subNetworkId === queryNetworkId &&
+        ringSelection.nodeIds.length === selectedNodesInQueryNetwork.length &&
+        ringSelection.nodeIds.every((id) =>
+          selectedNodesInQueryNetwork.includes(id),
+        )
+      ) {
+        return
+      }
+      clearRingSelection()
     }
 
     const { nodeTable } = tableRecord
@@ -347,23 +349,14 @@ export const SubNetworkPanel = ({
    *
    * Only a click does this: with nothing pending, a subnetwork arriving keeps
    * the selection it has, such as one restored from the URL. Selecting another
-   * subsystem first cancels the click. `shownSubNetworkId` can't tell that apart
-   * from a subnetwork still loading, since it is empty for both, so this compares
-   * against the subsystem selected now.
+   * subsystem first cancels the click, which the Cell View takes care of: it stays
+   * mounted, and this panel does not.
    */
-  const selectedSubNetworkId: IdType = getSubNetworkId(
-    hierarchyId,
-    subsystemNodeId,
-  )
   useEffect(() => {
-    if (selectedNodesTarget === null) {
-      return
-    }
-    if (selectedNodesTarget !== selectedSubNetworkId) {
-      clearSelectedNodesTarget()
-      return
-    }
-    if (shownSubNetworkId !== selectedNodesTarget) {
+    if (
+      selectedNodesTarget === null ||
+      shownSubNetworkId !== selectedNodesTarget
+    ) {
       return
     }
     const tableRecord = tables[shownSubNetworkId]
@@ -392,16 +385,14 @@ export const SubNetworkPanel = ({
 
     // A click on a subsystem ring names nothing. It clears the viewer, and the
     // Cell View is told so as with any selection made there.
-    ringSelectionRef.current = selectedNodes.length > 0 ? toBeSelected : null
+    markSelectedNodesApplied(
+      selectedNodes.length > 0
+        ? { subNetworkId: shownSubNetworkId, nodeIds: [...toBeSelected] }
+        : null,
+    )
     exclusiveSelect(shownSubNetworkId, toBeSelected, [])
-    clearSelectedNodesTarget()
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires on a click, a change of subsystem, or when the subnetwork is shown; the rest is fresh at trigger time
-  }, [
-    selectedNodes,
-    selectedNodesTarget,
-    selectedSubNetworkId,
-    shownSubNetworkId,
-  ])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires on a click or when its subnetwork is shown; the rest is fresh at trigger time
+  }, [selectedNodes, selectedNodesTarget, shownSubNetworkId])
 
   useEffect(() => {
     // Clear the shown subnetwork when the viewer unmounts so it can't leak into

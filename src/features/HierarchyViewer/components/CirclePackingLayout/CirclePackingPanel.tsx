@@ -772,6 +772,29 @@ export const CirclePackingPanel = ({
   )
 
   /**
+   * Forget a click still waiting for its subnetwork once its subsystem is no
+   * longer selected. This panel stays mounted while the viewer comes and goes, so
+   * the click can't reach a subnetwork selected later, and can't apply when the
+   * viewer comes back.
+   */
+  useEffect(
+    function onHierarchySelectionChange() {
+      const { selectedNodesTarget, clearSelectedNodesTarget } =
+        useSubNetworkStore.getState()
+      if (
+        selectedNodesTarget !== null &&
+        !selectedNodes.some(
+          (nodeId) =>
+            getSubNetworkId(networkId, nodeId) === selectedNodesTarget,
+        )
+      ) {
+        clearSelectedNodesTarget()
+      }
+    },
+    [selectedNodes, networkId],
+  )
+
+  /**
    * Update selected leaf when hierarchy node names change
    * This syncs selections in the subnetwork view to this circle packing view
    */

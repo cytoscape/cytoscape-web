@@ -754,6 +754,68 @@ describe('CirclePackingPanel protein ring selection (#931)', () => {
     expect(target()).toBeNull()
   })
 
+  // The Cell View stays mounted while the viewer comes and goes, so it is the one
+  // that can notice a click going stale. With the viewer on another tab, nothing
+  // else would, and coming back would apply the old click.
+  describe('a click waiting for its subnetwork', () => {
+    const target = () => useSubNetworkStore.getState().selectedNodesTarget
+    const select = (...nodeIds: string[]): void => {
+      act(() => {
+        useViewModelStore.getState().exclusiveSelect(NETWORK_ID, nodeIds, [])
+      })
+    }
+
+    it('survives while its subsystem stays selected', async () => {
+      const container = await drawn()
+      click(container, 'A-366')
+
+      select('A', 'B')
+
+      expect(target()).toBe(`${NETWORK_ID}_A`)
+    })
+
+    it('is forgotten when another subsystem is selected', async () => {
+      const container = await drawn()
+      click(container, 'A-366')
+
+      select('B')
+
+      expect(target()).toBeNull()
+    })
+
+    it('stays forgotten when its subsystem is selected again', async () => {
+      const container = await drawn()
+      click(container, 'A-366')
+
+      select('B')
+      select('A')
+
+      expect(target()).toBeNull()
+    })
+
+    it('is forgotten when the selection is cleared', async () => {
+      const container = await drawn()
+      click(container, 'A-366')
+
+      select()
+
+      expect(target()).toBeNull()
+    })
+
+    it('is forgotten when the view moves to another network', async () => {
+      const builds = deferBuilds()
+      const { container, rerender } = render(panel())
+      await act(async () => {
+        builds[0].resolve(sharedProtein())
+      })
+      click(container, 'A-366')
+
+      rerender(panel(otherNetwork))
+
+      expect(target()).toBeNull()
+    })
+  })
+
   // Protein names and node ids are both free text here: a failed name lookup
   // leaves a ring named with its numeric member id
   describe('a protein named like a subsystem with no members', () => {

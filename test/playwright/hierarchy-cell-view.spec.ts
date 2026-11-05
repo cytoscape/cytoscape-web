@@ -1053,7 +1053,11 @@ test.describe('Selecting a protein ring with the Sub Network Viewer (#931)', () 
     { status: [{ error: '', success: true }] },
   ]
 
-  const mockNdex = async (page: Page): Promise<void> => {
+  const mockNdex = async (
+    page: Page,
+    subnetworkDelayMs = 0,
+    missingNodeIds: number[] = [],
+  ): Promise<void> => {
     await page.route('**/*ndexbio.org/**', async (route) => {
       const request = route.request()
       const headers = {
@@ -1069,7 +1073,13 @@ test.describe('Selecting a protein ring with the Sub Network Viewer (#931)', () 
       const answer = (body: unknown) =>
         route.fulfill({ status: 200, headers, json: body })
       if (url.includes('/interconnectquery')) {
-        await answer(interactionNetworkCx2(request.postDataJSON().nodeIds))
+        await new Promise((resolve) => setTimeout(resolve, subnetworkDelayMs))
+        const nodeIds: number[] = request.postDataJSON().nodeIds
+        await answer(
+          interactionNetworkCx2(
+            nodeIds.filter((id) => !missingNodeIds.includes(id)),
+          ),
+        )
       } else if (url.includes('/search/networks/') && url.includes('/nodes')) {
         const ids: number[] = request.postDataJSON().ids
         await answer(
@@ -1083,8 +1093,12 @@ test.describe('Selecting a protein ring with the Sub Network Viewer (#931)', () 
     })
   }
 
-  const openCellView = async (page: Page): Promise<Locator> => {
-    await mockNdex(page)
+  const openCellView = async (
+    page: Page,
+    subnetworkDelayMs = 0,
+    missingNodeIds: number[] = [],
+  ): Promise<Locator> => {
+    await mockNdex(page, subnetworkDelayMs, missingNodeIds)
     await importNetworkFile(
       page,
       SHARED_MEMBERS_HCX,
@@ -1161,6 +1175,69 @@ test.describe('Selecting a protein ring with the Sub Network Viewer (#931)', () 
     expect(await strokeOf(svg, CYTOPLASM)).toBe('orange')
     expect(await strokeOf(svg, MYC_IN_CYTOPLASM)).toBe('red')
     expect(await strokeOf(svg, DR1_IN_NUCLEOPLASM)).toBe('#666')
+  })
+
+  // Closing the right panel unmounts the viewer while the Cell View stays. The
+  // viewer that comes back has an empty selection, since the subnetwork has no node
+  // for DR1, and must not report that as the user clearing the selection.
+  test('the border survives closing and reopening the viewer', async ({
+    page,
+  }) => {
+    const svg = await openCellView(page, 0, [1])
+
+    await clickLabel(page, svg, DR1_IN_NUCLEOPLASM)
+    await expect(page.getByTestId('subnetwork-panel')).toBeVisible({
+      timeout: 15000,
+    })
+    await expect.poll(() => strokeOf(svg, DR1_IN_NUCLEOPLASM)).toBe('red')
+
+    await page.getByTestId('side-panel-close-button').click()
+    await expect(page.getByTestId('subnetwork-panel')).toHaveCount(0)
+    await page.getByTestId('side-panel-open-button').click()
+    await expect(page.getByTestId('subnetwork-panel')).toBeVisible({
+      timeout: 15000,
+    })
+
+    await page.waitForTimeout(500)
+    expect(await strokeOf(svg, DR1_IN_NUCLEOPLASM)).toBe('red')
+    expect(await strokeOf(svg, NUCLEOPLASM)).toBe('orange')
+  })
+
+  // Both subsystems list DR1, so a click applied to the wrong one would show
+  test('a click overtaken while its subnetwork loads is dropped', async ({
+    page,
+  }) => {
+    const svg = await openCellView(page, 1000)
+    const select = (subsystemId: string) =>
+      page.evaluate(
+        ([hierarchyId, id]) => {
+          ;(window as any).CyWebApi.selection.exclusiveSelect(
+            hierarchyId,
+            [id],
+            [],
+          )
+        },
+        [/\/networks\/([^/?]+)/.exec(page.url())?.[1], subsystemId],
+      )
+
+    await clickLabel(page, svg, DR1_IN_NUCLEOPLASM)
+    await expect.poll(() => strokeOf(svg, NUCLEOPLASM)).toBe('orange')
+    await select(CYTOPLASM)
+
+    const cytoplasm = subNetworkIdOf(page, CYTOPLASM)
+    await expect(page.getByTestId('subnetwork-panel')).toBeVisible({
+      timeout: 15000,
+    })
+    await expect.poll(() => selectedInViewer(page, cytoplasm)).toEqual([])
+
+    await select(NUCLEOPLASM)
+    await expect(page.getByTestId('subnetwork-panel')).toBeVisible({
+      timeout: 15000,
+    })
+    await page.waitForTimeout(500)
+    expect(
+      await selectedInViewer(page, subNetworkIdOf(page, NUCLEOPLASM)),
+    ).toEqual([])
   })
 
   test('a selection made in the viewer outlines its rings, by name', async ({
