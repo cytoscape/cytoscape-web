@@ -22,6 +22,7 @@ The NDEx client is configured via `config.ts`:
 - Base URL is loaded from `config.json` at module initialization
 - Can be overridden at runtime for testing or custom deployments
 - Authentication tokens are passed per-request
+- `getNdexClient` sends the token only to the configured host: a `url` on any other origin gets an anonymous client, because `url` can come from untrusted network data (#936)
 
 ### Main Exports
 

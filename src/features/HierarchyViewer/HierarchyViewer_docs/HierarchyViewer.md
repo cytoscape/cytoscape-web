@@ -63,7 +63,7 @@ The main orchestrator component that manages the hierarchy viewer layout and sta
   - `ndexSchema: "hierarchy_v0.1"` (required)
   - `HCX::modelFileCount` (required)
   - `HCX::interactionNetworkUUID` (optional - for networks with associated interaction networks)
-  - `HCX::interactionNetworkHost` (optional - host for interaction network queries)
+  - `HCX::interactionNetworkHost` (optional - host for interaction network queries). Untrusted: requests to any host other than the configured NDEx host are anonymous, so a private interaction network on another host does not load (see `docs/specifications/EXTERNAL_INPUT_VALIDATION_POLICY.md`, #936)
 - Registers the Circle Packing renderer if hierarchy is detected
 - Manages selection state and extracts subsystem information from selected nodes
 - Names the selected subsystem (`getSubsystemName`) by the attribute the node label is mapped to, else its `name` column, else its node id: HCX files need not have a `name` column (the test fixtures name nodes with `n`), and a null, absent or blank value, or a list with no non-blank item, counts as none
