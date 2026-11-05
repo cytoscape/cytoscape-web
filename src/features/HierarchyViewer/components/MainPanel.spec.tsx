@@ -361,7 +361,9 @@ describe('MainPanel subsystem handed to the viewer', () => {
     select('A')
     rerender(<MainPanel />)
 
-    for (const props of rendersFor('A')) {
+    const renders = rendersFor('A')
+    expect(renders.length).toBeGreaterThan(0)
+    for (const props of renders) {
       expect(props.interactionNetworkId ?? '').toBe('')
     }
   })
