@@ -72,23 +72,6 @@ describe('getNdexClient', () => {
     })
   })
 
-  it('should create a client with access token and custom URL', () => {
-    const accessToken = 'test-token'
-    const customUrl = 'https://custom.ndex.org'
-    const client = getNdexClient(accessToken, customUrl)
-
-    expect(mockGetNDExBaseUrl).not.toHaveBeenCalled()
-    expect(MockNDExClient).toHaveBeenCalledWith({
-      baseURL: customUrl,
-    })
-    expect(client.updateConfig).toHaveBeenCalledWith({
-      auth: {
-        type: 'oauth',
-        idToken: accessToken,
-      },
-    })
-  })
-
   it('should use custom URL when provided, even with default base URL available', () => {
     const customUrl = 'https://test.ndex.org'
     getNdexClient(undefined, customUrl)
@@ -104,20 +87,75 @@ describe('getNdexClient', () => {
     expect(client.updateConfig).not.toHaveBeenCalled()
   })
 
-  it('should handle URL override with access token', () => {
-    const accessToken = 'token-123'
-    const customUrl = 'https://override.ndex.org'
-    const client = getNdexClient(accessToken, customUrl)
+  describe('sending the access token only to the configured host (#936)', () => {
+    const TOKEN = 'test-token'
+    const CONFIGURED = 'https://dev1.ndexbio.org'
 
-    expect(MockNDExClient).toHaveBeenCalledWith({
-      baseURL: customUrl,
+    beforeEach(() => {
+      mockGetNDExBaseUrl.mockReturnValue(CONFIGURED)
     })
-    expect(client.updateConfig).toHaveBeenCalledWith({
-      auth: {
-        type: 'oauth',
-        idToken: accessToken,
-      },
+
+    it.each([
+      ['the same URL', 'https://dev1.ndexbio.org'],
+      ['a bare host', 'dev1.ndexbio.org'],
+      ['a trailing slash', 'https://dev1.ndexbio.org/'],
+      ['an upper-case host', 'https://DEV1.NDEXBIO.ORG'],
+      ['an upper-case scheme', 'HTTPS://dev1.ndexbio.org'],
+      ['the default port', 'https://dev1.ndexbio.org:443'],
+    ])('sends it to %s', (_label, url) => {
+      const client = getNdexClient(TOKEN, url)
+
+      expect(client.updateConfig).toHaveBeenCalledWith({
+        auth: { type: 'oauth', idToken: TOKEN },
+      })
     })
-    expect(client.updateConfig).toHaveBeenCalledTimes(1)
+
+    it.each([
+      ['another host', 'https://attacker.example'],
+      ['another bare host', 'attacker.example'],
+      ['a scheme downgrade', 'http://dev1.ndexbio.org'],
+      ['another port', 'https://dev1.ndexbio.org:8443'],
+      ['a look-alike suffix', 'dev1.ndexbio.org.attacker.example'],
+      ['a look-alike prefix', 'attacker-dev1.ndexbio.org'],
+      ['a sibling subdomain', 'https://evil.dev1.ndexbio.org'],
+      ['a userinfo trick', 'https://dev1.ndexbio.org@attacker.example'],
+      ['a host in the path', 'https://attacker.example/dev1.ndexbio.org'],
+      ['a host in the query', 'https://attacker.example?dev1.ndexbio.org'],
+      ['a host in the fragment', 'https://attacker.example#dev1.ndexbio.org'],
+      ['a scheme-relative URL', '//attacker.example'],
+      ['another scheme', 'ftp://dev1.ndexbio.org'],
+      ['an empty value', ''],
+      ['an unparseable value', 'https://not a host'],
+    ])('withholds it from %s', (_label, url) => {
+      const client = getNdexClient(TOKEN, url)
+
+      expect(client.updateConfig).not.toHaveBeenCalled()
+    })
+
+    it.each([
+      ['a number', 123],
+      ['an object', { host: CONFIGURED }],
+      ['a boolean', true],
+    ])('withholds it from %s, as an HCX value can be', (_label, url) => {
+      const client = getNdexClient(TOKEN, url as unknown as string)
+
+      expect(client.updateConfig).not.toHaveBeenCalled()
+    })
+
+    it('still sends the request to the other host, anonymously', () => {
+      getNdexClient(TOKEN, 'https://public.ndex.example')
+
+      expect(MockNDExClient).toHaveBeenCalledWith({
+        baseURL: 'https://public.ndex.example',
+      })
+    })
+
+    it('sends it to any host when that host is the configured one', () => {
+      mockGetNDExBaseUrl.mockReturnValue('http://localhost:8080')
+
+      const client = getNdexClient(TOKEN, 'http://localhost:8080/')
+
+      expect(client.updateConfig).toHaveBeenCalledTimes(1)
+    })
   })
 })
