@@ -38,6 +38,7 @@ import {
   CP_UNAVAILABLE_MESSAGE,
 } from '../../model/impl/circlePackingSupport'
 import { useSubNetworkStore } from '../../store/SubNetworkStore'
+import { getSubNetworkId } from '../../utils/subnetworkQueryUtil'
 // Local imports
 import {
   CirclePackingType,
@@ -53,6 +54,7 @@ import {
   getLabel,
   getWordLines,
   isSelectedSubsystem,
+  proteinRingKey,
   subsystemNodeId,
   terminalRingKey,
 } from './CirclePackingUtils'
@@ -246,16 +248,22 @@ export const CirclePackingPanel = ({
 
         // Clear the selection in leafs in the selected node
         setSelectedLeaves([])
-        setSelectedNodes([])
+        setSelectedNodes(
+          [],
+          getSubNetworkId(network.id, subsystemNodeId(d.data)),
+        )
       } else {
         // This is a leaf node
-
-        // Set always one node by clicking on the leaf node
-        setSelectedNodes([d.data.name])
 
         // Select the parent node instead
         const { parent } = d
         if (parent === null || parent === undefined) return
+
+        // Set always one node by clicking on the leaf node
+        setSelectedNodes(
+          [d.data.name],
+          getSubNetworkId(network.id, subsystemNodeId(parent.data)),
+        )
 
         setSelectedLeaves([terminalRingKey(d.data)])
 
@@ -776,12 +784,9 @@ export const CirclePackingPanel = ({
         hasInitialFitToSelectedLeaves.current = false
         initialExpansionPendingRef.current = false
       } else {
-        setSelectedLeaves(selectedHierarchyNodeNames)
-        displaySelectedNodes(
-          selectedNodeSet,
-          selectedHierarchyNodeNames,
-          searchMatchedRings,
-        )
+        const selectedRings = selectedHierarchyNodeNames.map(proteinRingKey)
+        setSelectedLeaves(selectedRings)
+        displaySelectedNodes(selectedNodeSet, selectedRings, searchMatchedRings)
 
         // On initial load with selected leaves, expand to the subsystem
         // containing them. It takes the view model, which may still be
@@ -841,8 +846,9 @@ export const CirclePackingPanel = ({
     // Handle background click to clear selections
     svg.on('click', (event: any) => {
       if (event.target.id === SVG_ID) {
-        // Clear the selection in interaction network
-        setSelectedNodes([])
+        // Clear the selection in interaction network. No subsystem stays
+        // selected, so no subnetwork is waiting for this.
+        setSelectedNodes([], null)
 
         // Clear the selection in the CP view's leaf node
         setSelectedLeaves([])

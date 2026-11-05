@@ -41,6 +41,7 @@ import {
 } from '../utils/resolveShownSubNetworkId'
 import {
   fetchNdexSubnetworkByQuery,
+  getSubNetworkId,
   NdexSubnetworkFetchError,
 } from '../utils/subnetworkQueryUtil'
 import { CirclePackingType } from './CirclePackingLayout/CirclePackingLayout'
@@ -185,11 +186,11 @@ export const SubNetworkPanel = ({
     (state) => state.setCurrentSubNetworkId,
   )
 
-  const selectedNodesPending: boolean = useSubNetworkStore(
-    (state) => state.selectedNodesPending,
+  const selectedNodesTarget: IdType | null = useSubNetworkStore(
+    (state) => state.selectedNodesTarget,
   )
-  const markSelectedNodesApplied: () => void = useSubNetworkStore(
-    (state) => state.markSelectedNodesApplied,
+  const clearSelectedNodesTarget: () => void = useSubNetworkStore(
+    (state) => state.clearSelectedNodesTarget,
   )
 
   // What a click on a protein ring just selected in this subnetwork. The Cell
@@ -205,7 +206,7 @@ export const SubNetworkPanel = ({
 
     // A subnetwork that just arrived, with a click about to select in it. Its
     // selection until then would clear the clicked ring's border.
-    if (selectedNodesPending) {
+    if (selectedNodesTarget === queryNetworkId) {
       return
     }
 
@@ -345,10 +346,24 @@ export const SubNetworkPanel = ({
    * do: it keeps naming the previous subnetwork while the next one loads.
    *
    * Only a click does this: with nothing pending, a subnetwork arriving keeps
-   * the selection it has, such as one restored from the URL.
+   * the selection it has, such as one restored from the URL. Selecting another
+   * subsystem first cancels the click. `shownSubNetworkId` can't tell that apart
+   * from a subnetwork still loading, since it is empty for both, so this compares
+   * against the subsystem selected now.
    */
+  const selectedSubNetworkId: IdType = getSubNetworkId(
+    hierarchyId,
+    subsystemNodeId,
+  )
   useEffect(() => {
-    if (!selectedNodesPending || shownSubNetworkId === '') {
+    if (selectedNodesTarget === null) {
+      return
+    }
+    if (selectedNodesTarget !== selectedSubNetworkId) {
+      clearSelectedNodesTarget()
+      return
+    }
+    if (shownSubNetworkId !== selectedNodesTarget) {
       return
     }
     const tableRecord = tables[shownSubNetworkId]
@@ -379,9 +394,14 @@ export const SubNetworkPanel = ({
     // Cell View is told so as with any selection made there.
     ringSelectionRef.current = selectedNodes.length > 0 ? toBeSelected : null
     exclusiveSelect(shownSubNetworkId, toBeSelected, [])
-    markSelectedNodesApplied()
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires on a click or when its subnetwork is shown; the rest is fresh at trigger time
-  }, [selectedNodes, selectedNodesPending, shownSubNetworkId])
+    clearSelectedNodesTarget()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires on a click, a change of subsystem, or when the subnetwork is shown; the rest is fresh at trigger time
+  }, [
+    selectedNodes,
+    selectedNodesTarget,
+    selectedSubNetworkId,
+    shownSubNetworkId,
+  ])
 
   useEffect(() => {
     // Clear the shown subnetwork when the viewer unmounts so it can't leak into

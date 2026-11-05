@@ -7,11 +7,12 @@ interface SubNetworkState {
   // Names of the proteins to select in the subnetwork, from a click in the Cell
   // View
   selectedNodes: IdType[]
-  // Whether `selectedNodes` has yet to reach a subnetwork. A click comes before
-  // the subnetwork of a subsystem it selects, and must reach that one once, not
-  // the one still on screen. This lives here and not in the panel because the
-  // click is what mounts the panel, and the panel can unmount and come back.
-  selectedNodesPending: boolean
+  // The subnetwork `selectedNodes` has yet to reach, or null when nothing is
+  // waiting. A click comes before the subnetwork of the subsystem it selects, and
+  // must reach that one once: not the one still on screen, nor one selected after
+  // it. This lives here and not in the panel because the click is what mounts the
+  // panel, and the panel can unmount and come back.
+  selectedNodesTarget: IdType | null
   selectedHierarchyNodeNames: string[]
   // Id of the subnetwork currently rendered in the interaction viewer, of the
   // form `<hierarchyId>_<subsystemNodeId>`. Empty when none is shown. Used so
@@ -20,8 +21,8 @@ interface SubNetworkState {
 }
 
 interface SubNetworkAction {
-  setSelectedNodes: (selectedNodes: IdType[]) => void
-  markSelectedNodesApplied: () => void
+  setSelectedNodes: (selectedNodes: IdType[], target: IdType | null) => void
+  clearSelectedNodesTarget: () => void
   setSelectedHierarchyNodes: (selectedHierarchyNodeNames: string[]) => void
   setCurrentSubNetworkId: (currentSubNetworkId: IdType) => void
 }
@@ -35,18 +36,18 @@ export type SubNetworkStore = SubNetworkState & SubNetworkAction
 export const useSubNetworkStore = create(
   immer<SubNetworkStore>((set) => ({
     selectedNodes: [],
-    selectedNodesPending: false,
+    selectedNodesTarget: null,
     selectedHierarchyNodeNames: [],
     currentSubNetworkId: '',
-    setSelectedNodes: (selectedNodes) => {
+    setSelectedNodes: (selectedNodes, target) => {
       set((state) => {
         state.selectedNodes = selectedNodes
-        state.selectedNodesPending = true
+        state.selectedNodesTarget = target
       })
     },
-    markSelectedNodesApplied: () => {
+    clearSelectedNodesTarget: () => {
       set((state) => {
-        state.selectedNodesPending = false
+        state.selectedNodesTarget = null
       })
     },
     setSelectedHierarchyNodes: (selectedHierarchyNodeNames: string[]) => {

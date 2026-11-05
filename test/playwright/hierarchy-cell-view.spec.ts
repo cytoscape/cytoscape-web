@@ -757,7 +757,11 @@ const strokeOf = (svg: Locator, ringId: string) =>
     ringId,
   )
 
-/** The label's on-screen box, or undefined while the zoom level hides it */
+/**
+ * The label's on-screen box, or undefined while it can't be clicked: hidden by
+ * the zoom level, or panned out of the SVG. `clickLabel` clicks by coordinates,
+ * which would land on whatever else is there.
+ */
 const labelBox = (svg: Locator, ringId: string) =>
   svg.evaluate((element, id) => {
     const label = [...element.querySelectorAll('text')].find(
@@ -767,7 +771,16 @@ const labelBox = (svg: Locator, ringId: string) =>
     )
     if (label === undefined) return undefined
     const { x, y, width, height } = label.getBoundingClientRect()
-    return width > 0 && height > 0 ? { x, y, width, height } : undefined
+    if (width === 0 || height === 0) return undefined
+    const view = element.getBoundingClientRect()
+    const centerX = x + width / 2
+    const centerY = y + height / 2
+    const inView =
+      centerX >= Math.max(view.left, 0) &&
+      centerX <= Math.min(view.right, window.innerWidth) &&
+      centerY >= Math.max(view.top, 0) &&
+      centerY <= Math.min(view.bottom, window.innerHeight)
+    return inView ? { x, y, width, height } : undefined
   }, ringId)
 
 /** Zoom in on the ring until its label shows, then click the label's center */

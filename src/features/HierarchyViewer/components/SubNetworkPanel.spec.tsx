@@ -72,6 +72,9 @@ const cyNetworkOf = (id: IdType): CyNetwork => {
   } as unknown as CyNetwork
 }
 
+const fetchAtOnce = async ([hierarchyId, , , subsystemId]: string[]) =>
+  cyNetworkOf(getSubNetworkId(hierarchyId, subsystemId))
+
 /** Fetches the test settles by hand, by subnetwork id */
 const deferFetches = () => {
   const resolvers = new Map<IdType, () => void>()
@@ -97,7 +100,7 @@ const shown = (id: IdType): Promise<void> =>
 /** A click in the Cell View, which names the protein for the viewer to select */
 const clickRing = (...names: string[]): void => {
   act(() => {
-    useSubNetworkStore.getState().setSelectedNodes(names)
+    useSubNetworkStore.getState().setSelectedNodes(names, SUB_A)
   })
 }
 
@@ -128,13 +131,43 @@ describe('SubNetworkPanel selection sync with the Cell View (#931)', () => {
     </QueryClientProvider>
   )
 
+  // As in MainPanel, the subsystem comes from the hierarchy's selection, so a
+  // click changes it and the protein in one commit
+  const FollowsHierarchy = () => {
+    const subsystem = useViewModelStore(
+      (state) => state.viewModels[HIERARCHY_ID]?.[0].selectedNodes[0],
+    )
+    return panel(subsystem)
+  }
+
+  const followHierarchy = (): void => {
+    act(() => {
+      useViewModelStore.setState(
+        (state) =>
+          ({
+            viewModels: {
+              ...state.viewModels,
+              [HIERARCHY_ID]: [
+                {
+                  id: HIERARCHY_ID,
+                  type: 'nodeLink',
+                  selectedNodes: [SUBSYSTEM_A],
+                },
+              ],
+            },
+          }) as any,
+      )
+    })
+  }
+
+  const selectInHierarchy = (subsystem: IdType): void => {
+    useViewModelStore.getState().exclusiveSelect(HIERARCHY_ID, [subsystem], [])
+  }
+
   beforeEach(() => {
     client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     vi.mocked(fetchNdexSubnetworkByQuery).mockReset()
-    vi.mocked(fetchNdexSubnetworkByQuery).mockImplementation(
-      async ([hierarchyId, , , subsystemId]) =>
-        cyNetworkOf(getSubNetworkId(hierarchyId, subsystemId)),
-    )
+    vi.mocked(fetchNdexSubnetworkByQuery).mockImplementation(fetchAtOnce)
 
     // Both are in the stores already, which skips registration and its worker
     const networks = [SUB_A, SUB_B].map(cyNetworkOf)
@@ -159,7 +192,7 @@ describe('SubNetworkPanel selection sync with the Cell View (#931)', () => {
     useSubNetworkStore.setState({
       selectedNodes: [],
       selectedHierarchyNodeNames: [],
-      selectedNodesPending: false,
+      selectedNodesTarget: null,
       currentSubNetworkId: '',
     } as any)
 
@@ -203,40 +236,14 @@ describe('SubNetworkPanel selection sync with the Cell View (#931)', () => {
 
     // The previous subnetwork stays in the panel's state while the next loads
     it('leaves the previous subnetwork alone while its own loads', async () => {
-      // As in MainPanel, the subsystem comes from the hierarchy's selection, so
-      // a click changes it and the protein in one commit
-      const FollowsHierarchy = () => {
-        const subsystem = useViewModelStore(
-          (state) => state.viewModels[HIERARCHY_ID]?.[0].selectedNodes[0],
-        )
-        return panel(subsystem)
-      }
-      act(() => {
-        useViewModelStore.setState(
-          (state) =>
-            ({
-              viewModels: {
-                ...state.viewModels,
-                [HIERARCHY_ID]: [
-                  {
-                    id: HIERARCHY_ID,
-                    type: 'nodeLink',
-                    selectedNodes: [SUBSYSTEM_A],
-                  },
-                ],
-              },
-            }) as any,
-        )
-      })
+      followHierarchy()
       render(<FollowsHierarchy />)
       await shown(SUB_A)
       const fetches = deferFetches()
 
       act(() => {
-        useSubNetworkStore.getState().setSelectedNodes(['DR1'])
-        useViewModelStore
-          .getState()
-          .exclusiveSelect(HIERARCHY_ID, [SUBSYSTEM_B], [])
+        useSubNetworkStore.getState().setSelectedNodes(['DR1'], SUB_B)
+        selectInHierarchy(SUBSYSTEM_B)
       })
       await waitFor(() => expect(fetches.has(SUB_B)).toBe(true))
 
@@ -315,6 +322,74 @@ describe('SubNetworkPanel selection sync with the Cell View (#931)', () => {
     })
   })
 
+  // A click is for the subnetwork of the subsystem it selected. Another subsystem
+  // can be selected before that one arrives, in the Tree View for example.
+  describe('a click overtaken by another selection', () => {
+    const overtaken = async () => {
+      followHierarchy()
+      render(<FollowsHierarchy />)
+      await shown(SUB_A)
+      const fetches = deferFetches()
+
+      act(() => {
+        useSubNetworkStore.getState().setSelectedNodes(['DR1'], SUB_B)
+        selectInHierarchy(SUBSYSTEM_B)
+      })
+      await waitFor(() => expect(fetches.has(SUB_B)).toBe(true))
+      fetches.delete(SUB_A)
+
+      act(() => {
+        selectInHierarchy(SUBSYSTEM_A)
+      })
+      await waitFor(() => expect(fetches.has(SUB_A)).toBe(true))
+      await act(async () => {
+        fetches.get(SUB_A)?.()
+      })
+      await shown(SUB_A)
+      return fetches
+    }
+
+    it('selects nothing in the subnetwork shown instead', async () => {
+      await overtaken()
+
+      expect(selectedIn(SUB_A)).toEqual([])
+    })
+
+    it('is forgotten, so its own subnetwork does not get it later', async () => {
+      const fetches = await overtaken()
+      expect(useSubNetworkStore.getState().selectedNodesTarget).toBeNull()
+      vi.mocked(fetchNdexSubnetworkByQuery).mockImplementation(fetchAtOnce)
+
+      act(() => {
+        selectInHierarchy(SUBSYSTEM_B)
+      })
+      await act(async () => {
+        fetches.get(SUB_B)?.()
+      })
+      await shown(SUB_B)
+
+      expect(selectedIn(SUB_B)).toEqual([])
+    })
+
+    it('does not stop viewer selections from reaching the Cell View', async () => {
+      await overtaken()
+      echoes.length = 0
+
+      selectInViewer(SUB_A, ['a2'])
+
+      expect(echoes).toEqual([['TAF11']])
+    })
+
+    it('is not applied by a panel showing another subnetwork', async () => {
+      useSubNetworkStore.getState().setSelectedNodes(['DR1'], SUB_B)
+
+      render(panel(SUBSYSTEM_A))
+      await shown(SUB_A)
+
+      expect(selectedIn(SUB_A)).toEqual([])
+    })
+  })
+
   describe('other selections', () => {
     it('sends a selection made in the viewer to the Cell View by name', async () => {
       render(panel(SUBSYSTEM_A))
@@ -348,6 +423,17 @@ describe('SubNetworkPanel selection sync with the Cell View (#931)', () => {
 
       expect(selectedIn(SUB_A)).toEqual(['a2'])
       await waitFor(() => expect(echoes).toEqual([['TAF11']]))
+    })
+
+    // A click on the background selects no subsystem, so there is nowhere to apply it
+    it('keeps a selection when the last click selected no subsystem', async () => {
+      useViewModelStore.getState().exclusiveSelect(SUB_A, ['a2'], [])
+      useSubNetworkStore.getState().setSelectedNodes([], null)
+
+      render(panel(SUBSYSTEM_A))
+      await shown(SUB_A)
+
+      expect(selectedIn(SUB_A)).toEqual(['a2'])
     })
 
     it('clears the viewer when a subsystem ring is clicked', async () => {

@@ -195,6 +195,13 @@ export const CpDefaults = {
 } as const
 
 /**
+ * The selection key of a protein's rings, by its name. The prefix keeps it apart
+ * from a subsystem's: names are free text, and a failed name lookup leaves a ring
+ * named with its numeric member id, which can equal a node id.
+ */
+export const proteinRingKey = (name: string): string => `protein:${name}`
+
+/**
  * What a ring with no rings inside it is selected by.
  *
  * A protein ring goes by its protein's name, the one key the Sub Network Viewer
@@ -204,7 +211,9 @@ export const CpDefaults = {
  * has no name to rely on, so it goes by its node id.
  */
 export const terminalRingKey = (ring: D3TreeNode): string =>
-  ring.isMember === true ? ring.name : (ring.originalId ?? ring.id)
+  ring.isMember === true
+    ? proteinRingKey(ring.name)
+    : `subsystem:${ring.originalId ?? ring.id}`
 
 /**
  * The hierarchy node a subsystem ring draws.

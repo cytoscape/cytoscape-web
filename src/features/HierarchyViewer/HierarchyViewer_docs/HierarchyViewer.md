@@ -237,8 +237,9 @@ the Cell View blank, or tiny, until the next reload (#935).
 
 ### Selecting protein rings
 
-A protein ring is selected by its protein's name (`terminalRingKey`), the one
-key the Sub Network Viewer shares with the Cell View. So a click outlines in red
+A protein ring is selected by its protein's name (`terminalRingKey`, prefixed so
+that a protein named `7` can't match a subsystem with node id `7`), the one key
+the Sub Network Viewer shares with the Cell View. So a click outlines in red
 every ring of that protein, in whichever subsystems list it, whether the viewer
 is open or not. Only the clicked ring's parent is selected (orange), and that
 alone decides which subnetwork is shown. `originalId` is no use as the key: for
@@ -255,13 +256,14 @@ copy ids, because older shared URLs and saved selections can hold them.
 
 The click and the viewer talk through `SubNetworkStore`:
 
-- A click names the protein (`selectedNodes`) and marks it pending
-  (`selectedNodesPending`). `SubNetworkPanel` selects it once
-  `shownSubNetworkId` names the subnetwork of the subsystem the click selected,
-  then clears the mark. That subnetwork usually has yet to load, and may not
-  even be mounted, so the mark lives in the store. Waiting on `queryNetworkId`
-  instead would write into the previous subnetwork, which it keeps naming during
-  the load.
+- A click names the protein (`selectedNodes`) and the subnetwork of the subsystem
+  it selected (`selectedNodesTarget`). `SubNetworkPanel` selects the protein once
+  `shownSubNetworkId` names that subnetwork, then clears the target. That
+  subnetwork usually has yet to load, and may not even be mounted, so the target
+  lives in the store. Waiting on `queryNetworkId` instead would write into the
+  previous subnetwork, which it keeps naming during the load. Selecting another
+  subsystem first cancels the click, so it can't land in the wrong subnetwork. A
+  click on the background selects no subsystem, and has no target.
 - With nothing pending, a subnetwork arriving keeps the selection it has, such as
   one restored from `selectedSubnetworkNodes` in the URL.
 - A ring's own selection is not sent back (`selectedHierarchyNodeNames`). The Cell

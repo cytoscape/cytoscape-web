@@ -735,6 +735,71 @@ describe('CirclePackingPanel protein ring selection (#931)', () => {
     expect(strokes(container).C).toBe(GREY)
   })
 
+  it('names the subnetwork a click is for', async () => {
+    const container = await drawn()
+    const target = () => useSubNetworkStore.getState().selectedNodesTarget
+
+    click(container, 'A-366')
+    expect(target()).toBe(`${NETWORK_ID}_A`)
+
+    click(container, 'B')
+    expect(target()).toBe(`${NETWORK_ID}_B`)
+
+    // The background selects no subsystem, so nothing can receive the click
+    act(() => {
+      container
+        .querySelector('[data-testid="circle-packing-svg"]')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(target()).toBeNull()
+  })
+
+  // Protein names and node ids are both free text here: a failed name lookup
+  // leaves a ring named with its numeric member id
+  describe('a protein named like a subsystem with no members', () => {
+    const withEmptySubsystem = () =>
+      d3Hierarchy
+        .stratify<D3TreeNode>()([
+          subsystem('root', '', 'Cell'),
+          subsystem('A', 'root', 'Complex'),
+          ring('A-7', 'A', 7, '7'),
+          subsystem('B', 'root', 'Other'),
+          subsystem('7', 'B', 'Empty'),
+          ring('B-8', 'B', 8, 'X'),
+        ] as unknown as D3TreeNode[])
+        .sum(() => 1)
+
+    const strokeOf = (container: Element, id: string): string | null =>
+      circleOf(container, id).getAttribute('stroke')
+
+    it('does not outline the subsystem when the protein is clicked', async () => {
+      const container = await drawn(withEmptySubsystem())
+
+      click(container, 'A-7')
+
+      expect(strokeOf(container, 'A-7')).toBe(RED)
+      expect(strokeOf(container, '7')).toBe(GREY)
+    })
+
+    it('does not outline the subsystem when the viewer names the protein', async () => {
+      const container = await drawn(withEmptySubsystem())
+
+      echo(['7'])
+
+      expect(strokeOf(container, 'A-7')).toBe(RED)
+      expect(strokeOf(container, '7')).toBe(GREY)
+    })
+
+    it('does not outline the protein when the subsystem is clicked', async () => {
+      const container = await drawn(withEmptySubsystem())
+
+      click(container, '7')
+
+      expect(strokeOf(container, '7')).toBe(RED)
+      expect(strokeOf(container, 'A-7')).toBe(GREY)
+    })
+  })
+
   // A subsystem with several parents is drawn once per path. Its first drawing
   // has the node id, and the others are copies with an `originalId`.
   describe('inside a subsystem drawn more than once', () => {
