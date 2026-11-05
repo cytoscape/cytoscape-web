@@ -1,0 +1,147 @@
+[
+  {
+    "CXVersion": "2.0",
+    "hasFragments": false
+  },
+  {
+    "metaData": [
+      {
+        "name": "attributeDeclarations",
+        "elementCount": 1
+      },
+      {
+        "name": "networkAttributes",
+        "elementCount": 1
+      },
+      {
+        "name": "nodes",
+        "elementCount": 3
+      },
+      {
+        "name": "edges",
+        "elementCount": 2
+      }
+    ]
+  },
+  {
+    "attributeDeclarations": [
+      {
+        "networkAttributes": {
+          "name": {
+            "d": "string"
+          },
+          "description": {
+            "d": "string"
+          },
+          "ndexSchema": {
+            "d": "string"
+          },
+          "HCX::modelFileCount": {
+            "d": "integer"
+          },
+          "HCX::interactionNetworkUUID": {
+            "d": "string"
+          },
+          "HCX::interactionNetworkHost": {
+            "d": "string"
+          }
+        },
+        "nodes": {
+          "name": {
+            "d": "string"
+          },
+          "HCX::members": {
+            "d": "list_of_integer"
+          }
+        },
+        "edges": {
+          "interaction": {
+            "d": "string"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "networkAttributes": [
+      {
+        "name": "Shared Members Hierarchy",
+        "description": "A hierarchy whose subsystems list their proteins by node id (HCX::members), as MuSIC does, and share one protein, so the Cell View draws two rings of it",
+        "ndexSchema": "hierarchy_v0.1",
+        "HCX::modelFileCount": 1,
+        "HCX::interactionNetworkUUID": "test-uuid-123",
+        "HCX::interactionNetworkHost": "dev1.ndexbio.org"
+      }
+    ]
+  },
+  {
+    "nodes": [
+      {
+        "id": 0,
+        "x": 0,
+        "y": 50,
+        "v": {
+          "name": "Cell",
+          "HCX::members": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      },
+      {
+        "id": 1,
+        "x": 100,
+        "y": 50,
+        "v": {
+          "name": "Nucleoplasm",
+          "HCX::members": [
+            1,
+            2
+          ]
+        }
+      },
+      {
+        "id": 2,
+        "x": 200,
+        "y": 50,
+        "v": {
+          "name": "Cytoplasm",
+          "HCX::members": [
+            1,
+            3
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "edges": [
+      {
+        "id": 0,
+        "s": 0,
+        "t": 1,
+        "v": {
+          "interaction": "contains"
+        }
+      },
+      {
+        "id": 1,
+        "s": 0,
+        "t": 2,
+        "v": {
+          "interaction": "contains"
+        }
+      }
+    ]
+  },
+  {
+    "status": [
+      {
+        "success": true,
+        "error": ""
+      }
+    ]
+  }
+]

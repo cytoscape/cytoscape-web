@@ -68,6 +68,7 @@ The main orchestrator component that manages the hierarchy viewer layout and sta
 - Manages selection state and extracts subsystem information from selected nodes
 - Names the selected subsystem (`getSubsystemName`) by the attribute the node label is mapped to, else its `name` column, else its node id: HCX files need not have a `name` column (the test fixtures name nodes with `n`), and a null, absent or blank value, or a list with no non-blank item, counts as none
 - Coordinates between Circle Packing view and SubNetwork view
+- Derives the subsystem's name, members and interaction network during render, so `SubNetworkPanel` never gets a subsystem with another's members. A fetch started from such a pair could be stored as that subsystem's network for good (#931)
 - Handles multiple node selection and validates that selections are from the same branch
 - Displays appropriate messages when hierarchy is not detected or no subsystem is selected
 
@@ -86,9 +87,9 @@ A D3.js-based visualization component that renders hierarchical structures as ne
 - Renders hierarchy as nested circles using D3.js circle packing algorithm
 - Supports zoom and pan interactions
 - Dynamically shows/hides labels based on zoom level
-- Handles node selection (subsystems and leaf nodes)
+- Handles node selection (subsystems and leaf nodes). Labels are drawn over the rings with `pointer-events: none`, so a click or hover on a label reaches the ring underneath
 - Supports multi-selection of leaf nodes (enables selecting multiple leaves simultaneously)
-- Synchronizes selection with SubNetworkPanel (bidirectional sync between subnetwork view and circle packing view)
+- Synchronizes selection with SubNetworkPanel (see [Selecting protein rings](#selecting-protein-rings))
 - Highlights the protein rings a search matched (see [Search and protein rings](#search-and-protein-rings))
 - Applies visual styles from the visual style store
 - Provides fit-to-viewport functionality
@@ -234,6 +235,47 @@ layout of a hierarchy.
 
 The box was measured only once on mount, so a box that was not laid out yet left
 the Cell View blank, or tiny, until the next reload (#935).
+
+### Selecting protein rings
+
+A protein ring is selected by its protein's name (`terminalRingKey`, prefixed so
+that a protein named `7` can't match a subsystem with node id `7`), the one key
+the Sub Network Viewer shares with the Cell View. So a click outlines in red
+every ring of that protein, in whichever subsystems list it, whether the viewer
+is open or not. Only the clicked ring's parent is selected (orange), and that
+alone decides which subnetwork is shown. `originalId` is no use as the key: for
+a protein ring it is the member id, which the viewer never sees (#931).
+
+A subsystem with several parents is drawn once per path, and only its first
+drawing has the node's id. The others are copies, with an id like `110-2d` and
+`originalId` set. They all stand for one node. Clicking any of them, or a ring
+inside one, selects only that node's id (`subsystemNodeId`), since a copy has no
+table row and would count as a selected node with nothing behind it. Every
+drawing of a selected subsystem gets the orange border, however it was selected,
+Tree View and search included (`isSelectedSubsystem`). `MainPanel` still strips
+copy ids, because older shared URLs and saved selections can hold them.
+
+The click and the viewer talk through `SubNetworkStore`:
+
+- A click names the protein (`selectedNodes`) and the subnetwork of the subsystem
+  it selected (`selectedNodesTarget`). `SubNetworkPanel` selects the protein once
+  `shownSubNetworkId` names that subnetwork, then clears the target. That
+  subnetwork usually has yet to load, and may not even be mounted, so the target
+  lives in the store. Waiting on `queryNetworkId` instead would write into the
+  previous subnetwork, which it keeps naming during the load. Selecting another
+  subsystem first cancels the click, so it can't land in the wrong subnetwork.
+  The Cell View does the cancelling, because it stays mounted while the viewer
+  comes and goes with its tab or the right panel. A click on the background
+  selects no subsystem, and has no target.
+- With nothing pending, a subnetwork arriving keeps the selection it has, such as
+  one restored from `selectedSubnetworkNodes` in the URL.
+- A ring's own selection is not sent back (`selectedHierarchyNodeNames`). The Cell
+  View already shows it, an empty one would clear the border of a protein with no
+  node in the subnetwork, and any other would start the expansion meant for an
+  initial selection from the URL. The store remembers it (`ringSelection`), so a
+  viewer that unmounted and came back does not send it either, until the selection
+  changes or another click replaces it. A selection made in the viewer itself is
+  sent, and outlines the rings of those names.
 
 ### Search and protein rings
 

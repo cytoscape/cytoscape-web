@@ -38,6 +38,7 @@ import {
   CP_UNAVAILABLE_MESSAGE,
 } from '../../model/impl/circlePackingSupport'
 import { useSubNetworkStore } from '../../store/SubNetworkStore'
+import { getSubNetworkId } from '../../utils/subnetworkQueryUtil'
 // Local imports
 import {
   CirclePackingType,
@@ -52,6 +53,10 @@ import {
   getFontSize,
   getLabel,
   getWordLines,
+  isSelectedSubsystem,
+  proteinRingKey,
+  subsystemNodeId,
+  terminalRingKey,
 } from './CirclePackingUtils'
 import { D3TreeNode } from './D3TreeNode'
 import { findSearchMatchedRings } from './searchMatchedRings'
@@ -84,6 +89,16 @@ const MIN_BOX_SIZE = 100
 
 // Color scale for the circles in the view
 const colorScale = getColorMapper([0, 5])
+
+/**
+ * Add the group that holds the ring labels. It is drawn over the rings, and only
+ * the rings handle clicks and hovers, so the pointer has to pass through the
+ * labels. Otherwise a click on a label does nothing, and on a small protein ring
+ * the label covers most of the ring (#931).
+ */
+const appendLabelGroup = <PElement extends d3Selection.BaseType, PDatum>(
+  wrapper: d3Selection.Selection<SVGGElement, unknown, PElement, PDatum>,
+) => wrapper.append('g').style('pointer-events', 'none')
 
 /**
  * Circle Packing renderer as a variant of the network viewer
@@ -229,34 +244,30 @@ export const CirclePackingPanel = ({
 
       if (d.height !== 0) {
         // Selected item is a subsystem
-        if (d.data.originalId !== undefined) {
-          // Select both current and original branch
-          exclusiveSelect(network.id, [d.data.originalId, d.data.id], [])
-        } else {
-          exclusiveSelect(network.id, [d.data.id], [])
-        }
+        exclusiveSelect(network.id, [subsystemNodeId(d.data)], [])
 
         // Clear the selection in leafs in the selected node
         setSelectedLeaves([])
-        setSelectedNodes([])
+        setSelectedNodes(
+          [],
+          getSubNetworkId(network.id, subsystemNodeId(d.data)),
+        )
       } else {
         // This is a leaf node
-
-        // Set always one node by clicking on the leaf node
-        setSelectedNodes([d.data.name])
 
         // Select the parent node instead
         const { parent } = d
         if (parent === null || parent === undefined) return
 
-        const selectedChild = d.data.originalId ?? d.data.id
-        setSelectedLeaves([selectedChild])
+        // Set always one node by clicking on the leaf node
+        setSelectedNodes(
+          [d.data.name],
+          getSubNetworkId(network.id, subsystemNodeId(parent.data)),
+        )
 
-        if (parent.data.originalId !== undefined) {
-          exclusiveSelect(network.id, [parent.data.originalId], [])
-        } else {
-          exclusiveSelect(network.id, [parent.data.id], [])
-        }
+        setSelectedLeaves([terminalRingKey(d.data)])
+
+        exclusiveSelect(network.id, [subsystemNodeId(parent.data)], [])
       }
     },
     [
@@ -761,6 +772,29 @@ export const CirclePackingPanel = ({
   )
 
   /**
+   * Forget a click still waiting for its subnetwork once its subsystem is no
+   * longer selected. This panel stays mounted while the viewer comes and goes, so
+   * the click can't reach a subnetwork selected later, and can't apply when the
+   * viewer comes back.
+   */
+  useEffect(
+    function onHierarchySelectionChange() {
+      const { selectedNodesTarget, clearSelectedNodesTarget } =
+        useSubNetworkStore.getState()
+      if (
+        selectedNodesTarget !== null &&
+        !selectedNodes.some(
+          (nodeId) =>
+            getSubNetworkId(networkId, nodeId) === selectedNodesTarget,
+        )
+      ) {
+        clearSelectedNodesTarget()
+      }
+    },
+    [selectedNodes, networkId],
+  )
+
+  /**
    * Update selected leaf when hierarchy node names change
    * This syncs selections in the subnetwork view to this circle packing view
    */
@@ -773,12 +807,9 @@ export const CirclePackingPanel = ({
         hasInitialFitToSelectedLeaves.current = false
         initialExpansionPendingRef.current = false
       } else {
-        setSelectedLeaves(selectedHierarchyNodeNames)
-        displaySelectedNodes(
-          selectedNodeSet,
-          selectedHierarchyNodeNames,
-          searchMatchedRings,
-        )
+        const selectedRings = selectedHierarchyNodeNames.map(proteinRingKey)
+        setSelectedLeaves(selectedRings)
+        displaySelectedNodes(selectedNodeSet, selectedRings, searchMatchedRings)
 
         // On initial load with selected leaves, expand to the subsystem
         // containing them. It takes the view model, which may still be
@@ -838,8 +869,9 @@ export const CirclePackingPanel = ({
     // Handle background click to clear selections
     svg.on('click', (event: any) => {
       if (event.target.id === SVG_ID) {
-        // Clear the selection in interaction network
-        setSelectedNodes([])
+        // Clear the selection in interaction network. No subsystem stays
+        // selected, so no subnetwork is waiting for this.
+        setSelectedNodes([], null)
 
         // Clear the selection in the CP view's leaf node
         setSelectedLeaves([])
@@ -867,15 +899,12 @@ export const CirclePackingPanel = ({
       .attr('cy', (d) => d.y)
       .attr('r', (d) => d.r)
       .attr('stroke', (d) =>
-        selectedNodeSet.has(d.data.id)
+        isSelectedSubsystem(d.data, selectedNodeSet)
           ? CpDefaults.selectedBorderColor
           : CpDefaults.borderColor,
       )
       .attr('stroke-width', (d) => {
-        // return d.data.id === selected || d.data.originalId === selected
-        return selectedNodeSet.has(d.data.id) ||
-          (d.data.originalId !== undefined &&
-            selectedNodeSet.has(d.data.originalId))
+        return isSelectedSubsystem(d.data, selectedNodeSet)
           ? CpDefaults.borderWidthHover
           : CpDefaults.borderWidth
       })
@@ -887,8 +916,7 @@ export const CirclePackingPanel = ({
       .on('mousemove', handleCircleMouseMove)
 
     // Add the text labels
-    wrapper
-      .append('g')
+    appendLabelGroup(wrapper)
       .selectAll<SVGTextElement, d3Hierarchy.HierarchyCircularNode<D3TreeNode>>(
         'text',
       )
@@ -1039,14 +1067,12 @@ export const CirclePackingPanel = ({
             return colorScale(d.depth)
           })
           .attr('stroke', (d) =>
-            selectedNodeSet.has(d.data.id)
+            isSelectedSubsystem(d.data, selectedNodeSet)
               ? CpDefaults.selectedBorderColor
               : CpDefaults.borderColor,
           )
           .attr('stroke-width', (d) => {
-            return selectedNodeSet.has(d.data.id) ||
-              (d.data.originalId !== undefined &&
-                selectedNodeSet.has(d.data.originalId))
+            return isSelectedSubsystem(d.data, selectedNodeSet)
               ? CpDefaults.borderWidthHover
               : CpDefaults.borderWidth
           })
@@ -1062,14 +1088,12 @@ export const CirclePackingPanel = ({
             return colorScale(d.depth)
           })
           .attr('stroke', (d) =>
-            selectedNodeSet.has(d.data.id)
+            isSelectedSubsystem(d.data, selectedNodeSet)
               ? CpDefaults.selectedBorderColor
               : CpDefaults.borderColor,
           )
           .attr('stroke-width', (d) => {
-            return selectedNodeSet.has(d.data.id) ||
-              (d.data.originalId !== undefined &&
-                selectedNodeSet.has(d.data.originalId))
+            return isSelectedSubsystem(d.data, selectedNodeSet)
               ? CpDefaults.borderWidthHover
               : CpDefaults.borderWidth
           })
@@ -1086,7 +1110,7 @@ export const CirclePackingPanel = ({
         // Get or create the text container <g>
         const existingTextGroup = wrapper.select<SVGGElement>('g:nth-child(2)')
         const textGroup = existingTextGroup.empty()
-          ? wrapper.append('g')
+          ? appendLabelGroup(wrapper)
           : existingTextGroup
 
         // Update text labels

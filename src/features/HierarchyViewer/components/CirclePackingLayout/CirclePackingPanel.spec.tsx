@@ -1,4 +1,4 @@
-import { act, render } from '@testing-library/react'
+import { act, cleanup, render } from '@testing-library/react'
 import * as d3Hierarchy from 'd3-hierarchy'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -18,6 +18,7 @@ import { HcxMetaTag } from '../../model/HcxMetaTag'
 import { useSubNetworkStore } from '../../store/SubNetworkStore'
 import { CirclePackingType, createTreeLayout } from './CirclePackingLayout'
 import { CirclePackingPanel } from './CirclePackingPanel'
+import { CpDefaults } from './CirclePackingUtils'
 import { D3TreeNode } from './D3TreeNode'
 
 // The layout builder is the boundary under test: it receives the interaction
@@ -41,6 +42,9 @@ vi.mock(
     ),
   }),
 )
+
+// Tests that only count selections replace this action in the store
+const realExclusiveSelect = useViewModelStore.getState().exclusiveSelect
 
 const NETWORK_ID = 'hierarchy-1'
 const OTHER_NETWORK_ID = 'hierarchy-2'
@@ -487,6 +491,507 @@ describe('CirclePackingPanel name lookup source (#933)', () => {
       })
       expect(exclusiveSelect).toHaveBeenCalledTimes(1)
     })
+  })
+})
+
+// The labels are drawn over the rings, and only the rings have a click handler.
+// A label that catches the pointer swallows the click: the ring's handler never
+// runs and the background handler ignores it. jsdom cannot hit-test, so this
+// pins the property; hierarchy-cell-view.spec.ts clicks a label for real.
+describe('CirclePackingPanel ring labels (#931)', () => {
+  beforeEach(() => {
+    seedStores()
+    useNetworkSummaryStore.setState({
+      summaries: { [NETWORK_ID]: hcxSummary() },
+    } as any)
+  })
+
+  afterEach(() => {
+    vi.mocked(createTreeLayout).mockImplementation(
+      () => new Promise(() => {}) as any,
+    )
+  })
+
+  const pointerEventsOf = (container: Element, selector: string): string[] => {
+    const elements = [...container.querySelectorAll(selector)]
+    expect(elements.length).toBeGreaterThan(0)
+    return [...new Set(elements.map((e) => getComputedStyle(e).pointerEvents))]
+  }
+
+  const drawn = async () => {
+    const builds = deferBuilds()
+    const rendered = render(panel())
+    await act(async () => {
+      builds[0].resolve(hierarchyOf('root'))
+    })
+    return { builds, ...rendered }
+  }
+
+  /** A new visual style rebuilds the layout over the existing drawing */
+  const rebuild = async (
+    builds: ReturnType<typeof deferBuilds>,
+  ): Promise<void> => {
+    act(() => {
+      useVisualStyleStore.setState({
+        visualStyles: { [NETWORK_ID]: { ...visualStyle } },
+      } as any)
+    })
+    expect(builds).toHaveLength(2)
+    await act(async () => {
+      builds[1].resolve(hierarchyOf('root'))
+    })
+  }
+
+  it('lets the pointer through the labels to the rings', async () => {
+    const { container } = await drawn()
+
+    expect(pointerEventsOf(container, 'text, tspan')).toEqual(['none'])
+    expect(pointerEventsOf(container, 'circle')).not.toContain('none')
+  })
+
+  it('still does after a rebuild over the same drawing', async () => {
+    const { builds, container } = await drawn()
+
+    await rebuild(builds)
+
+    expect(pointerEventsOf(container, 'text, tspan')).toEqual(['none'])
+  })
+
+  it('still does when a rebuild has to recreate the label group', async () => {
+    const { builds, container } = await drawn()
+    container
+      .querySelector('.circle-packing-wrapper > g:nth-child(2)')
+      ?.remove()
+    expect(container.querySelector('text')).toBeNull()
+
+    await rebuild(builds)
+
+    expect(pointerEventsOf(container, 'text, tspan')).toEqual(['none'])
+  })
+})
+
+// A protein ring's `originalId` is its member id (366 in MuSIC), while the Sub
+// Network Viewer names proteins. Selecting by id lost the border as soon as the
+// viewer's names came back, so rings are selected by name everywhere.
+describe('CirclePackingPanel protein ring selection (#931)', () => {
+  const RED = CpDefaults.leafBorderColor
+  const ORANGE = CpDefaults.selectedBorderColor
+  const GREY = CpDefaults.borderColor
+
+  // DR1 is a member of two subsystems. A subsystem is named DR1 as well.
+  const ring = (
+    id: string,
+    parentId: string,
+    member: number,
+    name: string,
+  ) => ({
+    id,
+    originalId: member,
+    parentId,
+    name,
+    size: 1,
+    members: [],
+    isMember: true,
+  })
+  const subsystem = (id: string, parentId: string, name: string) => ({
+    id,
+    parentId,
+    name,
+    size: 1,
+    members: [],
+  })
+  const sharedProtein = () =>
+    d3Hierarchy
+      .stratify<D3TreeNode>()([
+        subsystem('root', '', 'Cell'),
+        subsystem('A', 'root', 'Nucleoplasm'),
+        ring('A-366', 'A', 366, 'DR1'),
+        ring('A-367', 'A', 367, 'TAF11'),
+        subsystem('B', 'root', 'Cytoplasm'),
+        ring('B-366', 'B', 366, 'DR1'),
+        subsystem('C', 'root', 'DR1'),
+        ring('C-368', 'C', 368, 'MYC'),
+      ] as unknown as D3TreeNode[])
+      .sum(() => 1)
+
+  const circleOf = (container: Element, id: string): SVGCircleElement => {
+    const circle = [...container.querySelectorAll('circle')].find(
+      (element) =>
+        (element as unknown as { __data__: { data: D3TreeNode } }).__data__.data
+          .id === id,
+    )
+    if (circle === undefined) throw new Error(`No ring ${id}`)
+    return circle
+  }
+
+  const strokes = (container: Element): Record<string, string | null> =>
+    Object.fromEntries(
+      ['A', 'A-366', 'A-367', 'B', 'B-366', 'C', 'C-368'].map((id) => [
+        id,
+        circleOf(container, id).getAttribute('stroke'),
+      ]),
+    )
+
+  const click = (container: Element, id: string): void => {
+    act(() => {
+      circleOf(container, id).dispatchEvent(
+        new MouseEvent('click', { bubbles: true }),
+      )
+    })
+  }
+
+  const echo = (names: string[]): void => {
+    act(() => {
+      useSubNetworkStore.getState().setSelectedHierarchyNodes(names)
+    })
+  }
+
+  const drawn = async (root = sharedProtein()): Promise<Element> => {
+    const builds = deferBuilds()
+    const { container } = render(panel())
+    await act(async () => {
+      builds[0].resolve(root)
+    })
+    return container
+  }
+
+  beforeEach(() => {
+    seedStores()
+    useViewModelStore.setState({ exclusiveSelect: realExclusiveSelect } as any)
+    useNetworkSummaryStore.setState({
+      summaries: { [NETWORK_ID]: hcxSummary() },
+    } as any)
+    useSubNetworkStore.setState({
+      selectedNodes: [],
+      selectedHierarchyNodeNames: [],
+    } as any)
+  })
+
+  afterEach(() => {
+    cleanup()
+    vi.mocked(createTreeLayout).mockImplementation(
+      () => new Promise(() => {}) as any,
+    )
+  })
+
+  it('outlines every ring of the clicked protein, and its parent', async () => {
+    const container = await drawn()
+
+    click(container, 'A-366')
+
+    expect(strokes(container)).toEqual({
+      A: ORANGE,
+      'A-366': RED,
+      'A-367': GREY,
+      B: GREY,
+      'B-366': RED,
+      C: GREY,
+      'C-368': GREY,
+    })
+  })
+
+  it('names the protein for the Sub Network Viewer', async () => {
+    const container = await drawn()
+
+    click(container, 'A-366')
+
+    expect(useSubNetworkStore.getState().selectedNodes).toEqual(['DR1'])
+  })
+
+  it('keeps the outline when the viewer names the same protein', async () => {
+    const container = await drawn()
+    click(container, 'A-366')
+
+    echo(['DR1'])
+
+    expect(strokes(container)['A-366']).toBe(RED)
+    expect(strokes(container)['B-366']).toBe(RED)
+  })
+
+  it('outlines a protein selected in the viewer, by name', async () => {
+    const container = await drawn()
+
+    echo(['TAF11'])
+
+    expect(strokes(container)['A-367']).toBe(RED)
+    expect(strokes(container)['A-366']).toBe(GREY)
+  })
+
+  it('clears the outline when the viewer selection is cleared', async () => {
+    const container = await drawn()
+    click(container, 'A-366')
+    echo(['DR1'])
+
+    echo([])
+
+    expect(strokes(container)['A-366']).toBe(GREY)
+  })
+
+  it('does not take a subsystem for a protein of the same name', async () => {
+    const container = await drawn()
+
+    echo(['DR1'])
+
+    expect(strokes(container).C).toBe(GREY)
+  })
+
+  it('names the subnetwork a click is for', async () => {
+    const container = await drawn()
+    const target = () => useSubNetworkStore.getState().selectedNodesTarget
+
+    click(container, 'A-366')
+    expect(target()).toBe(`${NETWORK_ID}_A`)
+
+    click(container, 'B')
+    expect(target()).toBe(`${NETWORK_ID}_B`)
+
+    // The background selects no subsystem, so nothing can receive the click
+    act(() => {
+      container
+        .querySelector('[data-testid="circle-packing-svg"]')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(target()).toBeNull()
+  })
+
+  // The Cell View stays mounted while the viewer comes and goes, so it is the one
+  // that can notice a click going stale. With the viewer on another tab, nothing
+  // else would, and coming back would apply the old click.
+  describe('a click waiting for its subnetwork', () => {
+    const target = () => useSubNetworkStore.getState().selectedNodesTarget
+    const select = (...nodeIds: string[]): void => {
+      act(() => {
+        useViewModelStore.getState().exclusiveSelect(NETWORK_ID, nodeIds, [])
+      })
+    }
+
+    it('survives while its subsystem stays selected', async () => {
+      const container = await drawn()
+      click(container, 'A-366')
+
+      select('A', 'B')
+
+      expect(target()).toBe(`${NETWORK_ID}_A`)
+    })
+
+    it('is forgotten when another subsystem is selected', async () => {
+      const container = await drawn()
+      click(container, 'A-366')
+
+      select('B')
+
+      expect(target()).toBeNull()
+    })
+
+    it('stays forgotten when its subsystem is selected again', async () => {
+      const container = await drawn()
+      click(container, 'A-366')
+
+      select('B')
+      select('A')
+
+      expect(target()).toBeNull()
+    })
+
+    it('is forgotten when the selection is cleared', async () => {
+      const container = await drawn()
+      click(container, 'A-366')
+
+      select()
+
+      expect(target()).toBeNull()
+    })
+
+    it('is forgotten when the view moves to another network', async () => {
+      const builds = deferBuilds()
+      const { container, rerender } = render(panel())
+      await act(async () => {
+        builds[0].resolve(sharedProtein())
+      })
+      click(container, 'A-366')
+
+      rerender(panel(otherNetwork))
+
+      expect(target()).toBeNull()
+    })
+  })
+
+  // Protein names and node ids are both free text here: a failed name lookup
+  // leaves a ring named with its numeric member id
+  describe('a protein named like a subsystem with no members', () => {
+    const withEmptySubsystem = () =>
+      d3Hierarchy
+        .stratify<D3TreeNode>()([
+          subsystem('root', '', 'Cell'),
+          subsystem('A', 'root', 'Complex'),
+          ring('A-7', 'A', 7, '7'),
+          subsystem('B', 'root', 'Other'),
+          subsystem('7', 'B', 'Empty'),
+          ring('B-8', 'B', 8, 'X'),
+        ] as unknown as D3TreeNode[])
+        .sum(() => 1)
+
+    const strokeOf = (container: Element, id: string): string | null =>
+      circleOf(container, id).getAttribute('stroke')
+
+    it('does not outline the subsystem when the protein is clicked', async () => {
+      const container = await drawn(withEmptySubsystem())
+
+      click(container, 'A-7')
+
+      expect(strokeOf(container, 'A-7')).toBe(RED)
+      expect(strokeOf(container, '7')).toBe(GREY)
+    })
+
+    it('does not outline the subsystem when the viewer names the protein', async () => {
+      const container = await drawn(withEmptySubsystem())
+
+      echo(['7'])
+
+      expect(strokeOf(container, 'A-7')).toBe(RED)
+      expect(strokeOf(container, '7')).toBe(GREY)
+    })
+
+    it('does not outline the protein when the subsystem is clicked', async () => {
+      const container = await drawn(withEmptySubsystem())
+
+      click(container, '7')
+
+      expect(strokeOf(container, '7')).toBe(RED)
+      expect(strokeOf(container, 'A-7')).toBe(GREY)
+    })
+  })
+
+  // A subsystem with several parents is drawn once per path. Its first drawing
+  // has the node id, and the others are copies with an `originalId`.
+  describe('inside a subsystem drawn more than once', () => {
+    const withCopy = () =>
+      d3Hierarchy
+        .stratify<D3TreeNode>()([
+          subsystem('root', '', 'Cell'),
+          subsystem('P1', 'root', 'Parent 1'),
+          subsystem('P2', 'root', 'Parent 2'),
+          subsystem('A', 'P1', 'Complex'),
+          ring('A-366', 'A', 366, 'RPL19'),
+          { ...subsystem('A-2d', 'P2', 'Complex'), originalId: 'A' },
+          ring('A-2d-366', 'A-2d', 366, 'RPL19'),
+        ] as unknown as D3TreeNode[])
+        .sum(() => 1)
+
+    const hierarchySelection = (): string[] =>
+      useViewModelStore.getState().viewModels[NETWORK_ID][0].selectedNodes
+
+    const strokeOf = (container: Element, id: string): string | null =>
+      circleOf(container, id).getAttribute('stroke')
+
+    const drawings = (container: Element): (string | null)[] => [
+      strokeOf(container, 'A'),
+      strokeOf(container, 'A-2d'),
+    ]
+
+    it('outlines every drawing for a ring clicked in a copy', async () => {
+      const container = await drawn(withCopy())
+
+      click(container, 'A-2d-366')
+
+      expect(drawings(container)).toEqual([ORANGE, ORANGE])
+      expect(strokeOf(container, 'A-2d-366')).toBe(RED)
+      expect(strokeOf(container, 'A-366')).toBe(RED)
+    })
+
+    it('outlines every drawing for a ring clicked in the first one', async () => {
+      const container = await drawn(withCopy())
+
+      click(container, 'A-366')
+
+      expect(drawings(container)).toEqual([ORANGE, ORANGE])
+    })
+
+    it('outlines every drawing when a copy itself is clicked', async () => {
+      const container = await drawn(withCopy())
+
+      click(container, 'A-2d')
+
+      expect(drawings(container)).toEqual([ORANGE, ORANGE])
+    })
+
+    it('outlines every drawing of a subsystem selected elsewhere', async () => {
+      const container = await drawn(withCopy())
+
+      act(() => {
+        useViewModelStore.getState().exclusiveSelect(NETWORK_ID, ['A'], [])
+      })
+
+      expect(drawings(container)).toEqual([ORANGE, ORANGE])
+    })
+
+    // A copy has no table row, so its id would count as a selected node with
+    // nothing behind it
+    it.each(['A-2d-366', 'A-366', 'A-2d', 'A'])(
+      'selects only the node itself for a click on %s',
+      async (id) => {
+        const container = await drawn(withCopy())
+
+        click(container, id)
+
+        expect(hierarchySelection()).toEqual(['A'])
+      },
+    )
+
+    it('keeps every drawing outlined after a rebuild', async () => {
+      const builds = deferBuilds()
+      const { container } = render(panel())
+      await act(async () => {
+        builds[0].resolve(withCopy())
+      })
+      click(container, 'A-2d-366')
+
+      act(() => {
+        useVisualStyleStore.setState({
+          visualStyles: { [NETWORK_ID]: { ...visualStyle } },
+        } as any)
+      })
+      expect(builds).toHaveLength(2)
+      await act(async () => {
+        builds[1].resolve(withCopy())
+      })
+
+      expect(drawings(container)).toEqual([ORANGE, ORANGE])
+    })
+
+    // A protein ring's `originalId` is a member id, not a hierarchy node
+    it('does not take a member id for the selected subsystem', async () => {
+      const container = await drawn(
+        d3Hierarchy
+          .stratify<D3TreeNode>()([
+            subsystem('root', '', 'Cell'),
+            subsystem('A', 'root', 'Complex'),
+            ring('A-x', 'A', 1, 'X'),
+            subsystem('B', 'root', 'Other'),
+            {
+              ...ring('B-A', 'B', 1, 'Y'),
+              originalId: 'A',
+            },
+          ] as unknown as D3TreeNode[])
+          .sum(() => 1),
+      )
+
+      act(() => {
+        useViewModelStore.getState().exclusiveSelect(NETWORK_ID, ['A'], [])
+      })
+
+      expect(strokeOf(container, 'B-A')).toBe(GREY)
+    })
+  })
+
+  it('clears the outline when a subsystem ring is clicked', async () => {
+    const container = await drawn()
+    click(container, 'A-366')
+
+    click(container, 'B')
+
+    expect(strokes(container)['A-366']).toBe(GREY)
+    expect(strokes(container).B).toBe(ORANGE)
   })
 })
 

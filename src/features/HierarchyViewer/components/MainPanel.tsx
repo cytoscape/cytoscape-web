@@ -62,11 +62,13 @@ const CirclePackingRenderer: Renderer = {
   ),
 }
 
-export const MainPanel = (): JSX.Element => {
-  const [subNetworkName, setSubNetworkName] = useState<string>('')
-  const [query, setQuery] = useState<Query>({ nodeIds: [] })
-  const [interactionNetworkUuid, setInteractionNetworkId] = useState<string>('')
+const NO_SUBSYSTEM: {
+  subNetworkName: string
+  query: Query
+  interactionNetworkUuid: string
+} = { subNetworkName: '', query: { nodeIds: [] }, interactionNetworkUuid: '' }
 
+export const MainPanel = (): JSX.Element => {
   // Check the network property and enable the UI only if it is a hierarchy
   const [isHierarchy, setIsHierarchy] = useState<boolean>(false)
   const [metadata, setMetadata] = useState<HcxMetaData>()
@@ -165,11 +167,15 @@ export const MainPanel = (): JSX.Element => {
     checkDataType()
   }, [networkSummary, currentNetworkId, checkDataType])
 
-  useEffect(() => {
+  // Derived during render and not in an effect: SubNetworkPanel fetches as soon as
+  // it gets a subsystem, so a render that pairs it with the previous subsystem's
+  // members starts a wrong fetch. When that answer came first, it was stored as
+  // this subsystem's network for good (#931).
+  const { subNetworkName, query, interactionNetworkUuid } = useMemo(() => {
     // Pick the first selected node if multiple nodes are selected
     const selectedSubsystem: IdType = selectedNodes[0]
     if (selectedSubsystem === undefined || tableRecord === undefined) {
-      return
+      return NO_SUBSYSTEM
     }
 
     const idString: string = selectedSubsystem.toString()
@@ -179,24 +185,20 @@ export const MainPanel = (): JSX.Element => {
     // Pick the table row for the selected subsystem and extract member list
     const row: Record<string, ValueType> | undefined = rows.get(idString)
     if (row === undefined) {
-      return
+      return NO_SUBSYSTEM
     }
-
-    const memberIds = row[SubsystemTag.members]
-    const interactionUuid: string = row[
-      SubsystemTag.interactionNetworkUuid
-    ] as string
 
     const visualStyle: VisualStyle | undefined = visualStyles[currentNetworkId]
     const nodeLabelMappingAttr: string | undefined =
       visualStyle?.nodeLabel?.mapping?.attribute
 
-    setSubNetworkName(getSubsystemName(row, nodeLabelMappingAttr, idString))
-    const newQuery: Query = { nodeIds: memberIds as number[] }
-    if (interactionUuid === undefined || interactionUuid === '') {
-      setQuery(newQuery)
+    return {
+      subNetworkName: getSubsystemName(row, nodeLabelMappingAttr, idString),
+      query: { nodeIds: row[SubsystemTag.members] as number[] },
+      interactionNetworkUuid: row[
+        SubsystemTag.interactionNetworkUuid
+      ] as string,
     }
-    setInteractionNetworkId(interactionUuid)
   }, [selectedNodes, tableRecord, visualStyles, currentNetworkId])
 
   if (!isHierarchy) {
