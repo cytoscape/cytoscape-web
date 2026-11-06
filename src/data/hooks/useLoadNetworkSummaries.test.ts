@@ -4,6 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { NetworkSummary } from '../../models/NetworkSummaryModel'
 import { getNetworkSummariesFromDb, putNetworkSummaryToDb } from '../db'
 import { fetchNdexSummaries } from '../external-api/ndex'
+import {
+  clearNdexAccessKeysForTesting,
+  rememberNdexAccessKey,
+} from '../external-api/ndex/accessKeys'
 import { useCredentialStore } from './stores/CredentialStore'
 import { useLoadNetworkSummaries } from './useLoadNetworkSummaries'
 
@@ -39,6 +43,7 @@ describe('useLoadNetworkSummaries', () => {
 
   afterEach(() => {
     useCredentialStore.setState({ getToken: originalGetToken })
+    clearNdexAccessKeysForTesting()
     vi.clearAllMocks()
   })
 
@@ -70,6 +75,28 @@ describe('useLoadNetworkSummaries', () => {
 
       expect(fetchNdexSummaries).toHaveBeenCalledWith(['b'], 'token-1')
       expect(putNetworkSummaryToDb).toHaveBeenCalledWith(summary('b'))
+      expect(Object.keys(result).sort()).toEqual(['a', 'b'])
+    })
+
+    // #807: a share-link deep link reaches the editor before its summary is
+    // in IndexedDB, so this refetch needs the key boot remembered. One key
+    // per request, so a keyed network is fetched on its own.
+    it('fetches a network with a remembered share-link key on its own, with the key', async () => {
+      rememberNdexAccessKey('b', 'key-b')
+      vi.mocked(fetchNdexSummaries).mockImplementation(async (id) =>
+        Array.isArray(id) ? id.map(summary) : [summary(id)],
+      )
+
+      const result = await loadSummaries()(['a', 'b'], 'token-1')
+
+      expect(fetchNdexSummaries).toHaveBeenCalledTimes(2)
+      expect(fetchNdexSummaries).toHaveBeenCalledWith(['a'], 'token-1')
+      expect(fetchNdexSummaries).toHaveBeenCalledWith(
+        'b',
+        'token-1',
+        undefined,
+        'key-b',
+      )
       expect(Object.keys(result).sort()).toEqual(['a', 'b'])
     })
 

@@ -26,6 +26,38 @@ jobs:
       - name: Run lint
         run: npm run lint
 
+  # Lists the in-app manual pages a PR's code changes ask someone to review
+  # (src/features/Manual/drift.ts). Warning mode: findings become annotations
+  # and a job summary, and the job passes. To block on findings, set
+  # MANUAL_DRIFT_STRICT to '1'. A commit trailer or a line in the PR body
+  # clears a page: `Manual-Reviewed: merge (tooltip wording only)`.
+  manual-drift:
+    name: Manual Drift
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The check diffs the branch against its base and reads every
+          # commit message on it.
+          fetch-depth: 0
+
+      # No npm install: the check imports only Node built-ins and two
+      # TypeScript files, which Node 24 runs directly.
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Check the manual against the changed code
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          MANUAL_DRIFT_STRICT: '0'
+        run: >-
+          node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON
+          scripts/check-manual-drift.mjs
+          --base origin/${{ github.base_ref }}
+
   build:
     name: Build
     runs-on: ubuntu-latest

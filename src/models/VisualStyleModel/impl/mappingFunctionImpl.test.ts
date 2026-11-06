@@ -397,3 +397,35 @@ describe('MappingFunctionImpl', () => {
     })
   })
 })
+
+// #812: Passthrough was disabled for every color property, so the color
+// passthroughs a Desktop-authored network carries (the WP5049 sample maps Fill
+// Color from a `FillColor` column of hex strings) rendered but could not be
+// edited.
+describe('typesCanBeMapped — passthrough onto a color property', () => {
+  it('allows a string column', () => {
+    expect(
+      typesCanBeMapped(
+        MappingFunctionType.Passthrough,
+        ValueTypeName.String,
+        VisualPropertyValueTypeName.Color,
+      ),
+    ).toBe(true)
+  })
+
+  it.each([
+    ValueTypeName.Integer,
+    ValueTypeName.Long,
+    ValueTypeName.Double,
+    ValueTypeName.Boolean,
+    ValueTypeName.ListString,
+  ])('rejects a %s column', (valueType) => {
+    expect(
+      typesCanBeMapped(
+        MappingFunctionType.Passthrough,
+        valueType,
+        VisualPropertyValueTypeName.Color,
+      ),
+    ).toBe(false)
+  })
+})

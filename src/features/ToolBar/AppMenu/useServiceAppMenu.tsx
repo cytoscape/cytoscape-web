@@ -11,6 +11,7 @@ import { ServiceStatus } from '../../../models/AppModel/ServiceStatus'
 import { TaskStatusDialog } from '../../AppManager/TaskStatusDialog'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
 import { AppMenuItemDialog, createMenuItems } from './MenuFactory'
+import { catalogServiceId, trackEvent } from '@/data/analytics/trackEvent'
 
 export interface ServiceAppMenu {
   // Menu items for the service apps that resolve to the requested root menu.
@@ -64,7 +65,12 @@ export const useServiceAppMenu = (
       setOpenTaskDialog(true)
       try {
         const result = await run(url)
-        if (result.status !== ServiceStatus.Complete) {
+        if (result.status === ServiceStatus.Complete) {
+          trackEvent('app_run', {
+            app_type: 'service',
+            app_id: catalogServiceId(url),
+          })
+        } else {
           setNotificationDialog(true)
           setNotificationMessage(result.message)
         }

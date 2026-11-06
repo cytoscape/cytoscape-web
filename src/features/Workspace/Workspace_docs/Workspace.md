@@ -18,7 +18,7 @@ The Workspace is the central orchestrator that:
 ### Main Component
 - **WorkspaceEditor.tsx**: Main workspace component
   - Allotment-based resizable layout
-  - Left panel: NetworkBrowserPanel, LayoutTools
+  - Left panel: NetworkBrowserPanel
   - Center: NetworkPanel (network visualization)
   - Right panel: SidePanel (Vizmapper, etc.)
   - Bottom panel: TableBrowser
@@ -27,17 +27,17 @@ The Workspace is the central orchestrator that:
 ### Sub-Panels
 - **NetworkBrowserPanel**: Network list and navigation
 - **SidePanel**: Right-side panel with tabs
-- **LayoutTools**: Layout algorithm controls
 - **NetworkPanel**: Network visualization (lazy loaded)
 - **TableBrowser**: Data table interface (lazy loaded)
 
 ## Behavior
 
 ### Panel Management
-- **Left Panel**: Network list and layout tools
+- **Left Panel**: Network list
   - Can be opened/closed
   - Resizable width
-  - Contains NetworkBrowserPanel and LayoutTools
+  - Contains NetworkBrowserPanel (Layout Tools is a floating panel in the
+    network view, opened from Layout → Layout Tools)
 
 - **Right Panel**: Visual style editor and other tools
   - Tabbed interface

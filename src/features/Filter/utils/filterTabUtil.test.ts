@@ -2,13 +2,20 @@
 import { describe, expect, it } from 'vitest'
 
 import { DisplayMode } from '@/models/FilterModel/DisplayMode'
-import { FilterPredicate } from '@/models/FilterModel/FilterTree'
-import { createWorkspaceFilter } from '@/models/FilterModel/impl/filterTreeImpl'
+import { FilterPredicate, MatchType } from '@/models/FilterModel/FilterTree'
+import {
+  createColumnFilter,
+  createCompositeFilter,
+  createDegreeFilter,
+  createTopologyFilter,
+  createWorkspaceFilter,
+} from '@/models/FilterModel/impl/filterTreeImpl'
 import type { Table } from '@/models/TableModel/Table'
 
 import {
   AUTO_APPLY_ELEMENT_LIMIT,
   bothTablesOption,
+  describeCondition,
   mergeRanges,
   defaultAutoApply,
   formatApplyStatus,
@@ -186,5 +193,25 @@ describe('mergeRanges', () => {
       max: 2,
     })
     expect(mergeRanges(undefined, undefined)).toBeUndefined()
+  })
+})
+
+describe('describeCondition', () => {
+  it('names each kind of condition', () => {
+    expect(describeCondition(createColumnFilter())).toBe('Column filter')
+    expect(
+      describeCondition({
+        ...createColumnFilter(),
+        columnName: 'weight',
+        target: 'edges',
+      }),
+    ).toBe('Edge: weight')
+    expect(describeCondition(createDegreeFilter())).toBe('Degree filter')
+    expect(describeCondition(createTopologyFilter())).toBe('Topology filter')
+    expect(
+      describeCondition(
+        createCompositeFilter(MatchType.ALL, [createDegreeFilter()]),
+      ),
+    ).toBe('Group (1 condition)')
   })
 })

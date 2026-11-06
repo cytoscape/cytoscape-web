@@ -111,7 +111,7 @@ apis.panel.open('right', 'NetworkAnalyzerPanel')
   in `src/models/UiModel/PanelTab.ts`):
   - Left: `workspace`, `style`, `llm-query`
   - Bottom: `nodes`, `edges`, `network`
-  - Right: `sub-network-viewer`
+  - Right: `sub-network-viewer` (only for a hierarchy network, #877)
 - The pane scopes the id, so built-in ids can stay short, and an App id can
   only collide with a built-in id of the same pane. Built-in tabs come first in
   tab order, so the built-in wins unless the caller owns the other tab.
@@ -235,8 +235,9 @@ What was built, where it differs from the plan above:
 - **Core** — `src/app-api/core/panelApi.ts`: `createPanelApi(appId?)` and the
   anonymous `panelApi`. It resolves the tab before touching any store, selects
   it, then opens the pane.
-- **`isHCX`** — the left pane's `'llm-query'` tab exists only for a hierarchy
-  network, and that predicate lives in `features/HierarchyViewer/utils/`.
+- **`isHCX`** — the left pane's `'llm-query'` tab and the right pane's
+  `'sub-network-viewer'` tab (#877) exist only for a hierarchy network, and
+  that predicate lives in `features/HierarchyViewer/utils/`.
   `panelApi.ts` imports it: it is a pure function with no React or heavy
   runtime imports, and models must not know what a hierarchy is. This is the
   one `features/` import in `core/`, recorded as principle 18 in

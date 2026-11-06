@@ -11,6 +11,16 @@ import {
 } from '../../../models/TableModel'
 
 /**
+ * The field of an index record that holds a column's value.
+ *
+ * Column names come from the network file, so a column can be named `id`, which
+ * is the field `runSearch` reads the row key from (#949), or `__proto__`, which
+ * cannot be assigned as a plain field. The prefix keeps every column name clear
+ * of both.
+ */
+const columnField = (columnName: string): string => `column:${columnName}`
+
+/**
  * Generates a Fuse.js index from a data table for fast text search.
  *
  * Only String and ListString columns are indexed. The index is configured with:
@@ -46,21 +56,44 @@ export const createFuseIndex = (
 
       newRow.id = key
       keySet.forEach((columnKey: string) => {
-        newRow[columnKey] = row[columnKey]
+        newRow[columnField(columnKey)] = row[columnKey]
       })
       list.push(newRow)
     }
   })
+
+  // A one-element path, because Fuse.js splits a string key at each dot
+  return createFuseIndexFromRecords(
+    list,
+    Array.from(keySet, (columnKey: string) => [columnField(columnKey)]),
+  )
+}
+
+/**
+ * Generates a Fuse.js index over plain records, configured like the index of
+ * a data table (see {@link createFuseIndex}), so {@link runSearch} matches
+ * them exactly as it matches table rows. Each record needs an `id`, which
+ * `runSearch` returns for a match.
+ *
+ * @param records Records to be indexed
+ * @param keys Record fields to search: a name, which Fuse.js splits at each dot
+ *   into a nested path, or an explicit path
+ * @returns Fuse.js index ready for searching
+ */
+export const createFuseIndexFromRecords = (
+  records: Array<Record<string, ValueType>>,
+  keys: Array<string | string[]>,
+): Fuse<Record<string, ValueType>> => {
   const options = {
     includeScore: true,
     includeMatches: true,
     threshold: 0.0,
     useExtendedSearch: true,
     ignoreLocation: true,
-    keys: Array.from(keySet),
+    keys,
   }
 
-  return new Fuse(list, options)
+  return new Fuse(records, options)
 }
 
 /**

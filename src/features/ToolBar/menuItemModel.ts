@@ -15,5 +15,10 @@ export interface ToolbarMenuItem {
   items?: ToolbarMenuItem[]
   separator?: boolean
   disabled?: boolean
+  /**
+   * The row's shortcuts for assistive technology, in `aria-keyshortcuts`
+   * form (e.g. "Control+A Meta+A"); the visible label is the template's
+   */
+  keyShortcuts?: string
   command?: () => void
 }

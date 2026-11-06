@@ -64,6 +64,21 @@ export const findRoot = (cyNet: Core): NodeSingular | undefined => {
 }
 
 /**
+ * Label of a protein ring: the name looked up for its member id, else the
+ * member itself. `HCX::members` holds numbers while the lookup is keyed by
+ * their canonical decimal strings, so the key is normalized here: a padded
+ * `'0189'` is requested as node 189. Stripped as text, since going through
+ * Number would round a large id.
+ */
+const memberLabel = (
+  member: string | number,
+  rootMemberMap: Map<string, string>,
+): string => {
+  const id = String(member)
+  return rootMemberMap.get(id.replace(/^0+(?=\d)/, '')) ?? id
+}
+
+/**
  * Function to convert a DAG to a tree for stratify
  *
  * @param node
@@ -72,6 +87,7 @@ export const findRoot = (cyNet: Core): NodeSingular | undefined => {
  * @param visited
  * @param treeElements
  * @param members
+ * @param rootMemberMap protein names keyed by member id (decimal string)
  */
 export const cyNetDag2tree2 = (
   node: NodeSingular,
@@ -80,7 +96,7 @@ export const cyNetDag2tree2 = (
   visited: Record<string, number>,
   treeElements: any[],
   members: Set<string>,
-  rootMemberMap: Map<string | number, string>,
+  rootMemberMap: Map<string, string>,
 ): void => {
   // CUrrent node ID
   const nodeId = node.id()
@@ -117,7 +133,7 @@ export const cyNetDag2tree2 = (
       }
 
       // Use the conversion map only for the generated leaf nodes
-      const label = rootMemberMap.get(member) ?? member
+      const label = memberLabel(member, rootMemberMap)
       treeElements.push({
         id: `${newNodeId}-${member}`,
         originalId: member,
@@ -125,6 +141,7 @@ export const cyNetDag2tree2 = (
         name: label,
         size: 1,
         members: [],
+        isMember: true,
       })
     })
   } else {
@@ -145,7 +162,7 @@ export const cyNetDag2tree2 = (
 
     nodeMembers.forEach((member: string) => {
       members.add(member)
-      const label = rootMemberMap.get(member) ?? member
+      const label = memberLabel(member, rootMemberMap)
 
       if (!childMembers.has(member)) {
         treeElements.push({
@@ -155,6 +172,7 @@ export const cyNetDag2tree2 = (
           name: label,
           size: 1,
           members: [],
+          isMember: true,
         })
       }
     })

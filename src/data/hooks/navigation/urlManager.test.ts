@@ -31,6 +31,26 @@ describe('urlManager', () => {
   }
 
   describe('navigateToNetwork', () => {
+    it('never navigates a manual tab into the editor, even when forced', () => {
+      // An editor component embedded in a manual demo (Merge, a network row)
+      // would otherwise leave /manual for /<ws>/networks/<id> — booting the
+      // editor on the manual's sandbox database.
+      window.history.replaceState(null, '', '/manual/merge')
+      try {
+        const navigate = vi.fn()
+
+        navigateToNetwork(
+          { workspaceId: 'ws-1', networkId: 'net-1', force: true },
+          navigate,
+        )
+
+        expect(navigate).not.toHaveBeenCalled()
+      } finally {
+        // Later tests must not run in the manual scope.
+        window.history.replaceState(null, '', '/')
+      }
+    })
+
     it('builds the network path with search parameters', () => {
       const navigate = vi.fn()
 
@@ -113,6 +133,59 @@ describe('urlManager', () => {
       expect(navigate).toHaveBeenCalledTimes(2)
       expect(navigate).toHaveBeenLastCalledWith('/ws-1/networks', {
         replace: true,
+      })
+    })
+
+    describe('userInitiated (a click on a network row)', () => {
+      const config = (networkId: string, userInitiated?: boolean) => ({
+        workspaceId: 'ws-1',
+        networkId,
+        searchParams: new URLSearchParams(),
+        replace: false,
+        userInitiated,
+      })
+
+      afterEach(() => {
+        window.history.replaceState(null, '', '/')
+      })
+
+      it('is not dropped within the throttle and in-progress windows', () => {
+        const navigate = vi.fn()
+
+        navigateToNetwork(config('net-1'), navigate)
+        navigateToNetwork(config('net-2', true), navigate)
+
+        expect(navigate).toHaveBeenCalledTimes(2)
+        expect(navigate).toHaveBeenLastCalledWith('/ws-1/networks/net-2', {
+          replace: false,
+        })
+      })
+
+      it('lands after Back, when only the remembered path matches it', () => {
+        const navigate = vi.fn()
+        navigateToNetwork(config('net-1'), navigate)
+        advance(400)
+        navigateToNetwork(config('net-2'), navigate)
+        advance(400)
+        // Back: the address bar names net-1, urlManager still remembers net-2
+        window.history.replaceState(null, '', '/ws-1/networks/net-1')
+
+        navigateToNetwork(config('net-2', true), navigate)
+
+        expect(navigate).toHaveBeenCalledTimes(3)
+        // A new entry, or Back could no longer return to net-1
+        expect(navigate).toHaveBeenLastCalledWith('/ws-1/networks/net-2', {
+          replace: false,
+        })
+      })
+
+      it('adds no history entry when the URL already names the network', () => {
+        const navigate = vi.fn()
+        window.history.replaceState(null, '', '/ws-1/networks/net-1')
+
+        navigateToNetwork(config('net-1', true), navigate)
+
+        expect(navigate).not.toHaveBeenCalled()
       })
     })
 

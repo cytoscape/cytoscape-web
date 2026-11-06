@@ -1,0 +1,92 @@
+# Exporting Your Data
+
+<a id="export_your_data" />
+
+Cytoscape Web exports the current network view as an image (PNG, SVG or
+PDF), and the network itself as a CX2 file.
+
+## Exporting Networks as Static Images
+
+Choose **Data → Export → Network to Image...**, or **Export Network to Image**
+in the network's ⋮ menu in the **WORKSPACE** panel. The
+**Export Network To Image** window opens:
+
+<Screenshot id="export-image-dialog" />
+
+1. Choose the **File type**: **PNG**, **SVG** or **PDF**.
+2. Edit the **File name** if you like. It starts with the network's name; the
+   extension is added for you.
+3. Set the options for the chosen type, listed below.
+4. Click **Export PNG**, **Export SVG** or **Export PDF**. The browser saves the file to your downloads, or asks
+   where to save it, depending on your browser settings.
+
+The image shows the network view that is active. When a network has more than
+one view, such as the subnetworks of a hierarchy, it exports the one you last
+worked in.
+
+If the image is going into a publication, the box above the dialog's
+buttons shows how to cite Cytoscape Web and links the paper's DOI. Its
+**Citation** button copies the references as text, and **BibTeX** copies them
+as BibTeX entries for a `.bib` file. **Help → Citation** has the same copy
+buttons.
+
+Every exported file also carries the citation in its metadata, so it stays
+with the figure: a PNG in its `Comment` text, an SVG in its `<metadata>`
+element, and a PDF in its document properties (**Subject**).
+
+<DemoOnly>
+
+<LiveDemo panels={['renderer']} actions={['exportImage']} height={420} />
+
+Arrange the demo network, then click **Export Network to Image…**. This opens
+the same window as Data → Export → Network to Image..., and the file
+downloads to your computer.
+
+</DemoOnly>
+
+### Export Full Network Image
+
+All three types have **Export full network image**, checked by default. When
+it is checked, the image contains the whole network. When it is unchecked, the
+image contains only what is visible in the network view. To export part of a
+network, zoom in on that part and uncheck the box.
+
+### PNG Options
+
+| Option                 | What it does                                                                                                                                                                                      |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Transparent background | Checked by default. Uncheck it for a white background.                                                                                                                                            |
+| Units                  | **Pixels** or **Inches**.                                                                                                                                                                         |
+| Size                   | The image width and height. Width and height stay in proportion: change one and the other follows. In inches, choose a **DPI** (72, 100, 150, 300 or 600) to set how many pixels each inch holds. |
+| Zoom                   | Scales the image from 10% to 500% of the network view's size on screen. Changing the size changes the zoom, and the other way around.                                                             |
+
+For a sharp image in a publication, choose Inches, set the printed width, and
+pick a DPI of 300 or more.
+
+### PDF Options
+
+| Option      | What it does                                                                                                                                            |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paper size  | **Letter** (the default), **Legal**, **Tabloid**, **A0** to **A5**, or **Custom**. With Custom, enter the **Page width** and **Page height** in inches. |
+| Orientation | **Portrait** or **Landscape**.                                                                                                                          |
+| Margin      | The space around the network on the page, in points (72 to the inch). The default is 52.                                                                |
+
+### SVG Options
+
+SVG has only Export full network image. The image has a white background.
+
+<Note>
+  PDF and SVG are vector formats: they stay sharp at any size, and you can edit
+  them in programs such as Adobe Illustrator or Inkscape. We recommend PDF or
+  SVG for publications.
+</Note>
+
+## Exporting Network Files
+
+To save the network itself, with its data, styles and layout, use
+**Data → Download Network File (.cx2)**. The file opens in Cytoscape desktop,
+uploads to NDEx, and imports back into Cytoscape Web. See
+[Download Network File](creating-networks#download_cx2_file).
+
+To keep networks online instead, save them to NDEx; see
+[Save to NDEx](creating-networks#save_to_NDEx).

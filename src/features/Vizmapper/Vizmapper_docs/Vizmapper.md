@@ -81,6 +81,7 @@ The Vizmapper is organized around visual properties, which are grouped into thre
 ### Mapping Functions
 
 - **Passthrough**: Directly uses table column values as visual property values
+  - Color properties accept a string column only. Each cell is parsed as a CSS color (`#rgb`, `#rrggbb`, named colors, `rgb()`, `hsl()`) and rendered as `#rrggbb`; alpha is dropped. A cell that is not a color renders the property's default value (`createPassthroughMapper`, #812).
 - **Discrete Mapping**: Maps specific table values to specific visual values (e.g., "Type A" → red, "Type B" → blue)
 - **Continuous Mapping**: Maps numeric ranges to visual scales (e.g., expression 0-100 → color gradient)
 

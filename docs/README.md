@@ -80,6 +80,7 @@ Behavior documentation co-located with source code in `src/features/`. Each `*_d
 | PopupPanel          | [PopupPanel.md](../src/features/PopupPanel/PopupPanel_docs/PopupPanel.md)                                     |
 | Login               | [Login.md](../src/features/Login/Login_docs/Login.md)                                                         |
 | FeatureAvailability | [FeatureAvailability.md](../src/features/FeatureAvailability/FeatureAvailability_docs/FeatureAvailability.md) |
+| Manual              | [Manual.md](../src/features/Manual/Manual_docs/Manual.md)                                                     |
 
 ### Network Visualization
 
@@ -116,6 +117,7 @@ Behavior documentation co-located with source code in `src/features/`. Each `*_d
 | AppMenu        | [AppMenu.md](../src/features/ToolBar/AppMenu/AppMenu_docs/AppMenu.md)                                                                                                    |
 | DataMenu       | [DataMenu.md](../src/features/ToolBar/DataMenu/DataMenu_docs/DataMenu.md), [WorkspaceMenuItems.md](../src/features/ToolBar/DataMenu/DataMenu_docs/WorkspaceMenuItems.md) |
 | EditMenu       | [EditMenu.md](../src/features/ToolBar/EditMenu/EditMenu_docs/EditMenu.md)                                                                                                |
+| SelectMenu     | [SelectMenu.md](../src/features/ToolBar/SelectMenu/SelectMenu_docs/SelectMenu.md)                                                                                        |
 | LayoutMenu     | [LayoutMenu.md](../src/features/ToolBar/LayoutMenu/LayoutMenu_docs/LayoutMenu.md)                                                                                        |
 | AnalysisMenu   | [AnalysisMenu.md](../src/features/ToolBar/AnalysisMenu/AnalysisMenu_docs/AnalysisMenu.md)                                                                                |
 | HelpMenu       | [HelpMenu.md](../src/features/ToolBar/HelpMenu/HelpMenu_docs/HelpMenu.md)                                                                                                |

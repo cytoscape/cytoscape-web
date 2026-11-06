@@ -27,7 +27,7 @@ npm install     # install dependencies
 npm run dev     # start the dev server (opens at http://localhost:5500)
 ```
 
-You need Node 24, the version pinned in [`.nvmrc`](.nvmrc); `nvm use` will select it for you. `npm install` refuses to run on an older Node. The README's [Build dependencies](README.md#build-dependencies) section also covers mise.
+You need Node 24.22.1 or a later 24.x, the version pinned in [`.nvmrc`](.nvmrc); `nvm use` will select it for you. `npm install` refuses to run on an older Node. The README's [Build dependencies](README.md#build-dependencies) section also covers mise.
 
 The [Core Developer's Guide](docs/guides/README.md) indexes the rest of the contributor documentation: architecture, testing, debugging and the creation patterns for features, models and stores.
 

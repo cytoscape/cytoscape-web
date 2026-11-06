@@ -20,6 +20,13 @@ import {
   EditTableColumnForm,
 } from '../TableColumnForm'
 
+/**
+ * Glyphs of the Cytoscape icon font (`src/assets/icons.css`) on the two
+ * toolbar buttons. The manual draws the same glyphs (UiIcon).
+ */
+export const INSERT_COLUMN_GLYPH = '\u2011'
+export const IMPORT_TABLE_GLYPH = ','
+
 // --- Helper Components ---
 const ButtonTooltip = ({
   title,
@@ -707,7 +714,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
         disabled={tables[currentNetworkId] === undefined}
         onClick={() => setShowCreateColumnForm(true)}
       >
-        <span className="icon">&#8209;</span>
+        <span className="icon">{INSERT_COLUMN_GLYPH}</span>
       </ToolbarIconButton>
       <ToolbarIconButton
         testId="import-table-button"
@@ -715,7 +722,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
         disabled={tables[currentNetworkId] === undefined}
         onClick={() => showTableJoinForm(true)}
       >
-        <span className="icon">&#44;</span>
+        <span className="icon">{IMPORT_TABLE_GLYPH}</span>
       </ToolbarIconButton>
       <CreateTableColumnForm
         error={createColumnFormError}

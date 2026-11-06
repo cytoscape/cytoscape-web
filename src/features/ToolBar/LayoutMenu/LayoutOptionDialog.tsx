@@ -11,9 +11,9 @@ import {
   PaperProps,
 } from '@mui/material'
 import { useEffect, useMemo, useState } from 'react'
-import Draggable from 'react-draggable'
 
 import { CyDialog } from '@/components/CyDialog'
+import { DragPosition, PointerDraggable } from '@/components/PointerDraggable'
 import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
 import { ParameterValue } from '../../../models/AppModel/AppParameter'
 import { IdType } from '../../../models/IdType'
@@ -25,14 +25,21 @@ import { ParameterForm, useParameterErrors } from '../../ParameterForm'
 import { LayoutSelector } from './LayoutSelector'
 import { runEngineLayout } from '../../../models/LayoutModel/impl/runEngineLayout'
 
+/**
+ * The dialog's paper, moved by dragging its title. The offset is dropped
+ * when the dialog closes, so it opens centered again.
+ */
 const DraggablePaper = (props: PaperProps): JSX.Element => {
+  const [position, setPosition] = useState<DragPosition>({ x: 0, y: 0 })
   return (
-    <Draggable
+    <PointerDraggable
+      position={position}
+      onDrag={setPosition}
       handle="#draggable-dialog-title"
       cancel={'[class*="MuiDialogContent-root"]'}
     >
       <Paper {...props} />
-    </Draggable>
+    </PointerDraggable>
   )
 }
 

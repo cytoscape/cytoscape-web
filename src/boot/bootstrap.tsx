@@ -7,6 +7,7 @@ import * as ReactDOM from 'react-dom/client'
 import { AppConfigContext } from '../AppConfigContext'
 import { publishHostDescriptor } from '../app-api/federation/hostDescriptor'
 import appConfig from '../assets/config.json'
+import { rememberNdexAccessKeyFromUrl } from '../data/external-api/ndex/accessKeys'
 import { initializeDebug, logStartup } from '../debug'
 import ErrorBoundary from '../features/ErrorBoundary'
 import { AppBootstrap } from './AppBootstrap'
@@ -58,6 +59,13 @@ const initializeApp = async (): Promise<void> => {
   await runPhase(BootPhase.RUNTIME, () => {
     enableMapSet() // lets immer work with Map and Set
     initializeDebug()
+    // Before render: the editor fetches a deep-linked network in an effect
+    // that fires before AppShell's boot, so the share-link key must be in
+    // memory first (#807).
+    rememberNdexAccessKeyFromUrl(
+      window.location.pathname,
+      window.location.search,
+    )
 
     // Independently guarded rather than inlined above: it touches an API a
     // hardened browsing context can refuse — window.name — and it is not a

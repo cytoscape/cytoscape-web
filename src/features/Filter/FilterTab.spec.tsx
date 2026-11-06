@@ -6,6 +6,7 @@ import { useNetworkStore } from '@/data/hooks/stores/NetworkStore'
 import { useTableStore } from '@/data/hooks/stores/TableStore'
 import { useViewModelStore } from '@/data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '@/data/hooks/stores/VisualStyleStore'
+import { showAll } from '@/data/select/selectCommands'
 import { DisplayMode } from '@/models/FilterModel/DisplayMode'
 import {
   FilterPredicate,
@@ -223,6 +224,113 @@ describe('FilterTab', () => {
     expect(screen.getByTestId('filter-status').textContent).toBe(
       'Showing 1 node and 1 edge in 0 ms',
     )
+  })
+
+  it('stops reporting a show-mode run once Show All releases the filter', () => {
+    useFilterStore.setState({
+      workspaceFilters: { f1: nameContains('alpha') },
+      selectedWorkspaceFilterId: 'f1',
+    })
+    render(<FilterTab networkId={NET} />)
+    fireEvent.click(
+      within(screen.getByTestId('filter-display-mode-show')).getByRole('radio'),
+    )
+    expect(screen.getByTestId('filter-status').textContent).toMatch(/^Showing/)
+
+    act(() => {
+      showAll(NET)
+    })
+    expect(useFilterStore.getState().appliedWorkspaceFilters).toEqual({})
+    expect(screen.getByTestId('filter-status').textContent?.trim()).toBe('')
+  })
+
+  // An edit schedules an automatic run; applying at once before it fires
+  // already applies that edit, so the timer must not re-apply the filter
+  // over what came next (Show All here)
+  const nodeVisibilityBypass = (): Record<string, unknown> =>
+    Object.fromEntries(
+      useVisualStyleStore.getState().visualStyles[NET][
+        NodeVisualPropertyName.NodeVisibility
+      ].bypassMap,
+    )
+
+  it('does not re-apply an edit that switching to show mode applied', () => {
+    useFilterStore.setState({
+      workspaceFilters: { f1: nameContains('a') },
+      selectedWorkspaceFilterId: 'f1',
+    })
+    render(<FilterTab networkId={NET} />)
+
+    fireEvent.change(screen.getByTestId('filter-condition-0-text'), {
+      target: { value: 'alpha' },
+    })
+    fireEvent.click(
+      within(screen.getByTestId('filter-display-mode-show')).getByRole('radio'),
+    )
+    expect(nodeVisibilityBypass()).toEqual({
+      n2: VisibilityType.None,
+      n3: VisibilityType.None,
+    })
+    act(() => {
+      showAll(NET)
+    })
+    act(() => {
+      vi.advanceTimersByTime(AUTO_APPLY_DELAY_MS)
+    })
+
+    expect(nodeVisibilityBypass()).toEqual({})
+    expect(useFilterStore.getState().appliedWorkspaceFilters).toEqual({})
+  })
+
+  it('does not re-apply an edit that Apply applied', () => {
+    useFilterStore.setState({
+      workspaceFilters: {
+        f1: { ...nameContains('a'), displayMode: DisplayMode.SHOW_HIDE },
+      },
+      selectedWorkspaceFilterId: 'f1',
+    })
+    render(<FilterTab networkId={NET} />)
+
+    fireEvent.change(screen.getByTestId('filter-condition-0-text'), {
+      target: { value: 'alpha' },
+    })
+    fireEvent.click(screen.getByTestId('filter-apply-button'))
+    expect(nodeVisibilityBypass()).toEqual({
+      n2: VisibilityType.None,
+      n3: VisibilityType.None,
+    })
+    act(() => {
+      showAll(NET)
+    })
+    act(() => {
+      vi.advanceTimersByTime(AUTO_APPLY_DELAY_MS)
+    })
+
+    expect(nodeVisibilityBypass()).toEqual({})
+    expect(useFilterStore.getState().appliedWorkspaceFilters).toEqual({})
+  })
+
+  it('does not apply an edit after Show All came in between', () => {
+    useFilterStore.setState({
+      workspaceFilters: {
+        f1: { ...nameContains('a'), displayMode: DisplayMode.SHOW_HIDE },
+      },
+      selectedWorkspaceFilterId: 'f1',
+    })
+    render(<FilterTab networkId={NET} />)
+
+    fireEvent.change(screen.getByTestId('filter-condition-0-text'), {
+      target: { value: 'alpha' },
+    })
+    act(() => {
+      showAll(NET)
+    })
+    act(() => {
+      vi.advanceTimersByTime(AUTO_APPLY_DELAY_MS)
+    })
+
+    expect(nodeVisibilityBypass()).toEqual({})
+    expect(useFilterStore.getState().appliedWorkspaceFilters).toEqual({})
   })
 
   it('warns about a condition on a column the network does not have', () => {

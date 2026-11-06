@@ -15,6 +15,7 @@ This document outlines the application's policy for validating external inputs, 
 The `validateCX2` function performs comprehensive validation of CX2 data, including:
 
 1. **Structure Validation**: Ensures the data is a valid CX2 array structure with proper version (2.0) and aspect format
+   - A `status` aspect is required. CX2 puts it last, but a `status` elsewhere is accepted with a warning: the extractor finds every aspect by name, so no aspect is lost (#830).
 2. **Metadata Validation**: Verifies that metadata aspects are consistent with the actual data
 3. **Referential Integrity**: Validates that:
    - All nodes have unique IDs
@@ -115,6 +116,14 @@ When testing components that handle external CX2 data:
 2. Test with invalid CX2 files (malformed structure, missing required fields, etc.)
 3. Verify that validation errors are properly logged and displayed
 4. Verify that invalid data is not processed or stored
+
+## Credentials and Hosts Named by External Data
+
+A valid CX2 file can still name a hostile host, so passing validation does not make its values trustworthy. **The user's NDEx access token is sent only to the configured NDEx host (`ndexBaseUrl` in `config.json`).**
+
+`getNdexClient` (`src/data/external-api/ndex/client.ts`) enforces this for every NDEx call, so call sites need no check of their own. It compares the parsed origin of the target with the configured host's. A different scheme or port, a look-alike host, or a value that cannot be parsed gets no token, and the request goes out anonymously. Public networks on another host therefore still load, and private ones fail through the caller's normal error handling.
+
+`HCX::interactionNetworkHost` is the case in use today: it reaches `getNdexClient` from both the Cell View name lookup and the Sub Network Viewer (#936). Any new code that sends a credential to a URL taken from external data must apply the same rule.
 
 ## References
 

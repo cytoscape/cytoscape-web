@@ -19,7 +19,7 @@ describe('LLMQueryStore', () => {
     const { result } = renderHook(() => useLLMQueryStore())
     expect(result.current.LLMProvider).toBe('openai')
     expect(result.current.LLMBaseUrl).toBe('')
-    expect(result.current.LLMModel).toBe('gpt-3.5-turbo')
+    expect(result.current.LLMModel).toBe('gpt-6-luna')
   })
 
   it('stores a provider and base URL for a local Ollama endpoint', () => {

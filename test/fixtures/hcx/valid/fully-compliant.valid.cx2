@@ -40,14 +40,6 @@
     ]
   },
   {
-    "status": [
-      {
-        "error": "",
-        "success": true
-      }
-    ]
-  },
-  {
     "attributeDeclarations": [
       {
         "nodes": {
@@ -1667,6 +1659,14 @@
         "mappingSource": "EDGE_LINE_COLOR",
         "label": "Interaction type",
         "widgetType": "checkboxes"
+      }
+    ]
+  },
+  {
+    "status": [
+      {
+        "error": "",
+        "success": true
       }
     ]
   }

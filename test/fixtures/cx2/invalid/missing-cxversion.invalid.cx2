@@ -20,14 +20,6 @@
     ]
   },
   {
-    "status": [
-      {
-        "error": "",
-        "success": true
-      }
-    ]
-  },
-  {
     "nodes": [
       {
         "id": 0,
@@ -52,6 +44,14 @@
         "v": {
           "interaction": "interacts"
         }
+      }
+    ]
+  },
+  {
+    "status": [
+      {
+        "error": "",
+        "success": true
       }
     ]
   }

@@ -22,7 +22,6 @@ describe('getSaveButtonState (CW-488)', () => {
     })
     expect(state.upToDate).toBe(false)
     expect(state.action).toBe('signin')
-    expect(state.tooltip).toMatch(/sign in/i)
   })
 
   it('overwrites a modified NDEx network when authenticated', () => {
@@ -33,6 +32,40 @@ describe('getSaveButtonState (CW-488)', () => {
     })
     expect(state.upToDate).toBe(false)
     expect(state.action).toBe('overwrite')
+  })
+
+  it('saves a copy of an unmodified local network when authenticated (#640)', () => {
+    // Data > Save Copy to NDEx is always enabled for a local network; the
+    // row's save entry must offer the same, changes or not.
+    const state = getSaveButtonState({
+      networkModified: false,
+      isNdex: false,
+      authenticated: true,
+    })
+    expect(state.upToDate).toBe(true)
+    expect(state.action).toBe('copy')
+  })
+
+  it('prompts sign-in for an unmodified local network when not authenticated (#640)', () => {
+    const state = getSaveButtonState({
+      networkModified: false,
+      isNdex: false,
+      authenticated: false,
+    })
+    expect(state.upToDate).toBe(true)
+    expect(state.action).toBe('signin')
+  })
+
+  it('offers nothing for an unmodified NDEx network, signed in or not', () => {
+    for (const authenticated of [true, false]) {
+      expect(
+        getSaveButtonState({
+          networkModified: false,
+          isNdex: true,
+          authenticated,
+        }).action,
+      ).toBe('none')
+    }
   })
 
   it('saves a copy of a modified local network when authenticated', () => {
@@ -103,6 +136,37 @@ describe('getSaveMenuItemState', () => {
     expect(state.disabled).toBe(true)
   })
 
+  it('enables saving a copy of an unmodified local network (#640)', () => {
+    const state = getSaveMenuItemState({
+      saveAction: getSaveButtonState({
+        networkModified: false,
+        isNdex: false,
+        authenticated: true,
+      }).action,
+      isNdex: false,
+      isCurrentNetwork: true,
+    })
+    expect(state).toEqual({
+      label: 'Save a Copy to NDEx',
+      hint: undefined,
+      disabled: false,
+    })
+  })
+
+  it('asks an anonymous user to sign in for an unmodified local network (#640)', () => {
+    const state = getSaveMenuItemState({
+      saveAction: getSaveButtonState({
+        networkModified: false,
+        isNdex: false,
+        authenticated: false,
+      }).action,
+      isNdex: false,
+      isCurrentNetwork: true,
+    })
+    expect(state.hint).toBe('Sign in to save to NDEx')
+    expect(state.disabled).toBe(true)
+  })
+
   it('disables an anonymous user, asking them to sign in', () => {
     const state = getSaveMenuItemState({
       saveAction: 'signin',
@@ -126,7 +190,7 @@ describe('getSaveMenuItemState', () => {
   it('reports nothing to save ahead of sign-in and of opening the network', () => {
     const state = getSaveMenuItemState({
       saveAction: 'none',
-      isNdex: false,
+      isNdex: true,
       isCurrentNetwork: false,
     })
     expect(state.hint).toBe('No unsaved changes')

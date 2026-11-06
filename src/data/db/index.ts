@@ -3,6 +3,7 @@ import 'dexie-observable'
 import Dexie, { IndexableType, Table as DxTable } from 'dexie'
 
 import { logDb, registerDebugTool } from '../../debug'
+import { currentDbScope, dbNameFor } from './dbScope'
 import { getTabId } from '@/data/tabState/tabId'
 import { APP_DATA_GLOBAL_SCOPE, AppDataRow } from '@/models/AppDataModel'
 import { CyApp } from '../../models/AppModel/CyApp'
@@ -73,8 +74,9 @@ import {
   serializeWorkspaceFilter,
   WorkspaceFilterRow,
 } from './serialization/workspaceFilter'
-// Unique, fixed DB name for the Cytoscape Web
-export const DB_NAME: string = 'cyweb-db'
+// `cyweb-db` for the editor, `cyweb-manual-db` for the in-app manual. Fixed
+// for the life of the document: see dbScope.ts.
+export const DB_NAME: string = dbNameFor(currentDbScope())
 
 // Current version of the DB (integer only).
 // If older version is found, the migration
@@ -541,6 +543,32 @@ export const deleteDb = async (
   logDb.info(`[DeleteDB]  ${DB_NAME} is deleted`)
   return (await reopenDb()) ? 'deleted' : 'reopen-failed'
 }
+/**
+ * Empties every object store of the manual's sandbox database.
+ *
+ * The manual never reads its database back — it has no workspace boot — so
+ * rows from earlier visits only take space. Clearing the stores, rather than
+ * deleting the database, never blocks on another manual tab's open
+ * connection.
+ *
+ * Refuses outside the manual scope and returns false: in the editor this
+ * would destroy the user's workspace.
+ */
+export const clearSandboxDb = async (): Promise<boolean> => {
+  // Both checks: a scope bug that pointed the manual at the editor's name
+  // must still not clear the user's workspace.
+  if (DB_NAME !== dbNameFor('manual') || DB_NAME === dbNameFor('app')) {
+    logDb.warn(`[clearSandboxDb] refused: ${DB_NAME} is not the sandbox`)
+    return false
+  }
+  const tables = Object.values(ObjectStoreNames).map((name) => db.table(name))
+  await db.transaction('rw', tables, async () => {
+    await Promise.all(tables.map((table) => table.clear()))
+  })
+  logDb.info(`[clearSandboxDb] ${DB_NAME} cleared`)
+  return true
+}
+
 export const getAllNetworkKeys = async (): Promise<IdType[]> => {
   return (await db.cyNetworks.toCollection().primaryKeys()) as IdType[]
 }

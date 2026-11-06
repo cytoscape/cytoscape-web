@@ -249,7 +249,8 @@ test.describe('Node graphics render hook', () => {
       )
       .toContain('data:image/svg')
 
-    // Change a default visual property, forcing cy.style(cyStyle) to rerun.
+    // Change a default visual property, forcing onStyleModelUpdate to rerun
+    // cy.style().
     const styled = await page.evaluate(
       (id) =>
         (window as unknown as DebugGlobals).CyWebApi.visualStyle.setDefault(

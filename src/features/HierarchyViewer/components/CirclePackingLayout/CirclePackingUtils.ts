@@ -194,27 +194,84 @@ export const CpDefaults = {
   borderWidthHover: 1,
 } as const
 
+/**
+ * The selection key of a protein's rings, by its name. The prefix keeps it apart
+ * from a subsystem's: names are free text, and a failed name lookup leaves a ring
+ * named with its numeric member id, which can equal a node id.
+ */
+export const proteinRingKey = (name: string): string => `protein:${name}`
+
+/**
+ * What a ring with no rings inside it is selected by.
+ *
+ * A protein ring goes by its protein's name, the one key the Sub Network Viewer
+ * shares with the Cell View. So selecting a protein outlines every ring of it,
+ * in whichever subsystems list it. Its `originalId` is no use here: that is the
+ * member id, which the viewer never sees (#931). A subsystem with no members
+ * has no name to rely on, so it goes by its node id.
+ */
+export const terminalRingKey = (ring: D3TreeNode): string =>
+  ring.isMember === true
+    ? proteinRingKey(ring.name)
+    : `subsystem:${ring.originalId ?? ring.id}`
+
+/**
+ * The hierarchy node a subsystem ring draws.
+ *
+ * A subsystem with several parents is drawn once per path, and only its first
+ * drawing has the node's id. The others are copies with an `originalId`. They all
+ * stand for one node, so a click on any of them, or on a ring inside one, selects
+ * that one id: a copy's own id has no table row, and would count as a selected
+ * node with nothing behind it (#931).
+ */
+export const subsystemNodeId = (subsystem: D3TreeNode): IdType =>
+  subsystem.originalId ?? subsystem.id
+
+/**
+ * Whether a circle is a drawing of a selected subsystem. Every drawing of the
+ * node counts, however it was selected. A protein ring never does: its
+ * `originalId` is a member id, not a hierarchy node.
+ */
+export const isSelectedSubsystem = (
+  circle: D3TreeNode,
+  selectedNodeSet: ReadonlySet<string>,
+): boolean =>
+  circle.isMember !== true && selectedNodeSet.has(subsystemNodeId(circle))
+
+/**
+ * Paint the selection borders of the Cell View's circles: orange for a
+ * selected subsystem, red for a selected protein ring.
+ *
+ * @param selectedNodeSet Subsystems selected in the hierarchy
+ * @param selectedLeaves Terminal rings the user selected, by `terminalRingKey`
+ * @param searchMatchedRings Protein rings the last search matched, by ring id
+ *   (`D3TreeNode.id`, see `findSearchMatchedRings`)
+ */
 export const displaySelectedNodes = (
   selectedNodeSet: Set<string>,
   selectedLeaves: string[],
+  searchMatchedRings: ReadonlySet<string> = new Set(),
 ) => {
+  const isSelectedRing = (d: d3Hierarchy.HierarchyNode<D3TreeNode>): boolean =>
+    (d.height === 0 && selectedLeaves.includes(terminalRingKey(d.data))) ||
+    searchMatchedRings.has(d.data.id)
+
   d3Selection
     .select('.circle-packing-wrapper')
     .selectAll<SVGCircleElement, d3Hierarchy.HierarchyCircularNode<D3TreeNode>>(
       'circle',
     )
     .attr('stroke', (d) => {
-      if (selectedNodeSet.has(d.data.id)) {
+      if (isSelectedSubsystem(d.data, selectedNodeSet)) {
         return CpDefaults.selectedBorderColor
-      } else if (selectedLeaves.includes(d.data.originalId ?? d.data.id)) {
+      } else if (isSelectedRing(d)) {
         return CpDefaults.leafBorderColor
       } else {
         return CpDefaults.borderColor
       }
     })
     .attr('stroke-width', (d) =>
-      selectedNodeSet.has(d.data.id) ||
-      selectedLeaves.includes(d.data.originalId ?? d.data.id)
+      isSelectedSubsystem(d.data, selectedNodeSet) || isSelectedRing(d)
         ? CpDefaults.borderWidthHover
         : CpDefaults.borderWidth,
     )

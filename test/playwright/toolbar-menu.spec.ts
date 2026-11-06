@@ -67,7 +67,7 @@ test.describe('Toolbar Menus', () => {
     await expect(dialog).toBeVisible()
     await expect(dialog.getByTestId('about-version-link')).toBeVisible()
 
-    await dialog.getByRole('button', { name: 'Close', exact: true }).click()
+    await dialog.getByTestId('about-dialog-close-button').click()
     await expect(dialog).toBeHidden()
     await expect(
       page.getByRole('menuitem', { name: 'About Cytoscape Web' }),

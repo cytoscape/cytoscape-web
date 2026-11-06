@@ -54,7 +54,7 @@ export const defaultAppConfig: AppConfig = {
   },
   maxEdgeCountThreshold: 20000,
   maxNetworkElementsThreshold: 20000, // max number of elements (nodes + edges) that can be rendered with cy.js
-  maxNetworkFileSize: 524288000, // 500MB in bytes - maximum file size that a user can upload
+  maxNetworkFileSize: 524288000, // 500MB in bytes - CX2 file size limit, from NDEx or a local file (networkSizeLimit.ts)
   testNetworks: [
     '4ae2709d-3055-11ec-94bf-525400c25d22',
     '8b3faf53-3056-11ec-94bf-525400c25d22',

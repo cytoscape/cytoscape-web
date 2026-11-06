@@ -15,7 +15,7 @@ import {
   LayoutEngines,
 } from './layoutSelection'
 
-// Mock Cosmos layout to avoid dependency issues with @cosmograph/cosmos
+// Mock Cosmos layout to avoid dependency issues with @cosmos.gl/graph
 vi.mock('./Cosmos/cosmosLayout', () => ({
   CosmosLayout: {
     name: 'cosmos',

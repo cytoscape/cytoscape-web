@@ -15,6 +15,7 @@ import {
 } from 'react-router-dom'
 
 import appConfig from './assets/config.json'
+import { currentDbScope, MANUAL_ROUTE_SEGMENT } from './data/db/dbScope'
 import { useCredentialStore } from './data/hooks/stores/CredentialStore'
 import { CookieConsentWidget } from './features/CookieConsent'
 import { Error } from './features/Error'
@@ -36,18 +37,27 @@ import { theme } from './theme'
 // workspace-editor-mounted goes 4359ms -> 4148ms. AppShell's own prefetch is
 // close to free (3206ms -> 3194ms) because its boundary renders immediately;
 // it is kept for symmetry and for slower links.
-const appShellPromise = import('./features/AppShell')
-const workspaceEditorPromise = import('./features/Workspace/WorkspaceEditor')
+//
+// A manual tab (/manual/*) never mounts AppShell, so it skips both downloads.
+const isManualTab = currentDbScope() === 'manual'
+const loadAppShell = () => import('./features/AppShell')
+const loadWorkspaceEditor = () => import('./features/Workspace/WorkspaceEditor')
+const appShellPromise = isManualTab ? undefined : loadAppShell()
+const workspaceEditorPromise = isManualTab ? undefined : loadWorkspaceEditor()
 
 // React.lazy only subscribes to these when its boundary first renders. A chunk
 // that fails to load before then would surface as an unhandledrejection —
 // noise in error reporting — even though the boundary still re-throws it
 // properly afterwards. These no-op handlers silence the global event only.
-appShellPromise.catch(() => undefined)
-workspaceEditorPromise.catch(() => undefined)
+appShellPromise?.catch(() => undefined)
+workspaceEditorPromise?.catch(() => undefined)
 
-const AppShell = React.lazy(() => appShellPromise)
-const WorkspaceEditor = React.lazy(() => workspaceEditorPromise)
+const AppShell = React.lazy(() => appShellPromise ?? loadAppShell())
+const WorkspaceEditor = React.lazy(
+  () => workspaceEditorPromise ?? loadWorkspaceEditor(),
+)
+// Not prefetched: most sessions never open the manual (#840).
+const ManualApp = React.lazy(() => import('./features/Manual/ManualApp'))
 
 const routerOpts: any = {}
 
@@ -57,41 +67,61 @@ if (appConfig.urlBaseName !== '') {
 
 const router = createBrowserRouter(
   createRoutesFromElements(
-    <Route
-      path="/"
-      element={
-        // The same boot shell that painted before React: the real shell
-        // replaces it region by region, so the boot sequence reads as the app
-        // assembling rather than a series of unrelated loading screens. The
-        // status line comes from the live boot phase, not from this boundary.
-        <Suspense fallback={<BootShell />}>
-          <AppShell />
-        </Suspense>
-      }
-      errorElement={<Error />}
-    >
+    <>
+      {/*
+      A sibling of "/", not a child: the manual must not mount AppShell, whose
+      boot loads the workspace. A static segment outranks ":workspaceId", so
+      /manual never reaches the workspace route.
+    */}
       <Route
-        path=":workspaceId"
+        path={`/${MANUAL_ROUTE_SEGMENT}/*`}
         element={
-          // Content region only — the real toolbar is already rendered by
-          // AppShell above, so only the region below it is still resolving.
-          <Suspense fallback={<BootShell region="content" />}>
-            <WorkspaceEditor />
+          <Suspense fallback={null}>
+            <ManualApp />
+          </Suspense>
+        }
+        errorElement={<Error />}
+      />
+      <Route
+        path="/"
+        element={
+          // The same boot shell that painted before React: the real shell
+          // replaces it region by region, so the boot sequence reads as the app
+          // assembling rather than a series of unrelated loading screens. The
+          // status line comes from the live boot phase, not from this boundary.
+          <Suspense fallback={<BootShell />}>
+            <AppShell />
           </Suspense>
         }
         errorElement={<Error />}
       >
-        <Route path="networks" element={<div />} errorElement={<Error />} />
         <Route
-          path="networks/:networkId"
-          element={<div />}
+          path=":workspaceId"
+          element={
+            // Content region only — the real toolbar is already rendered by
+            // AppShell above, so only the region below it is still resolving.
+            <Suspense fallback={<BootShell region="content" />}>
+              <WorkspaceEditor />
+            </Suspense>
+          }
           errorElement={<Error />}
-        />
-        <Route path="*" element={<RedirectPanel />} />
+        >
+          <Route path="networks" element={<div />} errorElement={<Error />} />
+          <Route
+            path="networks/:networkId"
+            element={<div />}
+            errorElement={<Error />}
+          />
+          <Route path="*" element={<RedirectPanel />} />
+        </Route>
       </Route>
-
+      {/*
+      A sibling of "/" for the same reason as the manual (#886): under "/" it
+      mounted AppShell, so an error from /manual ran the workspace boot against
+      the manual's database, and that boot navigated away from the error page.
+    */}
       <Route path="/error" element={<Error />} />
-    </Route>,
+    </>,
   ),
   routerOpts,
 )

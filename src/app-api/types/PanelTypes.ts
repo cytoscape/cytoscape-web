@@ -42,8 +42,13 @@ export interface PanelApi {
    * `window.CyWebApi` caller gets.
    *
    * A tab the pane is not showing right now (its app is disabled, its
-   * `requires.network` is unmet, 'llm-query' on a non-hierarchy network) does
+   * `requires.network` is unmet, 'llm-query' in the left pane or
+   * 'sub-network-viewer' in the right pane on a non-hierarchy network) does
    * not match.
+   *
+   * The right pane is shown only while it has a tab: on a non-hierarchy
+   * network with no app panels, opening it without `tabId` succeeds but
+   * nothing appears until a tab does.
    *
    * @returns `INVALID_INPUT` for an unknown `panel` or an empty `tabId`;
    * `RESOURCE_NOT_FOUND` when `panel` shows no tab with that id, in which

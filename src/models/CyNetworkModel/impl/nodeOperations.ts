@@ -3,7 +3,7 @@ import type { Edge, Network } from '@/models/NetworkModel'
 import { NetworkSummary } from '../../NetworkSummaryModel'
 import { TableType } from '../../StoreModel/TableStoreModel'
 import { ValueType } from '../../TableModel'
-import { NodeView } from '../../ViewModel'
+import { EdgeView, NetworkView, NodeView } from '../../ViewModel'
 import { VisualStyle } from '../../VisualStyleModel'
 
 /**
@@ -36,7 +36,8 @@ export interface NodeOperationStoreActions {
   // Store state getters
   networks: Map<IdType, Network>
   tables: Record<IdType, { nodeTable: any; edgeTable: any }>
-  viewModels: Record<IdType, any>
+  // One list of views per network, primary view first (ViewModelStore shape)
+  viewModels: Record<IdType, NetworkView[] | undefined>
   visualStyles: Record<IdType, VisualStyle>
 }
 
@@ -47,7 +48,7 @@ export interface DeleteNodesResult {
   deletedNodeIds: IdType[]
   deletedEdges: Edge[]
   deletedNodeViews: NodeView[]
-  deletedEdgeViews: any[]
+  deletedEdgeViews: EdgeView[]
   deletedNodeRows: Map<IdType, Record<string, ValueType>>
   deletedEdgeRows: Map<IdType, Record<string, ValueType>>
 }
@@ -91,7 +92,10 @@ export const deleteNodesCore = (
 
   // Collect data before deletion for undo/redo
   const tableRecord = tables[networkId]
-  const viewModel = viewModels[networkId]
+  // Capture from the primary view. The undo restores these into every view of
+  // the network (ViewModelStore.addNodeViews), which is how position writes
+  // already behave: setNodePosition/updateNodePositions update all views.
+  const viewModel = viewModels[networkId]?.[0]
 
   const deletedNodeRows = new Map<IdType, Record<string, ValueType>>()
   if (tableRecord?.nodeTable) {
@@ -127,7 +131,7 @@ export const deleteNodesCore = (
     })
   }
 
-  const deletedEdgeViews: any[] = []
+  const deletedEdgeViews: EdgeView[] = []
   if (viewModel?.edgeViews) {
     deletedEdges.forEach((edge) => {
       const edgeView = viewModel.edgeViews[edge.id]

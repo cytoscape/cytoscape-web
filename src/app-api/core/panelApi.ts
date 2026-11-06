@@ -14,6 +14,8 @@ import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 // A pure predicate, not a component: the one thing this file needs from
 // features/, because only the hierarchy viewer knows what makes a network HCX.
+// It decides the left pane's LLM QUERY tab and the right pane's Sub Network
+// Viewer tab.
 import { isHCX } from '../../features/HierarchyViewer/utils/hierarchyUtil'
 import {
   listBottomPanelTabs,
@@ -33,15 +35,17 @@ const PANELS: readonly string[] = [Panel.LEFT, Panel.RIGHT, Panel.BOTTOM]
 /** The tabs `panel` shows right now, in strip order. */
 const listPanelTabs = (panel: PanelId): PanelTab[] => {
   const { currentNetworkId } = useWorkspaceStore.getState().workspace
+  const isHierarchy = isHCX(
+    useNetworkSummaryStore.getState().summaries[currentNetworkId],
+  )
   if (panel === Panel.LEFT) {
-    const summary =
-      useNetworkSummaryStore.getState().summaries[currentNetworkId]
-    return listLeftPanelTabs(isHCX(summary))
+    return listLeftPanelTabs(isHierarchy)
   }
   if (panel === Panel.BOTTOM) {
     return listBottomPanelTabs()
   }
   return listRightPanelTabs(
+    isHierarchy,
     useAppStore.getState().apps,
     useAppResourceStore.getState().resources,
     currentNetworkId,

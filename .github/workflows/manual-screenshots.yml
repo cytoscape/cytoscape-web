@@ -1,0 +1,170 @@
+name: Manual Screenshots
+
+# Captures the in-app manual's screenshots and step sequences on Linux, in
+# the same Playwright image the integration tests use, so committed images do
+# not change with the machine that took them. Recipes:
+# src/features/Manual/screenshots/recipes.ts.
+#
+# When it runs:
+#
+# - Release: a pull request into master (the release PR). Every image is
+#   recaptured. If any changed, the images go to the branch
+#   manual-screenshots/<release PR head>, and a pull request from it into the
+#   release PR's head branch is opened or updated, so the images ship with
+#   the release. Merge it before the release PR.
+# - By hand: Actions tab → Manual Screenshots → Run workflow, on any branch.
+#   With "commit" checked, the images are committed to that branch.
+#
+# Every run uploads the images as an artifact.
+#
+# Capturing runs repository code (the app build and Playwright), so that job
+# gets a read-only token. The jobs that write run nothing but git and gh.
+#
+# A pull request opened with the workflow's token starts no workflows, so CI
+# does not run on the screenshots pull request by itself. Close and reopen it
+# to start CI.
+
+on:
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      ids:
+        description: Recipe or sequence ids to capture, separated by spaces (empty for all)
+        required: false
+        default: ''
+      commit:
+        description: Commit the images to the branch the workflow runs on
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: manual-screenshots-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    name: Capture manual screenshots
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    container:
+      image: mcr.microsoft.com/playwright:v1.61.0-noble
+      options: --user 1001
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-node-dependencies
+        with:
+          cache-suffix: playwright-noble
+
+      - name: Capture
+        env:
+          IDS: ${{ inputs.ids }}
+        # IDS is split on spaces on purpose: each id is one argument. A
+        # release run passes none, so every image is captured.
+        run: node scripts/capture-manual-screenshots.mjs $IDS
+
+      - name: Upload the images
+        uses: actions/upload-artifact@v4
+        with:
+          name: manual-screenshots
+          path: public/manual-assets/generated/
+          retention-days: 14
+
+  commit:
+    name: Commit manual screenshots
+    needs: capture
+    if: github.event_name == 'workflow_dispatch' && inputs.commit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download the images
+        uses: actions/download-artifact@v4
+        with:
+          name: manual-screenshots
+          path: public/manual-assets/generated/
+
+      - name: Commit the images
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A public/manual-assets/generated/
+          if git diff --cached --quiet; then
+            echo "The screenshots did not change."
+          else
+            git commit -m "docs(manual): recapture screenshots" -m "Captured by the Manual Screenshots workflow."
+            git push
+          fi
+
+  release:
+    name: Open a pull request with the release screenshots
+    needs: capture
+    # Release PRs come from this repository; a fork's branch cannot be
+    # written to.
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      HEAD_REF: ${{ github.event.pull_request.head.ref }}
+      RELEASE_PR: ${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Download the images
+        uses: actions/download-artifact@v4
+        with:
+          name: manual-screenshots
+          path: public/manual-assets/generated/
+
+      - name: Push the images and open the pull request
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A public/manual-assets/generated/
+          if git diff --cached --quiet; then
+            echo "The screenshots did not change."
+            exit 0
+          fi
+          branch="manual-screenshots/$HEAD_REF"
+          git switch -c "$branch"
+          # The branch belongs to this workflow and is rebuilt from the
+          # release head on every run, so it is overwritten.
+          git commit -m "docs(manual): recapture screenshots for release" \
+            -m "Captured by the Manual Screenshots workflow for #$RELEASE_PR."
+          git push --force origin "$branch"
+          body="Screenshots and step sequences recaptured on Linux for #$RELEASE_PR.
+
+          Merge this into \`$HEAD_REF\` before the release pull request. CI does not start on a pull request the workflow opens: close and reopen it to run CI.
+
+          Manual-Reviewed: all (screenshots recaptured, no text change)"
+          existing=$(gh pr list --head "$branch" --base "$HEAD_REF" --state open --json number --jq '.[0].number')
+          if [ -n "$existing" ]; then
+            echo "Updated #$existing."
+          else
+            url=$(gh pr create --head "$branch" --base "$HEAD_REF" \
+              --title "docs(manual): recapture screenshots for release" \
+              --body "$body")
+            # Once per screenshots pull request, not on every push.
+            gh pr comment "$RELEASE_PR" --body "The manual's screenshots changed for this release: $url. Merge it into \`$HEAD_REF\` first."
+          fi

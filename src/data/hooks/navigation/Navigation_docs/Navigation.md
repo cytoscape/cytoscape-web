@@ -33,6 +33,22 @@ The flow:
 - High-level functions for common transitions (open network, toggle panel, select table row, etc.)
 - Guards and normalization applied before updating the URL
 
+### Guards and which calls skip them
+
+`urlManager.navigateToNetwork` silently drops a call that comes within 300 ms of
+the previous one, while the previous one is in progress (100 ms), that matches the
+last path it remembers, or whose network is already in the real URL. A caller has
+usually written `currentNetworkId` by then, so a dropped call leaves the store and
+the URL naming different networks until the URL's load settles.
+
+- `userInitiated: true`, for a direct click that names a network (the workspace
+  row): only the real-URL check applies. Remembered state cannot veto a click, and
+  Back and Forward do not update that state.
+- `force: true`, for a navigation whose loss leaves the URL naming a deleted
+  network: no check applies.
+- Neither, for programmatic calls. Some flows navigate twice in a burst and rely on
+  the second call being dropped, so the throttle stays for them.
+
 ### React Integration
 
 - `useUrlNavigation` exposes callbacks and derived params

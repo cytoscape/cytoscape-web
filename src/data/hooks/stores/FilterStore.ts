@@ -18,7 +18,11 @@ import {
   RenameFilterResult,
   WorkspaceFilters,
 } from '../../../models/FilterModel/impl/workspaceFiltersImpl'
-import { Search, SearchOptions } from '../../../models/FilterModel/Search'
+import {
+  Search,
+  SearchOptions,
+  SearchRun,
+} from '../../../models/FilterModel/Search'
 import { SearchState } from '../../../models/FilterModel/SearchState'
 import { IdType } from '../../../models/IdType'
 import { GraphObjectType } from '../../../models/NetworkModel'
@@ -75,6 +79,8 @@ interface FilterAction {
   deleteAllNetworkIndexes: () => void
   setConverter: (converter: (result: any) => IdType[]) => void
   setOptions: (options: SearchOptions) => void
+  // Record the search that just ran; `undefined` forgets it
+  setLastSearch: (lastSearch: SearchRun | undefined) => void
 
   // Manage filter configurations
   addFilterConfig: (filterConfig: FilterConfig) => void
@@ -225,6 +231,13 @@ export const useFilterStore = create(
     setOptions: (options: SearchOptions) => {
       set((state) => {
         const newState = FilterStoreImpl.setOptions(state, options)
+        state.search = newState.search
+        return state
+      })
+    },
+    setLastSearch: (lastSearch: SearchRun | undefined) => {
+      set((state) => {
+        const newState = FilterStoreImpl.setLastSearch(state, lastSearch)
         state.search = newState.search
         return state
       })

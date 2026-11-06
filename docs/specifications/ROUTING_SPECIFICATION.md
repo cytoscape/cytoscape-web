@@ -19,7 +19,8 @@ This specification defines the routing behavior for the Cytoscape Web applicatio
 /:workspaceId               → Workspace Editor
 /:workspaceId/networks      → Workspace Editor with no network displayed
 /:workspaceId/networks/:networkId → Network viewer
-/error                      → Error page
+/error                      → Error page (no AppShell)
+/manual/*                   → In-app user manual (no AppShell)
 ```
 
 ### Route Parameters
@@ -98,8 +99,8 @@ Query paramters will set the initial ui state and subsequently removed from the 
 
 **Query Parameters** (consumed on load):
 
-- `selectedNodes`: Space-separated list of selected node IDs (for main network)
-- `selectedEdges`: Space-separated list of selected edge IDs (for main network)
+- `selectednodes`: Space-separated list of selected node IDs (for main network)
+- `selectededges`: Space-separated list of selected edge IDs (for main network)
 - `selectedSubnetworkNodes`: Space-separated list of selected node IDs (for subnetwork/interaction network, requires `activeNetworkView` parameter)
 - `selectedSubnetworkEdges`: Space-separated list of selected edge IDs (for subnetwork/interaction network, requires `activeNetworkView` parameter)
 - `filterFor`: Filter target (node/edge)
@@ -108,6 +109,11 @@ Query paramters will set the initial ui state and subsequently removed from the 
 - `activeNetworkView`: Active network view identifier (can be hierarchy network or subnetwork ID)
 - `activeNetworkViewTab`: Network view tab index (0, 1, 2, ...)
 - `activeTableBrowserTab`: Table browser tab index
+- `accesskey`: NDEx share-link key for a private network. Read from the URL
+  in the boot RUNTIME phase, before render, and passed to every NDEx summary
+  and CX2 fetch for `:networkId`. Held in memory only
+  (`src/data/external-api/ndex/accessKeys.ts`), never in IndexedDB. Once the
+  CX2 is cached, later loads need no key.
 
 **Error Handling**:
 
@@ -119,11 +125,37 @@ Query paramters will set the initial ui state and subsequently removed from the 
 
 **Purpose**: Display error page
 
+`/error` is a top-level route, a sibling of `/` like `/manual/*`. It mounts no
+`AppShell` and runs no workspace boot. Every `errorElement` renders `Error`,
+which navigates to `/error`, so an error from any route — the manual included —
+ends on a page with no editor around it (#886).
+
 **Behavior**:
 
 - Reset workspace state
 - Provide recovery options
 - Allow navigation back to root
+
+### 6. Manual Route (`/manual/*`)
+
+**Purpose**: The in-app user manual (`src/features/Manual/`).
+
+**Behavior**:
+
+- A sibling of `/`, not a child: `AppShell` never mounts, and no workspace
+  loads. The static segment outranks `/:workspaceId`.
+- The tab opens the sandbox database `cyweb-manual-db` instead of `cyweb-db`,
+  chosen once from the URL at page load (`src/data/db/dbScope.ts`). Live
+  demos write only there.
+- Links between the manual and the editor are full page loads (`<a href>`),
+  never `navigate()`. A client-side move would keep the wrong database.
+- `navigateToNetwork` does nothing in a manual tab, even with `force`. Editor
+  components embedded in manual demos (Merge, network rows) call it; following
+  it would boot the editor on the sandbox database.
+- `/manual` redirects to the first page. Read the Docs paths
+  (`/manual/en/latest/Styles.html#anchor`, `/manual/Styles.html`) redirect to
+  the matching page and keep the anchor.
+- Unknown paths show "Page not found" inside the manual.
 
 ## Import Behavior
 
@@ -186,8 +218,8 @@ Query paramters will set the initial ui state and subsequently removed from the 
 
 **Network State**:
 
-- `selectedNodes`: Selected node IDs (for main network)
-- `selectedEdges`: Selected edge IDs (for main network)
+- `selectednodes`: Selected node IDs (for main network)
+- `selectededges`: Selected edge IDs (for main network)
 - `selectedSubnetworkNodes`: Selected node IDs (for subnetwork/interaction network, requires `activeNetworkView`)
 - `selectedSubnetworkEdges`: Selected edge IDs (for subnetwork/interaction network, requires `activeNetworkView`)
 - `filterFor`, `filterBy`, `filterRange`: Filter configuration

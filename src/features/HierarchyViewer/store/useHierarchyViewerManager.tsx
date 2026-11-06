@@ -10,14 +10,26 @@ import {
 } from '../../../data/db'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useRendererStore } from '../../../data/hooks/stores/RendererStore'
+import { useSidePanelStore } from '../../../data/hooks/stores/SidePanelStore'
+import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
-import { logDb } from '../../../debug'
+import { logDb, logUi } from '../../../debug'
 import { IdType } from '../../../models/IdType'
 import { NetworkSummary } from '../../../models/NetworkSummaryModel'
 import { DEFAULT_RENDERER_ID } from '../../../models/RendererModel/impl/defaultRenderer'
+import { BUILTIN_SUB_NETWORK_RESOURCE_ID } from '../../../models/UiModel/impl/panelTabs'
 import { Panel } from '../../../models/UiModel/Panel'
 import { PanelState } from '../../../models/UiModel/PanelState'
+import { Table } from '../../../models/TableModel'
+import {
+  CirclePackingRenderer,
+  CP_RENDERER_ID,
+} from '../components/CirclePackingLayout/CirclePackingRenderer'
+import {
+  hasUniformEdgeInteraction,
+  MIXED_INTERACTION_WARNING,
+} from '../model/impl/circlePackingSupport'
 import { isHCX } from '../utils/hierarchyUtil'
 
 /**
@@ -52,6 +64,7 @@ export const useHierarchyViewerManager = (): void => {
     (state) => state.ui.activeNetworkView,
   )
 
+  const addRenderer = useRendererStore((state) => state.add)
   const deleteRenderer = useRendererStore((state) => state.delete)
   const renderers = useRendererStore((state) => state.renderers)
 
@@ -116,31 +129,66 @@ export const useHierarchyViewerManager = (): void => {
   )
 
   const summary = summaries[currentNetworkId]
+  const edgeTable: Table | undefined = useTableStore(
+    (state) => state.tables[currentNetworkId]?.edgeTable,
+  )
+  const hasCellViewRenderer: boolean = renderers[CP_RENDERER_ID] !== undefined
 
   useEffect(() => {
     if (summary === undefined) {
       return
     }
+    // Enable popup = this is a HCX
+    enablePopup(isHCX(summary))
+  }, [summary, enablePopup])
 
-    // Use the shared HCX detection, which treats a network with no properties
-    // (or no HCX metadata) as a non-hierarchy. Previously an empty-properties
-    // early return skipped the teardown below, so opening a regular network
-    // from NDEx after a hierarchy left the Cell View renderer — and its
-    // Tree View / Cell View tabs — in place (CW-466).
+  // The Cell View renderer, and with it the Tree View / Cell View tabs, exists
+  // while the current network is a hierarchy it can draw. This lives here and
+  // not in the Sub Network Viewer because that viewer is unmounted while an app
+  // tab is selected in the right panel, so a hierarchy came back without its
+  // tabs (#946).
+  //
+  // Uses the shared HCX detection, which treats a network with no properties
+  // (or no HCX metadata) as a non-hierarchy. Previously an empty-properties
+  // early return skipped the removal, so opening a regular network from NDEx
+  // after a hierarchy left the tabs in place (CW-466).
+  useEffect(() => {
+    if (summary === undefined) {
+      return
+    }
+
+    let canDraw: boolean = false
     if (isHCX(summary)) {
-      // Enable popup = this is a HCX
-      enablePopup(true)
-    } else {
-      enablePopup(false)
-      // Delete the Cell View (circle packing) renderer if it exists, so the
-      // hierarchy tabs disappear for regular networks.
-      const cellViewRenderer = renderers.circlePacking
-      if (cellViewRenderer !== undefined) {
-        deleteRenderer(cellViewRenderer.id)
+      if (edgeTable === undefined) {
+        // Tables have not been loaded yet: decide nothing. This effect re-runs
+        // when the table arrives.
+        return
+      }
+      // A hierarchy with non parent-child edges, which the circle packing
+      // layout cannot interpret, drops the Cell View tab instead of rendering a
+      // wrong or empty diagram (#630).
+      canDraw = hasUniformEdgeInteraction(edgeTable)
+      if (!canDraw) {
+        logUi.info(
+          `[${useHierarchyViewerManager.name}]: ${MIXED_INTERACTION_WARNING}`,
+          currentNetworkId,
+        )
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on summary change; renderers are fresh at trigger time
-  }, [summary])
+
+    if (canDraw && !hasCellViewRenderer) {
+      addRenderer(CirclePackingRenderer)
+    } else if (!canDraw && hasCellViewRenderer) {
+      deleteRenderer(CP_RENDERER_ID)
+    }
+  }, [
+    summary,
+    edgeTable,
+    currentNetworkId,
+    hasCellViewRenderer,
+    addRenderer,
+    deleteRenderer,
+  ])
 
   // The right panel follows `enablePopup` only when it changes: switching to
   // a hierarchy opens the panel, switching away from one closes it. The value
@@ -148,6 +196,11 @@ export const useHierarchyViewerManager = (): void => {
   // boot with a regular network (`enablePopup` starts false), undoing
   // `?right=open` and a restored open panel some time after boot had opened
   // it — a race e2e specs that need the panel kept losing.
+  //
+  // Leaving a hierarchy closes the panel only while the Sub Network Viewer is
+  // the selected tab (or none was chosen yet, which shows the viewer): it is
+  // the tab that goes away. An app tab the user picked is still there on the
+  // next network, so closing the panel would only make them reopen it (#881).
   const lastEnablePopupRef = useRef(uiState.enablePopup)
   useEffect(() => {
     const showPanel: boolean = uiState.enablePopup
@@ -155,6 +208,16 @@ export const useHierarchyViewerManager = (): void => {
       return
     }
     lastEnablePopupRef.current = showPanel
-    setPanelState(Panel.RIGHT, showPanel ? PanelState.OPEN : PanelState.CLOSED)
+    if (showPanel) {
+      setPanelState(Panel.RIGHT, PanelState.OPEN)
+      return
+    }
+    const { selectedTabId } = useSidePanelStore.getState()
+    if (
+      selectedTabId === null ||
+      selectedTabId === BUILTIN_SUB_NETWORK_RESOURCE_ID
+    ) {
+      setPanelState(Panel.RIGHT, PanelState.CLOSED)
+    }
   }, [uiState.enablePopup, setPanelState])
 }

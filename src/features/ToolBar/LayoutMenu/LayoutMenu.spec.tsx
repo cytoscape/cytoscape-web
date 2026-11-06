@@ -8,11 +8,15 @@
 // the running flag stuck.
 
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useLayoutStore } from '@/data/hooks/stores/LayoutStore'
+import { useRendererStore } from '@/data/hooks/stores/RendererStore'
+import { useUiStateStore } from '@/data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
 import { isAppLayoutEnabled } from '@/app-api/core/appLayoutEngine'
+import { CP_RENDERER_ID } from '../../HierarchyViewer/components/CirclePackingLayout/CirclePackingRenderer'
+import { isHCX } from '../../HierarchyViewer/utils/hierarchyUtil'
 import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
 import { DropdownMenuItem } from '../DropdownMenu'
 import type { LayoutAlgorithm } from '@/models/LayoutModel/LayoutAlgorithm'
@@ -59,6 +63,13 @@ vi.mock('@/data/hooks/stores/RendererFunctionStore', async () => {
   }
 })
 
+vi.mock('@/data/hooks/stores/RendererStore', async () => {
+  const { create } = await vi.importActual<typeof import('zustand')>('zustand')
+  return {
+    useRendererStore: create(() => ({ renderers: { cyjs: { id: 'cyjs' } } })),
+  }
+})
+
 vi.mock('@/data/hooks/stores/UiStateStore', async () => {
   const { create } = await vi.importActual<typeof import('zustand')>('zustand')
   return {
@@ -96,7 +107,7 @@ vi.mock('@/data/hooks/useUndoStack', () => ({
   useUndoStack: () => ({ postEdit: vi.fn() }),
 }))
 vi.mock('../../HierarchyViewer/utils/hierarchyUtil', () => ({
-  isHCX: () => false,
+  isHCX: vi.fn(() => false),
 }))
 vi.mock('./LayoutOptionDialog', () => ({ LayoutOptionDialog: () => null }))
 vi.mock('../AppMenu/useServiceAppMenu', () => ({
@@ -381,5 +392,59 @@ describe('LayoutMenu app algorithms', () => {
     expect(row.parentElement?.getAttribute('aria-label')).toBe(
       'Layouts are disabled since the network view is empty',
     )
+  })
+})
+
+describe('LayoutMenu on a hierarchy', () => {
+  /** A hierarchy with tab 1 selected and the given renderers registered. */
+  const setup = (renderers: Record<string, { id: string }>): void => {
+    vi.mocked(isHCX).mockReturnValue(true)
+    useUiStateStore.setState({
+      ui: { activeNetworkView: '', networkViewUi: { activeTabIndex: 1 } },
+    } as any)
+    useRendererStore.setState({ renderers } as any)
+    useWorkspaceStore.setState({
+      workspace: { currentNetworkId: 'net1', networkIds: ['net1'] },
+    } as any)
+    seedEngines([
+      makeCoreEngine(),
+      makeAppEngine('appX', [makeAlgorithm('appX', 'appX::row', 'Row Layout')]),
+    ])
+  }
+
+  afterEach(() => {
+    vi.mocked(isHCX).mockReturnValue(false)
+    useUiStateStore.setState({
+      ui: { activeNetworkView: '', networkViewUi: { activeTabIndex: 0 } },
+    } as any)
+    useRendererStore.setState({ renderers: { cyjs: { id: 'cyjs' } } } as any)
+  })
+
+  it('disables layouts while the Cell View is shown', () => {
+    setup({ cyjs: { id: 'cyjs' }, [CP_RENDERER_ID]: { id: CP_RENDERER_ID } })
+
+    render(<LayoutMenu />)
+    openMenu()
+
+    expect(
+      screen
+        .getByTestId('layout-menu-item-appX-row')
+        .getAttribute('aria-disabled'),
+    ).toBe('true')
+  })
+
+  // The tab index outlives the renderer: a network with no Cell View keeps it,
+  // so that the next hierarchy opens on the Cell View again.
+  it('keeps layouts enabled when the hierarchy has no Cell View, whatever the tab index says', () => {
+    setup({ cyjs: { id: 'cyjs' } })
+
+    render(<LayoutMenu />)
+    openMenu()
+
+    expect(
+      screen
+        .getByTestId('layout-menu-item-appX-row')
+        .getAttribute('aria-disabled'),
+    ).toBeNull()
   })
 })

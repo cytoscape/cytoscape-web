@@ -24,14 +24,6 @@
     ]
   },
   {
-    "status": [
-      {
-        "error": "",
-        "success": true
-      }
-    ]
-  },
-  {
     "nodes": [
       {
         "id": 0,
@@ -404,6 +396,14 @@
       {
         "key": "value",
         "data": "test"
+      }
+    ]
+  },
+  {
+    "status": [
+      {
+        "error": "",
+        "success": true
       }
     ]
   }

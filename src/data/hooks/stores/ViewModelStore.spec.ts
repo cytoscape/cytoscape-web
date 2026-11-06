@@ -3,8 +3,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { IdType } from '../../../models/IdType'
 import NetworkFn from '../../../models/NetworkModel'
+import { Column, Table } from '../../../models/TableModel'
+import { createTable } from '../../../models/TableModel/impl/inMemoryTable'
 import { EdgeView, NetworkView, NodeView } from '../../../models/ViewModel'
 import { createViewModel } from '../../../models/ViewModel/impl/viewModelImpl'
+import VisualStyleFn, {
+  MappingFunctionType,
+  VisualPropertyName,
+  VisualStyle,
+} from '../../../models/VisualStyleModel'
 import { flushPendingWrites } from './persistenceScheduler'
 import { useViewModelStore } from './ViewModelStore'
 
@@ -1108,6 +1115,134 @@ describe('useViewModelStore', () => {
       expect(
         result.current.viewModels[networkId][0].nodeViews['n3'],
       ).toBeUndefined()
+    })
+  })
+
+  // #859: CyjsRenderer's onStyleModelUpdate re-applies the style to
+  // getViewModel(id) on every style or table change and writes the result back
+  // with add(). The result used to lack a viewId, so add() appended a full copy
+  // each time, every copy was persisted, and views[0] — the one getViewModel
+  // returns — never received the computed values.
+  describe('style re-application writes back in place (regression: #859)', () => {
+    const networkId: IdType = 'style-net'
+    const network = NetworkFn.createNetworkFromLists(
+      networkId,
+      [{ id: 'n1' }, { id: 'n2' }],
+      [{ id: 'e1', s: 'n1', t: 'n2' }],
+    )
+    const nodeColumns: Column[] = [{ name: 'name', type: 'string' }]
+    const edgeColumns: Column[] = [{ name: 'interaction', type: 'string' }]
+    const nodeTableWith = (n1Name: string): Table =>
+      createTable(
+        'node-table',
+        nodeColumns,
+        new Map([
+          ['n1', { name: n1Name }],
+          ['n2', { name: 'Two' }],
+        ]),
+      )
+    const edgeTable = createTable(
+      'edge-table',
+      edgeColumns,
+      new Map([['e1', { interaction: 'pp' }]]),
+    )
+
+    // What onStyleModelUpdate does after a style or table change.
+    const reapplyStyle = (vs: VisualStyle, nodeTable: Table): void => {
+      const { getViewModel, add } = useViewModelStore.getState()
+      const updated = VisualStyleFn.applyVisualStyle({
+        network,
+        networkView: getViewModel(networkId),
+        nodeTable,
+        edgeTable,
+        visualStyle: vs,
+      })
+      act(() => {
+        add(networkId, updated)
+      })
+    }
+
+    const nodeValue = (nodeId: IdType, vp: VisualPropertyName): unknown =>
+      useViewModelStore
+        .getState()
+        .getViewModel(networkId)
+        ?.nodeViews[nodeId].values.get(vp)
+
+    const styleWith = (nodeWidth: number): VisualStyle => {
+      const vs = VisualStyleFn.createVisualStyle()
+      vs.nodeWidth.defaultValue = nodeWidth
+      vs.nodeLabel.mapping = {
+        type: MappingFunctionType.Passthrough,
+        attribute: 'name',
+        visualPropertyType: 'string',
+        defaultValue: '',
+      }
+      return vs
+    }
+
+    beforeEach(() => {
+      act(() => {
+        useViewModelStore.getState().add(networkId, createViewModel(network))
+      })
+    })
+
+    it('keeps exactly one node-link view across style changes', () => {
+      for (const width of [40, 60, 80]) {
+        reapplyStyle(styleWith(width), nodeTableWith('One'))
+      }
+
+      const views = useViewModelStore.getState().viewModels[networkId]
+      expect(views).toHaveLength(1)
+      expect(views[0].viewId).toBe(`${networkId}-nodeLink-1`)
+      expect(views[0].type).toBe('nodeLink')
+      expect(nodeValue('n1', 'nodeWidth')).toBe(80)
+    })
+
+    it('keeps exactly one node-link view across table changes', () => {
+      const vs = styleWith(50)
+      for (const name of ['A', 'B', 'C']) {
+        reapplyStyle(vs, nodeTableWith(name))
+      }
+
+      expect(useViewModelStore.getState().viewModels[networkId]).toHaveLength(1)
+      expect(nodeValue('n1', 'nodeLabel')).toBe('C')
+      expect(nodeValue('n1', 'nodeWidth')).toBe(50)
+    })
+
+    it('keeps positions and selection of the view it replaces', () => {
+      const { setNodePosition, exclusiveSelect } = useViewModelStore.getState()
+      act(() => {
+        setNodePosition(networkId, 'n1', [12, 34])
+        exclusiveSelect(networkId, ['n2'], ['e1'])
+      })
+
+      reapplyStyle(styleWith(70), nodeTableWith('One'))
+
+      const view = useViewModelStore.getState().getViewModel(networkId)
+      expect(view?.nodeViews.n1.x).toBe(12)
+      expect(view?.nodeViews.n1.y).toBe(34)
+      expect(view?.selectedNodes).toEqual(['n2'])
+      expect(view?.selectedEdges).toEqual(['e1'])
+    })
+
+    it('persists one view per network', async () => {
+      const { putNetworkViewsToDb } = await import('../../db')
+      flushPendingWrites()
+      vi.mocked(putNetworkViewsToDb).mockClear()
+
+      for (const width of [40, 60, 80]) {
+        reapplyStyle(styleWith(width), nodeTableWith('One'))
+        flushPendingWrites()
+      }
+
+      const calls = vi
+        .mocked(putNetworkViewsToDb)
+        .mock.calls.filter(([id]) => id === networkId)
+      expect(calls.length).toBeGreaterThan(0)
+      for (const [, views] of calls) {
+        expect(views).toHaveLength(1)
+      }
+      expect(calls.at(-1)?.[1][0].nodeViews.n1.values.get('nodeWidth')).toBe(80)
     })
   })
 

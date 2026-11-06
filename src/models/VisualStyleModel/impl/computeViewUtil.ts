@@ -138,6 +138,11 @@ export const updateNetworkView = (
     ),
     selectedNodes: networkView.selectedNodes,
     selectedEdges: networkView.selectedEdges,
+    // Keep the identity of the view being updated. ViewModelStore.add replaces
+    // a view only when its viewId matches; without one it appends a new view,
+    // which is how every style or table change used to add a copy (#859).
+    ...(networkView.type !== undefined && { type: networkView.type }),
+    ...(networkView.viewId !== undefined && { viewId: networkView.viewId }),
   }
 
   return nextView

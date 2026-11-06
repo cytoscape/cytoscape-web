@@ -18,6 +18,12 @@ The search functionality uses [Fuse.js](https://fusejs.io/) to provide fuzzy and
   - `ignoreLocation: true` - Matches can occur anywhere in the text
   - `includeScore: true` - Includes relevance scores
   - `includeMatches: true` - Includes match details
+- **Index Records**: `id` holds the row key, which `runSearch` returns for a
+  match, and each column's value sits in a `column:<name>` field. A column can
+  have any name, because the network file sets it: one named `id` used to
+  overwrite the row key, so the search selected its values instead of the rows
+  (#949). Fuse.js gets each field as a one-element path, so a dot in a column
+  name is not read as a nested path
 
 ### 2. Query Tokenization
 
@@ -67,6 +73,49 @@ The search supports two boolean operators:
 2. Each token is searched independently against the Fuse.js index
 3. Results are combined based on the selected operator (AND/OR)
 4. Matching nodes/edges are selected in the network view
+5. The result is reported inside the search field (see below)
+
+### 6. Result Count
+
+After a search, `SearchResultCount` shows what it selected inside the field,
+between the query and the buttons, like a browser's find-in-page count (#923):
+
+- `2 nodes · 13 edges`, counting only the object types that were searched
+  (`2 nodes` for a node-only search), or `No matches`. A zero-match search no
+  longer queues a Snackbar; the warnings (no network, index not ready, no
+  search target) still do.
+- Below the `lg` breakpoint the field (30vw) is too narrow for the nouns, so
+  the count shortens to `2 · 13`. It may shrink further to leave room for the
+  query and the buttons, and below `sm` (phone widths) it is not shown; the live
+  region still announces the result.
+- Hovering the count, or tabbing to it (it is focusable, since below `lg` the
+  label is only numbers), shows the whole sentence below the field, e.g. "2
+  nodes and 13 edges selected in the subnetwork view." While the pointer or the
+  focus is on the count, the field's search-examples tooltip is held closed. A
+  new search replaces the count in the same render, so it keeps its hover and
+  focus; it reports itself inactive only when it unmounts.
+- The same sentence goes to a visually hidden `role="status"` region, so screen
+  readers announce each result. The region is always mounted, so the first
+  result is announced too, and the sentence inside it is re-created for every
+  search, so repeating a search with the same result is announced again.
+
+The count disappears when the query is edited or cleared, and the next search
+replaces it: there is no queue and no timer. It is kept with the network view
+and the query it was computed for, so it is never shown for another view.
+
+The search runs on `activeNetworkView` only while that is the current network
+or one of its subnetworks (`<networkId>_<subsystemId>`); otherwise it runs on
+`currentNetworkId`. `WorkspaceStore.setCurrentNetworkId` moves the active view
+to the new current network (#927), so App API switches reach it too, but the
+view starts as `''` and the guard keeps the search on the shown network should
+any other path change the current network without it.
+
+On a hierarchy (`ui.enablePopup`), the sentence names the view searched: the
+**main network view** when the search ran on the current network, the
+**subnetwork view** when it ran on the Sub Network Viewer's network
+(`activeNetworkView` differs from `currentNetworkId`). A non-hierarchy network
+has one view, so the sentence names none. The wording lives in
+`describeSearchResult` (`searchResultSummary.ts`).
 
 ## Usage Examples
 
@@ -118,6 +167,18 @@ Finds all nodes/edges containing the exact phrase "cell cycle" OR "protein"
 - Search state is managed in the FilterStore
 - States include: `READY`, `IN_PROGRESS`, `DONE`
 - Search results update the network view selection
+- Each completed search with a query is recorded as `search.lastSearch`
+  (`SearchRun`: id, network id, query, options, selected node ids), cleared
+  when a search starts, when the search is cleared, and as soon as the
+  selection on the searched network stops matching it
+  (`selectionMatchesSearch`). It describes the search's own selection: an
+  equal selection made later by other means (Deselect All, then Select All
+  Nodes) does not revive it. Views that draw more
+  than the network's nodes read it: the Hierarchy Viewer's Cell View
+  highlights the protein rings a search matched (#930; see
+  `HierarchyViewer_docs/HierarchyViewer.md`). `createFuseIndexFromRecords`
+  builds an index over such records with the same options as the table index,
+  so `runSearch` matches them the same way
 
 ### Search Targets
 - Users can select whether to search nodes, edges, or both

@@ -36,8 +36,11 @@
 import { closeDb } from '@/data/db'
 import { logDb } from '@/debug'
 import { getTabId } from '@/data/tabState/tabId'
+import { currentDbScope, uiEventsChannelFor } from './dbScope'
 
-export const UI_EVENTS_CHANNEL = 'cyweb-ui-events'
+// Scoped like the database, so a reset in the manual's sandbox never reloads
+// an editor tab (#839).
+export const UI_EVENTS_CHANNEL = uiEventsChannelFor(currentDbScope())
 
 export const DATABASE_DELETED = 'DATABASE_DELETED'
 export const DATABASE_DELETED_ACK = 'DATABASE_DELETED_ACK'
