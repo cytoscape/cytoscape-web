@@ -259,6 +259,9 @@ test.describe('Hierarchy network view tabs', () => {
     await cellViewTab.click()
     const svg = page.locator('[data-testid="circle-packing-svg"]')
     await expect(svg).toBeVisible({ timeout: 15000 })
+    // The SVG shows before the first drawing, whose fit replaces any zoom. On a
+    // slow runner the wheel below landed first, and the fit undid it.
+    await settledPlacement(svg)
 
     /** The layout point at the center of the SVG, and the zoom level. */
     const readCenter = () =>
