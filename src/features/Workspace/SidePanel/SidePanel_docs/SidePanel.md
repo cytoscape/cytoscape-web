@@ -18,7 +18,7 @@
 
 `WorkspaceEditor` renders the right pane, and its open button, only while `usePanelEntries()` has an entry. A non-hierarchy network with no app panels therefore shows neither; the stored `ui.panels.right` state is not changed, so the pane comes back as it was once a tab exists.
 
-`useHierarchyViewerManager` opens the pane on switching to a hierarchy. On switching away from one it closes the pane only while the Sub Network Viewer is the selected tab (or nothing was selected yet, which shows the viewer). When an app tab is selected, that tab is still there on the next network, so the pane stays open (#881).
+`useHierarchyViewerManager` opens the pane on switching to a hierarchy. On switching away from one it closes the pane only while the Sub Network Viewer is the selected tab (or nothing was selected yet, which shows the viewer). When an app tab is selected, that tab is still there on the next network, so the pane stays open (#881). The selected tab does not decide whether a hierarchy gets its Tree View and Cell View tabs: the same hook registers the Cell View renderer, because the Sub Network Viewer is unmounted while an app tab is selected (#946).
 
 ### Network Activation
 

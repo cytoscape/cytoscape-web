@@ -12,6 +12,7 @@ import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useRendererFunctionStore } from '../../../data/hooks/stores/RendererFunctionStore'
+import { useRendererStore } from '../../../data/hooks/stores/RendererStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
@@ -25,6 +26,7 @@ import { DEFAULT_RENDERER_ID } from '../../../models/RendererModel/impl/defaultR
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 import { RootMenu } from '../../../models/AppModel/RootMenu'
 import { useLayoutToolsPanelStore } from '../../LayoutTools/store/layoutToolsPanelStore'
+import { CP_RENDERER_ID } from '../../HierarchyViewer/components/CirclePackingLayout/CirclePackingRenderer'
 import { isHCX } from '../../HierarchyViewer/utils/hierarchyUtil'
 import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
 import { DropdownMenu, DropdownMenuItem } from '../DropdownMenu'
@@ -129,7 +131,14 @@ export const LayoutMenu = (): JSX.Element => {
     (state) => state.summaries[currentNetworkId],
   )
 
-  const cellViewIsSelected = activeNetworkViewTabIndex === 1
+  const hasCellView: boolean = useRendererStore(
+    (state) => state.renderers[CP_RENDERER_ID] !== undefined,
+  )
+
+  // The tab index outlives the renderer: a network with no Cell View keeps it,
+  // so that the next hierarchy opens on the Cell View again. On a hierarchy
+  // without one (#630), tab 1 means nothing and the Tree View is what is shown.
+  const cellViewIsSelected = hasCellView && activeNetworkViewTabIndex === 1
 
   //disable all the layout menu items
   const allDisabled =

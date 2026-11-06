@@ -21,6 +21,7 @@ HierarchyViewer/
 │   ├── MainPanel.tsx                    # Main orchestrator component
 │   ├── CirclePackingLayout/              # Circle packing visualization
 │   │   ├── CirclePackingPanel.tsx       # D3.js-based circle packing renderer
+│   │   ├── CirclePackingRenderer.tsx    # The Cell View `Renderer`, lazy-loads the panel
 │   │   ├── memberNames.ts               # Protein-name lookup for member ids
 │   │   └── ...
 │   ├── SubNetworkPanel.tsx              # Interaction network viewer
@@ -64,7 +65,6 @@ The main orchestrator component that manages the hierarchy viewer layout and sta
   - `HCX::modelFileCount` (required)
   - `HCX::interactionNetworkUUID` (optional - for networks with associated interaction networks)
   - `HCX::interactionNetworkHost` (optional - host for interaction network queries). Untrusted: requests to any host other than the configured NDEx host are anonymous, so a private interaction network on another host does not load (see `docs/specifications/EXTERNAL_INPUT_VALIDATION_POLICY.md`, #936)
-- Registers the Circle Packing renderer if hierarchy is detected
 - Manages selection state and extracts subsystem information from selected nodes
 - Names the selected subsystem (`getSubsystemName`) by the attribute the node label is mapped to, else its `name` column, else its node id: HCX files need not have a `name` column (the test fixtures name nodes with `n`), and a null, absent or blank value, or a list with no non-blank item, counts as none
 - Coordinates between Circle Packing view and SubNetwork view
@@ -364,6 +364,8 @@ The HierarchyViewer integrates with the following stores and services:
    - `HCX::modelFileCount` (required)
    - `HCX::interactionNetworkUUID` (optional)
    - `HCX::interactionNetworkHost` (optional)
+
+   `useHierarchyViewerManager`, always mounted in `WorkspaceEditor`, does the same check to register the Cell View renderer, which brings the Tree View and Cell View tabs. It registers it for a hierarchy whose edges all have one interaction type (#630) and removes it otherwise, whichever tab the right panel shows: `MainPanel` is unmounted while an app tab is selected (#946).
 2. **Hierarchy Building**: CirclePackingPanel builds D3 hierarchy from network data using nodes with `HCX::members` attributes, once the network summary has loaded, and looks protein names up in the interaction network named by `HCX::interactionNetworkUUID` / `HCX::interactionNetworkHost`
 3. **Subsystem Selection**: User selects subsystem in Circle Packing view
 4. **Query Generation**: MainPanel extracts member nodes from `HCX::members` attribute and interaction network UUID from `HCX::interactionNetworkUUID`
