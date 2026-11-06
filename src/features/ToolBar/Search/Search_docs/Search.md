@@ -18,6 +18,12 @@ The search functionality uses [Fuse.js](https://fusejs.io/) to provide fuzzy and
   - `ignoreLocation: true` - Matches can occur anywhere in the text
   - `includeScore: true` - Includes relevance scores
   - `includeMatches: true` - Includes match details
+- **Index Records**: `id` holds the row key, which `runSearch` returns for a
+  match, and each column's value sits in a `column:<name>` field. A column can
+  have any name, because the network file sets it: one named `id` used to
+  overwrite the row key, so the search selected its values instead of the rows
+  (#949). Fuse.js gets each field as a one-element path, so a dot in a column
+  name is not read as a nested path
 
 ### 2. Query Tokenization
 

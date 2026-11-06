@@ -53,6 +53,74 @@ const count = (page: Page) => page.getByTestId('search-result-count')
 const countTooltip = (page: Page) =>
   page.getByRole('tooltip').filter({ hasText: 'selected' })
 
+test.describe('Search on a table with a column named id (#949)', () => {
+  test('selects the matching rows', async ({ page }) => {
+    await gotoAndWaitReady(page)
+
+    const networkId = await page.evaluate(async () => {
+      const api = (window as unknown as ApiWindow).CyWebApi
+      const node = (id: number, v: Record<string, string>) => ({
+        id,
+        x: id * 50,
+        y: 0,
+        v,
+      })
+      const result = await api.network.createNetworkFromCx2({
+        cxData: [
+          { CXVersion: '2.0', hasFragments: false },
+          {
+            metaData: [
+              { elementCount: 1, name: 'attributeDeclarations' },
+              { elementCount: 1, name: 'networkAttributes' },
+              { elementCount: 3, name: 'nodes' },
+              { elementCount: 1, name: 'edges' },
+            ],
+          },
+          {
+            attributeDeclarations: [
+              { nodes: { id: { d: 'string' }, label: { d: 'string' } } },
+            ],
+          },
+          { networkAttributes: [{ name: 'Search id column network' }] },
+          {
+            nodes: [
+              node(0, { id: 'https://example.org/1', label: 'other' }),
+              node(1, { id: 'https://example.org/2', label: 'FRYL' }),
+              node(2, { label: 'complex(FRYL)' }),
+            ],
+          },
+          { edges: [{ id: 0, s: 0, t: 1, v: {} }] },
+          { status: [{ error: '', success: true }] },
+        ],
+        addToWorkspace: true,
+        navigate: true,
+      })
+      return result.data.networkId as string
+    })
+
+    await page.getByTestId('search-settings-button').click()
+    await page.getByRole('radio', { name: 'Contains' }).click()
+    await page
+      .getByTestId('search-settings-popover')
+      .getByRole('button', { name: 'Close', exact: true })
+      .click()
+    await expect(page.getByTestId('search-settings-popover')).toHaveCount(0)
+
+    // The search index is built in an effect once the tables have landed
+    await expect(async () => {
+      await search(page, 'fryl')
+      await expect(count(page)).toHaveText('2 nodes', { timeout: 500 })
+    }).toPass()
+
+    const selected = await page.evaluate(
+      (id) =>
+        (window as unknown as ApiWindow).CyWebApi.selection.getSelection(id),
+      networkId,
+    )
+    expect(selected.data.selectedNodes.toSorted()).toEqual(['1', '2'])
+  })
+})
+
 test.describe('Search result count (#923)', () => {
   test('shows the count in the field, replaces it, and removes it on edit', async ({
     page,
