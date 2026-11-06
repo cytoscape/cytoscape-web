@@ -255,6 +255,12 @@ drawing of a selected subsystem gets the orange border, however it was selected,
 Tree View and search included (`isSelectedSubsystem`). `MainPanel` still strips
 copy ids, because older shared URLs and saved selections can hold them.
 
+`displaySelectedNodes` is the only code that paints borders. It runs when the
+selection changes and after every drawing or repaint, since a rebuild leaves the
+selection as it was: a visual style change keeps the borders (#942). The selected
+rings are cleared when the panel moves to another hierarchy, where the same
+protein names may have rings of their own.
+
 The click and the viewer talk through `SubNetworkStore`:
 
 - A click names the protein (`selectedNodes`) and the subnetwork of the subsystem

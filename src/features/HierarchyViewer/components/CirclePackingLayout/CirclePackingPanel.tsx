@@ -46,14 +46,12 @@ import {
   createTreeLayout,
 } from './CirclePackingLayout'
 import {
-  CpDefaults,
   displaySelectedNodes,
   findHierarchyNode,
   getColorMapper,
   getFontSize,
   getLabel,
   getWordLines,
-  isSelectedSubsystem,
   proteinRingKey,
   subsystemNodeId,
   terminalRingKey,
@@ -757,15 +755,18 @@ export const CirclePackingPanel = ({
   /**
    * Clear the failure state when the network changes, so a hierarchy that could
    * not be built does not keep hiding the diagram of the next one. Same for an
-   * expansion waiting on the previous network's view model.
+   * expansion waiting on the previous network's view model, and for the selected
+   * rings: they name proteins, so they would outline the same proteins in the
+   * next hierarchy.
    *
    * Must precede onSelectedHierarchyNodeNamesChange: this also runs on mount,
-   * and declared after it would clear the wait that effect has just recorded
-   * for a selection that was there before the panel mounted.
+   * and declared after it would clear what that effect has just recorded for a
+   * selection that was there before the panel mounted.
    */
   useEffect(
     function onNetworkIdChange() {
       setCpError(undefined)
+      setSelectedLeaves([])
       initialExpansionPendingRef.current = false
     },
     [networkId],
@@ -898,16 +899,6 @@ export const CirclePackingPanel = ({
       .attr('cx', (d) => d.x)
       .attr('cy', (d) => d.y)
       .attr('r', (d) => d.r)
-      .attr('stroke', (d) =>
-        isSelectedSubsystem(d.data, selectedNodeSet)
-          ? CpDefaults.selectedBorderColor
-          : CpDefaults.borderColor,
-      )
-      .attr('stroke-width', (d) => {
-        return isSelectedSubsystem(d.data, selectedNodeSet)
-          ? CpDefaults.borderWidthHover
-          : CpDefaults.borderWidth
-      })
       .attr('fill', (d) => {
         return colorScale(d.depth)
       })
@@ -1066,16 +1057,6 @@ export const CirclePackingPanel = ({
           .attr('fill', (d) => {
             return colorScale(d.depth)
           })
-          .attr('stroke', (d) =>
-            isSelectedSubsystem(d.data, selectedNodeSet)
-              ? CpDefaults.selectedBorderColor
-              : CpDefaults.borderColor,
-          )
-          .attr('stroke-width', (d) => {
-            return isSelectedSubsystem(d.data, selectedNodeSet)
-              ? CpDefaults.borderWidthHover
-              : CpDefaults.borderWidth
-          })
 
         // Enter new circles (with all attributes and handlers)
         circles
@@ -1086,16 +1067,6 @@ export const CirclePackingPanel = ({
           .attr('r', (d) => d.r)
           .attr('fill', (d) => {
             return colorScale(d.depth)
-          })
-          .attr('stroke', (d) =>
-            isSelectedSubsystem(d.data, selectedNodeSet)
-              ? CpDefaults.selectedBorderColor
-              : CpDefaults.borderColor,
-          )
-          .attr('stroke-width', (d) => {
-            return isSelectedSubsystem(d.data, selectedNodeSet)
-              ? CpDefaults.borderWidthHover
-              : CpDefaults.borderWidth
           })
           .on('mouseenter', handleCircleMouseEnter)
           .on('click', handleCircleClick)
@@ -1145,6 +1116,11 @@ export const CirclePackingPanel = ({
 
         updatingNetworkIdRef.current = null
       }
+
+      // The only painter of borders, here and in onNodeSelection. That effect
+      // does not run after a rebuild, which leaves the selection as it was, so
+      // the circles drawn or updated above get their borders here (#942).
+      displaySelectedNodes(selectedNodeSet, selectedLeaves, searchMatchedRings)
     },
     // Only depend on hierarchy changes and network changes, not on selection changes
     // (selection strokes are updated cheaply by onNodeSelection below)
