@@ -2,11 +2,13 @@ import { act, cleanup, render } from '@testing-library/react'
 import * as d3Hierarchy from 'd3-hierarchy'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useFilterStore } from '../../../../data/hooks/stores/FilterStore'
 import { useNetworkStore } from '../../../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../../../data/hooks/stores/NetworkSummaryStore'
 import { useTableStore } from '../../../../data/hooks/stores/TableStore'
 import { useViewModelStore } from '../../../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../../../data/hooks/stores/VisualStyleStore'
+import { SearchRun } from '../../../../models/FilterModel/Search'
 import { Network } from '../../../../models/NetworkModel'
 import { createNetworkSummary } from '../../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { NetworkSummary } from '../../../../models/NetworkSummaryModel'
@@ -992,6 +994,167 @@ describe('CirclePackingPanel protein ring selection (#931)', () => {
 
     expect(strokes(container)['A-366']).toBe(GREY)
     expect(strokes(container).B).toBe(ORANGE)
+  })
+
+  describe('when the view is drawn again (#942)', () => {
+    const widthOf = (container: Element, id: string): string | null =>
+      circleOf(container, id).getAttribute('stroke-width')
+
+    // A rebuild keeps the selection: ViewModelStore.add carries over the same
+    // selectedNodes array, so nothing about the selection changes
+    const changeVisualStyle = async (
+      builds: ReturnType<typeof deferBuilds>,
+    ): Promise<void> => {
+      const nextBuild = builds.length
+      act(() => {
+        useVisualStyleStore.setState({
+          visualStyles: { [NETWORK_ID]: { ...visualStyle } },
+        } as any)
+      })
+      expect(builds).toHaveLength(nextBuild + 1)
+      await act(async () => {
+        builds[nextBuild].resolve(sharedProtein())
+      })
+    }
+
+    it('keeps a clicked protein outlined after a visual style change', async () => {
+      const builds = deferBuilds()
+      const { container } = render(panel())
+      await act(async () => {
+        builds[0].resolve(sharedProtein())
+      })
+      click(container, 'A-366')
+
+      await changeVisualStyle(builds)
+
+      expect(strokes(container)).toEqual({
+        A: ORANGE,
+        'A-366': RED,
+        'A-367': GREY,
+        B: GREY,
+        'B-366': RED,
+        C: GREY,
+        'C-368': GREY,
+      })
+      expect(widthOf(container, 'A-366')).toBe(
+        String(CpDefaults.borderWidthHover),
+      )
+      expect(widthOf(container, 'A-367')).toBe(String(CpDefaults.borderWidth))
+    })
+
+    it('keeps a protein named by the viewer outlined after a visual style change', async () => {
+      const builds = deferBuilds()
+      const { container } = render(panel())
+      await act(async () => {
+        builds[0].resolve(sharedProtein())
+      })
+      echo(['TAF11'])
+
+      await changeVisualStyle(builds)
+
+      expect(strokes(container)['A-367']).toBe(RED)
+    })
+
+    it('keeps a search match outlined after a visual style change', async () => {
+      const builds = deferBuilds()
+      const { container } = render(panel())
+      await act(async () => {
+        builds[0].resolve(sharedProtein())
+      })
+      act(() => {
+        useViewModelStore.getState().exclusiveSelect(NETWORK_ID, ['A'], [])
+        useFilterStore.getState().setLastSearch({
+          id: 1,
+          networkId: NETWORK_ID,
+          query: 'TAF11',
+          options: { exact: false, operator: 'OR' },
+          nodeIds: ['A'],
+        } as SearchRun)
+      })
+      expect(strokes(container)['A-367']).toBe(RED)
+
+      await changeVisualStyle(builds)
+
+      expect(strokes(container)['A-367']).toBe(RED)
+      expect(strokes(container)['A-366']).toBe(GREY)
+    })
+
+    it('does not bring back an outline cleared before the change', async () => {
+      const builds = deferBuilds()
+      const { container } = render(panel())
+      await act(async () => {
+        builds[0].resolve(sharedProtein())
+      })
+      click(container, 'A-366')
+      click(container, 'B')
+
+      await changeVisualStyle(builds)
+
+      expect(strokes(container)).toEqual({
+        A: GREY,
+        'A-366': GREY,
+        'A-367': GREY,
+        B: ORANGE,
+        'B-366': GREY,
+        C: GREY,
+        'C-368': GREY,
+      })
+    })
+
+    // The view model may still be building when the viewer names a protein
+    it('outlines a protein the viewer named before the first drawing', async () => {
+      const builds = deferBuilds()
+      const { container } = render(panel())
+      echo(['DR1'])
+
+      await act(async () => {
+        builds[0].resolve(sharedProtein())
+      })
+
+      expect(strokes(container)['A-366']).toBe(RED)
+      expect(strokes(container)['B-366']).toBe(RED)
+    })
+
+    // NetworkTabs reuses the panel between hierarchies, and a protein can be
+    // a member of both. The click was on a ring of the other hierarchy.
+    it('does not take a clicked protein along to another hierarchy', async () => {
+      const builds = deferBuilds()
+      const otherId = OTHER_NETWORK_ID
+      useTableStore.setState({
+        tables: {
+          [NETWORK_ID]: { nodeTable, edgeTable },
+          [otherId]: { nodeTable, edgeTable },
+        },
+      } as any)
+      useVisualStyleStore.setState({
+        visualStyles: { [NETWORK_ID]: visualStyle, [otherId]: visualStyle },
+      } as any)
+      useViewModelStore.setState({
+        viewModels: {
+          [NETWORK_ID]: [primaryView],
+          [otherId]: [{ ...primaryView, id: otherId }],
+        },
+      } as any)
+      useNetworkSummaryStore.setState({
+        summaries: {
+          [NETWORK_ID]: hcxSummary(),
+          [otherId]: hcxSummary(undefined, INTERACTION_UUID, otherId),
+        },
+      } as any)
+      const { container, rerender } = render(panel())
+      await act(async () => {
+        builds[0].resolve(sharedProtein())
+      })
+      click(container, 'A-366')
+
+      rerender(panel(otherNetwork))
+      await act(async () => {
+        builds[builds.length - 1].resolve(sharedProtein())
+      })
+
+      expect(strokes(container)['A-366']).toBe(GREY)
+      expect(strokes(container)['B-366']).toBe(GREY)
+    })
   })
 })
 

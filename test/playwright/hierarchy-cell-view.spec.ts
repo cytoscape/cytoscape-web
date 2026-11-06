@@ -1020,6 +1020,46 @@ test.describe('Clicking a ring label in the Cell View (#931)', () => {
 
     await expect.poll(() => strokeOf(svg, '2')).toBe('orange')
   })
+
+  // #942: a visual style change rebuilds the layout and repaints the circles,
+  // and the selection itself does not change.
+  test('a selected ring keeps its border when the visual style changes', async ({
+    page,
+  }) => {
+    const svg = await openCellView(page)
+    await clickLabel(page, svg, '2-DR1')
+    await expect.poll(() => strokeOf(svg, '2-DR1')).toBe('red')
+
+    // The border was already red, so a check made before the rebuild lands
+    // would pass with the bug. A rebuild gives every circle a new datum.
+    const circleData = await svg.evaluateHandle((element) =>
+      [...element.querySelectorAll('circle')].map(
+        (circle) => (circle as unknown as { __data__: unknown }).__data__,
+      ),
+    )
+
+    await page.evaluate(() => {
+      const api = (window as any).CyWebApi
+      const { networkId } = api.workspace.getCurrentNetworkId().data
+      api.visualStyle.setDefault(networkId, 'nodeBackgroundColor', '#00ff00')
+    })
+
+    await expect
+      .poll(() =>
+        svg.evaluate(
+          (element, before) =>
+            (
+              element.querySelector('circle') as unknown as {
+                __data__: unknown
+              }
+            ).__data__ !== before[0],
+          circleData,
+        ),
+      )
+      .toBe(true)
+    expect(await strokeOf(svg, '2-DR1')).toBe('red')
+    expect(await strokeOf(svg, '2')).toBe('orange')
+  })
 })
 
 // #931: with the Sub Network Viewer open, clicking a protein ring lost its red
