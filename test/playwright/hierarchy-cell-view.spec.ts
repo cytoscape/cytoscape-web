@@ -653,6 +653,30 @@ test.describe('Right panel on leaving a hierarchy (#881)', () => {
     await expect(page.locator(sidePanel)).toHaveCount(0)
     await expect(page.locator(openButton)).toBeVisible()
   })
+
+  // An app tab keeps the Sub Network Viewer unmounted, and registering the Cell
+  // View used to be up to the viewer (#946).
+  test('the hierarchy comes back with its view tabs while the app tab is selected', async ({
+    page,
+  }) => {
+    const { hierarchyId, regularId } = await openHierarchyWithAppTab(page)
+    const viewTabs = page.locator(
+      '[data-testid="network-tabs-list"] [role="tab"]',
+    )
+    await expect(viewTabs).toHaveText(['Tree View', 'Cell View'])
+    await appDataTab(page).click()
+    await expect(appDataTab(page)).toHaveAttribute('aria-selected', 'true')
+
+    await workspaceItem(page, regularId).click()
+    await expect(viewerTab(page)).toHaveCount(0)
+    await expect(viewTabs).toHaveCount(0)
+
+    await workspaceItem(page, hierarchyId).click()
+
+    await expect(viewerTab(page)).toBeVisible({ timeout: 15000 })
+    await expect(viewTabs).toHaveText(['Tree View', 'Cell View'])
+    await expect(appDataTab(page)).toHaveAttribute('aria-selected', 'true')
+  })
 })
 
 // The HCX fixtures name their subsystems with an `n` column, not `name`, and
