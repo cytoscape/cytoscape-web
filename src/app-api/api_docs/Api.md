@@ -950,8 +950,9 @@ if (result.success) {
 | ----------- | ----------------------------------------------------- |
 | `APP1`      | Table record for `networkId` not found                |
 | `APP9`      | TSV has < 2 lines or key column missing               |
-| `FK1`/`FK2` | A new column is named `"id"` (`FK1` node, `FK2` edge) |
+| `FK1`/`FK2` | A new column is named `"id"` in any letter case (`FK1` node, `FK2` edge) |
 | `A8`        | A new column is named `"s"`/`"t"` on an edge table    |
+| `A1`        | A value would be written to a merged column of another declared type |
 
 All methods in this API return `APP1` if the table record for `networkId` is not found.
 

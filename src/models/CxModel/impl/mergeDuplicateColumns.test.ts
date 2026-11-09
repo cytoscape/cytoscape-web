@@ -275,6 +275,40 @@ describe('merging duplicate CX2 columns (#951)', () => {
       expect(aspect.filterWidgets[0].attributeName).toBe('interaction')
     })
 
+    it.each(['Nodes', ' node ', 'NODE'])(
+      'reads the node table for a filter widget that applies to %j',
+      (appliesTo) => {
+        const { otherAspects } = convert({
+          nodes,
+          edges: { Name: { d: 'string' }, name: { d: 'string' } },
+          aspects: [
+            {
+              filterWidgets: [{ appliesTo, attributeName: 'Name', filter: [] }],
+            },
+          ],
+        })
+
+        const aspect = otherAspects?.find((a) => 'filterWidgets' in a) as any
+        expect(aspect.filterWidgets[0].attributeName).toBe('name')
+      },
+    )
+
+    it('leaves a filter widget of an unknown kind alone', () => {
+      const { otherAspects } = convert({
+        edges: { Name: { d: 'string' }, name: { d: 'string' } },
+        aspects: [
+          {
+            filterWidgets: [
+              { appliesTo: 'network', attributeName: 'name', filter: [] },
+            ],
+          },
+        ],
+      })
+
+      const aspect = otherAspects?.find((a) => 'filterWidgets' in a) as any
+      expect(aspect.filterWidgets[0].attributeName).toBe('name')
+    })
+
     it('leaves a mapping on an unrelated column alone', () => {
       const { visualStyle } = convert({
         nodes: { ...nodes, score: { d: 'string' } },

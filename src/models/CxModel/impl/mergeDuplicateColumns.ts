@@ -282,8 +282,17 @@ const mergeFilterWidget = (
   if (!isRecord(widget) || typeof widget.attributeName !== 'string') {
     return widget
   }
+  // The widget schema trims and lower-cases this field too
+  const appliesTo =
+    typeof widget.appliesTo === 'string'
+      ? widget.appliesTo.trim().toLowerCase()
+      : ''
   const table =
-    widget.appliesTo === 'node' || widget.appliesTo === 'nodes' ? nodes : edges
+    appliesTo === 'node' || appliesTo === 'nodes'
+      ? nodes
+      : appliesTo === 'edge' || appliesTo === 'edges'
+        ? edges
+        : undefined
   const kept = table?.keptFor(widget.attributeName)
   return kept === undefined ? widget : { ...widget, attributeName: kept.name }
 }
