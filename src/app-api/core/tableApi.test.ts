@@ -2043,3 +2043,296 @@ describe('no-op writes (#680)', () => {
     expect(mockSetNetworkModified).not.toHaveBeenCalled()
   })
 })
+
+// --- Case-insensitive column names (#951) -----------------------------------
+
+describe('case-insensitive column names (#951)', () => {
+  const columns = () => [
+    { name: 'name', type: 'string' },
+    { name: 'foo', type: 'string' },
+  ]
+
+  const seed = (cols: Array<{ name: string; type: string }> = columns()) => {
+    const nodeRows = new Map([
+      ['n1', { name: 'Alice', foo: 'x' }],
+      ['n2', { name: 'Bob', foo: 'y' }],
+    ])
+    mockTables['net1'] = makeTableRecord(nodeRows, undefined, cols)
+    registerNet1(['n1', 'n2'])
+  }
+
+  const edits = () => mockSetValues.mock.calls[0][2]
+
+  describe('createColumn', () => {
+    it.each(['name', 'NAME', 'Name'])('rejects the duplicate %s', (name) => {
+      seed()
+
+      const result = tableApi.createColumn(
+        'net1',
+        'node',
+        name,
+        'string' as any,
+        'x',
+      )
+
+      expect(result.success).toBe(false)
+      if (!result.success) expect(result.error.code).toBe('AC6')
+      expect(mockCreateColumn).not.toHaveBeenCalled()
+    })
+
+    it.each(['id', 'ID', 'Id', 'iD'])('rejects %s on a node table', (name) => {
+      seed()
+
+      const result = tableApi.createColumn(
+        'net1',
+        'node',
+        name,
+        'string' as any,
+        '',
+      )
+
+      expect(result.success).toBe(false)
+      if (!result.success) expect(result.error.code).toBe('FK1')
+    })
+
+    it('rejects a case variant of id on an edge table with FK2', () => {
+      seed()
+
+      const result = tableApi.createColumn(
+        'net1',
+        'edge',
+        'ID',
+        'string' as any,
+        '',
+      )
+
+      expect(result.success).toBe(false)
+      if (!result.success) expect(result.error.code).toBe('FK2')
+    })
+  })
+
+  describe('renameColumn', () => {
+    it('rejects a case variant of another column', () => {
+      seed()
+
+      const result = tableApi.renameColumn('net1', 'node', 'foo', 'NAME')
+
+      expect(result.success).toBe(false)
+      if (!result.success) expect(result.error.code).toBe('AC6')
+      expect(mockSetColumnName).not.toHaveBeenCalled()
+    })
+
+    it('allows changing only the case of its own name', () => {
+      seed()
+
+      const result = tableApi.renameColumn('net1', 'node', 'foo', 'Foo')
+
+      expect(result.success).toBe(true)
+      expect(mockSetColumnName).toHaveBeenCalledWith(
+        'net1',
+        'node',
+        'foo',
+        'Foo',
+      )
+    })
+
+    it.each(['id', 'ID'])('rejects renaming to %s', (name) => {
+      seed()
+
+      const result = tableApi.renameColumn('net1', 'node', 'foo', name)
+
+      expect(result.success).toBe(false)
+      if (!result.success) expect(result.error.code).toBe('FK1')
+    })
+
+    it('rejects a case-only rename of an imported id column', () => {
+      seed([{ name: 'id', type: 'string' }])
+
+      const result = tableApi.renameColumn('net1', 'node', 'id', 'ID')
+
+      expect(result.success).toBe(false)
+      if (!result.success) expect(result.error.code).toBe('FK1')
+    })
+  })
+
+  describe('importTableFromTsv', () => {
+    it('writes a case variant to the existing column', () => {
+      seed()
+
+      const result = tableApi.importTableFromTsv(
+        'net1',
+        'node',
+        'id\tName\nn1\tCarol',
+      )
+
+      expect(result.success).toBe(true)
+      if (result.success) expect(result.data.newColumns).toEqual([])
+      expect(mockCreateColumn).not.toHaveBeenCalled()
+      expect(edits()).toEqual([{ row: 'n1', column: 'name', value: 'Carol' }])
+    })
+
+    it('merges two new spellings: first spelling, last value', () => {
+      seed()
+
+      const result = tableApi.importTableFromTsv(
+        'net1',
+        'node',
+        'id\tNew:string\tNEW:string\nn1\ta\tb\nn2\tc\t',
+      )
+
+      expect(result.success).toBe(true)
+      if (result.success) expect(result.data.newColumns).toEqual(['New'])
+      expect(mockCreateColumn).toHaveBeenCalledTimes(1)
+      expect(mockCreateColumn.mock.calls[0][2]).toBe('New')
+
+      const byRow = new Map<string, unknown>()
+      edits().forEach((e: any) => {
+        expect(e.column).toBe('New')
+        byRow.set(e.row, e.value)
+      })
+      expect(byRow.get('n1')).toBe('b')
+      // n2 has only the first spelling: its empty cell is no value
+      expect(byRow.get('n2')).toBe('c')
+    })
+
+    it('rejects a new column spelled like id', () => {
+      seed()
+
+      const result = tableApi.importTableFromTsv(
+        'net1',
+        'node',
+        'id\tID\nn1\tx',
+      )
+
+      expect(result.success).toBe(false)
+      if (!result.success) expect(result.error.code).toBe('FK1')
+      expect(mockCreateColumn).not.toHaveBeenCalled()
+    })
+
+    it('writes to an existing column spelled like id', () => {
+      seed([{ name: 'id', type: 'string' }])
+
+      const result = tableApi.importTableFromTsv(
+        'net1',
+        'node',
+        'id\tID\nn1\tx',
+      )
+
+      expect(result.success).toBe(true)
+      expect(edits()).toEqual([{ row: 'n1', column: 'id', value: 'x' }])
+    })
+
+    it('prefers the exact spelling of a saved duplicate', () => {
+      seed([
+        { name: 'name', type: 'string' },
+        { name: 'NAME', type: 'string' },
+      ])
+
+      tableApi.importTableFromTsv('net1', 'node', 'id\tNAME\nn1\tx')
+
+      expect(edits()).toEqual([{ row: 'n1', column: 'NAME', value: 'x' }])
+    })
+
+    describe('declared types that differ', () => {
+      const conflict = 'id\tscore:string\tScore:integer\nn1\ta\t5'
+
+      it('fails with A1 and changes nothing', () => {
+        seed()
+
+        const result = tableApi.importTableFromTsv('net1', 'node', conflict)
+
+        expect(result.success).toBe(false)
+        if (!result.success) expect(result.error.code).toBe('A1')
+        expect(mockCreateColumn).not.toHaveBeenCalled()
+        expect(mockSetValues).not.toHaveBeenCalled()
+        expect(mockSetNetworkModified).not.toHaveBeenCalled()
+      })
+
+      it('fails against the type of an existing column', () => {
+        seed([{ name: 'count', type: 'integer' }])
+
+        const result = tableApi.importTableFromTsv(
+          'net1',
+          'node',
+          'id\tCount:string\nn1\tmany',
+        )
+
+        expect(result.success).toBe(false)
+        if (!result.success) expect(result.error.code).toBe('A1')
+      })
+
+      it('does not fail when the other spelling has no values', () => {
+        seed()
+
+        const result = tableApi.importTableFromTsv(
+          'net1',
+          'node',
+          'id\tscore:string\tScore:integer\nn1\ta\t',
+        )
+
+        expect(result.success).toBe(true)
+        expect(mockCreateColumn).toHaveBeenCalledTimes(1)
+      })
+
+      it('does not fail when no row would write the value', () => {
+        seed()
+
+        const result = tableApi.importTableFromTsv(
+          'net1',
+          'node',
+          'id\tscore:string\tScore:integer\nmissing\ta\t5',
+        )
+
+        expect(result.success).toBe(true)
+      })
+
+      it('reports a value that does not parse as a skipped cell, not a conflict', () => {
+        seed()
+
+        const result = tableApi.importTableFromTsv(
+          'net1',
+          'node',
+          'id\tscore:string\tScore:integer\nn1\ta\tnot-a-number',
+        )
+
+        expect(result.success).toBe(true)
+        if (result.success) {
+          expect(result.data.skippedCells).toEqual([
+            { key: 'n1', column: 'Score', value: 'not-a-number' },
+          ])
+        }
+      })
+    })
+
+    it('skips an unannotated value that does not parse as the kept type', () => {
+      seed([{ name: 'count', type: 'integer' }])
+
+      const result = tableApi.importTableFromTsv(
+        'net1',
+        'node',
+        'id\tCount\nn1\tmany',
+      )
+
+      expect(result.success).toBe(true)
+      if (result.success) {
+        expect(result.data.skippedCells).toEqual([
+          { key: 'n1', column: 'Count', value: 'many' },
+        ])
+      }
+    })
+
+    it('rejects a new header named constructor without touching a prototype', () => {
+      seed()
+
+      const result = tableApi.importTableFromTsv(
+        'net1',
+        'node',
+        'id\tconstructor:string\tCONSTRUCTOR:string\nn1\ta\tb',
+      )
+
+      expect(result.success).toBe(false)
+      if (!result.success) expect(result.error.code).toBe('APP9')
+      expect(({} as Record<string, unknown>).a).toBeUndefined()
+    })
+  })
+})

@@ -75,7 +75,9 @@ Fields: `columnName`, `target` (`nodes`, `edges` or `nodes+edges`),
 - An element of the wrong kind for the target is rejected. `nodes+edges`
   reads the node table for nodes and the edge table for edges, so it needs a
   column of that name in both.
-- A column missing from the table rejects every element.
+- A column missing from the table rejects every element. Names match ignoring
+  case when no column has the exact spelling, so a condition keeps working on a
+  column that import merged into another spelling (#951).
 - The column's declared type decides the comparison:
   - **String** (and `list_of_string`): the text predicates.
   - **Integer, Long, Double** (and their lists): the numeric predicates. The

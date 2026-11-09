@@ -91,7 +91,10 @@ export const useLoadCyNetwork = () => {
           getNdexAccessKey(networkId),
         )
         // getCyNetworkFromCx2 validates the CX2 data before processing
-        return getCyNetworkFromCx2(networkId, cxData)
+        // A network saved on NDEx is left as it is, duplicates included (#951)
+        return getCyNetworkFromCx2(networkId, cxData, {
+          keepDuplicateColumns: true,
+        })
       }
     } catch (error) {
       logApi.error(`[${loadCyNetwork.name}]: Failed to get network: ${error}`)

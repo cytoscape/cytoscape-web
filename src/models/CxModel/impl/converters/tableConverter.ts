@@ -6,6 +6,7 @@
 import { IdType } from '../../../IdType'
 import { Column, Table } from '../../../TableModel'
 import { AttributeName } from '../../../TableModel/AttributeName'
+import { setCellValue } from '../../../TableModel/impl/columnNames'
 import { createTable } from '../../../TableModel/impl/inMemoryTable'
 import { ValueType } from '../../../TableModel/ValueType'
 import { ValueTypeName } from '../../../TableModel/ValueTypeName'
@@ -44,9 +45,10 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
   const attrDec = cxUtil.getAttributeDeclarations(cx)
   const attrDefs: AttributeDeclaration = attrDec.attributeDeclarations[0] ?? {}
 
-  // Map column aliases to their original names
-  const nodeAttributeTranslationMap: Record<string, string> = {}
-  const edgeAttributeTranslationMap: Record<string, string> = {}
+  // Map column aliases to their original names. Maps, because a column can
+  // be named `constructor`: a plain object would answer with Object's own
+  const nodeAttributeTranslationMap = new Map<string, string>()
+  const edgeAttributeTranslationMap = new Map<string, string>()
 
   const nodeAttrDefs = attrDefs.nodes
   if (nodeAttrDefs !== undefined) {
@@ -57,7 +59,7 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
       }
 
       if (attrDef.a != null) {
-        nodeAttributeTranslationMap[attrDef.a] = attrName
+        nodeAttributeTranslationMap.set(attrDef.a, attrName)
       }
 
       nodeTable.columns.push(columnDef)
@@ -75,7 +77,7 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
       }
 
       if (attrDef.a != null) {
-        edgeAttributeTranslationMap[attrDef.a] = attrName
+        edgeAttributeTranslationMap.set(attrDef.a, attrName)
       }
 
       edgeTable.columns.push(columnDef)
@@ -87,7 +89,7 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
   const defaultNodeAttributes: Record<AttributeName, ValueType> = {}
   Object.entries(nodeAttrDefs ?? {}).forEach(([key, value]) => {
     if (value.v != null) {
-      defaultNodeAttributes[key] = value.v as ValueType
+      setCellValue(defaultNodeAttributes, key, value.v as ValueType)
     }
   })
 
@@ -98,11 +100,11 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
 
     Object.entries(attr).forEach(([attrName, attrValue]) => {
       const translatedAttrName =
-        nodeAttributeTranslationMap[attrName] ?? attrName
+        nodeAttributeTranslationMap.get(attrName) ?? attrName
 
       const value: ValueType = attrValue as ValueType
 
-      processedAttributes[translatedAttrName] = value
+      setCellValue(processedAttributes, translatedAttrName, value)
     })
     nodeTable.rows.set(nodeId, processedAttributes)
   })
@@ -118,7 +120,7 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
   const defaultEdgeAttributes: Record<string, ValueType> = {}
   Object.entries(edgeAttrDefs ?? {}).forEach(([key, value]) => {
     if (value.v != null) {
-      defaultEdgeAttributes[key] = value.v as ValueType
+      setCellValue(defaultEdgeAttributes, key, value.v as ValueType)
     }
   })
 
@@ -130,11 +132,11 @@ export const createTablesFromCx = (id: IdType, cx: Cx2): [Table, Table] => {
 
     Object.entries(attr).forEach(([attrName, attrValue]) => {
       const translatedAttrName =
-        edgeAttributeTranslationMap[attrName] ?? attrName
+        edgeAttributeTranslationMap.get(attrName) ?? attrName
 
       const value: ValueType = attrValue as ValueType
 
-      processedAttributes[translatedAttrName] = value
+      setCellValue(processedAttributes, translatedAttrName, value)
     })
     edgeTable.rows.set(translatedEdgeId, processedAttributes)
   })

@@ -526,9 +526,15 @@ importing. Infers network name and description from CX2 `networkAttributes`.
 If `addToWorkspace: true`, adds to WorkspaceStore (fires `network:created`).
 If `navigate: true`, sets as current network (fires `network:switched`).
 
+Attributes whose names differ only by case are merged as in Cytoscape Desktop:
+the first declared spelling and type are kept, in each element the last value
+in `v` order wins, and visual style mappings, named styles, table display
+configuration and hierarchy filter widgets follow the kept column. An attribute
+named `id` still imports as a column.
+
 | Error Code | Condition                        |
 | ---------- | -------------------------------- |
-| `APP8`     | CX2 structural validation failed |
+| `APP8`     | CX2 structural validation failed, or a value would be written to a merged column of another declared type |
 
 #### `deleteNetwork(networkId, options?): ApiResult`
 
@@ -738,12 +744,15 @@ Creates a new column with the given data type and default value. The
 `data:changed` event reports the name in `addedColumns` and includes any rows
 whose values changed.
 
-| Error Code  | Condition                                                   |
-| ----------- | ----------------------------------------------------------- |
-| `APP1`      | `networkId` does not exist                                  |
-| `FK1`/`FK2` | `columnName` is `"id"` (`FK1` node table, `FK2` edge table) |
-| `A8`        | `columnName` is `"s"`/`"t"` on an edge table                |
-| `AC6`       | `columnName` already exists on this table                   |
+Column names are compared ignoring case, as in Cytoscape Desktop: `NAME`
+duplicates `name`.
+
+| Error Code  | Condition                                                                 |
+| ----------- | ------------------------------------------------------------------------- |
+| `APP1`      | `networkId` does not exist                                                |
+| `FK1`/`FK2` | `columnName` is `"id"` in any letter case (`FK1` node table, `FK2` edge table) |
+| `A8`        | `columnName` is `"s"`/`"t"` on an edge table                              |
+| `AC6`       | A column of this name, ignoring case, already exists on this table       |
 | `A6`        | `defaultValue` is `null` or `undefined`                     |
 | `A1`        | `defaultValue` does not match the declared `dataType`       |
 
@@ -766,13 +775,16 @@ column, and updates the Table Browser display config. Renaming to the current
 name is a no-op, not a collision. The `data:changed` event reports the old name
 in `removedColumns`, the new name in `addedColumns`, and any affected rows.
 
-| Error Code  | Condition                                                |
-| ----------- | -------------------------------------------------------- |
-| `APP1`      | `networkId` does not exist                               |
-| `FK1`/`FK2` | `newName` is `"id"` (`FK1` node table, `FK2` edge table) |
-| `A8`        | `newName` is `"s"`/`"t"` on an edge table                |
-| `APP10`     | `currentName` does not exist in the table                |
-| `AC6`       | `newName` already exists and differs from `currentName`  |
+Names are compared ignoring case. Changing only the case of a column's own name
+(`foo` to `Foo`) is allowed, except to a variant of `id`, which is rejected.
+
+| Error Code  | Condition                                                                 |
+| ----------- | ------------------------------------------------------------------------- |
+| `APP1`      | `networkId` does not exist                                                |
+| `FK1`/`FK2` | `newName` is `"id"` in any letter case (`FK1` node table, `FK2` edge table) |
+| `A8`        | `newName` is `"s"`/`"t"` on an edge table                                 |
+| `APP10`     | `currentName` does not exist in the table                                 |
+| `AC6`       | Another column of this name, ignoring case, already exists                |
 
 #### `setValue(networkId, tableType, elementId, column, value): ApiResult`
 
@@ -901,6 +913,20 @@ Cell values are parsed strictly against the column's type, with no coercion
   to `0`/`false`.
 - An empty cell for a non-string column is treated as "no value provided" and
   leaves the existing attribute untouched.
+
+Column names match ignoring case, as in Cytoscape Desktop:
+
+- A TSV column spelled like an existing column writes to that column, so
+  `Name` writes to `name` and no second column is created. The exact spelling
+  is preferred when a table already has several.
+- New TSV columns of one name merge: the first keeps its spelling and type, and
+  in each row the last non-empty value, in file order, wins. An empty cell in a
+  merged column never erases a value. `newColumns` lists the kept spelling.
+- A value in a column annotated with another type than the one it merges into
+  fails the import with `A1`, and nothing is changed. A differently typed column
+  with no values does not fail. A value that cannot be parsed as its own
+  annotated type is still skipped and reported in `skippedCells`, so it never
+  raises a conflict.
 
 **Options:**
 

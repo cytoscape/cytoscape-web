@@ -51,6 +51,10 @@ A real example is
 `test/fixtures/ndex/d3030388-dcb7-11ee-867c-005056aecf54.valid.filters.cx2`
 (MuSIC interaction network).
 
+An `attributeName` spelled like a column that import merged into another
+spelling is rewritten to the kept column with the rest of the document
+(`mergeDuplicateColumns`, #951).
+
 ### Entry fields
 
 | Field           | Required | Accepted values                                                                                                 | Default         |

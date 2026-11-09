@@ -15,13 +15,17 @@ import {
 import Papa from 'papaparse'
 import { useEffect, useState } from 'react'
 
+import { useMessageStore } from '../../../../data/hooks/stores/MessageStore'
 import { useTableStore } from '../../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
 import {
   Column as CyWebColumn,
+  Table,
   ValueTypeName,
 } from '../../../../models/TableModel'
+import { MessageSeverity } from '../../../../models/MessageModel'
+import { ColumnTypeConflictError } from '../../../../models/TableModel/impl/columnNames'
 import { BaseMenuItemProps } from '../../../ToolBar/BaseMenuItemProps'
 import { ColumnAppendState } from '../../model/ColumnAppendState'
 import { ColumnAppendType } from '../../model/ColumnAppendType'
@@ -59,6 +63,7 @@ import { ValueTypeForm, ValueTypeNameRender } from '../ValueTypeNameForm'
 import { ColumnAppendForm, ColumnAppendTypeRender } from './ColumnAppendForm'
 
 export function TableColumnAppendForm(props: BaseMenuItemProps) {
+  const addMessage = useMessageStore((state) => state.addMessage)
   const [loading, setLoading] = useState(false)
   const currentNetworkId = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
@@ -180,13 +185,26 @@ export function TableColumnAppendForm(props: BaseMenuItemProps) {
     setLoading(true)
     const table = tableToAppend === 'node' ? nodeTable : edgeTable
     if (networkKeyColumn != null) {
-      const nextTable = joinRowsToTable(
-        table,
-        rows as ParsedRow[],
-        columns,
-        networkKeyColumn,
-        caseSensitiveKeyValues,
-      )
+      let nextTable: Table
+      try {
+        nextTable = joinRowsToTable(
+          table,
+          rows as ParsedRow[],
+          columns,
+          networkKeyColumn,
+          caseSensitiveKeyValues,
+        )
+      } catch (error) {
+        setLoading(false)
+        if (!(error instanceof ColumnTypeConflictError)) throw error
+        // Nothing was written: the dialog stays open so the types can be fixed
+        addMessage({
+          duration: 10000,
+          message: `Failed to join the table: ${error.message}`,
+          severity: MessageSeverity.ERROR,
+        })
+        return
+      }
       setTable(currentNetworkId, tableToAppend, nextTable)
     }
     setNetworkModified(currentNetworkId, true)

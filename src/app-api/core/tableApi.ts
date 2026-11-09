@@ -19,6 +19,7 @@ import {
   ValueTypeName,
 } from '../../models/TableModel'
 import { Column } from '../../models/TableModel/Column'
+import { findColumnByName } from '../../models/TableModel/impl/columnNames'
 import { VisualPropertyName } from '../../models/VisualStyleModel'
 import {
   ColumnConfiguration,
@@ -503,6 +504,7 @@ export const tableApi: TableApi = {
       const duplicateName = validateColumnNameAvailable(
         tableRecord[tableKey(tableType)]?.columns ?? [],
         newName,
+        currentName,
       )
       if (duplicateName) return duplicateName
 
@@ -872,9 +874,7 @@ export const tableApi: TableApi = {
         return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const table = tableRecord[tableKey(tableType)]
-      const existingColumns = new Map(
-        (table?.columns ?? []).map((c: Column) => [c.name, c.type]),
-      )
+      const existingColumns: Column[] = table?.columns ?? []
 
       const lines = tsvText.split('\n').filter((l) => l.trim() !== '')
       if (lines.length < 2) {
@@ -923,35 +923,48 @@ export const tableApi: TableApi = {
       for (const colName of colNames) {
         if (colName === keyColumn) continue
         if (isStructuralColumn(colName)) continue
-        if (existingColumns.has(colName)) continue
+        if (findColumnByName(existingColumns, colName) !== undefined) continue
         const invalidName = validateColumnName(colName, tableType)
         if (invalidName) return invalidName
       }
 
-      // Create any missing columns
-      const newColumns: string[] = []
-      const storeState = useTableStore.getState()
+      // The column each file column writes to. Names match ignoring case, as
+      // in Cytoscape Desktop: a file column writes to the existing column of
+      // that name, and new file columns of one name share the first one's
+      // spelling and type. Nothing is created yet, so that a type conflict
+      // found in the cells below leaves the table untouched.
+      const newColumnsPlanned: Column[] = []
+      const targetColumnOf = new Map<string, Column>()
+      const writersOf = new Map<string, number>()
+      const addWriter = (target: Column): void => {
+        writersOf.set(target.name, (writersOf.get(target.name) ?? 0) + 1)
+      }
       for (const colName of colNames) {
         if (colName === keyColumn) continue
         if (isStructuralColumn(colName)) continue
-        if (!existingColumns.has(colName)) {
-          const inferredType =
-            colTypes.get(colName) ?? inferTypeFromData(lines, colNames, colName)
-          storeState.createColumn(
-            networkId,
-            tableType,
-            colName,
-            inferredType,
-            defaultForType(inferredType),
-          )
-          // Record the type so cell values parse as the column type
-          // (previously fell back to string for inferred columns)
-          colTypes.set(colName, inferredType)
-          newColumns.push(colName)
-          // Sync to Table Browser display config
-          syncColumnToTableDisplayConfig(networkId, tableType, colName)
+        const existing =
+          findColumnByName(existingColumns, colName) ??
+          findColumnByName(newColumnsPlanned, colName)
+        if (existing !== undefined) {
+          targetColumnOf.set(colName, existing)
+          addWriter(existing)
+          continue
         }
+        const planned: Column = {
+          name: colName,
+          type:
+            colTypes.get(colName) ??
+            inferTypeFromData(lines, colNames, colName),
+        }
+        newColumnsPlanned.push(planned)
+        targetColumnOf.set(colName, planned)
+        addWriter(planned)
       }
+
+      // Whether several spellings write to this column: an empty cell then
+      // means "no value", so it cannot erase the other spelling's value
+      const isMergedSpelling = (colName: string, target: Column): boolean =>
+        colName !== target.name || (writersOf.get(target.name) ?? 0) > 1
 
       // Resolve TSV key values to element IDs so imports can never
       // create orphaned rows: 'id' keys must exist in the network;
@@ -1010,12 +1023,18 @@ export const tableApi: TableApi = {
           const colName = colNames[j]
           if (colName === keyColumn) continue
           if (isStructuralColumn(colName)) continue
+          const target = targetColumnOf.get(colName)
+          if (target === undefined) continue
           const rawValue = values[j] ?? ''
-          const colType = (colTypes.get(colName) ??
-            existingColumns.get(colName) ??
-            'string') as ValueTypeName
+          const colType = colTypes.get(colName) ?? target.type
           // Empty cells mean "no value provided" — leave the attribute alone
-          if (rawValue === '' && colType !== ValueTypeName.String) continue
+          if (
+            rawValue === '' &&
+            (colType !== ValueTypeName.String ||
+              isMergedSpelling(colName, target))
+          ) {
+            continue
+          }
           const parsedValue = parseTsvValue(rawValue, colType)
           if (parsedValue === undefined) {
             // Unparseable for the column type — skip and report rather
@@ -1028,14 +1047,42 @@ export const tableApi: TableApi = {
             })
             continue
           }
+          // A parsed value of a file column declared with another type than
+          // the column it merges into fails the import, as in Cytoscape
+          // Desktop. A value that does not parse was reported above, and an
+          // exact-name column keeps its previous behaviour.
+          if (colName !== target.name && colType !== target.type) {
+            return fail(
+              TableCodes.VALUE_TYPE_MISMATCH,
+              target.name,
+              target.type,
+              JSON.stringify(parsedValue),
+            )
+          }
           for (const targetId of targetIds) {
             cellEdits.push({
               row: targetId,
-              column: colName,
+              column: target.name,
               value: parsedValue,
             })
           }
         }
+      }
+
+      // Everything is known to be valid: only now change the table
+      const newColumns: string[] = []
+      const storeState = useTableStore.getState()
+      for (const column of newColumnsPlanned) {
+        storeState.createColumn(
+          networkId,
+          tableType,
+          column.name,
+          column.type,
+          defaultForType(column.type),
+        )
+        newColumns.push(column.name)
+        // Sync to Table Browser display config
+        syncColumnToTableDisplayConfig(networkId, tableType, column.name)
       }
 
       storeState.setValues(networkId, tableType, cellEdits)

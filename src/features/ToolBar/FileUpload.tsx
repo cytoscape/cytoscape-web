@@ -31,6 +31,7 @@ import {
 } from '../../models/CxModel/impl/extractor'
 import { validateCX2 } from '../../models/CxModel/impl/validator'
 import { MessageSeverity } from '../../models/MessageModel'
+import { ColumnTypeConflictError } from '../../models/TableModel/impl/columnNames'
 import { NetworkProperty, Visibility } from '../../models/NetworkSummaryModel'
 import { createNetworkSummary } from '../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { ValueType, ValueTypeName } from '../../models/TableModel'
@@ -208,8 +209,11 @@ export function FileUpload(props: FileUploadProps) {
         error,
       )
       addMessage({
-        duration: 3000,
-        message: 'Failed to parse CX2 file',
+        duration: error instanceof ColumnTypeConflictError ? 10000 : 3000,
+        message:
+          error instanceof ColumnTypeConflictError
+            ? `Failed to import CX2 file: ${error.message}`
+            : 'Failed to parse CX2 file',
         severity: MessageSeverity.ERROR,
       })
     } finally {

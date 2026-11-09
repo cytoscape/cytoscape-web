@@ -93,7 +93,10 @@ describe('useLoadCyNetwork', () => {
         undefined,
         undefined,
       )
-      expect(getCyNetworkFromCx2).toHaveBeenCalledWith(NET_ID, cx2)
+      // A network saved on NDEx is loaded as it is, duplicates included (#951)
+      expect(getCyNetworkFromCx2).toHaveBeenCalledWith(NET_ID, cx2, {
+        keepDuplicateColumns: true,
+      })
       expect(result).toBe(convertedNetwork)
     })
 

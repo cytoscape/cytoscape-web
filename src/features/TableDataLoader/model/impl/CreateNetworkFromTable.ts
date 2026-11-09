@@ -6,6 +6,13 @@ import { Network } from '../../../../models/NetworkModel'
 import { NetworkSummary } from '../../../../models/NetworkSummaryModel'
 import { createNetworkSummary } from '../../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { Table, ValueType, ValueTypeName } from '../../../../models/TableModel'
+import {
+  assertSameColumnType,
+  columnNamesMatch,
+  DeclaredColumn,
+  mergeDeclaredColumns,
+  setCellValue,
+} from '../../../../models/TableModel/impl/columnNames'
 import { valueTypeNameLabel } from '../../../../models/TableModel/impl/valueTypeNameDisplay'
 import { createViewModel } from '../../../../models/ViewModel/impl/viewModelImpl'
 import {
@@ -163,6 +170,21 @@ export const unselectAllColumns = (
   }))
 }
 
+/** A file column and how it is declared for merging */
+interface TabularColumn extends DeclaredColumn {
+  readonly source: ColumnAssignmentState
+}
+
+const declareColumn = (c: ColumnAssignmentState): TabularColumn => ({
+  name: c.name,
+  type: c.dataType,
+  source: c,
+})
+
+// In a column shared by several spellings, an empty cell means "no value"
+const isEmptyCell = (value: unknown): boolean =>
+  value === undefined || value === null || value === ''
+
 export function createNetworkFromTableData(
   rows: ParsedRow[],
   columns: ColumnAssignmentState[],
@@ -191,17 +213,79 @@ export function createNetworkFromTableData(
     (c) => c.meaning === ColumnAssignmentType.EdgeAttribute,
   )
 
+  const nodeNameColumn: ColumnAssignmentState = {
+    name: 'name',
+    dataType: ValueTypeName.String,
+    meaning: ColumnAssignmentType.NotImported,
+    invalidValues: [] as number[],
+  }
+
+  // Columns of one name merge, as in Cytoscape Desktop: the first declared
+  // keeps its spelling and type, in file order. The built-in name column
+  // comes before any file column.
+  const nodeColumnMerge = mergeDeclaredColumns(
+    [
+      nodeNameColumn,
+      ...columns.filter(
+        (c) =>
+          c.meaning === ColumnAssignmentType.SourceNodeAttribute ||
+          c.meaning === ColumnAssignmentType.TargetNodeAttribute,
+      ),
+    ].map(declareColumn),
+  )
+  const edgeColumnsInFileOrder = columns.filter(
+    (c) =>
+      c.meaning === ColumnAssignmentType.EdgeAttribute ||
+      c === interactionTypeCol,
+  )
+  const edgeColumnMerge = mergeDeclaredColumns(
+    edgeColumnsInFileOrder.map(declareColumn),
+  )
+
   const nodeTableColumns: ColumnAssignmentState[] = [
-    {
-      name: 'name',
-      dataType: ValueTypeName.String,
-      meaning: ColumnAssignmentType.NotImported,
-      invalidValues: [] as number[],
-    },
+    nodeNameColumn,
     ...srcNodeAttrCols,
     ...tgtNodeAttrCols,
-  ]
-  const edgeTableColumns = edgeAttrCols.concat(interactionTypeCol ?? [])
+  ].filter((c) => nodeColumnMerge.keptColumn(c.name)?.source === c)
+  const edgeTableColumns = edgeAttrCols
+    .concat(interactionTypeCol ?? [])
+    .filter((c) => edgeColumnMerge.keptColumn(c.name)?.source === c)
+
+  // Copy a node's attribute values from a row. In a merged column the last
+  // non-empty value in file order wins.
+  const applyNodeAttributes = (
+    nodeData: Record<string, ValueType>,
+    attributeColumns: ColumnAssignmentState[],
+    row: ParsedRow,
+    nodeColumn: ColumnAssignmentState,
+    isNewNode: boolean,
+  ): void => {
+    const incoming = new Map<string, ValueType>()
+    attributeColumns.forEach((c) => {
+      const raw = row[c.name]
+      const kept = nodeColumnMerge.keptColumn(c.name)
+      if (raw === undefined || kept === undefined) return
+      if (nodeColumnMerge.isMerged(c.name)) {
+        if (isEmptyCell(raw)) return
+        assertSameColumnType(kept, declareColumn(c))
+        // The node column's own value comes later in the file, so it wins
+        if (
+          kept.source === nodeNameColumn &&
+          columnNamesMatch(nodeColumn.name, nodeNameColumn.name) &&
+          columns.indexOf(c) < columns.indexOf(nodeColumn)
+        ) {
+          return
+        }
+      }
+      incoming.set(kept.name, parseValue(raw, c.dataType, c.delimiter))
+    })
+    incoming.forEach((value, name) => {
+      const replacesNodeName = isNewNode && name === nodeNameColumn.name
+      if (replacesNodeName || !Object.hasOwn(nodeData, name)) {
+        setCellValue(nodeData, name, value)
+      }
+    })
+  }
 
   const networkId = uuid ?? uuidv4()
 
@@ -247,11 +331,13 @@ export function createNetworkFromTableData(
         network.nodes.push({ id: `${srcNodeId}` })
       }
 
-      srcNodeAttrCols.forEach((c) => {
-        if (nodeData[c.name] === undefined && row[c.name] !== undefined) {
-          nodeData[c.name] = parseValue(row[c.name], c.dataType, c.delimiter)
-        }
-      })
+      applyNodeAttributes(
+        nodeData,
+        srcNodeAttrCols,
+        row,
+        srcNodeCol,
+        !nodeExists,
+      )
 
       nodeTable.rows.set(`${srcNodeId}`, nodeData)
     }
@@ -272,11 +358,13 @@ export function createNetworkFromTableData(
         network.nodes.push({ id: `${tgtNodeId}` })
       }
 
-      tgtNodeAttrCols.forEach((c) => {
-        if (nodeData[c.name] === undefined && row[c.name] !== undefined) {
-          nodeData[c.name] = parseValue(row[c.name], c.dataType, c.delimiter)
-        }
-      })
+      applyNodeAttributes(
+        nodeData,
+        tgtNodeAttrCols,
+        row,
+        tgtNodeCol,
+        !nodeExists,
+      )
 
       nodeTable.rows.set(`${tgtNodeId}`, nodeData)
     }
@@ -296,11 +384,20 @@ export function createNetworkFromTableData(
       })
       const rowData: Record<string, any> = {}
 
-      if (interactionTypeCol !== undefined) {
-        rowData[interactionTypeCol.name] = row[interactionTypeCol.name]
-      }
-      edgeAttrCols.forEach((c) => {
-        rowData[c.name] = parseValue(row[c.name], c.dataType, c.delimiter)
+      edgeColumnsInFileOrder.forEach((c) => {
+        const raw = row[c.name]
+        const kept = edgeColumnMerge.keptColumn(c.name) as TabularColumn
+        if (edgeColumnMerge.isMerged(c.name)) {
+          if (isEmptyCell(raw)) return
+          assertSameColumnType(kept, declareColumn(c))
+        }
+        setCellValue(
+          rowData,
+          kept.name,
+          c === interactionTypeCol
+            ? raw
+            : parseValue(raw, c.dataType, c.delimiter),
+        )
       })
 
       edgeTable.rows.set(`e${eId}`, rowData)
