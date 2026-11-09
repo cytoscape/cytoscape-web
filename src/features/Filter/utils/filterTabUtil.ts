@@ -13,6 +13,7 @@ import type { FilterValidationWarning } from '@/models/FilterModel/impl/validate
 import type { Network } from '@/models/NetworkModel/Network'
 import type { NumberRange } from '@/models/PropertyModel/NumberRange'
 import type { Column } from '@/models/TableModel/Column'
+import { findColumnByName } from '@/models/TableModel/impl/columnNames'
 import type { Table } from '@/models/TableModel/Table'
 
 /**
@@ -94,8 +95,8 @@ export const bothTablesOption = (
   edgeTable: Table,
 ): ColumnOption | undefined => {
   const column =
-    nodeTable.columns.find((candidate) => candidate.name === columnName) ??
-    edgeTable.columns.find((candidate) => candidate.name === columnName)
+    findColumnByName(nodeTable.columns, columnName) ??
+    findColumnByName(edgeTable.columns, columnName)
   return column === undefined
     ? undefined
     : {

@@ -13,6 +13,7 @@ import {
   computeColumnRange,
 } from '@/models/FilterModel/impl/filterTreeImpl'
 import { toNumericBounds } from '@/models/FilterModel/impl/predicates'
+import { findColumnByName } from '@/models/TableModel/impl/columnNames'
 import type { Table } from '@/models/TableModel/Table'
 import { ValueTypeName } from '@/models/TableModel/ValueTypeName'
 
@@ -58,17 +59,32 @@ export const ColumnConditionEditor = ({
   onChange,
 }: ColumnConditionEditorProps): JSX.Element => {
   const { columnName, target } = node
+  // Column names match ignoring case (#951): a condition written against
+  // another spelling shows the column this network has
+  const resolvedName =
+    columnName === null
+      ? null
+      : (findColumnByName(
+          target === ColumnFilterTarget.EDGES
+            ? edgeTable.columns
+            : nodeTable.columns,
+          columnName,
+        )?.name ??
+        (target === ColumnFilterTarget.NODES_AND_EDGES
+          ? findColumnByName(edgeTable.columns, columnName)?.name
+          : undefined) ??
+        columnName)
   const options: ColumnOption[] = useMemo(() => {
     const listed = listColumnOptions(nodeTable, edgeTable)
     // An imported condition on both tables: listed so it stays visible
     const both =
-      target === ColumnFilterTarget.NODES_AND_EDGES && columnName !== null
-        ? bothTablesOption(columnName, nodeTable, edgeTable)
+      target === ColumnFilterTarget.NODES_AND_EDGES && resolvedName !== null
+        ? bothTablesOption(resolvedName, nodeTable, edgeTable)
         : undefined
     return both === undefined ? listed : [both, ...listed]
-  }, [nodeTable, edgeTable, target, columnName])
+  }, [nodeTable, edgeTable, target, resolvedName])
   const selectedKey =
-    columnName === null ? NO_COLUMN : columnOptionKey(target, columnName)
+    resolvedName === null ? NO_COLUMN : columnOptionKey(target, resolvedName)
   const selected: ColumnOption | undefined = options.find(
     (option) => option.key === selectedKey,
   )
@@ -81,12 +97,21 @@ export const ColumnConditionEditor = ({
       case ColumnFilterTarget.EDGES:
         return computeColumnRange(edgeTable, name)
       default:
+        // Each table under its own spelling, as evaluation reads it
         return mergeRanges(
-          computeColumnRange(nodeTable, name),
-          computeColumnRange(edgeTable, name),
+          computeColumnRange(
+            nodeTable,
+            findColumnByName(nodeTable.columns, columnName ?? name)?.name ??
+              name,
+          ),
+          computeColumnRange(
+            edgeTable,
+            findColumnByName(edgeTable.columns, columnName ?? name)?.name ??
+              name,
+          ),
         )
     }
-  }, [selected, nodeTable, edgeTable])
+  }, [selected, nodeTable, edgeTable, columnName])
 
   const pickColumn = (key: string): void => {
     const option = options.find((candidate) => candidate.key === key)

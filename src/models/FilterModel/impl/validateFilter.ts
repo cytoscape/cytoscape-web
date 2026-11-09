@@ -1,3 +1,4 @@
+import { findColumnByName } from '../../TableModel/impl/columnNames'
 import type { Table } from '../../TableModel/Table'
 import {
   ColumnFilterNode,
@@ -76,8 +77,9 @@ const validateColumn = (
   }
   const isNode = node.target === ColumnFilterTarget.NODES
   const tableLabel = isNode ? 'Node' : 'Edge'
-  const column = (isNode ? nodeTable : edgeTable).columns.find(
-    (candidate) => candidate.name === columnName,
+  const column = findColumnByName(
+    (isNode ? nodeTable : edgeTable).columns,
+    columnName,
   )
   if (column === undefined) {
     return [

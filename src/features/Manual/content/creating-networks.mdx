@@ -209,6 +209,11 @@ columns must be String, Integer or Long integer.
 **Select All** marks every column for import. **Select None** marks every
 column Not imported.
 
+Column names are compared ignoring case, as in Cytoscape Desktop, so `Name`
+and `name` become one column. The first keeps its spelling and type, and the
+last value in each row wins. If the types differ and a value would be written,
+the import stops and nothing is created. A `.cx2` file merges the same way.
+
 ### Import a List of Nodes Without Edges
 
 Assign only a Source node (or only a Target node) column. The network

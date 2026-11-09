@@ -154,3 +154,9 @@ describe('validateFilter', () => {
     ])
   })
 })
+
+describe('column names that differ only by case (#951)', () => {
+  it('does not report a case variant of an existing column as missing', () => {
+    expect(messagesOf(column({ columnName: 'NAME' }))).toEqual([])
+  })
+})

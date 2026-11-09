@@ -109,3 +109,33 @@ describe('ColumnConditionEditor: imported conditions on both tables', () => {
     )
   })
 })
+
+describe('ColumnConditionEditor: names that differ only by case (#951)', () => {
+  it('reads each table under its own spelling for a nodes+edges range', () => {
+    const edges: Table = {
+      id: 'net',
+      columns: [{ name: 'SCORE', type: 'double' }],
+      rows: new Map([
+        ['e1', { SCORE: 100 }],
+        ['e2', { SCORE: 200 }],
+      ]),
+    }
+    render(
+      <ColumnConditionEditor
+        node={{
+          ...scoreCondition(FilterPredicate.BETWEEN, [1, 200]),
+          columnName: 'SCORE',
+          target: 'nodes+edges',
+        }}
+        nodeTable={nodeTable}
+        edgeTable={edges}
+        testId="c"
+        onChange={vi.fn()}
+      />,
+    )
+
+    const [low] = screen.getAllByRole('slider')
+    expect(low.getAttribute('min')).toBe('1')
+    expect(low.getAttribute('max')).toBe('200')
+  })
+})

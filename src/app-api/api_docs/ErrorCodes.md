@@ -92,8 +92,9 @@ Same as GL1, for edges.
 **Severity:** error
 **Returned by:** `createColumn`, `renameColumn`, `importTableFromTsv`
 
-A column named `"id"` was requested for a node table. `id` is reserved for the
-element identity and forbidden as a column name. `importTableFromTsv` validates
+A column named `"id"`, in any letter case, was requested for a node table. `id`
+is reserved for the element identity and forbidden as a column name, including
+as a case-only rename of an imported `id` column. `importTableFromTsv` validates
 all new column names up front, so a TSV that would create an `"id"` column fails
 here before any column is created.
 
@@ -133,7 +134,7 @@ reused as an attribute column.
 
 **Severity:** error
 **Returned by:** `setValue`, `setValues`, `editRows`, `applyValueToElements`,
-`createColumn`
+`createColumn`, `importTableFromTsv`
 
 A cell value did not match its column's declared type. Checked strictly — no
 coercion (e.g. `1.5` is rejected for an `integer` column). For `createColumn`,
@@ -141,8 +142,11 @@ the `defaultValue` is validated against the column's declared `dataType` under
 the same rule. Writes to _undeclared_ columns pass through unchecked
 (declaration policy is a separate, not-yet-implemented concern).
 
-Note `importTableFromTsv` does **not** raise A1: unparseable cells are skipped
-and reported in its `skippedCells` result instead of failing the import.
+`importTableFromTsv` raises A1 in one case only: a parsed value in a TSV column
+annotated with another type than the column it writes to (the existing column
+of that name, ignoring case, or the first header of that name). Nothing is
+changed then. Unparseable cells are not conflicts: they are skipped and
+reported in its `skippedCells` result instead of failing the import.
 
 **CX2 spec:** `cx2-validation-requirements#A1`.
 
@@ -151,8 +155,10 @@ and reported in its `skippedCells` result instead of failing the import.
 **Severity:** error
 **Returned by:** `createColumn`, `renameColumn`
 
-The requested column name is already declared on the table. Renaming a column
-to its own current name is treated as a no-op, not a collision.
+The requested column name is already declared on the table. Names are compared
+ignoring case, as in Cytoscape Desktop, so `NAME` collides with `name`. Renaming
+a column to its own current name is treated as a no-op, not a collision, and
+changing only the case of its own name is allowed.
 
 **CX2 spec:** `cx2-library-design-requirements#AC6`.
 
@@ -404,7 +410,9 @@ The specified resource ID is not registered by this app in the given slot.
 **Severity:** error
 **Returned by:** `createNetworkFromCx2`
 
-The input document failed `validateCX2()`'s structural validation. The message
+The input document failed `validateCX2()`'s structural validation, or a value
+would be written to a column merged by name of another declared type (the
+message names both columns). The message
 is the validator's own aggregated error text — `validateCX2()` currently
 returns one combined message across all validation phases (structure,
 metadata, referential integrity, attributes), not a per-rule diagnostic list,

@@ -23,7 +23,17 @@ import {
   parseCyWebVisualStylesAspect,
 } from './converters'
 import { getOptionalAspects } from './extractor'
+import { mergeDuplicateColumns } from './mergeDuplicateColumns'
 import { validateCX2 } from './validator'
+
+export interface Cx2ConversionOptions {
+  /**
+   * Keep columns whose names differ only by case instead of merging them. For
+   * a network that is already saved (on NDEx, or copied from the workspace):
+   * those are left as they are (#951).
+   */
+  readonly keepDuplicateColumns?: boolean
+}
 
 /**
  * Create network data from CX2 format
@@ -36,13 +46,25 @@ import { validateCX2 } from './validator'
  * For external/untrusted CX2 data, use `getCyNetworkFromCx2` instead, which validates before conversion.
  *
  * @param networkId - Unique identifier for the network
- * @param cxData - CX2 data object (assumed to be valid)
+ * Columns whose names differ only by case are merged as Cytoscape Desktop
+ * does, unless `options.keepDuplicateColumns` is set.
+ *
+ * @param networkId - Unique identifier for the network
+ * @param cxInput - CX2 data object (assumed to be valid)
+ * @param options - Conversion options
  * @returns CyNetwork object with all network data
+ * @throws ColumnTypeConflictError when a value would be written to a merged
+ *   column of another declared type
  */
 export const createCyNetworkFromCx2 = (
   networkId: string,
-  cxData: Cx2,
+  cxInput: Cx2,
+  options?: Cx2ConversionOptions,
 ): CyNetwork => {
+  const cxData: Cx2 =
+    options?.keepDuplicateColumns === true
+      ? cxInput
+      : mergeDuplicateColumns(cxInput)
   const network: Network = createNetworkFromCx(networkId, cxData)
   const [nodeTable, edgeTable]: [Table, Table] = createTablesFromCx(
     networkId,
@@ -103,6 +125,7 @@ export const createCyNetworkFromCx2 = (
  *
  * @param networkId - Unique identifier for the network
  * @param cxData - CX2 data object to validate and convert
+ * @param options - Conversion options
  * @returns CyNetwork object with all network data
  * @throws Error if CX2 data validation fails
  *
@@ -120,6 +143,7 @@ export const createCyNetworkFromCx2 = (
 export const getCyNetworkFromCx2 = (
   networkId: string,
   cxData: Cx2,
+  options?: Cx2ConversionOptions,
 ): CyNetwork => {
   const validationResult = validateCX2(cxData)
   if (!validationResult.isValid) {
@@ -128,5 +152,5 @@ export const getCyNetworkFromCx2 = (
         'Invalid CX2 network: Unknown validation error',
     )
   }
-  return createCyNetworkFromCx2(networkId, cxData)
+  return createCyNetworkFromCx2(networkId, cxData, options)
 }

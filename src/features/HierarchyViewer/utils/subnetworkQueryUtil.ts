@@ -144,7 +144,10 @@ const fetchNdexSubnetwork = async (
           ndexUrl,
         )
     // getCyNetworkFromCx2 validates the CX2 data before processing
-    return getCyNetworkFromCx2(interactionNetworkId, cxData)
+    // A network saved on NDEx is left as it is, duplicates included (#951)
+    return getCyNetworkFromCx2(interactionNetworkId, cxData, {
+      keepDuplicateColumns: true,
+    })
   } catch (error) {
     const fetchMethod = interactionNetworkUuidExists ? 'uuid' : 'interconnect'
     const errorMessage =

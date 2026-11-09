@@ -92,7 +92,10 @@ export const useCloneNetwork = () => {
       )
 
       const newNetworkId = uuidv4()
-      const clonedCyNetwork = getCyNetworkFromCx2(newNetworkId, cx)
+      // A copy of a saved network keeps its columns as they are (#951)
+      const clonedCyNetwork = getCyNetworkFromCx2(newNetworkId, cx, {
+        keepDuplicateColumns: true,
+      })
       const clonedSummary = buildClonedNetworkSummary(summary, newNetworkId)
 
       // Register the clone first, then add it to the workspace and navigate to it.

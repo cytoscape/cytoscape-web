@@ -39,6 +39,13 @@ if (!validationResult.isValid) {
 }
 ```
 
+Validation runs before conversion, and conversion merges attribute declarations
+whose names differ only by case, as Cytoscape Desktop does
+(`src/models/CxModel/impl/mergeDuplicateColumns.ts`, #951). A value that would
+be written to a merged column of another declared type fails the conversion with
+`ColumnTypeConflictError`. Networks loaded from NDEx or copied from the
+workspace are saved networks and stay as they are (`keepDuplicateColumns`).
+
 The `validateCX2` function returns a `ValidationResult` object with:
 - `isValid`: Boolean indicating if the data is valid
 - `errors`: Array of validation errors

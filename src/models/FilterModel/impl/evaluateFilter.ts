@@ -1,5 +1,6 @@
 import type { IdType } from '../../IdType'
 import type { Network } from '../../NetworkModel/Network'
+import { normalizeColumnName } from '../../TableModel/impl/columnNames'
 import type { Table } from '../../TableModel/Table'
 import type { ValueTypeName } from '../../TableModel/ValueTypeName'
 import { DisplayMode } from '../DisplayMode'
@@ -43,6 +44,9 @@ export interface FilterContext {
   // Column types by table, from the table's column list
   readonly nodeColumnTypes: ReadonlyMap<string, ValueTypeName>
   readonly edgeColumnTypes: ReadonlyMap<string, ValueTypeName>
+  // Names ignoring case, for a condition on a merged-away spelling (#951)
+  readonly nodeColumnNames: ReadonlyMap<string, string>
+  readonly edgeColumnNames: ReadonlyMap<string, string>
   // Built on first use by a degree or topology condition
   adjacency?: Map<IdType, NodeEdges>
   // Compiled REGEX patterns, by condition
@@ -54,6 +58,16 @@ export interface FilterContext {
 const columnTypesOf = (table: Table): Map<string, ValueTypeName> =>
   new Map(table.columns.map((column) => [column.name, column.type]))
 
+// A table saved with duplicates keeps its first spelling of a name
+const columnNamesOf = (table: Table): Map<string, string> => {
+  const names = new Map<string, string>()
+  table.columns.forEach((column) => {
+    const normalized = normalizeColumnName(column.name)
+    if (!names.has(normalized)) names.set(normalized, column.name)
+  })
+  return names
+}
+
 export const createFilterContext = (
   network: Network,
   nodeTable: Table,
@@ -64,6 +78,8 @@ export const createFilterContext = (
   edgeTable,
   nodeColumnTypes: columnTypesOf(nodeTable),
   edgeColumnTypes: columnTypesOf(edgeTable),
+  nodeColumnNames: columnNamesOf(nodeTable),
+  edgeColumnNames: columnNamesOf(edgeTable),
   regexes: new WeakMap(),
   neighbourResults: new WeakMap(),
 })
@@ -183,12 +199,17 @@ const acceptsColumn = (
   if (!appliesTo(node, kind)) return false
 
   const isNode = kind === FilterElementKind.NODE
-  const columnType = (isNode ? ctx.nodeColumnTypes : ctx.edgeColumnTypes).get(
-    columnName,
-  )
+  const columnTypes = isNode ? ctx.nodeColumnTypes : ctx.edgeColumnTypes
+  const resolvedName = columnTypes.has(columnName)
+    ? columnName
+    : (isNode ? ctx.nodeColumnNames : ctx.edgeColumnNames).get(
+        normalizeColumnName(columnName),
+      )
+  if (resolvedName === undefined) return false
+  const columnType = columnTypes.get(resolvedName)
   if (columnType === undefined) return false
   const table = isNode ? ctx.nodeTable : ctx.edgeTable
-  const value = cellValue(table, id, columnName)
+  const value = cellValue(table, id, resolvedName)
   const isList = columnType.startsWith('list_of_')
 
   // A criterion of the wrong kind for the column rejects every element.

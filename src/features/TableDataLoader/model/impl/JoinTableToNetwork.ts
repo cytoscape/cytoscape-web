@@ -2,6 +2,13 @@ import cloneDeep from 'lodash/cloneDeep'
 import type { ParsedRow } from '@/features/TableDataLoader/model/ParsedRow'
 
 import { Column, Table, ValueTypeName } from '../../../../models/TableModel'
+import {
+  assertSameColumnType,
+  columnNameIsTaken,
+  findColumnByName,
+  mergeDeclaredColumns,
+  setCellValue,
+} from '../../../../models/TableModel/impl/columnNames'
 import { ColumnAppendState } from '../ColumnAppendState'
 import { ColumnAppendType } from '../ColumnAppendType'
 import { DelimiterType } from '../DelimiterType'
@@ -177,8 +184,17 @@ export const findValidRowsToJoin = (
   return rowsToJoin
 }
 
-// TODO handle the case when the columns to append are not unique
-// (i.e. shared between the network and the tabular data)
+/**
+ * Append the file's attribute columns to a table.
+ *
+ * Column names match ignoring case, as in Cytoscape Desktop. A file column
+ * spelled like an existing column writes to it, and file columns of one new
+ * name share the first one's spelling and type. In such a column an empty
+ * cell means "no value", and the last value in file order wins.
+ *
+ * @throws ColumnTypeConflictError when a value would be written to a column
+ *   of another declared type. The table passed in is not changed.
+ */
 export const joinRowsToTable = (
   table: Table,
   rows: ParsedRow[],
@@ -202,9 +218,20 @@ export const joinRowsToTable = (
     rows: new Map(table.rows),
   }
 
-  newTable.columns.push(
+  const columnMerge = mergeDeclaredColumns([
+    ...table.columns,
     ...columnsToAppend.map((c) => ({ name: c.name, type: c.dataType })),
+  ])
+  newTable.columns.push(
+    ...columnMerge.columns.filter(
+      (c) => !columnNameIsTaken(table.columns, c.name),
+    ),
   )
+  // The exact spelling first, so a table saved with duplicates keeps writing
+  // to the column the file names
+  const targetColumnOf = (c: ColumnAppendState): Column =>
+    (findColumnByName(table.columns, c.name) ??
+      columnMerge.keptColumn(c.name)) as Column
 
   const keyValues: Record<string, { rowId: number; value: ParsedRow }[]> = {}
   rows.forEach((r, i) => {
@@ -226,7 +253,13 @@ export const joinRowsToTable = (
     if (keyValues[rowKey] !== undefined) {
       keyValues[rowKey].forEach((v) => {
         columnsToAppend.forEach((c) => {
-          newRow[c.name] = v.value[c.name]
+          const value = v.value[c.name]
+          const target = targetColumnOf(c)
+          if (target.name !== c.name || columnMerge.isMerged(c.name)) {
+            if (value === undefined || value === null || value === '') return
+            assertSameColumnType(target, { name: c.name, type: c.dataType })
+          }
+          setCellValue(newRow, target.name, value)
         })
       })
     }

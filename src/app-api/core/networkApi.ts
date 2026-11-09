@@ -16,6 +16,7 @@ import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { Cx2 } from '../../models/CxModel/Cx2'
 import { createCyNetworkFromCx2 } from '../../models/CxModel/impl'
+import { ColumnTypeConflictError } from '../../models/TableModel/impl/columnNames'
 import { validateCX2 } from '../../models/CxModel/impl/validator'
 import { CyNetwork } from '../../models/CyNetworkModel'
 import { IdType } from '../../models/IdType'
@@ -455,6 +456,9 @@ export const networkApi: NetworkApi = {
 
       return ok({ networkId: network.id, cyNetwork })
     } catch (e) {
+      if (e instanceof ColumnTypeConflictError) {
+        return fail(AppCodes.INVALID_CX2, e.message)
+      }
       return fail(AppCodes.OPERATION_FAILED, String(e))
     }
   },

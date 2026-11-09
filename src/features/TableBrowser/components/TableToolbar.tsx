@@ -13,6 +13,7 @@ import {
 } from '../../../models/TableModel/impl/valueTypeImpl'
 import { useJoinTableToNetworkStore } from '../../TableDataLoader/store/joinTableToNetworkStore'
 import { VisualProperty } from '../../../models/VisualStyleModel'
+import { columnNameProblem } from '../utils/columnNameProblem'
 
 import {
   CreateTableColumnForm,
@@ -401,12 +402,13 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
             newColumnName: string,
             mappingUpdateType?: 'delete' | 'rename',
           ) => {
-            if (
-              currentTable?.columns?.find((c: any) => c.name === newColumnName)
-            ) {
-              setColumnFormError(
-                `${newColumnName} already exists. Please enter a new unique column name`,
-              )
+            const nameProblem = columnNameProblem(
+              currentTable?.columns ?? [],
+              newColumnName,
+              selectedColumn.id,
+            )
+            if (nameProblem !== undefined) {
+              setColumnFormError(nameProblem)
             } else {
               postEdit(
                 UndoCommandType.RENAME_COLUMN,
@@ -736,13 +738,13 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
           dataType: ValueTypeName,
           value: string,
         ) => {
-          const columnNameSet = new Set(columns?.map((c: any) => c.name))
-          const columnNameAlreadyExists = columnNameSet.has(columnName)
+          const nameProblem = columnNameProblem(
+            currentTable?.columns ?? [],
+            columnName,
+          )
           const valueIsValid = serializedStringIsValid(dataType, value)
-          if (columnNameAlreadyExists) {
-            setCreateColumnFormError(
-              `${columnName} already exists. Please enter a new unique column name`,
-            )
+          if (nameProblem !== undefined) {
+            setCreateColumnFormError(nameProblem)
           } else {
             if (!valueIsValid) {
               setCreateColumnFormError(

@@ -17,6 +17,10 @@ import {
   ValueTypeName,
 } from '../../models/TableModel'
 import {
+  columnNameIsTaken,
+  isIdColumnName,
+} from '../../models/TableModel/impl/columnNames'
+import {
   EdgeArrowShapeType,
   EdgeLineType,
   FontType,
@@ -71,8 +75,8 @@ const PROTOTYPE_POLLUTION_KEYS = new Set([
 ])
 
 /**
- * Column names must be non-empty, must not shadow the element id
- * (CX2 FK1 for nodes / FK2 for edges), must not collide with the edge
+ * Column names must be non-empty, must not shadow the element id in any
+ * letter case (CX2 FK1 for nodes / FK2 for edges), must not collide with the edge
  * source/target structural keys (A8), and must not be prototype-pollution
  * vectors. Node-table "reserved" names like `name` stay allowed — they
  * are warning-level in CX2 (AC3) and legitimately used throughout
@@ -85,7 +89,7 @@ export function validateColumnName(
   if (columnName.trim() === '') {
     return fail(AppCodes.INVALID_INPUT, 'Column name must not be empty')
   }
-  if (columnName === 'id') {
+  if (isIdColumnName(columnName)) {
     return fail(
       tableType === 'node'
         ? TableCodes.NODE_ID_COLUMN_FORBIDDEN
@@ -539,13 +543,17 @@ export function validateValuesMatchColumnTypes(
 
 /**
  * A new or renamed column must not collide with an already-declared
- * column in the same table (CX2 AC6 / AI1).
+ * column in the same table, ignoring case (CX2 AC6 / AI1).
+ *
+ * @param ownName The column being renamed: changing only the case of its own
+ *   name stays allowed
  */
 export function validateColumnNameAvailable(
   columns: Array<{ name: string }>,
   columnName: string,
+  ownName?: string,
 ): ApiFailure | undefined {
-  if (columns.some((c) => c.name === columnName)) {
+  if (columnNameIsTaken(columns, columnName, ownName)) {
     return fail(TableCodes.COLUMN_ALREADY_EXISTS, columnName)
   }
   return undefined

@@ -148,7 +148,7 @@ the **Create New Column** dialog, enter:
 
 | Field | Value |
 | --- | --- |
-| Column Name | Must be unique in the table. |
+| Column Name | Must be unique in the table, ignoring case: `NAME` is the same as `name`. `id` is reserved, in any case. |
 | Data type | One of the types listed above. |
 | Default value | The value every row starts with. It must match the data type. For a list type, click the field to open the **Edit list** dialog. |
 
@@ -161,7 +161,7 @@ Click a column header to select the column. The toolbar then shows:
 | Button | What it does |
 | --- | --- |
 | Duplicate | Adds a copy of the column next to it. The copy's name is the original name followed by `_copy_` and a number. |
-| Edit Column Name | Opens the **Rename Column** dialog. The new name must be unique in the table. The data type cannot be changed. |
+| Edit Column Name | Opens the **Rename Column** dialog. The new name must be unique in the table, ignoring case, and cannot be `id`. Changing only the case of a column's own name is allowed. The data type cannot be changed. |
 | Delete Column | Removes the column and its values from the network. |
 
 When a style mapping reads the column, the rename and delete dialogs list the
@@ -247,6 +247,13 @@ value fits its data type. Hover over it to see why.
 
 When several rows of the file share a key, the last of them supplies the
 values. An import cannot be undone with **Edit → Undo**.
+
+Column names are compared ignoring case, as in Cytoscape Desktop. A file
+column spelled like an existing column, such as `Name` for `name`, writes to
+that column and no second column is created. The same happens for two file
+columns of one name: the first keeps its spelling and type, and the last value
+in the row wins. An empty cell never erases a value. If the column types differ
+and a value would be written, the import stops and nothing changes.
 
 ### Advanced Settings
 

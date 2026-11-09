@@ -19,6 +19,7 @@ import {
   ValueTypeName,
 } from '../../models/TableModel'
 import { Column } from '../../models/TableModel/Column'
+import { findColumnByName } from '../../models/TableModel/impl/columnNames'
 import { VisualPropertyName } from '../../models/VisualStyleModel'
 import {
   ColumnConfiguration,
@@ -503,6 +504,7 @@ export const tableApi: TableApi = {
       const duplicateName = validateColumnNameAvailable(
         tableRecord[tableKey(tableType)]?.columns ?? [],
         newName,
+        currentName,
       )
       if (duplicateName) return duplicateName
 
@@ -872,9 +874,7 @@ export const tableApi: TableApi = {
         return fail(AppCodes.NETWORK_NOT_FOUND, networkId)
       }
       const table = tableRecord[tableKey(tableType)]
-      const existingColumns = new Map(
-        (table?.columns ?? []).map((c: Column) => [c.name, c.type]),
-      )
+      const existingColumns: Column[] = table?.columns ?? []
 
       const lines = tsvText.split('\n').filter((l) => l.trim() !== '')
       if (lines.length < 2) {
@@ -887,7 +887,8 @@ export const tableApi: TableApi = {
       // Parse header — detect optional type annotations (name:type)
       const headerFields = lines[0].split('\t')
       const colNames: string[] = []
-      const colTypes: Map<string, ValueTypeName> = new Map()
+      // By header position: the same name can appear twice with two types
+      const colTypeAt: Array<ValueTypeName | undefined> = []
       for (const field of headerFields) {
         const colonIdx = field.lastIndexOf(':')
         if (colonIdx > 0) {
@@ -895,11 +896,12 @@ export const tableApi: TableApi = {
           const typePart = field.slice(colonIdx + 1)
           if (isValidTypeName(typePart)) {
             colNames.push(name)
-            colTypes.set(name, typePart as ValueTypeName)
+            colTypeAt.push(typePart as ValueTypeName)
             continue
           }
         }
         colNames.push(field)
+        colTypeAt.push(undefined)
       }
 
       const keyColumn = options?.keyColumn ?? 'id'
@@ -923,35 +925,40 @@ export const tableApi: TableApi = {
       for (const colName of colNames) {
         if (colName === keyColumn) continue
         if (isStructuralColumn(colName)) continue
-        if (existingColumns.has(colName)) continue
+        if (findColumnByName(existingColumns, colName) !== undefined) continue
         const invalidName = validateColumnName(colName, tableType)
         if (invalidName) return invalidName
       }
 
-      // Create any missing columns
-      const newColumns: string[] = []
-      const storeState = useTableStore.getState()
-      for (const colName of colNames) {
-        if (colName === keyColumn) continue
-        if (isStructuralColumn(colName)) continue
-        if (!existingColumns.has(colName)) {
-          const inferredType =
-            colTypes.get(colName) ?? inferTypeFromData(lines, colNames, colName)
-          storeState.createColumn(
-            networkId,
-            tableType,
-            colName,
-            inferredType,
-            defaultForType(inferredType),
-          )
-          // Record the type so cell values parse as the column type
-          // (previously fell back to string for inferred columns)
-          colTypes.set(colName, inferredType)
-          newColumns.push(colName)
-          // Sync to Table Browser display config
-          syncColumnToTableDisplayConfig(networkId, tableType, colName)
+      // The column each file column writes to. Names match ignoring case, as
+      // in Cytoscape Desktop: a file column writes to the existing column of
+      // that name, and new file columns of one name share the first one's
+      // spelling and type. Nothing is created yet, so that a type conflict
+      // found in the cells below leaves the table untouched.
+      const newColumnsPlanned: Column[] = []
+      // The column each header position writes to
+      const targetAt: Array<Column | undefined> = []
+      const writersOf = new Map<string, number>()
+      colNames.forEach((colName, j) => {
+        if (colName === keyColumn || isStructuralColumn(colName)) return
+        let target =
+          findColumnByName(existingColumns, colName) ??
+          findColumnByName(newColumnsPlanned, colName)
+        if (target === undefined) {
+          target = {
+            name: colName,
+            type: colTypeAt[j] ?? inferTypeFromData(lines, colNames, colName),
+          }
+          newColumnsPlanned.push(target)
         }
-      }
+        targetAt[j] = target
+        writersOf.set(target.name, (writersOf.get(target.name) ?? 0) + 1)
+      })
+
+      // Whether several header columns write to this column: an empty cell
+      // then means "no value", so it cannot erase another one's value
+      const isMergedSpelling = (colName: string, target: Column): boolean =>
+        colName !== target.name || (writersOf.get(target.name) ?? 0) > 1
 
       // Resolve TSV key values to element IDs so imports can never
       // create orphaned rows: 'id' keys must exist in the network;
@@ -1010,12 +1017,18 @@ export const tableApi: TableApi = {
           const colName = colNames[j]
           if (colName === keyColumn) continue
           if (isStructuralColumn(colName)) continue
+          const target = targetAt[j]
+          if (target === undefined) continue
           const rawValue = values[j] ?? ''
-          const colType = (colTypes.get(colName) ??
-            existingColumns.get(colName) ??
-            'string') as ValueTypeName
+          const colType = colTypeAt[j] ?? target.type
           // Empty cells mean "no value provided" — leave the attribute alone
-          if (rawValue === '' && colType !== ValueTypeName.String) continue
+          if (
+            rawValue === '' &&
+            (colType !== ValueTypeName.String ||
+              isMergedSpelling(colName, target))
+          ) {
+            continue
+          }
           const parsedValue = parseTsvValue(rawValue, colType)
           if (parsedValue === undefined) {
             // Unparseable for the column type — skip and report rather
@@ -1028,14 +1041,43 @@ export const tableApi: TableApi = {
             })
             continue
           }
+          // A parsed value of a header column annotated with another type
+          // than the column it writes to fails the import, as in Cytoscape
+          // Desktop: whatever its spelling, and whether or not other header
+          // columns write there too. A value that does not parse was
+          // reported above.
+          if (colType !== target.type) {
+            return fail(
+              TableCodes.VALUE_TYPE_MISMATCH,
+              target.name,
+              target.type,
+              JSON.stringify(parsedValue),
+            )
+          }
           for (const targetId of targetIds) {
             cellEdits.push({
               row: targetId,
-              column: colName,
+              column: target.name,
               value: parsedValue,
             })
           }
         }
+      }
+
+      // Everything is known to be valid: only now change the table
+      const newColumns: string[] = []
+      const storeState = useTableStore.getState()
+      for (const column of newColumnsPlanned) {
+        storeState.createColumn(
+          networkId,
+          tableType,
+          column.name,
+          column.type,
+          defaultForType(column.type),
+        )
+        newColumns.push(column.name)
+        // Sync to Table Browser display config
+        syncColumnToTableDisplayConfig(networkId, tableType, column.name)
       }
 
       storeState.setValues(networkId, tableType, cellEdits)

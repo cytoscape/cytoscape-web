@@ -3,6 +3,7 @@ import { Column, Table } from '..'
 import { AttributeName } from '../AttributeName'
 import { ValueType } from '../ValueType'
 import { ValueTypeName } from '../ValueTypeName'
+import { columnNameIsTaken } from './columnNames'
 
 export const createTable = (
   id: IdType,
@@ -160,7 +161,9 @@ export const moveColumn = (
 }
 
 /**
- * Rename a column
+ * Rename a column. Names are compared ignoring case: a name another column
+ * already has leaves the table unchanged. Changing only the case of the
+ * column's own name is allowed.
  */
 export const setColumnName = (
   table: Table,
@@ -171,6 +174,9 @@ export const setColumnName = (
     (c) => c.name === currentColumnName,
   )
   if (columnIndex === -1) {
+    return table
+  }
+  if (columnNameIsTaken(table.columns, newColumnName, currentColumnName)) {
     return table
   }
 
@@ -262,7 +268,9 @@ export const deleteColumn = (
 }
 
 /**
- * Create a new column at the beginning
+ * Create a new column at the beginning. Names are compared ignoring case: a
+ * name a column already has leaves the table unchanged, so the existing
+ * column's values are never overwritten.
  */
 export const createColumn = (
   table: Table,
@@ -270,6 +278,10 @@ export const createColumn = (
   dataType: ValueTypeName,
   value: ValueType,
 ): Table => {
+  if (columnNameIsTaken(table.columns, columnName)) {
+    return table
+  }
+
   const newColumn: Column = {
     name: columnName,
     type: dataType,

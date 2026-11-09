@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid'
 
 import { putNetworkSummaryToDb } from '../../../data/db'
 import { useUrlNavigation } from '../../../data/hooks/navigation/useUrlNavigation'
+import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useOpaqueAspectStore } from '../../../data/hooks/stores/OpaqueAspectStore'
@@ -21,12 +22,14 @@ import {
 } from '../../../models/CxModel/impl/extractor'
 import { validateCX2 } from '../../../models/CxModel/impl/validator'
 import { IdType } from '../../../models/IdType'
+import { MessageSeverity } from '../../../models/MessageModel'
 import {
   NetworkProperty,
   Visibility,
 } from '../../../models/NetworkSummaryModel'
 import { createNetworkSummary } from '../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { ValueType, ValueTypeName } from '../../../models/TableModel'
+import { ColumnTypeConflictError } from '../../../models/TableModel/impl/columnNames'
 import { generateUniqueName } from '../../../utils/generateUniqueName'
 import { ActionHandlerProps } from './serviceResultHandlerManager'
 
@@ -52,6 +55,7 @@ export const useAddNetworks = (): (({
   )
   const { navigateToNetwork } = useUrlNavigation()
   const workspace = useWorkspaceStore((state) => state.workspace)
+  const addMessage = useMessageStore((state) => state.addMessage)
   const addNetworks = useCallback(
     async ({ responseObj }: ActionHandlerProps) => {
       if (!Array.isArray(responseObj)) {
@@ -140,6 +144,13 @@ export const useAddNetworks = (): (({
             validNetworkIds.push(localUuid)
           } catch (error) {
             logApp.error(`[${addNetworks.name}]: Error adding network:`, error)
+            if (error instanceof ColumnTypeConflictError) {
+              addMessage({
+                duration: 10000,
+                message: `Failed to add the network: ${error.message}`,
+                severity: MessageSeverity.ERROR,
+              })
+            }
           }
         } else {
           logApp.warn(
@@ -161,6 +172,7 @@ export const useAddNetworks = (): (({
       }
     },
     [
+      addMessage,
       summaries,
       addSummaries,
       addNetworksToWorkspace,
