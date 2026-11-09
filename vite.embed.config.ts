@@ -26,11 +26,12 @@ import { ensureTrailingSlash } from './src/utils/baseUrl'
  */
 
 const base = ensureTrailingSlash(config.urlBaseName)
-const EMBED_ROUTE = new RegExp(`^${base}embed/[^/?#]+/?(\\?.*)?$`)
+// `/embed/<uuid>`, and `/embed` or `/embed/` for the page on embed URLs
+const EMBED_ROUTE = new RegExp(`^${base}embed(?:/[^/?#]*)?/?(\\?.*)?$`)
 
 /**
- * Serve embed.html for `/embed/<uuid>` in dev and preview, standing in for
- * the production server's route.
+ * Serve embed.html for `/embed/<uuid>` and `/embed/` in dev and preview,
+ * standing in for the production server's route.
  */
 function embedRoutePlugin(): Plugin {
   const rewrite = (

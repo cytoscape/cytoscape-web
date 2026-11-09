@@ -9,6 +9,13 @@ export interface EmbedSelection {
   networkViewTab?: number
 }
 
+/** Query parameters the embed reads, named as the full app's deep links name them. */
+export const EMBED_PARAMS = {
+  selectedNodes: 'selectednodes',
+  selectedSubnetworkNodes: 'selectedSubnetworkNodes',
+  networkViewTab: 'activeNetworkViewTab',
+} as const
+
 const readIds = (params: URLSearchParams, name: string): IdType[] =>
   (params.get(name) ?? '').split(/\s+/).filter((id) => id !== '')
 
@@ -20,10 +27,10 @@ const readIds = (params: URLSearchParams, name: string): IdType[] =>
  */
 export const readSelectionFromSearch = (search: string): EmbedSelection => {
   const params = new URLSearchParams(search)
-  const tab = Number.parseInt(params.get('activeNetworkViewTab') ?? '', 10)
+  const tab = Number.parseInt(params.get(EMBED_PARAMS.networkViewTab) ?? '', 10)
   return {
-    nodeIds: readIds(params, 'selectednodes'),
-    subnetworkNodeIds: readIds(params, 'selectedSubnetworkNodes'),
+    nodeIds: readIds(params, EMBED_PARAMS.selectedNodes),
+    subnetworkNodeIds: readIds(params, EMBED_PARAMS.selectedSubnetworkNodes),
     ...(Number.isInteger(tab) && tab >= 0 ? { networkViewTab: tab } : {}),
   }
 }

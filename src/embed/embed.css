@@ -342,3 +342,68 @@ body {
   border: 1px solid var(--embed-text-secondary);
   flex: 0 0 auto;
 }
+
+/* The page at /embed/ with no network: how embed URLs work */
+.embed-help {
+  height: 100%;
+  overflow: auto;
+  padding: 16px;
+  box-sizing: border-box;
+  background: var(--embed-subtle);
+}
+
+.embed-help-body {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 8px 24px 16px;
+  line-height: 1.5;
+}
+
+.embed-help h1 {
+  font-size: 1.25rem;
+}
+
+.embed-help h2 {
+  font-size: 1rem;
+  margin: 1.5em 0 0.5em;
+}
+
+.embed-help pre {
+  padding: 8px 12px;
+  background: var(--embed-subtle);
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.embed-help code {
+  font-size: 0.8125rem;
+}
+
+.embed-help table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.embed-help th,
+.embed-help td {
+  text-align: left;
+  vertical-align: top;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--embed-subtle);
+}
+
+.embed-help th {
+  color: var(--embed-text-secondary);
+  font-weight: 500;
+}
+
+.embed-help td:first-child {
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .embed-help td:first-child {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}

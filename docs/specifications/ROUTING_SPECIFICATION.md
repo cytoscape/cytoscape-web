@@ -21,6 +21,7 @@ This specification defines the routing behavior for the Cytoscape Web applicatio
 /:workspaceId/networks/:networkId → Network viewer
 /error                      → Error page (no AppShell)
 /manual/*                   → In-app user manual (no AppShell)
+/embed/:networkId           → Embeddable viewer (embed.html, a separate build)
 ```
 
 ### Route Parameters
@@ -156,6 +157,30 @@ ends on a page with no editor around it (#886).
   (`/manual/en/latest/Styles.html#anchor`, `/manual/Styles.html`) redirect to
   the matching page and keep the anchor.
 - Unknown paths show "Page not found" inside the manual.
+
+### 7. Embed Route (`/embed/:networkId`, `/embed/`)
+
+**Purpose**: The embeddable read-only viewer (`src/embed/`, #871).
+
+**Behavior**:
+
+- Served by `embed.html`, built by `vite.embed.config.ts`, not by the app's
+  router. Vite's dev and preview servers rewrite the route; a production
+  server needs the same rewrite before its fallback to `index.html`.
+- `networkId` is an NDEx UUID. The embed loads only public networks and
+  stores nothing.
+- `/embed/` with no UUID shows how embed URLs work and lists the
+  parameters below (`EmbedHelp.tsx`).
+- Reads three of the Network Route's parameters, with the same names and
+  formats, and ignores the rest (`readSelectionFromSearch.ts`):
+  - `selectednodes`: in a hierarchy, the first ID that is a subsystem opens
+    it, and the Cell View zooms to it.
+  - `selectedSubnetworkNodes`: selected in that subsystem's network. The
+    embed needs no `activeNetworkView`.
+  - `activeNetworkViewTab`: `0` Hierarchy, `1` Cell View (default).
+- **Open in Cytoscape Web** links to `/0/networks/:networkId` with the
+  current selection as `selectednodes`, `activeNetworkView`,
+  `selectedSubnetworkNodes` and `activeNetworkViewTab` (`fullAppUrl.ts`).
 
 ## Import Behavior
 

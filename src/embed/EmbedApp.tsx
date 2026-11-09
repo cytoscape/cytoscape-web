@@ -9,6 +9,7 @@ import {
   EmbedNetworkResult,
   loadEmbedNetwork,
 } from './loadEmbedNetwork'
+import { EmbedHelp } from './EmbedHelp'
 import { MessageView } from './MessageView'
 import { NetworkCanvas } from './NetworkCanvas'
 import { EmbedSelection } from './readSelectionFromSearch'
@@ -45,14 +46,7 @@ export const EmbedApp = ({ networkId, initialSelection }: EmbedAppProps) => {
     }
   }, [networkId])
 
-  if (networkId === undefined) {
-    return (
-      <MessageView
-        title="No network to show"
-        detail="The embed URL needs an NDEx network UUID: /embed/<uuid>."
-      />
-    )
-  }
+  if (networkId === undefined) return <EmbedHelp />
   switch (state.kind) {
     case 'loading':
       return <MessageView title="Loading network…" testId="embed-loading" />
