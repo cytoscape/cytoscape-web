@@ -1,9 +1,10 @@
 import 'dexie-observable'
 
-import Dexie, { IndexableType, Table as DxTable } from 'dexie'
+import Dexie, { DexieOptions, IndexableType, Table as DxTable } from 'dexie'
 
 import { logDb, registerDebugTool } from '../../debug'
-import { currentDbScope, dbNameFor } from './dbScope'
+import { currentDbScope, dbNameFor, isInMemoryScope } from './dbScope'
+import { loadInMemoryBackend } from './inMemoryBackend'
 import { getTabId } from '@/data/tabState/tabId'
 import { APP_DATA_GLOBAL_SCOPE, AppDataRow } from '@/models/AppDataModel'
 import { CyApp } from '../../models/AppModel/CyApp'
@@ -74,9 +75,15 @@ import {
   serializeWorkspaceFilter,
   WorkspaceFilterRow,
 } from './serialization/workspaceFilter'
-// `cyweb-db` for the editor, `cyweb-manual-db` for the in-app manual. Fixed
-// for the life of the document: see dbScope.ts.
+// `cyweb-db` for the editor, `cyweb-manual-db` for the in-app manual,
+// `cyweb-embed-db` for the embed. Fixed for the life of the document: see
+// dbScope.ts.
 export const DB_NAME: string = dbNameFor(currentDbScope())
+
+// Whether the database is held in memory (the embed scope). Its backend loads
+// asynchronously, so the instance is created in initializeDb instead of at
+// module load.
+const IN_MEMORY: boolean = isInMemoryScope(currentDbScope())
 
 // Current version of the DB (integer only).
 // If older version is found, the migration
@@ -271,8 +278,8 @@ class CyDB extends Dexie {
     AppliedWorkspaceFilter & { id: IdType }
   >
 
-  constructor(dbName: string) {
-    super(dbName)
+  constructor(dbName: string, options?: DexieOptions) {
+    super(dbName, options)
     this.version(currentVersion).stores(Keys)
 
     stampTransactionSource(this)
@@ -310,16 +317,30 @@ const observeValidation = <T>(
   return value
 }
 
-// Initialize the DB
+// Options every Dexie instance on DB_NAME is built with. Empty for a database
+// in the browser's IndexedDB; the in-memory backend once initializeDb loads it.
+let dexieOptions: DexieOptions = {}
+
+/** Options for any Dexie instance opened on DB_NAME (see startupOpen.ts). */
+export const getDexieOptions = (): DexieOptions => dexieOptions
+
+// Initialize the DB. In memory, initializeDb creates it once the backend has
+// loaded; nothing reads the database before that phase.
 let db: CyDB
-try {
-  db = new CyDB(DB_NAME)
-} catch (err) {
-  logDb.error('[initializeDb] Failed to create Dixie instance', err)
-  throw err
+if (!IN_MEMORY) {
+  try {
+    db = new CyDB(DB_NAME)
+  } catch (err) {
+    logDb.error('[initializeDb] Failed to create Dixie instance', err)
+    throw err
+  }
 }
 
 export const initializeDb = async (): Promise<void> => {
+  if (db === undefined) {
+    dexieOptions = await loadInMemoryBackend()
+    db = new CyDB(DB_NAME, dexieOptions)
+  }
   await db.open()
   logDb.info('[initializeDb] IndexedDB is opened')
 
@@ -446,7 +467,7 @@ const deleteDatabaseBounded = async (
 ): Promise<'deleted' | 'blocked'> => {
   // `addons: []` keeps dexie-observable off the throwaway deleter instance;
   // this is what Dexie's own static `delete()` does.
-  const deleter = new Dexie(DB_NAME, { addons: [] })
+  const deleter = new Dexie(DB_NAME, { ...dexieOptions, addons: [] })
   const onBlocked = (): void => {
     logDb.warn(
       `[DeleteDB] ${DB_NAME} delete is blocked: another connection still has ` +
@@ -487,7 +508,7 @@ const deleteDatabaseBounded = async (
 /** Point the module-level `db` at a fresh, open instance. */
 const reopenDb = async (): Promise<boolean> => {
   try {
-    db = new CyDB(DB_NAME)
+    db = new CyDB(DB_NAME, dexieOptions)
     await db.open()
     logDb.info(`[DeleteDB] ${DB_NAME} is opened and ready to use`)
     return true

@@ -37,6 +37,13 @@ counter-example to the contract above.
 | `intents`   | `steps/runInstallIntents.ts`                                    | no      | —                      |
 | `route`     | `steps/runAppShellBoot.ts`                                      | no      | —                      |
 
+The embed route (`/embed/*`) does not mount `AppShell`, so the last six
+phases never run there. `runtime` skips the tab manager, `auth` is not
+started (the frame stays signed out), analytics never loads, and
+`database` opens an in-memory database. The embed then runs
+`steps/runEmbedBoot.ts`: the NDEx summary, the size check, and a workspace
+holding only that network (`EMBED_MODE_SPECIFICATION.md`).
+
 Adding a stage means adding a row and a `runPhase` call — not following `auth`'s
 example, which exists only because it is never awaited. Do not add bare `await`s
 to the boot path: that is how the pre-existing pipeline became untimed and

@@ -2,37 +2,26 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import { Box, Tooltip } from '@mui/material'
 import { Allotment } from 'allotment'
-import { lazy, Suspense, useContext, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Outlet, useParams } from 'react-router-dom'
 
-import { useLayoutStore } from '../../data/hooks/stores/LayoutStore'
-import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
-import { useNetworkSummaryStore } from '../../data/hooks/stores/NetworkSummaryStore'
-import { useTableStore } from '../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
-import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
-import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
-import { useLoadCyNetwork } from '../../data/hooks/useLoadCyNetwork'
-import { useLoadNetworkSummaries } from '../../data/hooks/useLoadNetworkSummaries'
 import { useRemountKeyOnReveal } from '../../data/hooks/useRemountKeyOnReveal'
 import { IdType } from '../../models/IdType'
-import { LayoutEngine } from '../../models/LayoutModel'
 import { Ui } from '../../models/UiModel'
 import { Panel } from '../../models/UiModel/Panel'
 import { PanelState } from '../../models/UiModel/PanelState'
 import { useHierarchyViewerManager } from '../HierarchyViewer/store/useHierarchyViewerManager'
-import { isHCX } from '../HierarchyViewer/utils/hierarchyUtil'
-import { validateAndRecordHcx } from '../HierarchyViewer/utils/validateAndRecordHcx'
 import { SnackbarMessageList } from '../Messages'
 import { setTabNetworkId } from '@/data/tabState/tabNetwork'
-import { createLayoutCompletionHandler } from './layoutCompletion'
 import { NetworkBrowserPanel } from './NetworkBrowserPanel/NetworkBrowserPanel'
 import { OpenRightPanelButton } from './SidePanel/OpenRightPanelButton'
 import { SidePanel } from './SidePanel/SidePanel'
 import { usePanelEntries } from './SidePanel/TabContents'
 import { toVerticalPaneSizes } from './splitPaneSizes'
 import { useUrlFollowsNetworkRemoval } from './useUrlFollowsNetworkRemoval'
+import { useLoadNetworkIntoStores } from './useLoadNetworkIntoStores'
 import { useUrlNetworkLoad } from './useUrlNetworkLoad'
 // Lazy load heavy TableDataLoader forms
 const CreateNetworkFromTableForm = lazy(() =>
@@ -45,15 +34,9 @@ const JoinTableToNetworkForm = lazy(() =>
     '../TableDataLoader/components/JoinTableToNetwork/JoinTableToNetworkForm'
   ).then((module) => ({ default: module.JoinTableToNetworkForm })),
 )
-import { AppConfigContext } from '../../AppConfigContext'
 import { markBoot } from '../../boot/metrics/bootMarks'
 import { publishBootReport } from '../../boot/metrics/bootReport'
-import { useOpaqueAspectStore } from '../../data/hooks/stores/OpaqueAspectStore'
-import { useRendererFunctionStore } from '../../data/hooks/stores/RendererFunctionStore'
-import { useUndoStore } from '../../data/hooks/stores/UndoStore'
 import { logUi } from '../../debug'
-import { CyNetwork } from '../../models'
-import { getDefaultLayout } from '../../models/LayoutModel/impl/layoutSelection'
 import { useCreateNetworkFromTableStore } from '../TableDataLoader/store/createNetworkFromTableStore'
 import { useJoinTableToNetworkStore } from '../TableDataLoader/store/joinTableToNetworkStore'
 
@@ -115,10 +98,6 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   const ui: Ui = useUiStateStore((state) => state.ui)
 
-  const setVisualStyleOptions = useUiStateStore(
-    (state) => state.setVisualStyleOptions,
-  )
-
   const setPanelState: (panel: Panel, panelState: PanelState) => void =
     useUiStateStore((state) => state.setPanelState)
 
@@ -137,11 +116,6 @@ const WorkSpaceEditor = (): JSX.Element => {
   const setCurrentNetworkId: (id: IdType) => void = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
   )
-
-  const setNetworkModified: (id: IdType, isModified: boolean) => void =
-    useWorkspaceStore((state) => state.setNetworkModified)
-
-  const addStack = useUndoStore((state) => state.addStack)
 
   // The networkModified flag is NOT watched for here.
   //
@@ -171,32 +145,7 @@ const WorkSpaceEditor = (): JSX.Element => {
     [number, number]
   >([0, 0])
 
-  const layoutEngines: LayoutEngine[] = useLayoutStore(
-    (state) => state.layoutEngines,
-  )
-
-  const setIsRunning: (isRunning: boolean) => void = useLayoutStore(
-    (state) => state.setIsRunning,
-  )
-
-  const updateSummary = useNetworkSummaryStore((state) => state.update)
-
-  const loadCyNetwork = useLoadCyNetwork()
-  const loadNetworkSummaries = useLoadNetworkSummaries()
-
-  const addNewNetwork = useNetworkStore((state) => state.add)
-  const addVisualStyle = useVisualStyleStore((state) => state.add)
-  const addTable = useTableStore((state) => state.add)
-  const addViewModel = useViewModelStore((state) => state.add)
-  const addAllOpaqueAspects = useOpaqueAspectStore((state) => state.addAll)
-  const updateNodePositions: (
-    networkId: IdType,
-    positions: Map<IdType, [number, number, number?]>,
-  ) => void = useViewModelStore((state) => state.updateNodePositions)
-
-  const getFunction = useRendererFunctionStore((state) => state.getFunction)
-
-  const { maxNetworkElementsThreshold } = useContext(AppConfigContext)
+  const loadNetworkIntoStores = useLoadNetworkIntoStores()
 
   /**
    * Loads a network by ID and populates all related stores
@@ -213,91 +162,7 @@ const WorkSpaceEditor = (): JSX.Element => {
     isRemoved: () => boolean,
   ): Promise<boolean> => {
     try {
-      // Cached summaries/content resolve immediately; the loaders only wait
-      // for the auth token when they actually fetch from NDEx (cache miss).
-      const summaryMap = await loadNetworkSummaries([networkId])
-      const summary = summaryMap[networkId]
-      const cyNetworkData: CyNetwork = await loadCyNetwork(networkId)
-      // Deleted while it loaded: adding it now would bring it back
-      if (isRemoved()) {
-        return false
-      }
-      const {
-        network,
-        nodeTable,
-        edgeTable,
-        visualStyle,
-        visualStyleSet,
-        networkViews,
-        visualStyleOptions,
-        otherAspects,
-        undoRedoStack,
-      } = cyNetworkData
-
-      setVisualStyleOptions(networkId, visualStyleOptions)
-      addNewNetwork(network)
-      addVisualStyle(networkId, visualStyle, visualStyleSet)
-      addTable(networkId, nodeTable, edgeTable)
-      addViewModel(networkId, networkViews[0])
-      if (otherAspects !== undefined) {
-        addAllOpaqueAspects(networkId, otherAspects)
-      }
-      addStack(networkId, undoRedoStack)
-
-      // Validate HCX networks if applicable
-      if (isHCX(summary)) {
-        validateAndRecordHcx(networkId, summary, nodeTable, edgeTable)
-      }
-
-      // Apply default layout if network doesn't have one
-      if (!summary.hasLayout) {
-        const totalNetworkElements = network.nodes.length + network.edges.length
-        const defaultLayout = getDefaultLayout(
-          totalNetworkElements,
-          maxNetworkElementsThreshold,
-          isHCX(summary),
-        )
-
-        if (defaultLayout !== undefined) {
-          const layoutEngine: LayoutEngine | undefined = layoutEngines.find(
-            (engine) => engine.name === defaultLayout.engineName,
-          )
-
-          if (layoutEngine !== undefined) {
-            const summaryWithLayout = { ...summary, hasLayout: true }
-
-            setIsRunning(true)
-            const handleLayoutComplete = createLayoutCompletionHandler(
-              networkId,
-              {
-                // Read from the store directly to get the value current at
-                // callback time rather than the stale closure value.
-                isNetworkModified: (id) =>
-                  useWorkspaceStore.getState().workspace.networkModified[id] ===
-                  true,
-                updateNodePositions,
-                fitViewport: (id) => {
-                  const fitFunction = getFunction('cyjs', 'fit', id)
-                  if (fitFunction !== undefined) {
-                    fitFunction()
-                  }
-                },
-                markLayoutApplied: (id) => updateSummary(id, summaryWithLayout),
-                setLayoutRunning: setIsRunning,
-                setNetworkModified,
-              },
-            )
-
-            layoutEngine.apply(
-              network.nodes,
-              network.edges,
-              handleLayoutComplete,
-              layoutEngine.algorithms[defaultLayout.algorithmName],
-              networkId,
-            )
-          }
-        }
-      }
+      return await loadNetworkIntoStores(networkId, isRemoved)
     } catch (error) {
       logUi.error(
         `[${WorkSpaceEditor.name}]:[${loadCurrentNetworkById.name}]: Failed to load network: ${error}`,
@@ -315,7 +180,6 @@ const WorkSpaceEditor = (): JSX.Element => {
       )
       return false
     }
-    return true
   }
 
   const params = useParams()

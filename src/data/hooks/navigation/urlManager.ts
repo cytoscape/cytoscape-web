@@ -105,12 +105,14 @@ export const navigateToNetwork = (
   } = config
   navigationCount++
 
-  // 0. A manual tab never navigates into the editor, not even when forced.
-  // The manual embeds editor components (Merge, network rows) that call this;
-  // following them would boot the editor on the manual's sandbox database.
-  if (currentDbScope() === 'manual') {
+  // 0. A manual tab or an embed never navigates into the editor, not even
+  // when forced. Both render editor components that call this; following them
+  // would boot the editor on the scope's own database, and an embed would
+  // leave its frame's /embed route.
+  const scope = currentDbScope()
+  if (scope === 'manual' || scope === 'embed') {
     logHistory.info(
-      `[URLManager:${navigationCount}] Manual tab: not navigating to network ${networkId ?? ''}`,
+      `[URLManager:${navigationCount}] ${scope} tab: not navigating to network ${networkId ?? ''}`,
     )
     return
   }

@@ -1,5 +1,6 @@
 import React, { Suspense, useSyncExternalStore } from 'react'
 
+import { currentDbScope } from '../data/db/dbScope'
 import { BootShell } from './shell/BootShell'
 import type { AuthResolutionSource } from './startAuthentication'
 
@@ -20,6 +21,11 @@ const FeatureAvailabilityProvider = React.lazy(() =>
   })),
 )
 const EmailVerificationModal = React.lazy(() => emailVerificationPromise)
+
+// The embed leaves out the provider: it polls Cytoscape Desktop on
+// 127.0.0.1:1234, which from an iframe would probe every visitor's machine.
+// Consumers fall back to the context default, "not available".
+const isEmbed = currentDbScope() === 'embed'
 
 /**
  * Terminal outcome of the boot SSO check, delivered asynchronously while the
@@ -71,6 +77,8 @@ export const AppBootstrap = ({
           onVerify={onVerify}
           onCancel={onCancel}
         />
+      ) : isEmbed ? (
+        <App />
       ) : (
         <FeatureAvailabilityProvider>
           <App />

@@ -12,7 +12,7 @@ import { trackEvent } from '@/data/analytics/trackEvent'
  * own and takes no AbortSignal, so a hung or very slow NDEx left this await
  * pending forever — and boot with it, on a blank screen.
  */
-const DEEP_LINK_TIMEOUT_MS = 30000
+export const DEEP_LINK_TIMEOUT_MS = 30000
 
 /**
  * Reject after `ms` if `promise` has not settled.
@@ -21,7 +21,7 @@ const DEEP_LINK_TIMEOUT_MS = 30000
  * the client exposes no way to cancel it. The rejection lands in the catch
  * below, which records the failure and lets boot continue.
  */
-const withTimeout = async <T>(
+export const withTimeout = async <T>(
   promise: Promise<T>,
   ms: number,
   message: string,

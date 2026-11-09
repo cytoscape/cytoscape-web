@@ -15,12 +15,17 @@ import {
 } from 'react-router-dom'
 
 import appConfig from './assets/config.json'
-import { currentDbScope, MANUAL_ROUTE_SEGMENT } from './data/db/dbScope'
+import {
+  currentDbScope,
+  EMBED_ROUTE_SEGMENT,
+  MANUAL_ROUTE_SEGMENT,
+} from './data/db/dbScope'
 import { useCredentialStore } from './data/hooks/stores/CredentialStore'
 import { CookieConsentWidget } from './features/CookieConsent'
 import { Error } from './features/Error'
 import ErrorBoundary from './features/ErrorBoundary'
 import { OnboardingHost } from './features/Onboarding'
+import { EmbedErrorElement } from './features/Embed/EmbedErrorElement'
 import { RedirectPanel } from './features/RedirectPanel'
 import { BootShell } from './boot/shell/BootShell'
 import { KeycloakContext } from '@/boot/keycloak'
@@ -38,12 +43,17 @@ import { theme } from './theme'
 // close to free (3206ms -> 3194ms) because its boundary renders immediately;
 // it is kept for symmetry and for slower links.
 //
-// A manual tab (/manual/*) never mounts AppShell, so it skips both downloads.
-const isManualTab = currentDbScope() === 'manual'
+// A manual tab (/manual/*) or an embed (/embed/*) never mounts AppShell, so it
+// skips both downloads.
+const scope = currentDbScope()
+const isEmbed = scope === 'embed'
+const mountsAppShell = scope === 'app'
 const loadAppShell = () => import('./features/AppShell')
 const loadWorkspaceEditor = () => import('./features/Workspace/WorkspaceEditor')
-const appShellPromise = isManualTab ? undefined : loadAppShell()
-const workspaceEditorPromise = isManualTab ? undefined : loadWorkspaceEditor()
+const appShellPromise = mountsAppShell ? loadAppShell() : undefined
+const workspaceEditorPromise = mountsAppShell
+  ? loadWorkspaceEditor()
+  : undefined
 
 // React.lazy only subscribes to these when its boundary first renders. A chunk
 // that fails to load before then would surface as an unhandledrejection —
@@ -58,6 +68,7 @@ const WorkspaceEditor = React.lazy(
 )
 // Not prefetched: most sessions never open the manual (#840).
 const ManualApp = React.lazy(() => import('./features/Manual/ManualApp'))
+const EmbedRoute = React.lazy(() => import('./features/Embed/EmbedRoute'))
 
 const routerOpts: any = {}
 
@@ -81,6 +92,20 @@ const router = createBrowserRouter(
           </Suspense>
         }
         errorElement={<Error />}
+      />
+      {/*
+      A sibling of "/" for the same reason as the manual: the embed shows one
+      network read-only in a third-party iframe and never mounts AppShell. Its
+      own error element keeps errors in the frame, not on /error.
+    */}
+      <Route
+        path={`/${EMBED_ROUTE_SEGMENT}/:networkId?`}
+        element={
+          <Suspense fallback={<BootShell region="content" />}>
+            <EmbedRoute />
+          </Suspense>
+        }
+        errorElement={<EmbedErrorElement />}
       />
       <Route
         path="/"
@@ -162,11 +187,15 @@ export const App = (): React.ReactElement => {
           the error page. The tour is an overlay: dropping just the overlay
           leaves the user where they were.
         */}
-        <ErrorBoundary fallback={null}>
-          <OnboardingHost />
-        </ErrorBoundary>
+        {/* The embed has no tour and, with analytics off, nothing to consent
+            to; both would pop up inside the host page's frame. */}
+        {!isEmbed && (
+          <ErrorBoundary fallback={null}>
+            <OnboardingHost />
+          </ErrorBoundary>
+        )}
       </ErrorBoundary>
-      <CookieConsentWidget />
+      {!isEmbed && <CookieConsentWidget />}
     </CssVarsProvider>
   )
 }

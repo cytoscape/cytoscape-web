@@ -37,7 +37,7 @@ The main workspace editor component that provides layout and network management.
   - Right Panel: Side panel with additional tools (collapsible)
 
 - **Network Loading:**
-  - Loads network data, summaries, visual styles, tables, views, and opaque aspects
+  - Loads network data, summaries, visual styles, tables, views, and opaque aspects through `useLoadNetworkIntoStores` (`useLoadNetworkIntoStores.ts`), which the embed (`src/features/Embed/`) uses too
   - Handles network switching when URL parameter changes
   - Uses loading ref to prevent concurrent loads
   - Shows error state if network fails to load

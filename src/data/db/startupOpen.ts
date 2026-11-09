@@ -4,6 +4,7 @@ import { logDb } from '../../debug'
 import {
   currentVersion,
   DB_NAME,
+  getDexieOptions,
   initializeDb,
   verifyTransactionSourceStamp,
 } from './index'
@@ -48,7 +49,7 @@ export type DbOpenResult =
  * support it; this works everywhere Dexie does.
  */
 const readOnDiskVersion = async (): Promise<number | undefined> => {
-  const probe = new Dexie(DB_NAME)
+  const probe = new Dexie(DB_NAME, getDexieOptions())
   try {
     await probe.open()
     return probe.verno

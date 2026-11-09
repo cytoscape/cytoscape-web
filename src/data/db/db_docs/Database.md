@@ -26,13 +26,23 @@ The database uses Dexie (IndexedDB wrapper) with the following object stores:
 
 ### Database Scope
 
-A tab opens one of two databases, chosen once from the URL at page load
+A tab opens one of three databases, chosen once from the URL at page load
 (`dbScope.ts`):
 
-| Scope | URL | Database | Reset channel |
-| --- | --- | --- | --- |
-| `app` | everything except `/manual/*` | `cyweb-db` | `cyweb-ui-events` |
-| `manual` | `/manual/*` under the base URL | `cyweb-manual-db` | `cyweb-manual-ui-events` |
+| Scope    | URL                                      | Database          | Backend                      | Reset channel            |
+| -------- | ---------------------------------------- | ----------------- | ---------------------------- | ------------------------ |
+| `app`    | everything except `/manual/*`, `/embed*` | `cyweb-db`        | browser IndexedDB            | `cyweb-ui-events`        |
+| `manual` | `/manual/*` under the base URL           | `cyweb-manual-db` | browser IndexedDB            | `cyweb-manual-ui-events` |
+| `embed`  | `/embed`, `/embed/*` under the base URL  | `cyweb-embed-db`  | in memory (`fake-indexeddb`) | `cyweb-embed-ui-events`  |
+
+The embed runs in a third-party iframe. Its database lives in memory
+(`inMemoryBackend.ts`), so nothing it writes reaches disk, the visitor's
+workspace or another embed on the same page. `fake-indexeddb` loads with a
+dynamic import, so only the embed downloads it. In that scope `initializeDb`
+creates the Dexie instance once the backend has loaded, and every instance on
+the name (`reopenDb`, the delete, the version probe) gets the same options
+(`getDexieOptions`). dexie-observable is off there: it serves cross-tab sync,
+which the embed does not run.
 
 The manual renders real components on a fixture network, and every store
 mutation persists. A separate database keeps those writes out of the user's

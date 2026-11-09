@@ -21,6 +21,7 @@ This specification defines the routing behavior for the Cytoscape Web applicatio
 /:workspaceId/networks/:networkId → Network viewer
 /error                      → Error page (no AppShell)
 /manual/*                   → In-app user manual (no AppShell)
+/embed/:networkId?          → Read-only embed for iframes (no AppShell)
 ```
 
 ### Route Parameters
@@ -156,6 +157,27 @@ ends on a page with no editor around it (#886).
   (`/manual/en/latest/Styles.html#anchor`, `/manual/Styles.html`) redirect to
   the matching page and keep the anchor.
 - Unknown paths show "Page not found" inside the manual.
+
+### 7. Embed Route (`/embed/:networkId`, `/embed/`)
+
+**Purpose**: One NDEx network, read-only, for an `<iframe>` on another site
+(`src/features/Embed/`). Full contract: `EMBED_MODE_SPECIFICATION.md`.
+
+**Behavior**:
+
+- A sibling of `/`, like `/manual/*`: `AppShell` never mounts, so the saved
+  workspace, URL imports, app installs and cross-tab sync never run.
+- The tab uses the `embed` database scope: `cyweb-embed-db`, held in memory
+  (`fake-indexeddb`). Nothing reaches the browser's IndexedDB.
+- The URL is never rewritten or stripped. `navigateToNetwork` does nothing in
+  an embed tab, even with `force`.
+- Reads `selectednodes`, `selectededges`, `selectedSubnetworkNodes`,
+  `activeNetworkViewTab` and `accesskey`. Ignores every other parameter.
+- `/embed` and `/embed/` with no network show how to build an embed URL.
+- Its own error element keeps errors inside the frame instead of navigating
+  to `/error`.
+- The web server must serve `index.html` for `/embed` and `/embed/*`, and must
+  let other sites frame those paths only (see the embed spec, Hosting).
 
 ## Import Behavior
 

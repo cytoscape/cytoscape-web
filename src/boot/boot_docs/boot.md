@@ -56,6 +56,22 @@ index.html
                                                                           → publishBootReport()
 ```
 
+The embed (`/embed/*`, `currentDbScope() === 'embed'`) takes a shorter path.
+`bootstrap.tsx` skips the host descriptor, `window.CyWebApi`, the tab manager,
+the SSO check (`signedOutResolution()` instead) and analytics. `AppBootstrap`
+skips the Cytoscape Desktop poller, and `App` skips the onboarding tour and the
+cookie banner. DATABASE opens an in-memory database. The route renders
+`EmbedRoute`, never `AppShell`:
+
+```text
+<EmbedRoute/>
+  └─ runEmbedBoot()     NDEx summary (with ?accesskey=), size check,
+  │                     one-network workspace
+  └─ useLoadNetworkIntoStores()   the editor's own network loader
+  └─ applyEmbedSelection()        URL selection, Cell View focus
+  └─ <EmbedViewer/>     toolbar, NetworkPanel, Sub Network Viewer
+```
+
 ## Why it is shaped this way
 
 **The shell chunk exists because nothing in the normal entry graph can paint

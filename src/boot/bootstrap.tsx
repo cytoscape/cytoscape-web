@@ -7,6 +7,7 @@ import * as ReactDOM from 'react-dom/client'
 import { AppConfigContext } from '../AppConfigContext'
 import { publishHostDescriptor } from '../app-api/federation/hostDescriptor'
 import appConfig from '../assets/config.json'
+import { currentDbScope } from '../data/db/dbScope'
 import { rememberNdexAccessKeyFromUrl } from '../data/external-api/ndex/accessKeys'
 import { initializeDebug, logStartup } from '../debug'
 import ErrorBoundary from '../features/ErrorBoundary'
@@ -19,7 +20,7 @@ import { markBoot } from './metrics/bootMarks'
 import { openDatabasePhase } from './openDatabasePhase'
 import { isBootAborted, runPhase } from './runBoot'
 import { repaintBootShell } from './shell/showBootShell'
-import { startAuthentication } from './startAuthentication'
+import { signedOutResolution, startAuthentication } from './startAuthentication'
 import { initializeTabManager } from './tabManager'
 import { runOnIdle } from '@/utils/idlePrefetch'
 
@@ -27,21 +28,31 @@ import { runOnIdle } from '@/utils/idlePrefetch'
 // The phases themselves live in their own modules, and runPhase gives each one
 // timing and error handling — see boot_docs/boot.md for the full sequence.
 
+// The embed (/embed/*) runs inside a third-party iframe, read-only and signed
+// out. It skips every step that reaches outside the frame: the App API on
+// window, the federation descriptor, window.name, Keycloak's SSO iframe and
+// analytics (EMBED_MODE_SPECIFICATION.md).
+const isEmbed = currentDbScope() === 'embed'
+
 // Publish the host descriptor a federated app's Module Federation runtime reads
 // to find this host's remoteEntry.js. Assigned SYNCHRONOUSLY at boot-chunk
 // evaluation: a remote's beforeInit hook is synchronous and must never lose a
 // race with this. Deliberately NOT part of window.CyWebApi below — that object
 // arrives from an async import() and its consumers are gated behind
 // cywebapi:ready, which is far too late and the wrong shape for a sync hook.
-publishHostDescriptor(window, import.meta.env.BASE_URL, window.location.href)
+if (!isEmbed) {
+  publishHostDescriptor(window, import.meta.env.BASE_URL, window.location.href)
+}
 
 // Assign CyWebApi to window for external consumers (browser extensions, LLM
 // agents). Loaded asynchronously — it pulls in the store/data layer, which
 // must not block the boot chunk. Consumers already have to wait for the
 // cywebapi:ready event (fired in AppShell after stores hydrate) before use.
-void import('../app-api/core').then(({ CyWebApi }) => {
-  ;(window as any).CyWebApi = CyWebApi
-})
+if (!isEmbed) {
+  void import('../app-api/core').then(({ CyWebApi }) => {
+    ;(window as any).CyWebApi = CyWebApi
+  })
+}
 
 const initializeApp = async (): Promise<void> => {
   markBoot('init-exec')
@@ -70,10 +81,12 @@ const initializeApp = async (): Promise<void> => {
     // Independently guarded rather than inlined above: it touches an API a
     // hardened browsing context can refuse — window.name — and it is not a
     // prerequisite for the app, so being blocked must not abort the phase.
-    try {
-      initializeTabManager()
-    } catch (cause) {
-      logStartup.warn('[boot]: tab identity unavailable', cause)
+    if (!isEmbed) {
+      try {
+        initializeTabManager()
+      } catch (cause) {
+        logStartup.warn('[boot]: tab identity unavailable', cause)
+      }
     }
   })
 
@@ -88,11 +101,16 @@ const initializeApp = async (): Promise<void> => {
   // hidden iframe and never navigates the top-level page, so if the database
   // gate below aborts the boot, an in-flight check is harmless under the
   // error shell.
-  const authResolution = startAuthentication({
-    keycloak,
-    checkUserVerification,
-    urlBaseName: appConfig.urlBaseName,
-  })
+  //
+  // The embed never signs in: a third-party frame cannot rely on Keycloak's
+  // cookies. Its NDEx requests go out anonymously, with the share-link key.
+  const authResolution = isEmbed
+    ? signedOutResolution()
+    : startAuthentication({
+        keycloak,
+        checkUserVerification,
+        urlBaseName: appConfig.urlBaseName,
+      })
 
   // The gate. A dead database is the one failure the app cannot render over —
   // AppShell's first act is to read the workspace from it — so on failure the
@@ -126,13 +144,15 @@ const initializeApp = async (): Promise<void> => {
   // script never competes with the boot-critical chunks or the SSO iframe for
   // the connection. Guarded because analytics storage can be refused by a
   // hardened browsing context, and that must not take anything down with it.
-  runOnIdle(() => {
-    try {
-      initializeGoogleAnalytics()
-    } catch (cause) {
-      logStartup.warn('[boot]: analytics initialization failed', cause)
-    }
-  })
+  if (!isEmbed) {
+    runOnIdle(() => {
+      try {
+        initializeGoogleAnalytics()
+      } catch (cause) {
+        logStartup.warn('[boot]: analytics initialization failed', cause)
+      }
+    })
+  }
 }
 
 void initializeApp()

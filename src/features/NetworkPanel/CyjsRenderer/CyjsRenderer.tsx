@@ -30,6 +30,7 @@ import { useCreateEdge } from '../../../data/hooks/useCreateEdge'
 import { useCreateNode } from '../../../data/hooks/useCreateNode'
 import { useUndoStack } from '../../../data/hooks/useUndoStack'
 import { logUi, registerDebugTool } from '../../../debug'
+import { useReadOnly } from '../../../ReadOnlyContext'
 import { isHCX } from '../../../features/HierarchyViewer/utils/hierarchyUtil'
 import { CX_ANNOTATIONS_KEY } from '../../../models/CxModel/impl/extractor'
 import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
@@ -105,6 +106,9 @@ const CyjsRenderer = ({
   hasTab = false,
 }: NetworkRendererProps): ReactElement => {
   const id = network?.id as IdType
+
+  // In the embed: no right-click menu (its items edit) and no node drag.
+  const readOnly: boolean = useReadOnly()
 
   // ============================================================================
   //                            CyjsRenderer Local State
@@ -702,8 +706,16 @@ const CyjsRenderer = ({
       cy.autounselectify(false)
     })
 
+    // Nodes stay put when dragged in a read-only view.
+    cy.autoungrabify(readOnly)
+
     // --- Right-click Context Menu ---
     cy.on('cxttap', (e: EventObject) => {
+      // Every item of the menu edits the network.
+      if (readOnly) {
+        return
+      }
+
       // Safety check: ensure target methods exist before calling
       const targetIsNode =
         typeof e.target.isNode === 'function' && e.target.isNode()
@@ -816,29 +828,31 @@ const CyjsRenderer = ({
     // --- Node Dragging ---
 
     // One drag is one undo entry, however many nodes it moved (#870)
-    listenForNodeDrags(
-      cy,
-      ({ from, to }): void => {
-        // Set flag to avoid unnecessary fit
-        setNodesMoved(true)
-        updateNodePositions(id, to)
-        postEdit(
-          UndoCommandType.MOVE_NODES,
-          `Move Nodes`,
-          [id, from],
-          [id, to],
-          id,
-        )
-      },
-      {
-        // Read the store: this listener outlives the render that registered it.
-        positionBeforeDrag: (nodeId) => {
-          const nodeView: NodeView | undefined =
-            getViewModel(id)?.nodeViews[nodeId]
-          return nodeView === undefined ? undefined : [nodeView.x, nodeView.y]
+    if (!readOnly) {
+      listenForNodeDrags(
+        cy,
+        ({ from, to }): void => {
+          // Set flag to avoid unnecessary fit
+          setNodesMoved(true)
+          updateNodePositions(id, to)
+          postEdit(
+            UndoCommandType.MOVE_NODES,
+            `Move Nodes`,
+            [id, from],
+            [id, to],
+            id,
+          )
         },
-      },
-    )
+        {
+          // Read the store: this listener outlives the render that registered it.
+          positionBeforeDrag: (nodeId) => {
+            const nodeView: NodeView | undefined =
+              getViewModel(id)?.nodeViews[nodeId]
+            return nodeView === undefined ? undefined : [nodeView.x, nodeView.y]
+          },
+        },
+      )
+    }
 
     // --- Hover Effects ---
 

@@ -29,6 +29,18 @@ describe('rememberNdexAccessKeyFromUrl', () => {
     expect(getNdexAccessKey(NET)).toBe('key-2')
   })
 
+  it('remembers the key of an embed link', () => {
+    rememberNdexAccessKeyFromUrl(`/embed/${NET}`, '?accesskey=key-4')
+
+    expect(getNdexAccessKey(NET)).toBe('key-4')
+  })
+
+  it('reads an embed link under a base path', () => {
+    rememberNdexAccessKeyFromUrl(`/cytoscape/embed/${NET}/`, '?accesskey=key-5')
+
+    expect(getNdexAccessKey(NET)).toBe('key-5')
+  })
+
   it('ignores a link without a key', () => {
     rememberNdexAccessKeyFromUrl(`/0/networks/${NET}`, '?selectedNodes=1')
     rememberNdexAccessKeyFromUrl(`/0/networks/${NET}`, '?accesskey=')
@@ -39,8 +51,10 @@ describe('rememberNdexAccessKeyFromUrl', () => {
   it('ignores a key on a path that names no network', () => {
     rememberNdexAccessKeyFromUrl('/0', '?accesskey=key-3')
     rememberNdexAccessKeyFromUrl('/0/networks/', '?accesskey=key-3')
+    rememberNdexAccessKeyFromUrl('/embed/', '?accesskey=key-3')
 
     expect(getNdexAccessKey('')).toBeUndefined()
     expect(getNdexAccessKey('0')).toBeUndefined()
+    expect(getNdexAccessKey('embed')).toBeUndefined()
   })
 })

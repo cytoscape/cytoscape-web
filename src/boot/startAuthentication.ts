@@ -62,6 +62,16 @@ export interface AuthResolutionSource {
   subscribe: (listener: () => void) => () => void
 }
 
+/**
+ * An auth outcome that is signed out from the start, for the embed, which
+ * never runs the SSO check. The token gate is never closed, so `getToken()`
+ * resolves at once with no token.
+ */
+export const signedOutResolution = (): AuthResolutionSource => ({
+  get: () => UNAUTHENTICATED,
+  subscribe: () => () => undefined,
+})
+
 export interface StartAuthenticationOptions {
   keycloak: Keycloak
   checkUserVerification: () => Promise<UserVerificationStatus>

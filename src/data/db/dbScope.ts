@@ -10,14 +10,24 @@ import { ensureTrailingSlash } from '@/utils/baseUrl'
  * (#839). The manual therefore gets its own database and its own reset
  * channel; the two scopes cannot see each other.
  *
+ * The embed (`/embed/*`) shows one network inside a third-party iframe. Its
+ * database is held in memory (`fake-indexeddb`), so nothing it does reaches
+ * disk or any other frame: see `inMemoryBackend.ts`.
+ *
  * The scope is fixed for the life of the document. A tab that moved between
  * scopes with client-side navigation would write half its session to each
  * database, so links between the manual and the editor are full page loads.
  */
-export type DbScope = 'app' | 'manual'
+export type DbScope = 'app' | 'manual' | 'embed'
 
 /** First path segment under the app's base URL that selects the manual. */
 export const MANUAL_ROUTE_SEGMENT = 'manual'
+
+/** First path segment under the app's base URL that selects the embed. */
+export const EMBED_ROUTE_SEGMENT = 'embed'
+
+const startsWithSegment = (rest: string, segment: string): boolean =>
+  rest === segment || rest.startsWith(`${segment}/`)
 
 export const resolveDbScope = (pathname: string, baseUrl: string): DbScope => {
   const base = ensureTrailingSlash(baseUrl)
@@ -25,17 +35,38 @@ export const resolveDbScope = (pathname: string, baseUrl: string): DbScope => {
     return 'app'
   }
   const rest = pathname.slice(base.length)
-  return rest === MANUAL_ROUTE_SEGMENT ||
-    rest.startsWith(`${MANUAL_ROUTE_SEGMENT}/`)
-    ? 'manual'
-    : 'app'
+  if (startsWithSegment(rest, MANUAL_ROUTE_SEGMENT)) {
+    return 'manual'
+  }
+  if (startsWithSegment(rest, EMBED_ROUTE_SEGMENT)) {
+    return 'embed'
+  }
+  return 'app'
 }
 
-export const dbNameFor = (scope: DbScope): string =>
-  scope === 'manual' ? 'cyweb-manual-db' : 'cyweb-db'
+const DB_NAMES: Record<DbScope, string> = {
+  app: 'cyweb-db',
+  manual: 'cyweb-manual-db',
+  embed: 'cyweb-embed-db',
+}
+
+const UI_EVENTS_CHANNELS: Record<DbScope, string> = {
+  app: 'cyweb-ui-events',
+  manual: 'cyweb-manual-ui-events',
+  embed: 'cyweb-embed-ui-events',
+}
+
+export const dbNameFor = (scope: DbScope): string => DB_NAMES[scope]
 
 export const uiEventsChannelFor = (scope: DbScope): string =>
-  scope === 'manual' ? 'cyweb-manual-ui-events' : 'cyweb-ui-events'
+  UI_EVENTS_CHANNELS[scope]
+
+/**
+ * Whether the scope's database lives in memory rather than in the browser's
+ * IndexedDB. Only the embed: it runs in someone else's page, where a visitor's
+ * workspace must stay untouched and storage may be refused.
+ */
+export const isInMemoryScope = (scope: DbScope): boolean => scope === 'embed'
 
 /**
  * The scope of this document. `import.meta.env.BASE_URL` is Vite's `base`,

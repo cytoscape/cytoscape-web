@@ -5,8 +5,8 @@ import type { IdType } from '../../../models/IdType'
  *
  * A share link grants read access to a private network without a login. The
  * key arrives on a deep link, `/:workspaceId/networks/:networkId?accesskey=`,
- * but every NDEx fetch for that network happens after the URL is cleaned, so
- * the key is held here.
+ * or on an embed link, `/embed/:networkId?accesskey=`. Every NDEx fetch for
+ * that network happens later, so the key is held here.
  *
  * Memory only, on purpose: anyone holding the key can read the network, so it
  * never reaches IndexedDB. Once the CX2 is cached, later loads need no key.
@@ -16,7 +16,7 @@ const accessKeys = new Map<IdType, string>()
 /** NDEx's own query param name for a share-link key, lowercase. */
 export const ACCESS_KEY_QUERY_KEY = 'accesskey'
 
-const NETWORK_PATH = /\/networks\/([^/]+)\/?$/
+const NETWORK_PATH = /\/(?:networks|embed)\/([^/]+)\/?$/
 
 export const rememberNdexAccessKey = (
   networkId: IdType,

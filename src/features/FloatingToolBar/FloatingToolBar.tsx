@@ -1,5 +1,6 @@
 import { Box } from '@mui/material'
 
+import { useReadOnly } from '../../ReadOnlyContext'
 import { ApplyLayoutButton } from './ApplyLayoutButton'
 import { FitButton } from './FitButton'
 import { OpenInCytoscapeButton } from './OpenInCytoscapeButton'
@@ -27,6 +28,9 @@ export const FloatingToolBar = ({
   rendererId,
 }: FloatingToolBarProps): JSX.Element => {
   const isCirclePackingRenderer = rendererId === 'circlePacking'
+  // The embed keeps Fit only: a layout edits the network, and the open and
+  // share buttons act on the editor's workspace (the embed has its own link).
+  const readOnly: boolean = useReadOnly()
   return (
     <Box
       data-testid="floating-toolbar"
@@ -46,20 +50,24 @@ export const FloatingToolBar = ({
         },
       }}
     >
-      <ApplyLayoutButton
-        targetNetworkId={targetNetworkId}
-        disabled={isCirclePackingRenderer}
-        rendererId={rendererId}
-      />
+      {!readOnly && (
+        <ApplyLayoutButton
+          targetNetworkId={targetNetworkId}
+          disabled={isCirclePackingRenderer}
+          rendererId={rendererId}
+        />
+      )}
       <FitButton
         rendererId={rendererId}
         targetNetworkId={viewNetworkId ?? targetNetworkId}
       />
-      <OpenInCytoscapeButton
-        targetNetworkId={targetNetworkId}
-        networkLabel={networkLabel}
-      />
-      <ShareNetworkButton targetNetworkId={targetNetworkId} />
+      {!readOnly && (
+        <OpenInCytoscapeButton
+          targetNetworkId={targetNetworkId}
+          networkLabel={networkLabel}
+        />
+      )}
+      {!readOnly && <ShareNetworkButton targetNetworkId={targetNetworkId} />}
     </Box>
   )
 }
