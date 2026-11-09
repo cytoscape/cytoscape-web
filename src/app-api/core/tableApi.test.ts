@@ -2248,6 +2248,48 @@ describe('case-insensitive column names (#951)', () => {
         expect(mockSetNetworkModified).not.toHaveBeenCalled()
       })
 
+      it('keeps the first type of an exact duplicate header', () => {
+        seed()
+
+        const result = tableApi.importTableFromTsv(
+          'net1',
+          'node',
+          'id\tscore:string\tscore:integer\nn1\ttext\t5',
+        )
+
+        expect(result.success).toBe(false)
+        if (!result.success) expect(result.error.code).toBe('A1')
+        expect(mockCreateColumn).not.toHaveBeenCalled()
+        expect(mockSetValues).not.toHaveBeenCalled()
+      })
+
+      it('checks the exact spelling of a merged column too', () => {
+        seed([{ name: 'score', type: 'integer' }])
+
+        const result = tableApi.importTableFromTsv(
+          'net1',
+          'node',
+          'id\tscore:string\tSCORE:integer\nn1\tmany\t',
+        )
+
+        expect(result.success).toBe(false)
+        if (!result.success) expect(result.error.code).toBe('A1')
+        expect(mockSetValues).not.toHaveBeenCalled()
+      })
+
+      it('fails for an exact name annotated with another type', () => {
+        seed([{ name: 'count', type: 'integer' }])
+
+        const result = tableApi.importTableFromTsv(
+          'net1',
+          'node',
+          'id\tcount:string\nn1\tmany',
+        )
+
+        expect(result.success).toBe(false)
+        if (!result.success) expect(result.error.code).toBe('A1')
+      })
+
       it('fails against the type of an existing column', () => {
         seed([{ name: 'count', type: 'integer' }])
 

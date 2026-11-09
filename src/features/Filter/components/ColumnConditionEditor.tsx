@@ -97,12 +97,21 @@ export const ColumnConditionEditor = ({
       case ColumnFilterTarget.EDGES:
         return computeColumnRange(edgeTable, name)
       default:
+        // Each table under its own spelling, as evaluation reads it
         return mergeRanges(
-          computeColumnRange(nodeTable, name),
-          computeColumnRange(edgeTable, name),
+          computeColumnRange(
+            nodeTable,
+            findColumnByName(nodeTable.columns, columnName ?? name)?.name ??
+              name,
+          ),
+          computeColumnRange(
+            edgeTable,
+            findColumnByName(edgeTable.columns, columnName ?? name)?.name ??
+              name,
+          ),
         )
     }
-  }, [selected, nodeTable, edgeTable])
+  }, [selected, nodeTable, edgeTable, columnName])
 
   const pickColumn = (key: string): void => {
     const option = options.find((candidate) => candidate.key === key)

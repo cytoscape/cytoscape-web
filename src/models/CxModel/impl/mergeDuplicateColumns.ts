@@ -77,16 +77,20 @@ const planTableMerge = (declarations: unknown): TableMerge | undefined => {
     defaultValues.set(kept.name, definition.v)
   })
 
+  // Every value is moved to its full name (mergeElementValues), so no alias
+  // is declared any more: an alias could otherwise equal a kept name and
+  // send that column's values to another one
   const keptEntries = entries
     .filter(([name]) => merge.keptColumn(name)?.name === name)
     .map(([name, definition]) => {
+      if (!isRecord(definition)) return [name, definition] as const
+      const { a: _alias, ...withoutAlias } = definition
       const mergedDefault = defaultValues.get(name)
-      if (!merge.isMerged(name) || mergedDefault === undefined) {
-        return [name, definition] as const
-      }
       return [
         name,
-        { ...(definition as JsonRecord), v: mergedDefault },
+        merge.isMerged(name) && mergedDefault !== undefined
+          ? { ...withoutAlias, v: mergedDefault }
+          : withoutAlias,
       ] as const
     })
 
@@ -121,7 +125,11 @@ const mergeElementValues = (element: unknown, table: TableMerge): unknown => {
       const spelling = table.aliases.get(key) ?? key
       const kept = table.keptFor(spelling)
       if (kept === undefined) {
-        values.set(key, value)
+        // Under its full name, since the declarations keep no alias. A key
+        // nothing declares stays as it is.
+        const name = table.declaredType.has(spelling) ? spelling : key
+        changed = changed || key !== name
+        values.set(name, value)
         return
       }
       // Desktop clears the cell for a null, without checking its type

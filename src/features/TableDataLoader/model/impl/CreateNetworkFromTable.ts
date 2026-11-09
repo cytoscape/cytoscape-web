@@ -223,15 +223,13 @@ export function createNetworkFromTableData(
   // Columns of one name merge, as in Cytoscape Desktop: the first declared
   // keeps its spelling and type, in file order. The built-in name column
   // comes before any file column.
+  const nodeAttributeColumnsInFileOrder = columns.filter(
+    (c) =>
+      c.meaning === ColumnAssignmentType.SourceNodeAttribute ||
+      c.meaning === ColumnAssignmentType.TargetNodeAttribute,
+  )
   const nodeColumnMerge = mergeDeclaredColumns(
-    [
-      nodeNameColumn,
-      ...columns.filter(
-        (c) =>
-          c.meaning === ColumnAssignmentType.SourceNodeAttribute ||
-          c.meaning === ColumnAssignmentType.TargetNodeAttribute,
-      ),
-    ].map(declareColumn),
+    [nodeNameColumn, ...nodeAttributeColumnsInFileOrder].map(declareColumn),
   )
   const edgeColumnsInFileOrder = columns.filter(
     (c) =>
@@ -250,42 +248,6 @@ export function createNetworkFromTableData(
   const edgeTableColumns = edgeAttrCols
     .concat(interactionTypeCol ?? [])
     .filter((c) => edgeColumnMerge.keptColumn(c.name)?.source === c)
-
-  // Copy a node's attribute values from a row. In a merged column the last
-  // non-empty value in file order wins.
-  const applyNodeAttributes = (
-    nodeData: Record<string, ValueType>,
-    attributeColumns: ColumnAssignmentState[],
-    row: ParsedRow,
-    nodeColumn: ColumnAssignmentState,
-    isNewNode: boolean,
-  ): void => {
-    const incoming = new Map<string, ValueType>()
-    attributeColumns.forEach((c) => {
-      const raw = row[c.name]
-      const kept = nodeColumnMerge.keptColumn(c.name)
-      if (raw === undefined || kept === undefined) return
-      if (nodeColumnMerge.isMerged(c.name)) {
-        if (isEmptyCell(raw)) return
-        assertSameColumnType(kept, declareColumn(c))
-        // The node column's own value comes later in the file, so it wins
-        if (
-          kept.source === nodeNameColumn &&
-          columnNamesMatch(nodeColumn.name, nodeNameColumn.name) &&
-          columns.indexOf(c) < columns.indexOf(nodeColumn)
-        ) {
-          return
-        }
-      }
-      incoming.set(kept.name, parseValue(raw, c.dataType, c.delimiter))
-    })
-    incoming.forEach((value, name) => {
-      const replacesNodeName = isNewNode && name === nodeNameColumn.name
-      if (replacesNodeName || !Object.hasOwn(nodeData, name)) {
-        setCellValue(nodeData, name, value)
-      }
-    })
-  }
 
   const networkId = uuid ?? uuidv4()
 
@@ -311,63 +273,84 @@ export function createNetworkFromTableData(
   let nodeIdIndex = 0
   let edgeIdIndex = 0
   const nodeIdMap = new Map<string, number>()
+  // Nodes whose name is still the node column's value. The first explicit
+  // value of a column merged into `name` replaces it, in whichever row and
+  // role the node was first seen.
+  const nodeColumnNames = new Set<number>()
+
+  const ensureNode = (nodeName: string): number => {
+    const known = nodeIdMap.get(nodeName)
+    if (known !== undefined) return known
+    const nodeId = nodeIdIndex++
+    nodeIdMap.set(nodeName, nodeId)
+    network.nodes.push({ id: `${nodeId}` })
+    nodeTable.rows.set(`${nodeId}`, { name: nodeName })
+    nodeColumnNames.add(nodeId)
+    return nodeId
+  }
+
   rows.forEach((row) => {
-    let srcNodeId: number | undefined = undefined
-    let tgtNodeId: number | undefined = undefined
+    const srcNodeId: number | undefined =
+      srcNodeCol === undefined ? undefined : ensureNode(row[srcNodeCol.name])
+    const tgtNodeId: number | undefined =
+      tgtNodeCol === undefined ? undefined : ensureNode(row[tgtNodeCol.name])
     let eId: number | undefined = undefined
-    if (srcNodeCol !== undefined) {
-      const nodeName: string = row[srcNodeCol.name]
-      const nodeExists = nodeIdMap.has(nodeName)
 
-      const nodeData: Record<string, ValueType> = !nodeExists
-        ? { name: nodeName }
-        : (nodeTable.rows.get(`${nodeIdMap.get(nodeName)}`) ?? {})
-      srcNodeId = !nodeExists
-        ? nodeIdIndex++
-        : (nodeIdMap.get(nodeName) as number)
-
-      if (!nodeExists) {
-        nodeIdMap.set(nodeName, srcNodeId)
-        network.nodes.push({ id: `${srcNodeId}` })
+    // This row's node values, per node and in file order across the source
+    // and target roles, so in a merged column the last value wins even when
+    // both ends are the same node
+    const incoming = new Map<number, Map<string, ValueType>>()
+    nodeAttributeColumnsInFileOrder.forEach((c) => {
+      const isSource = c.meaning === ColumnAssignmentType.SourceNodeAttribute
+      const nodeId = isSource ? srcNodeId : tgtNodeId
+      const nodeColumn = isSource ? srcNodeCol : tgtNodeCol
+      const raw = row[c.name]
+      const kept = nodeColumnMerge.keptColumn(c.name)
+      if (
+        nodeId === undefined ||
+        nodeColumn === undefined ||
+        raw === undefined ||
+        kept === undefined
+      ) {
+        return
       }
-
-      applyNodeAttributes(
-        nodeData,
-        srcNodeAttrCols,
-        row,
-        srcNodeCol,
-        !nodeExists,
-      )
-
-      nodeTable.rows.set(`${srcNodeId}`, nodeData)
-    }
-
-    if (tgtNodeCol !== undefined) {
-      const nodeName = row[tgtNodeCol.name]
-      const nodeExists = nodeIdMap.has(nodeName)
-
-      const nodeData: Record<string, ValueType> = !nodeExists
-        ? { name: nodeName }
-        : (nodeTable.rows.get(`${nodeIdMap.get(nodeName)}`) ?? {})
-      tgtNodeId = !nodeExists
-        ? nodeIdIndex++
-        : (nodeIdMap.get(nodeName) as number)
-
-      if (!nodeExists) {
-        nodeIdMap.set(nodeName, tgtNodeId)
-        network.nodes.push({ id: `${tgtNodeId}` })
+      if (nodeColumnMerge.isMerged(c.name)) {
+        if (isEmptyCell(raw)) return
+        assertSameColumnType(kept, declareColumn(c))
+        // The node column's own value comes later in the file, so it wins
+        if (
+          kept.source === nodeNameColumn &&
+          columnNamesMatch(nodeColumn.name, nodeNameColumn.name) &&
+          columns.indexOf(c) < columns.indexOf(nodeColumn)
+        ) {
+          return
+        }
       }
+      let values = incoming.get(nodeId)
+      if (values === undefined) {
+        values = new Map()
+        incoming.set(nodeId, values)
+      }
+      values.set(kept.name, parseValue(raw, c.dataType, c.delimiter))
+    })
 
-      applyNodeAttributes(
-        nodeData,
-        tgtNodeAttrCols,
-        row,
-        tgtNodeCol,
-        !nodeExists,
-      )
-
-      nodeTable.rows.set(`${tgtNodeId}`, nodeData)
-    }
+    // A value from an earlier row is kept, except a name that is still the
+    // node column's value
+    incoming.forEach((values, nodeId) => {
+      const nodeData = nodeTable.rows.get(`${nodeId}`) as Record<
+        string,
+        ValueType
+      >
+      values.forEach((value, name) => {
+        const isName = name === nodeNameColumn.name
+        if (isName && nodeColumnNames.has(nodeId)) {
+          nodeColumnNames.delete(nodeId)
+        } else if (Object.hasOwn(nodeData, name)) {
+          return
+        }
+        setCellValue(nodeData, name, value)
+      })
+    })
 
     if (
       srcNodeCol !== undefined &&

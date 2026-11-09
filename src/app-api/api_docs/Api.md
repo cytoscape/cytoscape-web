@@ -919,12 +919,14 @@ Column names match ignoring case, as in Cytoscape Desktop:
 - A TSV column spelled like an existing column writes to that column, so
   `Name` writes to `name` and no second column is created. The exact spelling
   is preferred when a table already has several.
-- New TSV columns of one name merge: the first keeps its spelling and type, and
-  in each row the last non-empty value, in file order, wins. An empty cell in a
-  merged column never erases a value. `newColumns` lists the kept spelling.
-- A value in a column annotated with another type than the one it merges into
-  fails the import with `A1`, and nothing is changed. A differently typed column
-  with no values does not fail. A value that cannot be parsed as its own
+- New TSV columns of one name merge, including a header repeated exactly: the
+  first keeps its spelling and type, and in each row the last non-empty value,
+  in file order, wins. An empty cell in a merged column never erases a value.
+  `newColumns` lists the kept spelling.
+- A value in a TSV column annotated with another type than the column it writes
+  to fails the import with `A1`, and nothing is changed. This holds for any
+  spelling, the exact name of an existing column included. A differently typed
+  column with no values does not fail. A value that cannot be parsed as its own
   annotated type is still skipped and reported in `skippedCells`, so it never
   raises a conflict.
 

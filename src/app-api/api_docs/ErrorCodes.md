@@ -142,11 +142,11 @@ the `defaultValue` is validated against the column's declared `dataType` under
 the same rule. Writes to _undeclared_ columns pass through unchecked
 (declaration policy is a separate, not-yet-implemented concern).
 
-`importTableFromTsv` raises A1 in one case only: a parsed value in a column
-annotated with another type than the existing or first-declared column it
-merges into, ignoring case. Nothing is changed then. Unparseable cells are not
-conflicts: they are skipped and reported in its `skippedCells` result instead
-of failing the import.
+`importTableFromTsv` raises A1 in one case only: a parsed value in a TSV column
+annotated with another type than the column it writes to (the existing column
+of that name, ignoring case, or the first header of that name). Nothing is
+changed then. Unparseable cells are not conflicts: they are skipped and
+reported in its `skippedCells` result instead of failing the import.
 
 **CX2 spec:** `cx2-validation-requirements#A1`.
 

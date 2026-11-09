@@ -159,4 +159,56 @@ describe('createNetworkFromTableData duplicate columns (#951)', () => {
     expect(cyNetwork.nodeTable.rows.size).toBe(0)
     expect(cyNetwork.edgeTable.rows.size).toBe(0)
   })
+
+  it('lets an explicit name replace a node name first seen as a target', () => {
+    const { cyNetwork } = createNetworkFromTableData(
+      [
+        { s: 'a', t: 'b', Name: 'Label A' },
+        { s: 'b', t: 'c', Name: 'Label B' },
+      ],
+      [
+        column('s', SourceNode),
+        column('t', TargetNode),
+        column('Name', SourceNodeAttribute),
+      ],
+    )
+
+    const names = Object.fromEntries(
+      [...cyNetwork.nodeTable.rows.entries()].map(([id, row]) => [
+        id,
+        row.name,
+      ]),
+    )
+    // a, b and c are nodes 0, 1 and 2; c never had an explicit name
+    expect(names).toEqual({ '0': 'Label A', '1': 'Label B', '2': 'c' })
+  })
+
+  it('keeps the first explicit name of a node over a later one', () => {
+    const { cyNetwork } = createNetworkFromTableData(
+      [
+        { s: 'a', Name: 'first' },
+        { s: 'a', Name: 'second' },
+      ],
+      [column('s', SourceNode), column('Name', SourceNodeAttribute)],
+    )
+
+    expect(cyNetwork.nodeTable.rows.get('0')).toEqual({ name: 'first' })
+  })
+
+  it('applies a self-loop row in file order across source and target', () => {
+    const { cyNetwork } = createNetworkFromTableData(
+      [{ s: 'a', t: 'a', group: 'first', GROUP: 'last' }],
+      [
+        column('s', SourceNode),
+        column('t', TargetNode),
+        column('group', SourceNodeAttribute),
+        column('GROUP', ColumnAssignmentType.TargetNodeAttribute),
+      ],
+    )
+
+    expect(cyNetwork.nodeTable.rows.get('0')).toEqual({
+      name: 'a',
+      group: 'last',
+    })
+  })
 })

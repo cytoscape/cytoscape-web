@@ -93,6 +93,21 @@ describe('merging duplicate CX2 columns (#951)', () => {
     expect(nodeTable.rows.get('1')).toEqual({ name: 'b' })
   })
 
+  it('keeps a merged value when another column uses its name as an alias', () => {
+    const { nodeTable } = convert({
+      nodes: {
+        n: { d: 'string', a: 'a' },
+        N: { d: 'string', a: 'b' },
+        name: { d: 'string', a: 'n' },
+      },
+      nodeElements: [
+        { id: 1, x: 0, y: 0, v: { a: 'first', b: 'last', n: 'label' } },
+      ],
+    })
+
+    expect(nodeTable.rows.get('1')).toEqual({ n: 'last', name: 'label' })
+  })
+
   it('uses a default only for a row with no value under any spelling', () => {
     const { nodeTable } = convert({
       nodes: { name: { d: 'string', v: 'x' }, Name: { d: 'string', v: 'y' } },

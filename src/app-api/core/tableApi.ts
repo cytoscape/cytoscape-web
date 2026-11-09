@@ -887,7 +887,8 @@ export const tableApi: TableApi = {
       // Parse header — detect optional type annotations (name:type)
       const headerFields = lines[0].split('\t')
       const colNames: string[] = []
-      const colTypes: Map<string, ValueTypeName> = new Map()
+      // By header position: the same name can appear twice with two types
+      const colTypeAt: Array<ValueTypeName | undefined> = []
       for (const field of headerFields) {
         const colonIdx = field.lastIndexOf(':')
         if (colonIdx > 0) {
@@ -895,11 +896,12 @@ export const tableApi: TableApi = {
           const typePart = field.slice(colonIdx + 1)
           if (isValidTypeName(typePart)) {
             colNames.push(name)
-            colTypes.set(name, typePart as ValueTypeName)
+            colTypeAt.push(typePart as ValueTypeName)
             continue
           }
         }
         colNames.push(field)
+        colTypeAt.push(undefined)
       }
 
       const keyColumn = options?.keyColumn ?? 'id'
@@ -934,35 +936,27 @@ export const tableApi: TableApi = {
       // spelling and type. Nothing is created yet, so that a type conflict
       // found in the cells below leaves the table untouched.
       const newColumnsPlanned: Column[] = []
-      const targetColumnOf = new Map<string, Column>()
+      // The column each header position writes to
+      const targetAt: Array<Column | undefined> = []
       const writersOf = new Map<string, number>()
-      const addWriter = (target: Column): void => {
-        writersOf.set(target.name, (writersOf.get(target.name) ?? 0) + 1)
-      }
-      for (const colName of colNames) {
-        if (colName === keyColumn) continue
-        if (isStructuralColumn(colName)) continue
-        const existing =
+      colNames.forEach((colName, j) => {
+        if (colName === keyColumn || isStructuralColumn(colName)) return
+        let target =
           findColumnByName(existingColumns, colName) ??
           findColumnByName(newColumnsPlanned, colName)
-        if (existing !== undefined) {
-          targetColumnOf.set(colName, existing)
-          addWriter(existing)
-          continue
+        if (target === undefined) {
+          target = {
+            name: colName,
+            type: colTypeAt[j] ?? inferTypeFromData(lines, colNames, colName),
+          }
+          newColumnsPlanned.push(target)
         }
-        const planned: Column = {
-          name: colName,
-          type:
-            colTypes.get(colName) ??
-            inferTypeFromData(lines, colNames, colName),
-        }
-        newColumnsPlanned.push(planned)
-        targetColumnOf.set(colName, planned)
-        addWriter(planned)
-      }
+        targetAt[j] = target
+        writersOf.set(target.name, (writersOf.get(target.name) ?? 0) + 1)
+      })
 
-      // Whether several spellings write to this column: an empty cell then
-      // means "no value", so it cannot erase the other spelling's value
+      // Whether several header columns write to this column: an empty cell
+      // then means "no value", so it cannot erase another one's value
       const isMergedSpelling = (colName: string, target: Column): boolean =>
         colName !== target.name || (writersOf.get(target.name) ?? 0) > 1
 
@@ -1023,10 +1017,10 @@ export const tableApi: TableApi = {
           const colName = colNames[j]
           if (colName === keyColumn) continue
           if (isStructuralColumn(colName)) continue
-          const target = targetColumnOf.get(colName)
+          const target = targetAt[j]
           if (target === undefined) continue
           const rawValue = values[j] ?? ''
-          const colType = colTypes.get(colName) ?? target.type
+          const colType = colTypeAt[j] ?? target.type
           // Empty cells mean "no value provided" — leave the attribute alone
           if (
             rawValue === '' &&
@@ -1047,11 +1041,12 @@ export const tableApi: TableApi = {
             })
             continue
           }
-          // A parsed value of a file column declared with another type than
-          // the column it merges into fails the import, as in Cytoscape
-          // Desktop. A value that does not parse was reported above, and an
-          // exact-name column keeps its previous behaviour.
-          if (colName !== target.name && colType !== target.type) {
+          // A parsed value of a header column annotated with another type
+          // than the column it writes to fails the import, as in Cytoscape
+          // Desktop: whatever its spelling, and whether or not other header
+          // columns write there too. A value that does not parse was
+          // reported above.
+          if (colType !== target.type) {
             return fail(
               TableCodes.VALUE_TYPE_MISMATCH,
               target.name,
