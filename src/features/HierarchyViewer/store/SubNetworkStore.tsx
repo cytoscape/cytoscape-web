@@ -8,6 +8,13 @@ export interface RingSelection {
   nodeIds: IdType[]
 }
 
+/** A selection a link asks for in a subnetwork, by node and edge id */
+export interface UrlSubNetworkSelection {
+  subNetworkId: IdType
+  nodeIds: IdType[]
+  edgeIds: IdType[]
+}
+
 interface SubNetworkState {
   // Names of the proteins to select in the subnetwork, from a click in the Cell
   // View
@@ -28,6 +35,13 @@ interface SubNetworkState {
   // form `<hierarchyId>_<subsystemNodeId>`. Empty when none is shown. Used so
   // the hierarchy-side share URL can capture the shown subnetwork (CW-654).
   currentSubNetworkId: IdType
+  // What a link (`selectedSubnetworkNodes`) selects in a subnetwork, held until
+  // the viewer shows that subnetwork, however long its fetch takes. Applied
+  // once, then cleared.
+  urlSelection: UrlSubNetworkSelection | null
+  // A subsystem a link selected, for the Cell View to zoom to once it is shown
+  // and the subsystem is selected. Applied once, then cleared.
+  cellViewFocus: IdType | null
 }
 
 interface SubNetworkAction {
@@ -39,6 +53,10 @@ interface SubNetworkAction {
   clearRingSelection: () => void
   setSelectedHierarchyNodes: (selectedHierarchyNodeNames: string[]) => void
   setCurrentSubNetworkId: (currentSubNetworkId: IdType) => void
+  requestUrlSelection: (selection: UrlSubNetworkSelection) => void
+  clearUrlSelection: () => void
+  requestCellViewFocus: (subsystemId: IdType) => void
+  clearCellViewFocus: () => void
 }
 
 export type SubNetworkStore = SubNetworkState & SubNetworkAction
@@ -54,6 +72,8 @@ export const useSubNetworkStore = create(
     ringSelection: null,
     selectedHierarchyNodeNames: [],
     currentSubNetworkId: '',
+    urlSelection: null,
+    cellViewFocus: null,
     setSelectedNodes: (selectedNodes, target) => {
       set((state) => {
         state.selectedNodes = selectedNodes
@@ -85,6 +105,26 @@ export const useSubNetworkStore = create(
     setCurrentSubNetworkId: (currentSubNetworkId) => {
       set((state) => {
         state.currentSubNetworkId = currentSubNetworkId
+      })
+    },
+    requestUrlSelection: (selection) => {
+      set((state) => {
+        state.urlSelection = selection
+      })
+    },
+    clearUrlSelection: () => {
+      set((state) => {
+        state.urlSelection = null
+      })
+    },
+    requestCellViewFocus: (subsystemId) => {
+      set((state) => {
+        state.cellViewFocus = subsystemId
+      })
+    },
+    clearCellViewFocus: () => {
+      set((state) => {
+        state.cellViewFocus = null
       })
     },
   })),

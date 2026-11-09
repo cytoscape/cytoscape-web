@@ -494,6 +494,76 @@ describe('CirclePackingPanel name lookup source (#933)', () => {
       expect(exclusiveSelect).toHaveBeenCalledTimes(1)
     })
   })
+
+  // A link that selects a subsystem (`selectednodes`) zooms the Cell View to it
+  // once, whether or not the link also selects a protein (#871).
+  describe('zoom to a subsystem a link selects', () => {
+    const focus = (): string | null =>
+      useSubNetworkStore.getState().cellViewFocus
+
+    beforeEach(() => {
+      vi.useFakeTimers()
+      useViewModelStore.setState({ exclusiveSelect: vi.fn() } as any)
+      useNetworkSummaryStore.setState({
+        summaries: { [NETWORK_ID]: hcxSummary() },
+      } as any)
+      useViewModelStore.setState({
+        viewModels: {
+          [NETWORK_ID]: [{ ...primaryView, selectedNodes: ['root'] }],
+        },
+      } as any)
+      useSubNetworkStore.getState().requestCellViewFocus('root')
+    })
+
+    afterEach(() => {
+      useSubNetworkStore.getState().clearCellViewFocus()
+      vi.clearAllTimers()
+      vi.useRealTimers()
+    })
+
+    it('zooms once the view model is built', async () => {
+      const builds = deferBuilds()
+      render(panel(network, true))
+      expect(focus()).toBe('root')
+
+      await act(async () => {
+        builds[0].resolve(hierarchyOf('root'))
+      })
+
+      expect(focus()).toBeNull()
+    })
+
+    it('waits while the Cell View is hidden', async () => {
+      const builds = deferBuilds()
+      const { rerender } = render(panel(network, false))
+      await act(async () => {
+        builds[0].resolve(hierarchyOf('root'))
+      })
+      expect(focus()).toBe('root')
+
+      rerender(panel(network, true))
+
+      expect(focus()).toBeNull()
+    })
+
+    it('waits until the subsystem is selected', async () => {
+      useViewModelStore.setState({
+        viewModels: { [NETWORK_ID]: [primaryView] },
+      } as any)
+      const builds = deferBuilds()
+      render(panel(network, true))
+      await act(async () => {
+        builds[0].resolve(hierarchyOf('root'))
+      })
+      expect(focus()).toBe('root')
+
+      act(() => {
+        realExclusiveSelect(NETWORK_ID, ['root'], [])
+      })
+
+      expect(focus()).toBeNull()
+    })
+  })
 })
 
 // The labels are drawn over the rings, and only the rings have a click handler.

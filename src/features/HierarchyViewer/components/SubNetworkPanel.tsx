@@ -27,7 +27,10 @@ import { FloatingToolBar } from '../../FloatingToolBar'
 import { MessagePanel } from '../../Messages'
 import { CyjsRenderer } from '../../NetworkPanel/CyjsRenderer'
 import { CirclePackingView } from '../model/CirclePackingView'
-import { useSubNetworkStore } from '../store/SubNetworkStore'
+import {
+  UrlSubNetworkSelection,
+  useSubNetworkStore,
+} from '../store/SubNetworkStore'
 import {
   createFilterFromAspect,
   findFilterAspect,
@@ -193,6 +196,12 @@ export const SubNetworkPanel = ({
   )
   const clearRingSelection: () => void = useSubNetworkStore(
     (state) => state.clearRingSelection,
+  )
+  const urlSelection: UrlSubNetworkSelection | null = useSubNetworkStore(
+    (state) => state.urlSelection,
+  )
+  const clearUrlSelection: () => void = useSubNetworkStore(
+    (state) => state.clearUrlSelection,
   )
 
   useEffect(() => {
@@ -393,6 +402,34 @@ export const SubNetworkPanel = ({
     exclusiveSelect(shownSubNetworkId, toBeSelected, [])
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fires on a click or when its subnetwork is shown; the rest is fresh at trigger time
   }, [selectedNodes, selectedNodesTarget, shownSubNetworkId])
+
+  /**
+   * Select what a link (`selectedSubnetworkNodes`) names, once its subnetwork is
+   * shown. The fetch can take any time, so the request waits in the store
+   * rather than on a timer. Ids the subnetwork does not have are skipped. The
+   * selection then reaches the Cell View by name, like one made here.
+   */
+  useEffect(() => {
+    if (
+      urlSelection === null ||
+      shownSubNetworkId !== urlSelection.subNetworkId
+    ) {
+      return
+    }
+    const tableRecord = tables[shownSubNetworkId]
+    if (tableRecord === undefined) {
+      return
+    }
+    const nodeIds = urlSelection.nodeIds.filter((id) =>
+      tableRecord.nodeTable.rows.has(id),
+    )
+    const edgeIds = urlSelection.edgeIds.filter((id) =>
+      tableRecord.edgeTable.rows.has(id),
+    )
+    clearUrlSelection()
+    exclusiveSelect(shownSubNetworkId, nodeIds, edgeIds)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires on the request or when its subnetwork is shown; the tables are read fresh then
+  }, [urlSelection, shownSubNetworkId])
 
   useEffect(() => {
     // Clear the shown subnetwork when the viewer unmounts so it can't leak into

@@ -194,6 +194,7 @@ describe('SubNetworkPanel selection sync with the Cell View (#931)', () => {
       selectedHierarchyNodeNames: [],
       selectedNodesTarget: null,
       currentSubNetworkId: '',
+      urlSelection: null,
     } as any)
 
     echoes = []
@@ -374,7 +375,7 @@ describe('SubNetworkPanel selection sync with the Cell View (#931)', () => {
       render(panel(SUBSYSTEM_A))
       await shown(SUB_A)
 
-      await waitFor(() => expect(echoes).toEqual([['DR1']]))
+      await waitFor(() => expect(echoes.at(-1)).toEqual(['DR1']))
     })
   })
 
@@ -486,6 +487,59 @@ describe('SubNetworkPanel selection sync with the Cell View (#931)', () => {
 
       expect(selectedIn(SUB_A)).toEqual([])
       expect(echoes).toEqual([[]])
+    })
+  })
+
+  // `selectedSubnetworkNodes` in a link, by node id (#871). The subnetwork is
+  // fetched after the link is read, so the request waits for it.
+  describe('a selection from a link', () => {
+    const requestFromLink = (subNetworkId: IdType, nodeIds: IdType[]) => {
+      act(() => {
+        useSubNetworkStore
+          .getState()
+          .requestUrlSelection({ subNetworkId, nodeIds, edgeIds: [] })
+      })
+    }
+
+    it('selects its nodes once the subnetwork is shown', async () => {
+      const fetches = deferFetches()
+      requestFromLink(SUB_A, ['a2'])
+      render(panel(SUBSYSTEM_A))
+      await waitFor(() => expect(fetches.has(SUB_A)).toBe(true))
+      expect(selectedIn(SUB_A)).toEqual([])
+
+      await act(async () => {
+        fetches.get(SUB_A)?.()
+      })
+      await shown(SUB_A)
+
+      await waitFor(() => expect(selectedIn(SUB_A)).toEqual(['a2']))
+      expect(useSubNetworkStore.getState().urlSelection).toBeNull()
+    })
+
+    it('is sent to the Cell View by name', async () => {
+      requestFromLink(SUB_A, ['a1'])
+      render(panel(SUBSYSTEM_A))
+      await shown(SUB_A)
+
+      await waitFor(() => expect(echoes.at(-1)).toEqual(['DR1']))
+    })
+
+    it('skips ids the subnetwork does not have', async () => {
+      requestFromLink(SUB_A, ['a1', 'missing'])
+      render(panel(SUBSYSTEM_A))
+      await shown(SUB_A)
+
+      await waitFor(() => expect(selectedIn(SUB_A)).toEqual(['a1']))
+    })
+
+    it('is not applied by a panel showing another subnetwork', async () => {
+      requestFromLink(SUB_B, ['b2'])
+      render(panel(SUBSYSTEM_A))
+      await shown(SUB_A)
+
+      expect(selectedIn(SUB_A)).toEqual([])
+      expect(useSubNetworkStore.getState().urlSelection).not.toBeNull()
     })
   })
 })

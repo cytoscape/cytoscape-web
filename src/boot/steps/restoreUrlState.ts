@@ -2,6 +2,7 @@ import { useFilterStore } from '@/data/hooks/stores/FilterStore'
 import { useUiStateStore } from '@/data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '@/data/hooks/stores/ViewModelStore'
 import { SelectionStates } from '@/features/FloatingToolBar/ShareNetworkButton'
+import { useSubNetworkStore } from '@/features/HierarchyViewer/store/SubNetworkStore'
 import {
   DisplayMode,
   FilterConfig,
@@ -135,20 +136,33 @@ export const restoreUrlState = (
   restoreNetworkViewTab(search)
   restoreFilter(search)
 
-  // The active view and its subnetwork selection need the components that own
-  // them to exist first, hence the delay. Safe against the navigate() that
-  // strips the params right after this returns, because `search` is a
-  // mount-time snapshot rather than a live read.
   const activeNetworkViewId = search.get('activeNetworkView')
-  setTimeout(() => {
-    if (activeNetworkViewId == null) return
+  if (activeNetworkViewId == null) return
 
+  // A subnetwork view is selected through its subsystem in the hierarchy:
+  // the Cell View zooms to it once shown, and the subnetwork selection waits
+  // in the store for the Sub Network Viewer to show that subnetwork, however
+  // long its fetch takes (#871).
+  const subsystemId = splitIds(
+    search.get(SelectionStates.SelectedNodes) ?? '',
+  )[0]
+  if (subsystemId !== undefined) {
+    useSubNetworkStore.getState().requestCellViewFocus(subsystemId)
+  }
+  const subNetworkNodes = splitIds(search.get('selectedSubnetworkNodes') ?? '')
+  const subNetworkEdges = splitIds(search.get('selectedSubnetworkEdges') ?? '')
+  if (subNetworkNodes.length > 0 || subNetworkEdges.length > 0) {
+    useSubNetworkStore.getState().requestUrlSelection({
+      subNetworkId: activeNetworkViewId,
+      nodeIds: subNetworkNodes,
+      edgeIds: subNetworkEdges,
+    })
+  }
+
+  // The active view needs the network to have loaded first, hence the delay.
+  // Safe against the navigate() that strips the params right after this
+  // returns, because `search` is a mount-time snapshot rather than a live read.
+  setTimeout(() => {
     useUiStateStore.getState().setActiveNetworkView(activeNetworkViewId)
-    restoreSelection(
-      search,
-      activeNetworkViewId,
-      'selectedSubnetworkNodes',
-      'selectedSubnetworkEdges',
-    )
   }, NETWORK_VIEW_RESTORE_DELAY_MS)
 }

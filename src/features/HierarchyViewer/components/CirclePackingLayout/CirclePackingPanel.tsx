@@ -185,6 +185,9 @@ export const CirclePackingPanel = ({
   const selectedHierarchyNodeNames = useSubNetworkStore(
     (state) => state.selectedHierarchyNodeNames,
   )
+  const cellViewFocus: IdType | null = useSubNetworkStore(
+    (state) => state.cellViewFocus,
+  )
 
   // ===== COMPUTED VALUES =====
   // Protein names are looked up in the interaction network named by this
@@ -851,6 +854,30 @@ export const CirclePackingPanel = ({
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs when the view model arrives or the panel is shown; the pending flag makes it one-shot
     [circlePackingView?.hierarchy, visible],
+  )
+
+  /**
+   * Zoom to the subsystem a link selected (`selectednodes`), once. The link
+   * may name no protein, so this does not wait for selected leaves as the
+   * expansion above does. It waits for the subsystem to be selected, the view
+   * model to be built and the view to be shown, in any order (#871).
+   */
+  useEffect(
+    function onCellViewFocusRequest() {
+      if (
+        cellViewFocus === null ||
+        !visible ||
+        circlePackingView?.hierarchy === undefined ||
+        !selectedNodes.includes(cellViewFocus)
+      ) {
+        return
+      }
+      useSubNetworkStore.getState().clearCellViewFocus()
+      initialExpansionPendingRef.current = false
+      expandToInitialSelection()
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot on the request; expandToInitialSelection reads the same values fresh
+    [cellViewFocus, visible, circlePackingView?.hierarchy, selectedNodes],
   )
 
   /**
