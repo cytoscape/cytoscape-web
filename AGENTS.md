@@ -232,6 +232,7 @@ Read these before working in related areas:
 - `docs/specifications/EXTERNAL_INPUT_VALIDATION_POLICY.md` — CX2 validation requirements for external data
 - `docs/specifications/HIERARCHY_FILTER_WIDGETS_ASPECT.md` — Hierarchy Viewer `filterWidgets` aspect format and validation
 - `docs/specifications/FILTER_SPECIFICATION.md` — FILTER tab: filter tree, evaluation rules, Cytoscape Desktop filter file format
+- `docs/specifications/EMBED_MODE_SPECIFICATION.md` — `/embed/<uuid>` read-only iframe route: URL contract, `embed` database scope, boot gating
 - `docs/specifications/DIALOG_DISMISS_POLICY.md` — button-only dialog dismissal, the `CyDialog` wrapper, modal form popovers
 - `docs/specifications/DEBUG_GUIDE.md` — Structured logging policy and debug namespace usage
 - `docs/specifications/FEATURE_MODULE_CREATION_PATTERN.md` — How to create new feature modules
