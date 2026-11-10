@@ -4,6 +4,11 @@ All notable changes to Cytoscape Web are documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- The default app catalog loads on a site served from a subpath, such as
+  `/cytoscape/`. It was fetched from the site root, so App Manager listed no apps there
+
 ## [1.1.1] — 2026-10-28
 
 An in-app user manual, keyboard shortcuts for undo, redo and delete, a Select menu, a new

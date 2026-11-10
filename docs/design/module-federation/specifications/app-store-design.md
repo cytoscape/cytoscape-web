@@ -73,7 +73,9 @@ The host-side manifest contract already exists:
 - `parseManifest()` validates and normalizes the manifest before storing it in
   `AppStore.catalog`
 
-The current default manifest URL is `/apps.json`; once the App Store web
+The current default manifest URL is `apps.json` under the deployment's base
+path (`/apps.json` at the origin root, `/cytoscape/apps.json` on a deployment
+served from `/cytoscape/`); once the App Store web
 catalog is deployed, `DEFAULT_MANIFEST_URL` can point at the official App Store
 manifest endpoint.
 

@@ -355,9 +355,11 @@ type ManifestSource =
 The host resolves the manifest as follows:
 
 - If `manifestSource` is `undefined`, the host fetches from
-  `DEFAULT_MANIFEST_URL` (initially `/apps.json` — a same-origin path
-  served from the bundle root via `CopyPlugin`; will be updated to the
-  App Store catalog URL when the App Store is deployed). Defined in
+  `DEFAULT_MANIFEST_URL` (`<base>apps.json` — a same-origin path under the
+  deployment's base path, `import.meta.env.BASE_URL`: `/apps.json` at the
+  origin root, `/cytoscape/apps.json` on dev1; emitted into the bundle root by
+  `appsConfigPlugin` in `vite.config.ts`; will be updated to the App Store
+  catalog URL when the App Store is deployed). Defined in
   `src/app-api/constants.ts`
 - If `manifestSource.type === 'url'`, the host fetches from the custom URL
 - If `manifestSource.type === 'inline'`, the host parses the stored JSON
