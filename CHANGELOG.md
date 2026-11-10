@@ -4,6 +4,15 @@ All notable changes to Cytoscape Web are documented here.
 
 ## [Unreleased]
 
+### Changed
+
+- The apps in a site's own catalog (`apps.json`) are core apps: they are on when
+  Cytoscape Web starts, without a trip to Manage Apps. Turning one off keeps it off in
+  that workspace across reloads; a new workspace starts with it on again. A core app
+  that fails to load is reported in a message and tried again at the next start
+- The repository's `apps.json` is empty. The example apps are no longer listed by
+  default; each deployment ships its own catalog
+
 ### Fixed
 
 - The default app catalog loads on a site served from a subpath, such as

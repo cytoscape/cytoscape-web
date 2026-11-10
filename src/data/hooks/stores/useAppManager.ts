@@ -26,6 +26,7 @@ import { AppLoadFailure } from '../../../models/AppModel/AppLoadFailure'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
 import { CyApp } from '../../../models/AppModel/CyApp'
 import { appLoadFailureToast } from '../../../models/AppModel/impl/appLoadFailureMessage'
+import { startupAppStatus } from '../../../models/AppModel/impl/startupAppStatus'
 import { ManifestSource } from '../../../models/AppModel/ManifestSource'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { getAppSettingFromDb } from '../../db'
@@ -147,6 +148,20 @@ export const useAppManager = (): AppManagerCommands => {
     manifestEntriesRef.current.some((e) => e.id === id && e.url === url)
 
   /**
+   * True if `id` is a core app: its catalog entry is one the deployment's own
+   * `apps.json` lists. Core apps are on unless the workspace records that the
+   * user turned them off (see `startupAppStatus`).
+   */
+  const isCoreApp = (id: string): boolean => {
+    const { catalog, manifestSource } = useAppStore.getState()
+    const entry = catalog[id]
+    return (
+      entry !== undefined &&
+      isFromDefaultManifest(id, entry.url, manifestSource)
+    )
+  }
+
+  /**
    * Recompose the catalog (manifest ∪ workspace.installedApps) and write it
    * back. Used after install/uninstall so the change is immediately visible.
    */
@@ -217,9 +232,12 @@ export const useAppManager = (): AppManagerCommands => {
 
   /**
    * Mirror an app's runtime status into the durable workspace record (§8.4).
-   * Updates an existing InstalledApp; if none exists, a successful activation
-   * creates a `source: 'manifest'` record (first activation of a manifest app).
-   * Failures/deactivations with no record are no-ops.
+   * Updates an existing InstalledApp. If none exists, a `source: 'manifest'`
+   * record is created for a successful activation (first activation of a
+   * manifest app) and for turning off a core app: a core app with no record
+   * starts on, so without one it would come back at the next startup.
+   * Other changes with no record (failures, turning off any other app) are
+   * no-ops.
    */
   const reconcileInstalledStatus = (id: string, status: AppStatus): void => {
     const ws = useWorkspaceStore.getState()
@@ -230,12 +248,13 @@ export const useAppManager = (): AppManagerCommands => {
       ws.setInstalledAppStatus(id, status)
       return
     }
-    if (status === AppStatus.Active) {
+    const turnedOffCoreApp = status === AppStatus.Inactive && isCoreApp(id)
+    if (status === AppStatus.Active || turnedOffCoreApp) {
       const entry = useAppStore.getState().catalog[id]
       if (entry !== undefined) {
         ws.addInstalledApp({
           entry,
-          status: AppStatus.Active,
+          status,
           source: 'manifest',
           installedAt: new Date().toISOString(),
         })
@@ -584,21 +603,35 @@ export const useAppManager = (): AppManagerCommands => {
 
         // 6. Restore the session apps map by seeding it from the workspace's
         //    installedApps (the durable status source, §8.4), not the legacy
-        //    global apps store. Non-fatal on failure.
-        const catalogIdSet = new Set(entries.map((e) => e.id))
-        const seedApps: CyApp[] = (
-          useWorkspaceStore.getState().workspace.installedApps ?? []
+        //    global apps store. Core apps (the default apps.json's entries)
+        //    are seeded too: on unless their record says the user turned them
+        //    off, so one with no record starts on. Nothing is written here;
+        //    only the user turning a core app off creates its record
+        //    (reconcileInstalledStatus). Non-fatal on failure.
+        const records = new Map(
+          (useWorkspaceStore.getState().workspace.installedApps ?? []).map(
+            (a) => [a.entry.id, a],
+          ),
         )
-          .filter((a) => catalogIdSet.has(a.entry.id))
-          .map((a) => ({
-            id: a.entry.id,
-            name: a.entry.name ?? a.entry.id,
-            ...(a.entry.description !== undefined && {
-              description: a.entry.description,
+        const seedApps: CyApp[] = []
+        for (const catalogEntry of entries) {
+          const { id } = catalogEntry
+          const recorded = records.get(id)
+          const status = startupAppStatus(recorded?.status, isCoreApp(id))
+          if (status === undefined) continue
+          const seedEntry = recorded?.entry ?? catalogEntry
+          seedApps.push({
+            id,
+            name: seedEntry.name ?? id,
+            ...(seedEntry.description !== undefined && {
+              description: seedEntry.description,
             }),
-            ...(a.entry.version !== undefined && { version: a.entry.version }),
-            status: a.status,
-          }))
+            ...(seedEntry.version !== undefined && {
+              version: seedEntry.version,
+            }),
+            status,
+          })
+        }
         try {
           await restore(seedApps)
           logApp.info(
@@ -614,11 +647,9 @@ export const useAppManager = (): AppManagerCommands => {
         // 7. Unblock the lifecycle useEffect
         setRestored(true)
 
-        // 8. Startup auto-load: the active set comes from the workspace's
-        //    installed apps (the durable source of truth, §8.4), not the
-        //    legacy global apps store.
-        const installedAppList =
-          useWorkspaceStore.getState().workspace.installedApps ?? []
+        // 8. Startup auto-load: the apps seeded active above — those the
+        //    workspace's installed apps record as active (the durable source
+        //    of truth, §8.4) and the core apps not turned off.
         const { catalog, manifestSource } = useAppStore.getState()
         // Ids that failed anywhere in this startup pass, collapsed into one
         // toast at the end. Before #719 this path raised none at all, so a
@@ -628,13 +659,10 @@ export const useAppManager = (): AppManagerCommands => {
         // `catalog[id].url`, not the installed record's URL, so a user-set
         // manifest declaring an existing app's id would otherwise decide where
         // an already-trusted app is fetched from.
-        const activeAppIds = installedAppList
-          .filter(
-            (a) =>
-              a.status === AppStatus.Active &&
-              catalog[a.entry.id] !== undefined,
-          )
-          .map((a) => a.entry.id)
+        // seedApps holds catalog ids only, so catalog[id] is defined below.
+        const activeAppIds = seedApps
+          .filter((app) => app.status === AppStatus.Active)
+          .map((app) => app.id)
           .filter((id) => {
             const allowed = isCatalogEntryAllowed(
               catalog[id].url,

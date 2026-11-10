@@ -51,6 +51,7 @@ or removing a spec.
 - **`annotation-canvas-lifecycle.spec.ts`** — Annotation canvas lifecycle (2 tests)
 - **`app-api-active-network-view.spec.ts`** — App API network changes move the active view (#927) (1 test)
 - **`cookie-consent.spec.ts`** — Cookie Consent (3 tests)
+- **`core-apps.spec.ts`** — core apps from the deployment catalog: on at start, kept off once turned off, failures reported (3 tests)
 - **`cross-tab-sync.spec.ts`** — cross-tab synchronization (4 tests)
 - **`cywebapi-ready.spec.ts`** — window.CyWebApi public surface (1 test)
 - **`hierarchy-cell-view.spec.ts`** — Cell View availability for hierarchies (#630) (2 tests)

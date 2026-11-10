@@ -1,5 +1,6 @@
 # Runtime App Registration Specification
 
+- **Rev. 7 (11/10/2026): Jing Chen and Claude** — Core apps: the default manifest's entries auto-load unless the workspace persists them as inactive (§8.1, §8.5, §10.1); the default manifest is fetched under the deployment's base path (§7.2)
 - **Rev. 6 (3/23/2026): Keiichiro ONO and Claude** — `author` field relaxed from required to optional with `"unknown"` default for backward compatibility with legacy `{ name, url }` manifests (§6.4, §7.1)
 - **Rev. 5 (3/20/2026): Keiichiro ONO and Claude** — Manifest schema extension for App Store readiness: added `author` (required), `tags`, `icon`, `license`, `repository`, `compatibleHostVersions` fields to `AppCatalogEntry` (§6.4) and `AppManifestEntrySchema` (§7.1)
 - **Rev. 4 (3/19/2026): Keiichiro ONO, GitHub Copilot, and Claude** — Second code review round: `manifestSource` hydration responsibility unified to `useAppManager` (§7.2); state transition table cleanup calls updated to use `unmountApp` (§9.7 rows 6/12); `obtainCatalogEntries` introduced as source-agnostic manifest resolution entry point (§7.2); remaining `manifestUrl` naming remnants fixed throughout
@@ -864,9 +865,21 @@ These are potential future enhancements as the App Store ecosystem matures.
 
 ### 8.1 Rule
 
-Only apps persisted as active are auto-loaded at startup.
+Two kinds of app are auto-loaded at startup:
 
-This is the startup policy for the first rollout.
+- apps persisted as active, and
+- **core apps** — the entries of the deployment's own default manifest
+  (`apps.json`) — unless the workspace persists them as inactive.
+
+A core app with no persisted record, or with a record of `AppStatus.Error`,
+loads. Only `AppStatus.Inactive`, which is written when the user turns a core
+app off, keeps it from loading. Startup writes nothing for a core app; see
+[workspace-app-install-design.md §8.5](./workspace-app-install-design.md#85-core-apps-on-by-default).
+The rule is `startupAppStatus` in
+`src/models/AppModel/impl/startupAppStatus.ts`.
+
+An app listed only by a user-set Manifest Source (§6.5) is not a core app and
+follows the first rule.
 
 ### 8.2 Rationale
 
@@ -874,14 +887,17 @@ This policy provides the best balance between continuity and performance:
 
 - apps the user actively uses remain available after restart
 - inactive apps do not increase startup network cost
-- startup traffic scales with real usage, not manifest size
+- the apps a deployment ships work from the first start, with no trip to
+  Manage Apps, while the user can still turn each one off
+- startup traffic scales with real usage and the deployment's core list, not
+  with the size of a user-set manifest
 
 ### 8.3 Startup Flow
 
 After restore completes:
 
-1. Inspect restored app records
-2. Select only apps with status equal to active
+1. Inspect restored app records and the core apps of the default manifest
+2. Select the apps `startupAppStatus` makes active (§8.1)
 3. Load all selected apps in parallel using `Promise.allSettled`
 4. For each successfully loaded app:
    1. register the loaded app
@@ -929,9 +945,10 @@ per-app loader contract or lifecycle hooks.
 If an app exists in the manifest but is:
 
 - persisted as inactive, or
-- not present in IndexedDB
+- not present in IndexedDB, and not a core app (§8.1)
 
-then it remains visible in the catalog but is not loaded.
+then it remains visible in the catalog but is not loaded. A core app with no
+record is loaded.
 
 ## 9. Activation and Deactivation Policy
 
@@ -1119,11 +1136,17 @@ in session-local `loadStates`).
 
 ### 10.1 Startup Load Failure
 
-If startup loading of an active app fails:
+If startup loading of an active app (including a core app, §8.1) fails:
 
 1. set loadStates[id] to failed
 2. keep the rest of the host usable
 3. expose retry in the app manager UI
+4. tell the user in one toast for the whole startup pass: a single failure
+   names the app and the cause, several are counted
+   (`N apps failed to load — open App Manager for details.`)
+
+The persisted record is not changed. A core app that failed is therefore tried
+again at the next startup, until it loads or the user turns it off.
 
 ### 10.2 Retry
 

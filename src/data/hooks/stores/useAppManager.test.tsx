@@ -20,6 +20,8 @@ import { migrateLegacyApps } from '../../../features/AppManager/install/migrateL
 import { loadRemoteApp } from '../../../features/AppManager/loader/loadRemoteApp'
 import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
+import { InstalledApp } from '../../../models/AppModel/InstalledApp'
+import { getAppSettingFromDb } from '../../db'
 import { mountApp, unmountApp } from './appLifecycle'
 import { useAppStore } from './AppStore'
 import { useMessageStore } from './MessageStore'
@@ -40,8 +42,13 @@ vi.mock('../../db', async (importOriginal) => ({
   putWorkspaceToDb: vi.fn().mockResolvedValue(undefined),
 }))
 
+// Hoisted rather than imported: src/data may not import from src/features
+// (src/data/layering.test.ts), and the core-app tests need the handle.
+const { mockObtainCatalogEntries } = vi.hoisted(() => ({
+  mockObtainCatalogEntries: vi.fn(),
+}))
 vi.mock('../../../features/AppManager/manifest/obtainCatalogEntries', () => ({
-  obtainCatalogEntries: vi.fn().mockResolvedValue([]),
+  obtainCatalogEntries: mockObtainCatalogEntries.mockResolvedValue([]),
 }))
 
 vi.mock('../../../features/AppManager/install/migrateLegacyApps', () => ({
@@ -71,6 +78,7 @@ const mockMigrate = migrateLegacyApps as Mock
 const mockLoadRemoteApp = loadRemoteApp as Mock
 const mockMountApp = mountApp as Mock
 const mockUnmountApp = unmountApp as Mock
+const mockGetAppSettingFromDb = getAppSettingFromDb as Mock
 
 const entry = (id: string, version = '1.0.0'): AppCatalogEntry => ({
   id,
@@ -657,5 +665,186 @@ describe('useAppManager — load failure reasons', () => {
       ),
     )
     expect(useMessageStore.getState().messages).toHaveLength(1)
+  })
+})
+
+// Core apps: every entry in the deployment's own apps.json is on unless the
+// current workspace records that the user turned it off. Only that choice is
+// written down; a workspace with no record of a core app gets it on.
+describe('useAppManager — core apps', () => {
+  const core = entry('coreApp')
+
+  /** A loadRemoteApp that registers the module, as a successful load does. */
+  const loadsFine = async (
+    id: string,
+    _url: string,
+    registry: Map<string, unknown>,
+  ) => {
+    const app = { id, name: id, status: AppStatus.Inactive }
+    registry.set(id, app)
+    return { ok: true, app }
+  }
+
+  const record = (status: AppStatus): InstalledApp => ({
+    entry: core,
+    status,
+    source: 'manifest',
+    installedAt: '2026-01-01T00:00:00.000Z',
+  })
+
+  const seedWorkspace = (records: InstalledApp[]): void => {
+    useWorkspaceStore.getState().set({
+      id: 'ws-test',
+      name: 'Test',
+      isRemote: false,
+      networkIds: [],
+      networkModified: {},
+      creationTime: new Date(),
+      localModificationTime: new Date(),
+      currentNetworkId: '',
+      installedApps: records,
+    })
+  }
+
+  /** Forget the session, as a page reload does; the workspace stays. */
+  const resetSession = (): void => {
+    appRegistry.clear()
+    loadedAppUrls.clear()
+    useAppStore.setState({
+      apps: {},
+      loadStates: {},
+      loadErrors: {},
+      manifestSource: undefined,
+    })
+    useAppStore.getState().setCatalog([])
+  }
+
+  const coreStatus = () => useAppStore.getState().apps['coreApp']?.status
+
+  const lastMessage = (): string => {
+    const messages = useMessageStore.getState().messages
+    return messages[messages.length - 1]?.message ?? ''
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockIsAllowedOrigin.mockReturnValue(true)
+    mockIsCatalogEntryAllowed.mockReturnValue(true)
+    mockIsHostCompatible.mockReturnValue(true)
+    // The deployment's default apps.json lists one app.
+    mockObtainCatalogEntries.mockResolvedValue([core])
+    mockGetAppSettingFromDb.mockResolvedValue(undefined)
+    seedWorkspace([])
+    resetSession()
+    useMessageStore.getState().resetMessages()
+  })
+
+  afterEach(() => {
+    mockObtainCatalogEntries.mockResolvedValue([])
+    mockGetAppSettingFromDb.mockResolvedValue(undefined)
+  })
+
+  it('turns a core app on at startup without writing a record', async () => {
+    mockLoadRemoteApp.mockImplementation(loadsFine)
+
+    await renderManager()
+
+    await waitFor(() =>
+      expect(useAppStore.getState().loadStates['coreApp']).toBe('loaded'),
+    )
+    expect(coreStatus()).toBe(AppStatus.Active)
+    expect(mockMountApp).toHaveBeenCalledTimes(1)
+    // "No record" is what on-by-default means. Writing one here would keep
+    // the app running for this user after it is dropped from apps.json.
+    expect(installed()).toEqual([])
+  })
+
+  it('keeps a core app off when the workspace records it was turned off', async () => {
+    seedWorkspace([record(AppStatus.Inactive)])
+
+    await renderManager()
+
+    await waitFor(() => expect(coreStatus()).toBe(AppStatus.Inactive))
+    expect(mockLoadRemoteApp).not.toHaveBeenCalled()
+  })
+
+  it('tries a core app again when its record says an earlier load failed', async () => {
+    mockLoadRemoteApp.mockImplementation(loadsFine)
+    seedWorkspace([record(AppStatus.Error)])
+
+    await renderManager()
+
+    await waitFor(() =>
+      expect(useAppStore.getState().loadStates['coreApp']).toBe('loaded'),
+    )
+    expect(coreStatus()).toBe(AppStatus.Active)
+  })
+
+  it('records the user turning a core app off, so it stays off after a reload', async () => {
+    mockLoadRemoteApp.mockImplementation(loadsFine)
+    const first = await renderManager()
+    await waitFor(() =>
+      expect(useAppStore.getState().loadStates['coreApp']).toBe('loaded'),
+    )
+
+    await act(async () => {
+      await first.result.current.deactivateApp('coreApp')
+    })
+
+    // Before core apps, turning off an app with no record saved nothing,
+    // which would have brought this one back on at the next startup.
+    expect(installed()).toEqual([
+      expect.objectContaining({
+        entry: expect.objectContaining({ id: 'coreApp' }),
+        status: AppStatus.Inactive,
+        source: 'manifest',
+      }),
+    ])
+
+    first.unmount()
+    resetSession()
+    mockLoadRemoteApp.mockClear()
+    mockMigrate.mockClear()
+
+    await renderManager()
+
+    await waitFor(() => expect(coreStatus()).toBe(AppStatus.Inactive))
+    expect(mockLoadRemoteApp).not.toHaveBeenCalled()
+  })
+
+  it('tells the user when a core app fails to start, and keeps no record', async () => {
+    mockLoadRemoteApp.mockResolvedValue({
+      ok: false,
+      failure: { code: 'fetch-failed', url: core.url, message: 'HTTP 404' },
+    })
+
+    await renderManager()
+
+    await waitFor(() =>
+      expect(lastMessage()).toContain('Could not load "coreApp app"'),
+    )
+    expect(lastMessage()).toContain('HTTP 404')
+    expect(coreStatus()).toBe(AppStatus.Error)
+    // A failure is not the user turning the app off: the next startup tries
+    // again.
+    expect(installed()).toEqual([])
+  })
+
+  it('leaves an app from a user-set catalog off until the user turns it on', async () => {
+    // A custom Manifest Source is the user's list, not the deployment's: its
+    // apps are not core apps and never run without a click.
+    mockGetAppSettingFromDb.mockResolvedValue({
+      type: 'url',
+      url: 'https://example.org/catalog.json',
+    })
+
+    await renderManager()
+
+    await waitFor(() =>
+      expect(useAppStore.getState().catalog['coreApp']).toBeDefined(),
+    )
+    await act(async () => {})
+    expect(mockLoadRemoteApp).not.toHaveBeenCalled()
+    expect(coreStatus()).toBeUndefined()
   })
 })

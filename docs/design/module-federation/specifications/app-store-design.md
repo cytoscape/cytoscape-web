@@ -79,6 +79,13 @@ served from `/cytoscape/`); once the App Store web
 catalog is deployed, `DEFAULT_MANIFEST_URL` can point at the official App Store
 manifest endpoint.
 
+Every entry of the default manifest is a **core app** that starts on unless the
+user turned it off ([workspace-app-install-design.md §8.5](./workspace-app-install-design.md#85-core-apps-on-by-default)).
+Pointing `DEFAULT_MANIFEST_URL` at the full App Store catalog would therefore
+turn on every published app for every user. Before that switch, the App Store
+must serve a curated core list at that endpoint, or the browsable catalog must
+reach Cytoscape Web by another path than the default manifest.
+
 The existing Cytoscape Desktop App Store at <https://apps.cytoscape.org/>
 already provides a public catalog for Desktop apps. This design extends that
 store so that it can also publish Cytoscape Web apps. The distribution model is

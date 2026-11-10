@@ -18,10 +18,18 @@ The **Apps** tab lists the apps you can turn on. Each row shows the app's
 name, version and description. Use the switch at the right of a row to turn
 an app on or off. An app that is on is marked **active**.
 
-The list comes from a catalog that ships with Cytoscape Web. It holds example
-apps from the Cytoscape team, such as **Hello Cytoscape World App**,
-**Network Workflow Examples** and **Network Statistics**. **Refresh**, at the
-bottom of the dialog, loads the catalog again.
+The list starts with the apps that come with the Cytoscape Web you are using,
+from a catalog it ships with. Each site chooses its own catalog, and it can be
+empty. **Refresh**, at the bottom of the dialog, loads the catalog again.
+
+Apps from the catalog are on when you start Cytoscape Web; you do not have to
+turn them on. If you turn one off, it stays off in this workspace, also after
+you reload the page. A new workspace starts with all of them on again.
+
+If an app from the catalog cannot be loaded when Cytoscape Web starts, a
+message at the bottom of the window names the app and the reason, and its row
+is marked **failed**. Cytoscape Web tries again the next time it starts. Turn
+the app off if you do not want it tried again.
 
 Once an app is on, its menu items appear in the Apps menu, above
 **Manage Apps...**. An app can also add a panel or a dialog of its own.

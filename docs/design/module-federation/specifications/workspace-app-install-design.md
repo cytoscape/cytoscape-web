@@ -13,6 +13,10 @@
 > `mountApp`) are reused; this design adds a persisted, workspace-scoped install
 > layer on top.
 
+- Rev. 4 (11/10/2026): Jing Chen and Claude (Opus 5.5) — Core apps: every
+  entry of the deployment's own `apps.json` is on unless the workspace records
+  the user turning it off; turning one off now writes an `inactive` record
+  (§8.4, §8.5, §12.2, §15)
 - Rev. 3 (6/10/2026): Keiichiro ONO and Claude (Fable 5) — Resolve all
   pre-implementation decisions: unify app state in `workspace.installedApps`
   (manifest apps included, §6.3/§8.4), replace the Dexie-upgrade migration
@@ -66,6 +70,9 @@
   `compatibleHostVersions` check. On restore, allow-listed entries keep their
   saved Active status (apps auto-load as today); anything else arrives
   inactive with a warning.
+- **Core apps:** the entries of the deployment's own `apps.json` are on by
+  default. They load at startup unless the workspace records that the user
+  turned them off, and only that choice is written down (§8.5).
 - **One source of truth:** manifest apps also get an `InstalledApp` record
   when activated, so `workspace.installedApps` holds *all* durable app state.
   The legacy global `apps` IndexedDB store is absorbed by an idempotent
@@ -428,8 +435,8 @@ flowchart TD
     A["Read manifestSource"] --> B["obtainCatalogEntries() → manifest entries"]
     H["Hydrate WorkspaceStore → workspace.installedApps"] --> C
     B --> C["setCatalog(merge(manifest, installedApps))"]
-    C --> D["restore(catalogAppIds)"]
-    D --> E["Auto-load apps where status === Active && catalog[id] exists"]
+    C --> D["restore(seed: records + core apps, §8.5)"]
+    D --> E["Auto-load apps seeded Active (catalog[id] exists)"]
 ```
 
 Merge rule: union by `id`; on collision, the **workspace installed entry wins**
@@ -479,9 +486,55 @@ deactivation updates both the runtime `CyApp.status` and the persisted
 
 Activating an app that has no `InstalledApp` record yet (a manifest app)
 creates one with `source: 'manifest'`, so `workspace.installedApps` is the
-single durable source for app status. The legacy global `apps` store is no
-longer written; app activation state therefore becomes workspace-scoped,
-which is the behavior the NDEx workspace round-trip (§11) requires.
+single durable source for app status. Turning off a core app that has no
+record creates one too, with `status: inactive` (§8.5); turning off any other
+app with no record, or a failed activation with none, writes nothing. The
+legacy global `apps` store is no longer written; app activation state
+therefore becomes workspace-scoped, which is the behavior the NDEx workspace
+round-trip (§11) requires.
+
+### 8.5 Core apps (on by default)
+
+Every entry of the deployment's own default manifest (`apps.json`, fetched
+from `<base>apps.json`) is a **core app**: part of what the deployment ships,
+on unless the user turned it off. How a core app starts depends only on the
+current workspace's record for it:
+
+| `installedApps` record | At startup |
+| --- | --- |
+| none | Loads. Seeded `active` for the session; no record is written |
+| `active` | Loads |
+| `error` | Loads: a failed activation is not the user's choice |
+| `inactive` | Listed, turned off, not loaded |
+
+Any other app starts with the status its record holds and is not seeded when
+it has none. The rule is `startupAppStatus`
+(`src/models/AppModel/impl/startupAppStatus.ts`); `useAppManager` seeds the
+session from it before the auto-load pass.
+
+- **Only the user's choice is written.** Startup writes nothing for a core app.
+  Turning a core app off creates its `inactive` record (`source: 'manifest'`)
+  when it has none (`reconcileInstalledStatus`, §8.4). Before core apps, turning
+  off an app with no record wrote nothing, which would now bring it back at the
+  next startup. Because "no record" is what on-by-default means, dropping an app
+  from `apps.json` removes it from every workspace that never turned it on or off.
+- **Scoped to the workspace.** A new workspace, or one opened from NDEx with no
+  record of the app, starts with every core app on. A workspace saved to NDEx
+  carries its `inactive` records (§11.1), so turning an app off travels with
+  the workspace.
+- **Only the default manifest.** Core status is decided against the manifest as
+  loaded, by id and URL (`isFromDefaultManifest`), the same test as the §9
+  exemption. Entries of a user-set Manifest Source keep the opt-in behavior,
+  and so does an `appstore`/`snapshot` record pinned to another URL for a core
+  app's id.
+- **Failures are reported, not recorded.** A core app that fails at startup is
+  named in the startup toast and marked failed on its row
+  (runtime-app-registration-specification.md §10.1). No record is written, so
+  it is tried again at the next startup until it loads or the user turns it
+  off.
+- **Deployment consequence.** Adding an app to a deployment's `apps.json` turns
+  it on for every user who has not turned it off. The repository's `apps.json`
+  is empty; each deployment's build swaps in its own list.
 
 ---
 
@@ -709,7 +762,7 @@ Two distinct operations must be visually separated:
 
 | Operation | Effect | Persisted state |
 | --- | --- | --- |
-| **Disable** (toggle off) | Unmounts the app; keeps it installed | `InstalledApp.status = inactive` |
+| **Disable** (toggle off) | Unmounts the app; keeps it installed | `InstalledApp.status = inactive` (a core app with no record gets one, §8.5) |
 | **Uninstall** | Unmounts (if active) and removes it from the workspace | Entry deleted from `workspace.installedApps` |
 
 Uninstall removes the app from the workspace and therefore from any future
@@ -932,4 +985,13 @@ restore-after-reload defect (P1–P3).
   the installed list through the §9 gate with §11.3 activation (allow-listed
   Active apps auto-load), while a legacy workspace carrying only `activeApps`
   behaves exactly as today.
-- Apps loaded from `apps.json` continue to behave exactly as before.
+- An app the deployment's `apps.json` lists loads at the first start, and in
+  any workspace with no record of it, without the user turning it on; no
+  record is written for it (§8.5).
+- Turning such a core app off writes an `inactive` record; after a reload it is
+  listed turned off and not loaded. A new workspace starts with it on again.
+- A core app whose record says `error` is loaded again at startup.
+- A core app that fails at startup is named in a toast and marked failed on its
+  row; no record is written, and the next startup tries it again.
+- An app listed only by a user-set Manifest Source is not loaded until the user
+  turns it on.

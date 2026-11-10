@@ -30,7 +30,8 @@ The AppManager feature consists of:
 ### AppListPanel.tsx
 - Displays list of registered apps
 - Shows app name, description, and version (if provided)
-- Checkbox to activate/deactivate apps
+- Switch to activate/deactivate apps; a failed app shows its reason and, when
+  retrying can help, a Retry button
 - Handles app status changes
 - Shows message when no apps are registered
 
@@ -71,10 +72,22 @@ The AppManager feature consists of:
 ## Behavior
 
 ### App Management
-1. Apps are registered in the AppStore
-2. Apps can be activated or deactivated via checkbox
-3. App status is tracked (Active, Inactive, Error)
-4. App state changes trigger updates
+1. The catalog is the deployment's `apps.json`, fetched from `<base>apps.json`
+   (or a Manifest Source the user set), plus the apps installed in the
+   workspace
+2. Apps the deployment's `apps.json` lists are **core apps**: they are on when
+   Cytoscape Web starts, unless the workspace records that the user turned
+   them off. A workspace with no record of a core app starts it; only turning
+   it off writes a record (`inactive`). The rule is `startupAppStatus`
+   (`src/models/AppModel/impl/startupAppStatus.ts`), applied by `useAppManager`
+3. Every other app starts with the status its workspace record holds, and is
+   off when there is none
+4. Apps are activated or deactivated with the switch; the status is written to
+   `workspace.installedApps`
+5. App status is tracked (Active, Inactive, Error). A load that fails is
+   reported in a toast (one per startup pass) and on the app's row
+6. Design: `docs/design/module-federation/specifications/workspace-app-install-design.md`
+   §8.5 (core apps) and `runtime-app-registration-specification.md` §8–§10
 
 ### Service Management
 1. Services are added via URL input
