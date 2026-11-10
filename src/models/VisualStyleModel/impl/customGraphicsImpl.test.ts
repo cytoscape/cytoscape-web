@@ -12,10 +12,12 @@ import {
 } from '../VisualPropertyValue/CustomGraphicsType'
 import { MappingFunctionType } from '../VisualMappingFunction/MappingFunctionType'
 import {
+  chartStartAngle,
   computeCustomGraphicsProperties,
   computeImageProperties,
   computePieChartProperties,
   computeRingChartProperties,
+  DEFAULT_CHART_START_ANGLE,
   getCustomGraphicNodeVps,
   getCustomGraphicsPropertyKeys,
   getFirstValidCustomGraphicVp,
@@ -1231,6 +1233,27 @@ describe('CustomGraphicsImpl', () => {
 
       expect(Array.isArray(result)).toBe(true)
       expect(result.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('chartStartAngle (#842)', () => {
+    it('returns a numeric start angle unchanged', () => {
+      expect(chartStartAngle({ cy_startAngle: 45 })).toBe(45)
+      expect(chartStartAngle({ cy_startAngle: -90 })).toBe(-90)
+      expect(chartStartAngle({ cy_startAngle: 0 })).toBe(0)
+    })
+
+    it('defaults a missing start angle, as Cytoscape Desktop writes none at its default', () => {
+      expect(chartStartAngle({})).toBe(DEFAULT_CHART_START_ANGLE)
+      expect(chartStartAngle({ cy_startAngle: undefined })).toBe(0)
+    })
+
+    it('defaults a start angle that is not a finite number', () => {
+      // CX2 values are external input: a string, null or non-finite number
+      // must not reach SVG path or cytoscape.js arithmetic.
+      for (const bad of ['45', null, NaN, Infinity, -Infinity, {}, []]) {
+        expect(chartStartAngle({ cy_startAngle: bad })).toBe(0)
+      }
     })
   })
 })

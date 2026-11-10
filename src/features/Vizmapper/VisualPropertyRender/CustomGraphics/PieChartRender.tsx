@@ -1,6 +1,7 @@
 import { Box, Typography } from '@mui/material'
 import * as React from 'react'
 
+import { chartStartAngle } from '../../../../models/VisualStyleModel/impl/customGraphicsImpl'
 import { PieChartPropertiesType } from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import {
   calculateChartDimensions,
@@ -37,7 +38,7 @@ export const PieChartRender: React.FC<PieChartRenderProps> = ({
     ? containerHeight + 20
     : containerHeight
 
-  const { cy_startAngle, cy_colors, cy_dataColumns } = properties
+  const { cy_colors, cy_dataColumns } = properties
 
   // Calculate slice angles (equal distribution for preview)
   const sliceAngle = calculateSliceAngle(cy_dataColumns.length)
@@ -46,7 +47,8 @@ export const PieChartRender: React.FC<PieChartRenderProps> = ({
   // Convert start angle to match Cytoscape.js coordinate system
   // Cytoscape uses: (90 - angle) % 360, where 90deg = 12 o'clock
   // We need to apply the same conversion for alignment
-  const cytoscapeStartAngle = (((90 - cy_startAngle) % 360) + 360) % 360
+  const cytoscapeStartAngle =
+    (((90 - chartStartAngle(properties)) % 360) + 360) % 360
 
   // Remove stroke for preview charts to prevent gaps (only use stroke for very large charts)
   const useStroke = chartSize > 120
