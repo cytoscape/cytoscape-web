@@ -69,9 +69,9 @@ const showAll = (networkId: IdType): void => {
 /**
  * Switch off the subnetwork's `filterWidgets` filter, if it has one and it is
  * on, and remove the visibility bypass it wrote (what CheckboxFilter does
- * when switched off)
+ * when switched off). Also used by the Select menu's Show All.
  */
-const switchOffSubnetworkFilter = (networkId: IdType): void => {
+export const switchOffSubnetworkFilter = (networkId: IdType): void => {
   const { filterConfigs, setFilterEnabled } = useFilterStore.getState()
   const config: FilterConfig | undefined = hasOwn(filterConfigs, networkId)
     ? filterConfigs[networkId]

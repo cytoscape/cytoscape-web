@@ -30,6 +30,7 @@ import { CyDialog } from '@/components/CyDialog'
 import { IdType } from '../../../../models/IdType'
 import { AttributeName } from '../../../../models/TableModel/AttributeName'
 import { CustomGraphicsType } from '../../../../models/VisualStyleModel'
+import { chartStartAngle } from '../../../../models/VisualStyleModel/impl/customGraphicsImpl'
 import { DEFAULT_CUSTOM_GRAPHICS } from '../../../../models/VisualStyleModel/impl/defaultVisualStyle'
 import { ColorType } from '../../../../models/VisualStyleModel/VisualPropertyValue/ColorType'
 import {
@@ -546,7 +547,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                     )}
                     {chartProps.cy_dataColumns.length > 0 && (
                       <PropertiesForm
-                        startAngle={chartProps.cy_startAngle}
+                        startAngle={chartStartAngle(chartProps)}
                         holeSize={
                           kind === CustomGraphicsNameType.RingChart &&
                           isRingChartProperties(currentProps)
@@ -909,7 +910,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                       )}
                       {chartProps.cy_dataColumns.length > 0 && (
                         <PropertiesForm
-                          startAngle={chartProps.cy_startAngle}
+                          startAngle={chartStartAngle(chartProps)}
                           holeSize={
                             kind === CustomGraphicsNameType.RingChart &&
                             isRingChartProperties(currentProps)

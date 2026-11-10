@@ -1,10 +1,12 @@
 // @vitest-environment node
+import cytoscape from 'cytoscape'
 import type { Core, NodeSingular } from 'cytoscape'
 import { describe, expect, it } from 'vitest'
 
 import type { Table } from '../../../../models/TableModel'
 import { SubsystemTag } from '../../model/HcxMetaTag'
-import { findRoot, getMembers } from './DataBuilderUtil'
+import { D3TreeNode } from './D3TreeNode'
+import { cyNetDag2tree2, findRoot, getMembers } from './DataBuilderUtil'
 
 const tableWith = (rows: Record<string, Record<string, unknown>>): Table =>
   ({ rows: new Map(Object.entries(rows)) }) as unknown as Table
@@ -78,5 +80,161 @@ describe('findRoot', () => {
 
     expect(() => findRoot(cyNet)).not.toThrow()
     expect(findRoot(cyNet)).toBeUndefined()
+  })
+})
+
+describe('cyNetDag2tree2', () => {
+  // Cell (members DR1, TAF11, ACTB) contains Nucleus (members DR1, TAF11)
+  const cyNet = cytoscape({
+    headless: true,
+    elements: [
+      { data: { id: 'cell' } },
+      { data: { id: 'nucleus' } },
+      { data: { id: 'e', source: 'cell', target: 'nucleus' } },
+    ],
+  })
+  const table = tableWith({
+    cell: {
+      name: 'Cell',
+      [SubsystemTag.memberNames]: ['DR1', 'TAF11', 'ACTB'],
+    },
+    nucleus: { name: 'Nucleus', [SubsystemTag.memberNames]: ['DR1', 'TAF11'] },
+  })
+
+  const build = (): D3TreeNode[] => {
+    const elements: D3TreeNode[] = []
+    cyNetDag2tree2(
+      cyNet.getElementById('cell') as NodeSingular,
+      null,
+      table,
+      {},
+      elements,
+      new Set(),
+      new Map(),
+    )
+    return elements
+  }
+
+  // #930: the Cell View tells protein rings from subsystems by this flag
+  it('marks the rings generated for members, and only those, as members', () => {
+    const elements = build()
+    const memberRings = elements
+      .filter((e) => e.isMember === true)
+      .map((e) => `${e.id} (${e.name}, ${e.originalId})`)
+      .sort()
+
+    expect(memberRings).toEqual([
+      'cell-ACTB (ACTB, ACTB)',
+      'nucleus-DR1 (DR1, DR1)',
+      'nucleus-TAF11 (TAF11, TAF11)',
+    ])
+    expect(
+      elements.filter((e) => e.isMember !== true).map((e) => e.id),
+    ).toEqual(['cell', 'nucleus'])
+  })
+})
+
+describe('cyNetDag2tree2 with numeric HCX::members', () => {
+  // Leaf subsystem whose members are interaction-network node ids
+  const cyNet = cytoscape({
+    headless: true,
+    elements: [{ data: { id: 'complex' } }],
+  })
+  const table = tableWith({
+    complex: { name: 'Complex', [SubsystemTag.members]: [0, 189] },
+  })
+
+  const ringNames = (names: Map<string, string>): string[] => {
+    const elements: D3TreeNode[] = []
+    cyNetDag2tree2(
+      cyNet.getElementById('complex') as NodeSingular,
+      null,
+      table,
+      {},
+      elements,
+      new Set(),
+      names,
+    )
+    return elements.filter((e) => e.isMember === true).map((e) => e.name)
+  }
+
+  // #933: the lookup returns names keyed by id; the rings show them
+  it('labels each ring with the name looked up for its id', () => {
+    expect(
+      ringNames(
+        new Map([
+          ['0', 'ACTB'],
+          ['189', 'SMARCD2'],
+        ]),
+      ),
+    ).toEqual(['ACTB', 'SMARCD2'])
+  })
+
+  it('falls back to the id when no name was found', () => {
+    expect(ringNames(new Map([['189', 'SMARCD2']]))).toEqual(['0', 'SMARCD2'])
+  })
+
+  it('finds the name of a zero-padded id, and keeps the id as written otherwise', () => {
+    const padded = tableWith({
+      complex: {
+        name: 'Complex',
+        [SubsystemTag.members]: ['0189', '007', '00'],
+      },
+    })
+    const elements: D3TreeNode[] = []
+    cyNetDag2tree2(
+      cyNet.getElementById('complex') as NodeSingular,
+      null,
+      padded,
+      {},
+      elements,
+      new Set(),
+      new Map([
+        ['189', 'SMARCD2'],
+        ['0', 'ACTB'],
+      ]),
+    )
+
+    expect(
+      elements.filter((e) => e.isMember === true).map((e) => e.name),
+    ).toEqual(['SMARCD2', '007', 'ACTB'])
+  })
+
+  // A member listed on the parent but on no child gets its ring on the parent
+  describe('on a parent subsystem', () => {
+    const parentNet = cytoscape({
+      headless: true,
+      elements: [
+        { data: { id: 'parent' } },
+        { data: { id: 'child' } },
+        { data: { id: 'e', source: 'parent', target: 'child' } },
+      ],
+    })
+    const parentTable = tableWith({
+      parent: { name: 'Parent', [SubsystemTag.members]: [1, 2] },
+      child: { name: 'Child', [SubsystemTag.members]: [1] },
+    })
+
+    const parentRingName = (names: Map<string, string>): string | undefined => {
+      const elements: D3TreeNode[] = []
+      cyNetDag2tree2(
+        parentNet.getElementById('parent') as NodeSingular,
+        null,
+        parentTable,
+        {},
+        elements,
+        new Set(),
+        names,
+      )
+      return elements.find((e) => e.id === 'parent-2')?.name
+    }
+
+    it('labels the ring with the name looked up for its id', () => {
+      expect(parentRingName(new Map([['2', 'TAF11']]))).toBe('TAF11')
+    })
+
+    it('falls back to the id when no name was found', () => {
+      expect(parentRingName(new Map())).toBe('2')
+    })
   })
 })

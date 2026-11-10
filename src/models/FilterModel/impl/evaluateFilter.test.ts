@@ -605,3 +605,39 @@ describe('evaluateFilter', () => {
     ).toBeUndefined()
   })
 })
+
+describe('column names that differ only by case (#951)', () => {
+  it('follows the kept column when the filter uses a merged-away spelling', () => {
+    const ctx = createFilterContext(
+      network(['n1', 'n2']),
+      table({ name: 'string' }, { n1: { name: 'aaa' }, n2: { name: 'bbb' } }),
+      EMPTY,
+    )
+
+    expect(acceptedNodes(ctx, column('NAME', P.CONTAINS, 'a'))).toEqual(['n1'])
+  })
+
+  it('prefers the exact spelling in a table saved with duplicates', () => {
+    const ctx = createFilterContext(
+      network(['n1']),
+      table(
+        { NAME: 'string', name: 'string' },
+        { n1: { NAME: 'aaa', name: 'bbb' } },
+      ),
+      EMPTY,
+    )
+
+    expect(acceptedNodes(ctx, column('name', P.CONTAINS, 'b'))).toEqual(['n1'])
+    expect(acceptedNodes(ctx, column('name', P.CONTAINS, 'a'))).toEqual([])
+  })
+
+  it('still rejects every element for a column that does not exist', () => {
+    const ctx = createFilterContext(
+      network(['n1']),
+      table({ name: 'string' }, { n1: { name: 'aaa' } }),
+      EMPTY,
+    )
+
+    expect(acceptedNodes(ctx, column('other', P.CONTAINS, 'a'))).toEqual([])
+  })
+})

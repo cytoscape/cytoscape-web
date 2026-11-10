@@ -343,7 +343,7 @@ is behind it:
 
 | | React app | Service app |
 | --- | --- | --- |
-| Payload | array, or a single entry object, with a valid `url` | object with `cyWebActions` / `cyWebMenuItem` / `serviceInputDefinition` |
+| Payload | array, or a single entry object, with a valid `url` | object with `cyWebActions` / `cyWebMenuItem` / `serviceInputDefinition`, or any object with no `url` or `id` that passes `ServiceMetadataSchema` |
 | Validated by | `parseManifest()` | `ServiceMetadataSchema` |
 | Origin gate | `appInstallAllowedOrigins` (§9) | none |
 | Installed by | `installApp(entry, { activate: true })` | `AppStore.addService(url)` |
@@ -351,6 +351,11 @@ is behind it:
 An optional `type` field (`client` / `service`, the `AppType` enum) overrides the
 structural check when the App Store starts emitting it. It is not required:
 making it so would break every manifest already published.
+
+The unmarked-service fallback (#827) exists because service apps in the wild
+send only `name` and `parameters`. The `url`/`id` guard keeps a manifest entry
+with a broken `url` from registering as a service. The App Manager's Install
+from URL field uses the same classifier (§12.8).
 
 **Nothing installs inside the boot phase.** The URL comes from an arbitrary link,
 so `INTENTS` only resolves the apps and returns them as `PendingAppInstall[]`.
@@ -666,7 +671,7 @@ Target layout of the Apps tab after this design (mock):
 │ └──────────────────────────────────────────────────────────────┘ │
 │                                                                  │
 │ ┌ Install from URL ────────────────────────────────────────────┐ │
-│ │ [ https://apps.cytoscape.org/…/manifest.json ]  [ Install ]  │ │
+│ │ [ App manifest or service URL ]                 [ Install ]  │ │
 │ └──────────────────────────────────────────────────────────────┘ │
 │                                                                  │
 │ ⚙ Advanced                                [ Refresh ]  [ Close ] │
@@ -678,7 +683,8 @@ Differences from the current dialog:
 - The `[App Store]` chip and the kebab menu (`⠇`) appear only on
   workspace-installed rows (§12.3–§12.5); manifest rows keep the toggle alone,
   exactly as today.
-- **Install from URL** is the new manual install entry point (§12.8), separate
+- **Install from URL** is the manual install entry point (§12.8) for both app
+  kinds. Since #827 it sits above the tabs and shows on both. It is separate
   from the **Manifest Source** editor, which keeps its existing catalog-source
   behavior unchanged. Since #703 that editor is hidden behind the footer's
   **Advanced** toggle: it expands inline below Install from URL, headed by a
@@ -819,6 +825,14 @@ gains an **Install from URL** action:
 
 This reuses `installApp` unchanged (§7.4 — transport-agnostic), and the §9
 gate applies as-is.
+
+**Service apps (#827).** The same field adds service apps, and the Service Apps
+tab no longer has its own URL field. The host passes the fetched payload to
+`classifyInstallPayload`, the classifier `?installApp=` uses (§7.2). A service
+result goes to `addService` with the normalized endpoint URL, with no origin
+gate, and the dialog switches to the Service Apps tab. A service that is
+already registered is refused inline, because re-registering discards the
+user's parameter values. A payload that is neither kind is reported inline.
 
 **Origin policy.** Restricting installs to the App Store CDN would block
 developers from testing their own apps. The allow-list (§9) is therefore

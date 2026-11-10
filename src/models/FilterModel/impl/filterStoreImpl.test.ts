@@ -21,6 +21,8 @@ import {
   setFilterEnabled,
   setIndex,
   setIndexedColumns,
+  selectionMatchesSearch,
+  setLastSearch,
   setOptions,
   setQuery,
   setSearchState,
@@ -78,6 +80,59 @@ describe('FilterStoreImpl', () => {
 
       expect(result.search.query).toBe('test query')
       expect(result).not.toBe(state) // Immutability check
+    })
+  })
+
+  describe('setLastSearch', () => {
+    const run = {
+      id: 3,
+      networkId: 'network-1',
+      query: 'DR1',
+      options: { exact: false, operator: 'OR' as const },
+      nodeIds: ['n1'],
+    }
+
+    it('records the search that ran', () => {
+      const state = createDefaultState()
+
+      const result = setLastSearch(state, run)
+
+      expect(result.search.lastSearch).toEqual(run)
+      expect(state.search.lastSearch).toBeUndefined() // Immutability check
+    })
+
+    it('forgets it when given undefined', () => {
+      const state = setLastSearch(createDefaultState(), run)
+
+      const result = setLastSearch(state, undefined)
+
+      expect(result.search.lastSearch).toBeUndefined()
+    })
+  })
+
+  describe('selectionMatchesSearch', () => {
+    const run = {
+      id: 1,
+      networkId: 'network-1',
+      query: 'DR1',
+      options: { exact: true, operator: 'OR' as const },
+      nodeIds: ['a', 'b'],
+    }
+
+    it('accepts the same nodes in any order', () => {
+      expect(selectionMatchesSearch(run, ['a', 'b'])).toBe(true)
+      expect(selectionMatchesSearch(run, ['b', 'a'])).toBe(true)
+    })
+
+    it('rejects fewer, more or other nodes', () => {
+      expect(selectionMatchesSearch(run, ['a'])).toBe(false)
+      expect(selectionMatchesSearch(run, ['a', 'b', 'c'])).toBe(false)
+      expect(selectionMatchesSearch(run, ['a', 'c'])).toBe(false)
+      expect(selectionMatchesSearch(run, [])).toBe(false)
+    })
+
+    it('matches an empty selection to a search that selected nothing', () => {
+      expect(selectionMatchesSearch({ ...run, nodeIds: [] }, [])).toBe(true)
     })
   })
 

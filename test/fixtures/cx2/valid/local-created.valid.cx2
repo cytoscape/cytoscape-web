@@ -32,14 +32,6 @@
     ]
   },
   {
-    "status": [
-      {
-        "error": "",
-        "success": true
-      }
-    ]
-  },
-  {
     "networkAttributes": [
       {
         "name": "Test Network 20 nodes",
@@ -412,6 +404,14 @@
         "v": {
           "interaction": "inhibits"
         }
+      }
+    ]
+  },
+  {
+    "status": [
+      {
+        "error": "",
+        "success": true
       }
     ]
   }

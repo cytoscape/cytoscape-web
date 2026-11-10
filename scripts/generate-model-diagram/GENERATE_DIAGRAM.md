@@ -16,16 +16,13 @@ This will:
 
 ## Requirements
 
-The script will automatically install `@mermaid-js/mermaid-cli` if needed (as a dev dependency).
+`@mermaid-js/mermaid-cli` is not a project dependency. The script uses a global `mmdc` if you have one, and otherwise runs it through `npx`, which downloads it (and a headless Chromium) on first use.
 
 ## Manual Steps
 
 If you prefer to run manually:
 
 ```bash
-# Install mermaid-cli (one time)
-npm install --save-dev @mermaid-js/mermaid-cli
-
 # Run the script
 ./scripts/generate-model-diagram-to-png.sh
 ```
@@ -46,10 +43,10 @@ The PNG will be saved to:
 
 ### "mmdc not found"
 
-The script will automatically install it. If it still fails:
+The script falls back to `npx --yes @mermaid-js/mermaid-cli`. If that fails, install it globally:
 
 ```bash
-npm install --save-dev @mermaid-js/mermaid-cli
+npm install --global @mermaid-js/mermaid-cli
 ```
 
 ### "Could not find Mermaid diagram"

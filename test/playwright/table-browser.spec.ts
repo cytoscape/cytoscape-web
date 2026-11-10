@@ -1,5 +1,9 @@
 import { test, expect } from './fixtures'
-import { gotoAndSeedNetwork, gotoAndWaitReady } from './fixtures'
+import {
+  gotoAndSeedNetwork,
+  gotoAndWaitReady,
+  installFixtureApp,
+} from './fixtures'
 
 test.describe('Table Browser', () => {
   test.describe('1. Basic Rendering & Tabs', () => {
@@ -107,6 +111,53 @@ test.describe('Table Browser', () => {
     })
   })
 
+  test.describe('3b. Column names ignore case (#951)', () => {
+    test('3.2 Rejects duplicate and reserved names and keeps the values', async ({
+      page,
+    }) => {
+      await gotoAndSeedNetwork(page)
+      await expect(
+        page.locator('[data-testid="table-browser-nodes-tab"]'),
+      ).toBeVisible()
+
+      await page.click('[data-testid="insert-column-button"]')
+      const dialog = page.locator('[data-testid="create-table-column-dialog"]')
+      await expect(dialog).toBeVisible()
+      const nameInput = page.locator(
+        '[data-testid="create-table-column-name-input"] input',
+      )
+      const confirm = page.locator(
+        '[data-testid="create-table-column-confirm-button"]',
+      )
+
+      await nameInput.fill('NAME')
+      await confirm.click()
+      await expect(dialog).toContainText('NAME already exists')
+
+      await nameInput.fill('ID')
+      await confirm.click()
+      await expect(dialog).toContainText('ID is reserved')
+
+      await page.click('[data-testid="create-table-column-cancel-button"]')
+      await expect(dialog).not.toBeVisible()
+
+      const names = await page.evaluate(() => {
+        const api = (window as any).CyWebApi
+        const networkId = api.workspace.getCurrentNetworkId().data.networkId
+        const result = api.table.getTable(networkId, 'node', {
+          includeId: false,
+        })
+        return {
+          columns: result.data.columns.map((c: any) => c.name),
+          values: result.data.rows.map((r: any) => r.name),
+        }
+      })
+      expect(names.columns.filter((n: string) => n === 'name')).toHaveLength(1)
+      expect(names.columns).not.toContain('NAME')
+      expect(names.values.every((v: unknown) => v !== '')).toBe(true)
+    })
+  })
+
   test.describe('6. Toolbar Operations', () => {
     test('6.1 Import Table Dialog', async ({ page }) => {
       await gotoAndSeedNetwork(page)
@@ -131,6 +182,27 @@ test.describe('Table Browser', () => {
         page.locator('[data-testid="join-table-upload-dropzone"]'),
       ).not.toBeVisible()
     })
+
+    test('6.2 Key Column for Network list opens above the dialog', async ({
+      page,
+    }) => {
+      await gotoAndSeedNetwork(page)
+      await page.click('[data-testid="import-table-button"]')
+      await page
+        .locator(
+          '[data-testid="join-table-upload-dropzone"] input[type="file"]',
+        )
+        .setInputFiles('test/fixtures/tables/table-data-from-cy-tutorial.csv')
+      const keySelect = page.getByRole('combobox', {
+        name: 'Key column for network',
+      })
+      await keySelect.click()
+      const last = page.getByRole('option').last()
+      const name = (await last.textContent()) ?? ''
+      // A click lands only when the list is not under the dialog.
+      await last.click({ timeout: 5_000 })
+      await expect(keySelect).toHaveText(name)
+    })
   })
 
   test.describe('7. Grid Sizing', () => {
@@ -142,6 +214,9 @@ test.describe('Table Browser', () => {
       // window-wide — its last columns stuck behind the panel, unreachable
       // by horizontal scrolling.
       await gotoAndSeedNetwork(page)
+      // The seeded network is not a hierarchy, so the right pane has a tab
+      // (and an open button) only once an app registers a panel (#877).
+      await installFixtureApp(page)
 
       const nodeEditor = page.locator(
         '[data-testid="table-browser-node-editor"]',

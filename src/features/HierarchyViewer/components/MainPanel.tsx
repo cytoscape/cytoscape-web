@@ -1,33 +1,25 @@
 import { Box } from '@mui/material'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Allotment } from 'allotment'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 
 import { useFilterStore } from '../../../data/hooks/stores/FilterStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
-import { useRendererStore } from '../../../data/hooks/stores/RendererStore'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
-import { logUi } from '../../../debug'
 import { IdType } from '../../../models/IdType'
-import { Network } from '../../../models/NetworkModel'
-import { Renderer } from '../../../models/RendererModel/Renderer'
-import { Table, ValueType } from '../../../models/TableModel'
+import { ValueType } from '../../../models/TableModel'
 import { NetworkView } from '../../../models/ViewModel'
 import { VisualStyle } from '../../../models/VisualStyleModel'
 import { MessagePanel } from '../../Messages'
 import { HcxMetaData } from '../model/HcxMetaData'
 import { SubsystemTag } from '../model/HcxMetaTag'
-import {
-  hasUniformEdgeInteraction,
-  MIXED_INTERACTION_WARNING,
-} from '../model/impl/circlePackingSupport'
 import { useSubNetworkStore } from '../store/SubNetworkStore'
 import { getHcxMetadata } from '../utils/hierarchyUtil'
 import { getSubNetworkId } from '../utils/subnetworkQueryUtil'
-import { CirclePackingPanel } from './CirclePackingLayout/CirclePackingPanel'
+import { getSubsystemName } from '../utils/subsystemName'
 import { DuplicateNodeSeparator } from './CirclePackingLayout/DataBuilderUtil'
 import FilterPanel from './FilterPanel/FilterPanel'
 import { PropertyPanel } from './PropertyPanel/PropertyPanel'
@@ -40,36 +32,13 @@ export interface Query {
 
 const queryClient = new QueryClient()
 
-export const CP_RENDERER_ID: string = 'circlePacking'
-
-// Module-scope so the renderer object keeps a stable identity across renders
-const CirclePackingRenderer: Renderer = {
-  id: CP_RENDERER_ID,
-  name: 'Cell View',
-  description: 'Circle Packing Renderer',
-  getComponent: (
-    networkData: Network,
-    initialSize = { w: 0, h: 0 },
-    visible = true,
-  ) => (
-    <CirclePackingPanel
-      rendererId={CP_RENDERER_ID}
-      network={networkData}
-      initialSize={initialSize}
-      visible={visible}
-    />
-  ),
-}
+const NO_SUBSYSTEM: {
+  subNetworkName: string
+  query: Query
+  interactionNetworkUuid: string
+} = { subNetworkName: '', query: { nodeIds: [] }, interactionNetworkUuid: '' }
 
 export const MainPanel = (): JSX.Element => {
-  const [subNetworkName, setSubNetworkName] = useState<string>('')
-  const [query, setQuery] = useState<Query>({ nodeIds: [] })
-  const [interactionNetworkUuid, setInteractionNetworkId] = useState<string>('')
-
-  // Check the network property and enable the UI only if it is a hierarchy
-  const [isHierarchy, setIsHierarchy] = useState<boolean>(false)
-  const [metadata, setMetadata] = useState<HcxMetaData>()
-
   const currentNetworkId: IdType = useWorkspaceStore(
     (state) => state.workspace.currentNetworkId,
   )
@@ -98,14 +67,9 @@ export const MainPanel = (): JSX.Element => {
   const networkSummary: any = useNetworkSummaryStore(
     (state) => state.summaries[currentNetworkId],
   )
-  const addRenderer = useRendererStore((state) => state.add)
-  const deleteRenderer = useRendererStore((state) => state.delete)
-  const renderers = useRendererStore((state) => state.renderers)
 
-  const setRootNetworkId = useSubNetworkStore((state) => state.setRootNetworkId)
-  const setRootNetworkHost = useSubNetworkStore(
-    (state) => state.setRootNetworkHost,
-  )
+  // Check the network property and enable the UI only if it is a hierarchy
+  const metadata: HcxMetaData | undefined = getHcxMetadata(networkSummary)
 
   // ID the shown subnetwork is stored under (`<hierarchyId>_<subsystemNodeId>`).
   // Empty until SubNetworkPanel has loaded it.
@@ -120,60 +84,15 @@ export const MainPanel = (): JSX.Element => {
     (state) => state.filterConfigs[currentSubNetworkId] !== undefined,
   )
 
-  const checkDataType = useCallback((): void => {
-    const metadata: HcxMetaData | undefined = getHcxMetadata(networkSummary)
-
-    if (metadata === undefined) {
-      setIsHierarchy(false)
-      setMetadata(undefined)
-      return
-    }
-
-    setIsHierarchy(true)
-    setMetadata(metadata)
-
-    const edgeTable: Table | undefined = tableRecord?.edgeTable
-    if (edgeTable === undefined) {
-      // Tables have not been loaded yet: decide nothing. This effect re-runs
-      // when the table record arrives.
-      return
-    }
-
-    if (hasUniformEdgeInteraction(edgeTable)) {
-      // Add the CP renderer if it does not exist
-      if (renderers.circlePacking === undefined) {
-        addRenderer(CirclePackingRenderer)
-      }
-    } else {
-      // This hierarchy also contains non parent-child edges, which the circle
-      // packing layout cannot interpret. Drop the Cell View tab instead of
-      // rendering a wrong or empty diagram (issue #630).
-      logUi.info(
-        `[${MainPanel.name}]: ${MIXED_INTERACTION_WARNING}`,
-        currentNetworkId,
-      )
-      if (renderers.circlePacking !== undefined) {
-        deleteRenderer(renderers.circlePacking.id)
-      }
-    }
-  }, [
-    networkSummary,
-    tableRecord,
-    renderers,
-    addRenderer,
-    deleteRenderer,
-    currentNetworkId,
-  ])
-
-  useEffect(() => {
-    checkDataType()
-  }, [networkSummary, currentNetworkId, checkDataType])
-
-  useEffect(() => {
+  // Derived during render and not in an effect: SubNetworkPanel fetches as soon as
+  // it gets a subsystem, so a render that pairs it with the previous subsystem's
+  // members starts a wrong fetch. When that answer came first, it was stored as
+  // this subsystem's network for good (#931).
+  const { subNetworkName, query, interactionNetworkUuid } = useMemo(() => {
     // Pick the first selected node if multiple nodes are selected
     const selectedSubsystem: IdType = selectedNodes[0]
     if (selectedSubsystem === undefined || tableRecord === undefined) {
-      return
+      return NO_SUBSYSTEM
     }
 
     const idString: string = selectedSubsystem.toString()
@@ -183,45 +102,23 @@ export const MainPanel = (): JSX.Element => {
     // Pick the table row for the selected subsystem and extract member list
     const row: Record<string, ValueType> | undefined = rows.get(idString)
     if (row === undefined) {
-      return
+      return NO_SUBSYSTEM
     }
-
-    const memberIds = row[SubsystemTag.members]
-    const interactionUuid: string = row[
-      SubsystemTag.interactionNetworkUuid
-    ] as string
 
     const visualStyle: VisualStyle | undefined = visualStyles[currentNetworkId]
     const nodeLabelMappingAttr: string | undefined =
       visualStyle?.nodeLabel?.mapping?.attribute
 
-    let nameVal = row['name']
-    if (nodeLabelMappingAttr !== undefined) {
-      const mappedVal = row[nodeLabelMappingAttr]
-      if (mappedVal !== undefined) {
-        nameVal = mappedVal
-      }
+    return {
+      subNetworkName: getSubsystemName(row, nodeLabelMappingAttr, idString),
+      query: { nodeIds: row[SubsystemTag.members] as number[] },
+      interactionNetworkUuid: row[
+        SubsystemTag.interactionNetworkUuid
+      ] as string,
     }
-    // const name: ValueType = nodeLabelMappingAttr !== undefined ? row.nodeLabelMappingAttr : row.name
-    setSubNetworkName(nameVal.toString())
-    const newQuery: Query = { nodeIds: memberIds as number[] }
-    if (interactionUuid === undefined || interactionUuid === '') {
-      setQuery(newQuery)
-    }
-    setInteractionNetworkId(interactionUuid)
   }, [selectedNodes, tableRecord, visualStyles, currentNetworkId])
 
-  useEffect(() => {
-    if (
-      metadata !== undefined &&
-      metadata.interactionNetworkUUID !== undefined
-    ) {
-      setRootNetworkId(metadata.interactionNetworkUUID)
-      setRootNetworkHost(metadata.interactionNetworkHost ?? '')
-    }
-  }, [metadata, setRootNetworkId, setRootNetworkHost])
-
-  if (!isHierarchy) {
+  if (metadata === undefined) {
     return <MessagePanel message="This network is not a hierarchy" />
   }
 
@@ -274,8 +171,8 @@ export const MainPanel = (): JSX.Element => {
   const showFilterPanel: boolean =
     propertyNetworkId !== '' && subNetworkHasFilter
 
-  const rootNetworkId: IdType = metadata?.interactionNetworkUUID ?? ''
-  const interactionNetworkHost: string = metadata?.interactionNetworkHost ?? ''
+  const rootNetworkId: IdType = metadata.interactionNetworkUUID ?? ''
+  const interactionNetworkHost: string = metadata.interactionNetworkHost ?? ''
 
   return (
     <QueryClientProvider client={queryClient}>

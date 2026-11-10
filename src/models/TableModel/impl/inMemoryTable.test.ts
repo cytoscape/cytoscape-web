@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { IdType } from '../../IdType'
 import { Column } from '../Column'
 import { ValueType } from '../ValueType'
+import { ValueTypeName } from '../ValueTypeName'
 import {
   addColumn,
   addRowWithDefaults,
@@ -773,6 +774,78 @@ describe('InMemoryTable', () => {
       expect(table.rows.size).toBe(originalSize)
       expect(updated.rows.size).toBe(originalSize + 1)
       expect(updated).not.toBe(table)
+    })
+  })
+})
+
+describe('InMemoryTable duplicate column names (#951)', () => {
+  const makeTable = () =>
+    createTable(
+      'dup',
+      [
+        { name: 'name', type: ValueTypeName.String },
+        { name: 'foo', type: ValueTypeName.String },
+      ],
+      new Map<IdType, Record<string, ValueType>>([
+        ['n1', { name: 'alice', foo: 'bar' }],
+      ]),
+    )
+
+  describe('createColumn', () => {
+    it.each(['name', 'NAME', 'Name'])(
+      'leaves the table unchanged for the duplicate %s',
+      (duplicate) => {
+        const table = makeTable()
+
+        const result = createColumn(
+          table,
+          duplicate,
+          ValueTypeName.String,
+          'overwritten',
+        )
+
+        expect(result).toBe(table)
+        expect(result.rows.get('n1')?.name).toBe('alice')
+      },
+    )
+
+    it('still creates a new column', () => {
+      const result = createColumn(
+        makeTable(),
+        'fresh',
+        ValueTypeName.String,
+        'x',
+      )
+
+      expect(result.columns.map((c) => c.name)).toEqual([
+        'fresh',
+        'name',
+        'foo',
+      ])
+    })
+  })
+
+  describe('setColumnName', () => {
+    it.each(['name', 'NAME'])(
+      'leaves the table unchanged for the duplicate %s',
+      (duplicate) => {
+        const table = makeTable()
+
+        expect(setColumnName(table, 'foo', duplicate)).toBe(table)
+      },
+    )
+
+    it('allows changing only the case of its own name', () => {
+      const result = setColumnName(makeTable(), 'foo', 'Foo')
+
+      expect(result.columns.map((c) => c.name)).toEqual(['name', 'Foo'])
+      expect(result.rows.get('n1')).toEqual({ name: 'alice', Foo: 'bar' })
+    })
+
+    it('renames to a free name as before', () => {
+      const result = setColumnName(makeTable(), 'foo', 'other')
+
+      expect(result.columns.map((c) => c.name)).toEqual(['name', 'other'])
     })
   })
 })

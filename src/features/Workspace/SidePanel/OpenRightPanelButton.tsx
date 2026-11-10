@@ -6,6 +6,9 @@ import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { Panel } from '../../../models/UiModel/Panel'
 import { PanelState } from '../../../models/UiModel/PanelState'
 
+/** The open button's icon; the manual draws the same one (UiIcon). */
+export const OpenPanelIcon = ChevronLeft
+
 interface OpenRightPanelButtonProps {
   show: boolean
   toOpen: boolean
@@ -58,7 +61,7 @@ export const OpenRightPanelButton = ({
               },
             }}
           >
-            <ChevronLeft />
+            <OpenPanelIcon />
           </IconButton>
         </Box>
       ) : (

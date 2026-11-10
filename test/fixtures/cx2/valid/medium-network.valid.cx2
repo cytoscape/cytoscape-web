@@ -48,14 +48,6 @@
     ]
   },
   {
-    "status": [
-      {
-        "error": "",
-        "success": true
-      }
-    ]
-  },
-  {
     "attributeDeclarations": [
       {
         "nodes": {
@@ -2714,6 +2706,14 @@
         "mappings": [],
         "dependencies": {},
         "cytoscapeVersion": "3.0"
+      }
+    ]
+  },
+  {
+    "status": [
+      {
+        "error": "",
+        "success": true
       }
     ]
   }

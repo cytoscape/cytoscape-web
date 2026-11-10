@@ -142,7 +142,7 @@ export const MatchingTableComp = React.memo(
         ) {
           isReady = false
           setMergeTooltipText(
-            "Merge is disabled because difference merge operation must take exactly two networks. Plesae select exactly two networks in the 'Networks to Merge' list.",
+            "Merge is disabled because difference merge operation must take exactly two networks. Please select exactly two networks in the 'Networks to Merge' list.",
           )
         }
         if (tableView === TableView.node && tableData.length < 1) {

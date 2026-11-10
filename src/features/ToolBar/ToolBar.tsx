@@ -13,6 +13,7 @@ import { HelpMenu } from './HelpMenu'
 import { LayoutMenu } from './LayoutMenu'
 import { MenuBar } from './MenuBar'
 import { SearchBox } from './Search'
+import { SelectMenu } from './SelectMenu'
 import { ThemeToggleButton } from './ThemeToggleButton'
 import { ToolsMenu } from './ToolsMenu'
 
@@ -42,6 +43,7 @@ export const ToolBar = (): JSX.Element => {
             <MenuBar sx={{ display: 'flex' }}>
               <DataMenu />
               <EditMenu />
+              <SelectMenu />
               <LayoutMenu />
               <AnalysisMenu />
               <ToolsMenu />

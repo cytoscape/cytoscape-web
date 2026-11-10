@@ -13,12 +13,20 @@ import {
 } from '../../../models/TableModel/impl/valueTypeImpl'
 import { useJoinTableToNetworkStore } from '../../TableDataLoader/store/joinTableToNetworkStore'
 import { VisualProperty } from '../../../models/VisualStyleModel'
+import { columnNameProblem } from '../utils/columnNameProblem'
 
 import {
   CreateTableColumnForm,
   DeleteTableColumnForm,
   EditTableColumnForm,
 } from '../TableColumnForm'
+
+/**
+ * Glyphs of the Cytoscape icon font (`src/assets/icons.css`) on the two
+ * toolbar buttons. The manual draws the same glyphs (UiIcon).
+ */
+export const INSERT_COLUMN_GLYPH = '\u2011'
+export const IMPORT_TABLE_GLYPH = ','
 
 // --- Helper Components ---
 const ButtonTooltip = ({
@@ -394,12 +402,13 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
             newColumnName: string,
             mappingUpdateType?: 'delete' | 'rename',
           ) => {
-            if (
-              currentTable?.columns?.find((c: any) => c.name === newColumnName)
-            ) {
-              setColumnFormError(
-                `${newColumnName} already exists. Please enter a new unique column name`,
-              )
+            const nameProblem = columnNameProblem(
+              currentTable?.columns ?? [],
+              newColumnName,
+              selectedColumn.id,
+            )
+            if (nameProblem !== undefined) {
+              setColumnFormError(nameProblem)
             } else {
               postEdit(
                 UndoCommandType.RENAME_COLUMN,
@@ -707,7 +716,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
         disabled={tables[currentNetworkId] === undefined}
         onClick={() => setShowCreateColumnForm(true)}
       >
-        <span className="icon">&#8209;</span>
+        <span className="icon">{INSERT_COLUMN_GLYPH}</span>
       </ToolbarIconButton>
       <ToolbarIconButton
         testId="import-table-button"
@@ -715,7 +724,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
         disabled={tables[currentNetworkId] === undefined}
         onClick={() => showTableJoinForm(true)}
       >
-        <span className="icon">&#44;</span>
+        <span className="icon">{IMPORT_TABLE_GLYPH}</span>
       </ToolbarIconButton>
       <CreateTableColumnForm
         error={createColumnFormError}
@@ -729,13 +738,13 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
           dataType: ValueTypeName,
           value: string,
         ) => {
-          const columnNameSet = new Set(columns?.map((c: any) => c.name))
-          const columnNameAlreadyExists = columnNameSet.has(columnName)
+          const nameProblem = columnNameProblem(
+            currentTable?.columns ?? [],
+            columnName,
+          )
           const valueIsValid = serializedStringIsValid(dataType, value)
-          if (columnNameAlreadyExists) {
-            setCreateColumnFormError(
-              `${columnName} already exists. Please enter a new unique column name`,
-            )
+          if (nameProblem !== undefined) {
+            setCreateColumnFormError(nameProblem)
           } else {
             if (!valueIsValid) {
               setCreateColumnFormError(

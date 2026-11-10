@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import NetworkFn from '../../NetworkModel'
 import { TableType } from '../../StoreModel/TableStoreModel'
+import type { EdgeView, NetworkView } from '../../ViewModel'
 import {
   createEdgesCore,
   deleteEdgesCore,
@@ -21,6 +22,16 @@ const makeNetwork = () =>
       { id: 'e2', s: 'n2', t: 'n3' },
     ],
   )
+
+// ViewModelStore keeps a LIST of views per network, primary view first
+const makeView = (edgeViews: Record<string, EdgeView> = {}): NetworkView => ({
+  id: NET_ID,
+  values: new Map(),
+  nodeViews: {},
+  edgeViews,
+  selectedNodes: [],
+  selectedEdges: [],
+})
 
 const makeActions = (
   overrides: Partial<EdgeOperationStoreActions> = {},
@@ -50,10 +61,7 @@ describe('deleteEdgesCore', () => {
         },
       },
       viewModels: {
-        [NET_ID]: {
-          nodeViews: {},
-          edgeViews: { e1: { id: 'e1', values: new Map() } },
-        },
+        [NET_ID]: [makeView({ e1: { id: 'e1', values: new Map() } })],
       },
     })
 
@@ -61,7 +69,7 @@ describe('deleteEdgesCore', () => {
 
     expect(result.deletedEdgeIds).toEqual(['e1'])
     expect(result.deletedEdgeRows.get('e1')).toEqual({ weight: 7 })
-    expect(result.deletedEdgeViews).toHaveLength(1)
+    expect(result.deletedEdgeViews).toEqual([{ id: 'e1', values: new Map() }])
 
     expect(actions.deleteEdgesFromNetwork).toHaveBeenCalledWith(NET_ID, ['e1'])
     expect(actions.deleteViewObjects).toHaveBeenCalledWith(NET_ID, ['e1'])
@@ -122,7 +130,7 @@ describe('createEdgesCore', () => {
       tables: {
         [NET_ID]: { nodeTable: undefined, edgeTable: { rows: new Map() } },
       },
-      viewModels: { [NET_ID]: { nodeViews: {}, edgeViews: {} } },
+      viewModels: { [NET_ID]: [makeView()] },
     })
 
     createEdgesCore(

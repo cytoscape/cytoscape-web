@@ -10,4 +10,7 @@ export interface D3TreeNode {
   size: number // Numeric value of the node to be used for circle size
   members: string[] // members assigned to this node
   selected?: boolean // Whether this node is selected
+  // True for a protein ring: a ring generated for a subsystem member, which
+  // has no row of its own in the node table. Subsystems leave it unset.
+  isMember?: boolean
 }

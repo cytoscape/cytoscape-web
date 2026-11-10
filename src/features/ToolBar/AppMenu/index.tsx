@@ -16,6 +16,7 @@ import { DropdownMenu, DropdownMenuItem } from '../DropdownMenu'
 import { useMenuBarMenu } from '../MenuBar'
 import { MenuItemIcon } from './MenuItemIcon'
 import { useServiceAppMenu } from './useServiceAppMenu'
+import { catalogAppId, trackEvent } from '@/data/analytics/trackEvent'
 
 export const AppMenu = () => {
   const { open, setOpen } = useMenuBarMenu('apps-menu')
@@ -86,6 +87,10 @@ export const AppMenu = () => {
           // that onClick only kicks off work living in a separate render
           // tree, so closing the menu can never unmount it mid-run.
           handleClose()
+          trackEvent('app_run', {
+            app_type: 'plugin',
+            app_id: catalogAppId(r.appId),
+          })
           try {
             const result = r.onClick?.(perAppApis)
             if (result instanceof Promise) {

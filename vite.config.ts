@@ -3,6 +3,7 @@ import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 
+import mdx from '@mdx-js/rollup'
 import { federation } from '@module-federation/vite'
 import react from '@vitejs/plugin-react'
 import {
@@ -15,6 +16,7 @@ import {
   type ViteDevServer,
 } from 'vite'
 import type { ServerResponse } from 'node:http'
+import remarkGfm from 'remark-gfm'
 
 import config from './src/assets/config.json'
 import packageJson from './package.json'
@@ -218,7 +220,14 @@ export default defineConfig(async ({ command, mode }: ConfigEnv) => {
   )
 
   const plugins: PluginOption[] = [
-    react(),
+    // The in-app manual's pages (src/features/Manual/content/*.mdx) compile to
+    // React components at build time; no markdown parser ships to the
+    // browser. `pre` so the MDX output reaches the React plugin as JSX.
+    {
+      enforce: 'pre',
+      ...mdx({ remarkPlugins: [remarkGfm] }),
+    } as PluginOption,
+    react({ include: /\.(mdx|js|jsx|ts|tsx)$/ }),
     federation({
       name: FEDERATION_NAME,
       filename: FEDERATION_FILENAME,

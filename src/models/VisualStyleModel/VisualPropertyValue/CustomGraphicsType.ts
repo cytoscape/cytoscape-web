@@ -73,7 +73,9 @@ export interface CustomGraphicsType {
 export interface PieChartPropertiesType {
   cy_range: [number, number]
   cy_colorScheme: string
-  cy_startAngle: number
+  // Optional: Cytoscape Desktop omits it at its default. Read it through
+  // `chartStartAngle()` (`impl/customGraphicsImpl.ts`), which defaults to 0°.
+  cy_startAngle?: number
   cy_colors: ColorType[]
   cy_dataColumns: AttributeName[]
 }
@@ -82,7 +84,9 @@ export interface RingChartPropertiesType {
   cy_range: [number, number]
   cy_colorScheme: string
   cy_holeSize: number
-  cy_startAngle: number
+  // Optional: Cytoscape Desktop omits it at its default. Read it through
+  // `chartStartAngle()` (`impl/customGraphicsImpl.ts`), which defaults to 0°.
+  cy_startAngle?: number
   cy_colors: ColorType[]
   cy_dataColumns: AttributeName[]
 }

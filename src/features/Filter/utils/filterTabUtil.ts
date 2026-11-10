@@ -2,8 +2,10 @@ import type { ApplyWorkspaceFilterResult } from '@/data/filter/applyWorkspaceFil
 import { DisplayMode } from '@/models/FilterModel/DisplayMode'
 import {
   ColumnFilterTarget,
+  FilterNode,
   FilterNodePath,
   FilterPredicate,
+  FilterTypeId,
   NumberRangeCriterion,
   WorkspaceFilter,
 } from '@/models/FilterModel/FilterTree'
@@ -11,6 +13,7 @@ import type { FilterValidationWarning } from '@/models/FilterModel/impl/validate
 import type { Network } from '@/models/NetworkModel/Network'
 import type { NumberRange } from '@/models/PropertyModel/NumberRange'
 import type { Column } from '@/models/TableModel/Column'
+import { findColumnByName } from '@/models/TableModel/impl/columnNames'
 import type { Table } from '@/models/TableModel/Table'
 
 /**
@@ -92,8 +95,8 @@ export const bothTablesOption = (
   edgeTable: Table,
 ): ColumnOption | undefined => {
   const column =
-    nodeTable.columns.find((candidate) => candidate.name === columnName) ??
-    edgeTable.columns.find((candidate) => candidate.name === columnName)
+    findColumnByName(nodeTable.columns, columnName) ??
+    findColumnByName(edgeTable.columns, columnName)
   return column === undefined
     ? undefined
     : {
@@ -266,3 +269,23 @@ export const formatApplyStatus = (
  */
 export const roundForDisplay = (value: number): number =>
   Number.isFinite(value) ? Number(value.toPrecision(6)) : value
+
+/**
+ * A short name for a condition, shown while it is dragged
+ */
+export const describeCondition = (node: FilterNode): string => {
+  switch (node.type) {
+    case FilterTypeId.Column:
+      return node.columnName === null
+        ? 'Column filter'
+        : columnLabel(node.target, node.columnName)
+    case FilterTypeId.Degree:
+      return 'Degree filter'
+    case FilterTypeId.Topology:
+      return 'Topology filter'
+    default: {
+      const count = node.children.length
+      return `Group (${count} condition${count === 1 ? '' : 's'})`
+    }
+  }
+}

@@ -14,6 +14,7 @@ import {
   deleteNetworkUiState,
   deserializeColumnUIKey,
   enablePopup,
+  isViewOfNetwork,
   serializeColumnUIKey,
   setActiveNetworkBrowserPanelIndex,
   setActiveNetworkView,
@@ -69,6 +70,37 @@ describe('UiImpl', () => {
       expect(result.activeNetworkView).toBe(networkId)
       expect(result).not.toBe(ui) // Immutability check
       expect(ui.activeNetworkView).toBe('') // Original unchanged
+    })
+  })
+
+  describe('isViewOfNetwork', () => {
+    it('is true for the network itself', () => {
+      expect(isViewOfNetwork('network-1', 'network-1')).toBe(true)
+    })
+
+    it('is true for one of its subnetwork views', () => {
+      expect(isViewOfNetwork('network-1_42', 'network-1')).toBe(true)
+    })
+
+    it('is false for another network', () => {
+      expect(isViewOfNetwork('network-2', 'network-1')).toBe(false)
+    })
+
+    it('is false for a network whose id only starts with the same text', () => {
+      expect(isViewOfNetwork('network-10', 'network-1')).toBe(false)
+    })
+
+    it('is false for no view', () => {
+      expect(isViewOfNetwork('', 'network-1')).toBe(false)
+    })
+
+    it('is false for any view when there is no network', () => {
+      expect(isViewOfNetwork('_42', '')).toBe(false)
+      expect(isViewOfNetwork('network-1', '')).toBe(false)
+    })
+
+    it('is true for no view when there is no network', () => {
+      expect(isViewOfNetwork('', '')).toBe(true)
     })
   })
 

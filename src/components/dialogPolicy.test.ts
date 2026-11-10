@@ -79,6 +79,8 @@ const dialogBlocks = (): Array<{ where: string; body: string }> => {
  * a trapped user looks for is a label, not a callback.
  */
 const hasDismissControl = (body: string): boolean => {
+  // The shared corner "X" (`DialogCloseButton.tsx`) is always labelled Close.
+  if (/<DialogCloseButton\b/.test(body)) return true
   const controls = [
     // <Button …>Cancel</Button>, including the multi-line form.
     ...[...body.matchAll(/<(?:Button|IconButton)\b[^>]*>([^<]*)</g)].map(
@@ -110,6 +112,16 @@ describe('dialog dismissal policy', () => {
     ).toBe(false)
     expect(
       hasDismissControl('<CyDialog open><Button>Cancel</Button></CyDialog>'),
+    ).toBe(true)
+  })
+
+  it('accepts the shared DialogCloseButton as an exit', () => {
+    // It renders an IconButton labelled "Close", but in another file, so the
+    // lexical scan has to know the component by name.
+    expect(
+      hasDismissControl(
+        '<CyDialog open><DialogCloseButton onClose={onClose} /></CyDialog>',
+      ),
     ).toBe(true)
   })
 

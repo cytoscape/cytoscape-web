@@ -20,6 +20,14 @@ export const setActiveNetworkView = (ui: Ui, id: IdType): Ui => {
 }
 
 /**
+ * True when the view shows the given network: the network itself or one of
+ * its subnetworks, whose view ids are `<networkId>_<subsystemId>`.
+ */
+export const isViewOfNetwork = (viewId: IdType, networkId: IdType): boolean =>
+  viewId === networkId ||
+  (networkId !== '' && viewId.startsWith(`${networkId}_`))
+
+/**
  * Set panel state
  */
 export const setPanelState = (ui: Ui, panel: Panel, state: PanelState): Ui => {

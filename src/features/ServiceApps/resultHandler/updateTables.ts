@@ -3,8 +3,17 @@ import { useCallback } from 'react'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { logApp } from '../../../debug'
-import { Column, Table, ValueType } from '../../../models'
+import { Table, ValueType } from '../../../models'
 import { TableType } from '../../../models/StoreModel/TableStoreModel'
+import { ValueTypeName } from '../../../models/TableModel'
+import {
+  assertSameColumnType,
+  columnNameIsTaken,
+  DeclaredColumn,
+  findColumnByName,
+  mergeDeclaredColumns,
+  setCellValue,
+} from '../../../models/TableModel/impl/columnNames'
 import { ActionHandlerProps } from './serviceResultHandlerManager'
 
 interface UpdatedTable {
@@ -29,7 +38,11 @@ export const useUpdateTables = (): (({
       typeof data.id === 'string' &&
       (data.id === TableType.EDGE || data.id === TableType.NODE) &&
       typeof data.rows === 'object' &&
+      data.rows !== null &&
       !Array.isArray(data.rows) &&
+      Object.values(data.rows).every(
+        (row) => typeof row === 'object' && row !== null && !Array.isArray(row),
+      ) &&
       Array.isArray(data.columns) &&
       data.columns.every(
         (col: any) =>
@@ -51,21 +64,50 @@ export const useUpdateTables = (): (({
       const originalTable: Table =
         id === TableType.NODE ? tables?.nodeTable : tables?.edgeTable
 
-      const originalColumnSet = new Set(
-        originalTable.columns.map((col) => `${col.name}|${col.type}`),
+      // Columns of one name merge, ignoring case, as in Cytoscape Desktop: a
+      // response column spelled like an existing column writes to it, and
+      // new ones of one name share the first one's spelling and type.
+      const responseColumns: DeclaredColumn[] = columns.map((c) => ({
+        name: c.id,
+        type: c.type as ValueTypeName,
+      }))
+      const columnMerge = mergeDeclaredColumns([
+        ...originalTable.columns,
+        ...responseColumns,
+      ])
+      const updatedColumns = [
+        ...originalTable.columns,
+        ...columnMerge.columns.filter(
+          (c) => !columnNameIsTaken(originalTable.columns, c.name),
+        ),
+      ]
+      // How a row key is declared. The response's own declaration replaces
+      // the table's, since a value of this key was written with its type.
+      const declaredAs = new Map<string, DeclaredColumn>(
+        [...originalTable.columns, ...responseColumns].map((c) => [c.name, c]),
       )
 
-      // update columns
-      const updatedColumns = [...originalTable.columns]
-      columns.forEach((newCol) => {
-        const columnSignature = `${newCol.id}|${newCol.type}`
-        if (!originalColumnSet.has(columnSignature)) {
-          updatedColumns.push({
-            name: newCol.id,
-            type: newCol.type,
-          } as Column)
-        }
-      })
+      // Write a row's values in the order of its keys, so the last spelling
+      // wins. Throws before the table is touched when a value would be
+      // written to a column of another type.
+      const writeValues = (
+        target: Record<string, ValueType>,
+        values: Record<string, ValueType>,
+        keepUndeclared: boolean,
+      ): void => {
+        Object.entries(values).forEach(([key, value]) => {
+          if (value === undefined) return
+          const spelling = declaredAs.get(key)
+          if (spelling === undefined) {
+            if (keepUndeclared) setCellValue(target, key, value)
+            return
+          }
+          const column = (findColumnByName(originalTable.columns, key) ??
+            columnMerge.keptColumn(key)) as DeclaredColumn
+          if (value !== null) assertSameColumnType(column, spelling)
+          setCellValue(target, column.name, value)
+        })
+      }
 
       // update rows
       const updatedRowMap = new Map(originalTable.rows)
@@ -75,18 +117,11 @@ export const useUpdateTables = (): (({
         const existingRow = updatedRowMap.get(translatedId as string)
 
         // If the row exists, update it; if not, add a new one
-        if (existingRow) {
-          const updatedRow = { ...existingRow }
-          updatedColumns.forEach((col) => {
-            if (newRow[col.name] !== undefined) {
-              updatedRow[col.name] = newRow[col.name]
-            }
-          })
-          updatedRowMap.set(translatedId as string, updatedRow)
-        } else {
-          // New row, add it
-          updatedRowMap.set(translatedId as string, newRow)
-        }
+        const updatedRow: Record<string, ValueType> = existingRow
+          ? { ...existingRow }
+          : {}
+        writeValues(updatedRow, newRow, existingRow === undefined)
+        updatedRowMap.set(translatedId as string, updatedRow)
       })
 
       const nextTable: Table = {

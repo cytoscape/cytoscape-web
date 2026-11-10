@@ -27,9 +27,9 @@ vi.mock('./AppListPanel', () => ({ AppListPanel: () => null }))
 vi.mock('./ServiceListPanel', () => ({ ServiceListPanel: () => null }))
 
 const { AppSettingsDialog } = await import('./AppSettingsDialog')
-const { isAllowedOrigin, validateManifestUrl } = await import(
-  './install/installGate'
-)
+const { isAllowedOrigin, parseSingleEntryManifest, validateManifestUrl } =
+  await import('./install/installGate')
+const { useAppStore } = await import('../../data/hooks/stores/AppStore')
 
 const DEV1 = 'https://dev1.ndexbio.org'
 
@@ -194,8 +194,6 @@ describe('AppSettingsDialog — reopening', () => {
     fireEvent.change(screen.getByLabelText('Custom manifest URL'), {
       target: { value: 'https://example.org/manifest.json' },
     })
-    // The service URL field lives in ServiceListPanel, which mounts only on
-    // this tab: starting on Apps is what resets it.
     fireEvent.click(screen.getByRole('tab', { name: 'Service Apps' }))
     expect(selectedTab()).toBe('Service Apps')
 
@@ -214,5 +212,110 @@ describe('AppSettingsDialog — reopening', () => {
     expect(
       (screen.getByLabelText('Custom manifest URL') as HTMLInputElement).value,
     ).toBe('')
+  })
+})
+
+// Issue #827: one URL field installs either kind. The payload behind the URL
+// decides, so the user no longer has to know which tab the app belongs on.
+describe('AppSettingsDialog — one URL field for both app kinds', () => {
+  const SERVICE_URL = 'https://cd.ndexbio.org/cy/cytocontainer/v1/openurl'
+  const SERVICE_METADATA = {
+    name: 'Open URL',
+    cyWebActions: ['openURL'],
+    parameters: [],
+  }
+
+  const addService = vi.fn(async (_url: string) => undefined)
+
+  const stubFetchJson = (body: unknown): void => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ ok: true, json: async () => body })),
+    )
+  }
+
+  const submit = (url: string): void => {
+    fireEvent.change(screen.getByTestId('install-from-url-input'), {
+      target: { value: url },
+    })
+    fireEvent.click(screen.getByTestId('install-from-url-button'))
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    useAppStore.setState({ serviceApps: {}, addService })
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('adds a service app from the field and shows the Service Apps tab', async () => {
+    stubFetchJson(SERVICE_METADATA)
+    renderDialog()
+
+    submit(`${SERVICE_URL}/`)
+
+    await waitFor(() => expect(addService).toHaveBeenCalledWith(SERVICE_URL))
+    expect(installApp).not.toHaveBeenCalled()
+    expect(isAllowedOrigin).not.toHaveBeenCalled()
+    await waitFor(() =>
+      expect(
+        screen
+          .getByRole('tab', { name: 'Service Apps' })
+          .getAttribute('aria-selected'),
+      ).toBe('true'),
+    )
+  })
+
+  it('installs a React app manifest from the same field', async () => {
+    stubFetchJson([{}])
+    renderDialog()
+
+    submit('https://apps.cytoscape.org/devapp/manifest.json')
+
+    await waitFor(() => expect(installApp).toHaveBeenCalled())
+    expect(addService).not.toHaveBeenCalled()
+  })
+
+  it('shows the field on the Service Apps tab too', () => {
+    renderDialog()
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Service Apps' }))
+
+    expect(screen.getByTestId('install-from-url-input')).toBeTruthy()
+  })
+
+  it('does not re-register a service that is already added', async () => {
+    useAppStore.setState({
+      serviceApps: {
+        [SERVICE_URL]: { url: SERVICE_URL, ...SERVICE_METADATA } as never,
+      },
+    })
+    stubFetchJson(SERVICE_METADATA)
+    renderDialog()
+
+    submit(SERVICE_URL)
+
+    expect(
+      await screen.findByText(`This service is already added: ${SERVICE_URL}`),
+    ).toBeTruthy()
+    expect(addService).not.toHaveBeenCalled()
+  })
+
+  it('says so when the URL is neither an app manifest nor a service', async () => {
+    vi.mocked(parseSingleEntryManifest).mockReturnValueOnce(undefined)
+    stubFetchJson({ hello: 'world' })
+    renderDialog()
+
+    submit('https://example.org/data.json')
+
+    expect(
+      await screen.findByText(
+        'That URL is neither a Cytoscape Web app manifest nor a service app.',
+      ),
+    ).toBeTruthy()
+    expect(installApp).not.toHaveBeenCalled()
+    expect(addService).not.toHaveBeenCalled()
   })
 })

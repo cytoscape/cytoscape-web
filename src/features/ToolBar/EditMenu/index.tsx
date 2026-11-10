@@ -13,9 +13,17 @@ import { DeleteSelectedEdgesMenuItem } from './DeleteSelectedEdgesMenuItem'
 import { DeleteSelectedNodesMenuItem } from './DeleteSelectedNodesMenuItem'
 import { RedoMenuItem } from './RedoMenuItem'
 import { UndoMenuItem } from './UndoMenuItem'
+import { useDeleteSelectionShortcut } from './useDeleteSelectionShortcut'
+import {
+  REDO_KEY_SHORTCUTS,
+  UNDO_KEY_SHORTCUTS,
+  useUndoRedoShortcuts,
+} from './useUndoRedoShortcuts'
 
 export const EditMenu = () => {
   const { open, setOpen } = useMenuBarMenu('edit-menu')
+  useUndoRedoShortcuts()
+  useDeleteSelectionShortcut()
 
   const hasNoNetworks =
     useWorkspaceStore((state) => state.workspace.networkIds).length === 0
@@ -52,9 +60,11 @@ export const EditMenu = () => {
     },
     {
       template: <UndoMenuItem onClick={handleClose} />,
+      keyShortcuts: UNDO_KEY_SHORTCUTS,
     },
     {
       template: <RedoMenuItem onClick={handleClose} />,
+      keyShortcuts: REDO_KEY_SHORTCUTS,
     },
   ]
   const menuItems = appendServiceMenuItems(builtInItems, serviceMenuItems)

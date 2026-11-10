@@ -286,6 +286,23 @@ export const setNodePosition = (
 }
 
 /**
+ * Whether a value is a node position, `[x, y]` or `[x, y, z]` with every
+ * coordinate a finite number. For positions that come from outside the store:
+ * an app API call, or an undo entry read back from IndexedDB.
+ *
+ * Each index is read explicitly: every() skips the holes of a sparse array,
+ * so `[, 0]` would pass and write an undefined coordinate.
+ */
+export const isNodePosition = (
+  value: unknown,
+): value is [number, number, number?] =>
+  Array.isArray(value) &&
+  (value.length === 2 || value.length === 3) &&
+  Number.isFinite(value[0]) &&
+  Number.isFinite(value[1]) &&
+  (value.length === 2 || Number.isFinite(value[2]))
+
+/**
  * Update multiple node positions
  */
 export const updateNodePositions = (

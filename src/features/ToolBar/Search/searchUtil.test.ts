@@ -171,6 +171,75 @@ describe('SearchUtils', () => {
       testIndex = createFuseIndex(testTable)
     })
 
+    // A table's columns come from the network file, so they can have any name
+    describe('column names (#949)', () => {
+      const search = (
+        columnName: string,
+        rows: Array<[string, Record<string, ValueType>]>,
+        query: string,
+        exact = false,
+      ): string[] => {
+        const table = createTestTable(
+          [
+            { name: columnName, type: ValueTypeName.String },
+            { name: 'label', type: ValueTypeName.String },
+          ],
+          new Map(rows),
+        )
+        return runSearch(createFuseIndex(table), query, 'OR', exact)
+      }
+
+      // The rows of the node table reported in #949
+      const rowsWithIdColumn: Array<[string, Record<string, ValueType>]> = [
+        ['0', { id: 'https://identifiers.org/HGNC:35271', label: 'MIR1205' }],
+        ['2', { id: 'https://identifiers.org/HGNC:29127', label: 'FRYL' }],
+        ['18', { id: 'https://identifiers.org/HGNC:29127', label: 'FRYL' }],
+        ['55', { label: 'FRYL), m(HGNC:MIR1205)' }],
+        ['61', { label: 'FRYL)' }],
+      ]
+
+      it('returns row keys when a column is named id', () => {
+        const results = search('id', rowsWithIdColumn, 'fryl')
+        expect([...results].sort()).toEqual(['18', '2', '55', '61'])
+      })
+
+      it('returns row keys in exact mode when a column is named id', () => {
+        const results = search('id', rowsWithIdColumn, 'FRYL', true)
+        expect([...results].sort()).toEqual(['18', '2'])
+      })
+
+      it('still searches the values of a column named id', () => {
+        expect(search('id', rowsWithIdColumn, 'HGNC:35271')).toEqual(['0'])
+      })
+
+      it('searches a column whose name has a dot', () => {
+        const rows: Array<[string, Record<string, ValueType>]> = [
+          ['1', { 'gene.symbol': 'FRYL', label: 'first' }],
+          ['2', { 'gene.symbol': 'TP53', label: 'second' }],
+        ]
+        expect(search('gene.symbol', rows, 'fryl')).toEqual(['1'])
+      })
+
+      it('searches a column named __proto__ without touching the prototype', () => {
+        const row = JSON.parse('{"__proto__": "FRYL", "label": "first"}')
+        const results = search('__proto__', [['1', row]], 'fryl')
+
+        expect(results).toEqual(['1'])
+        expect(({} as Record<string, unknown>).label).toBeUndefined()
+      })
+
+      it('searches list values in a column named id', () => {
+        const table = createTestTable(
+          [{ name: 'id', type: ValueTypeName.ListString }],
+          new Map<string, Record<string, ValueType>>([
+            ['1', { id: ['alpha', 'FRYL'] }],
+            ['2', { id: ['beta'] }],
+          ]),
+        )
+        expect(runSearch(createFuseIndex(table), 'fryl', 'OR')).toEqual(['1'])
+      })
+    })
+
     describe('tokenization', () => {
       it('should tokenize space-separated query', () => {
         const results = runSearch(testIndex, 'YL protein', 'AND', false)

@@ -608,10 +608,29 @@ describe('fetchNdexSummaries', () => {
     expect(mockGetNdexClient).toHaveBeenCalledWith(mockAccessToken, undefined)
     expect(
       mockClient.networks.v2.getNetworkSummariesByUUIDs,
-    ).toHaveBeenCalledWith([mockNetworkId])
+    ).toHaveBeenCalledWith([mockNetworkId], undefined)
     expect(result).toHaveLength(1)
     expect(result[0].externalId).toBe(mockNetworkId)
     expect(result[0].isNdex).toBe(true) // Should be normalized
+  })
+
+  it('passes a share-link access key to NDEx', async () => {
+    const rawSummary = createBaseSummary()
+    rawSummary.externalId = 'private-net'
+    const mockClient = {
+      networks: {
+        v2: {
+          getNetworkSummariesByUUIDs: vi.fn().mockResolvedValue([rawSummary]),
+        },
+      },
+    }
+    mockGetNdexClient.mockReturnValue(mockClient as any)
+
+    await fetchNdexSummaries('private-net', undefined, undefined, 'key-123')
+
+    expect(
+      mockClient.networks.v2.getNetworkSummariesByUUIDs,
+    ).toHaveBeenCalledWith(['private-net'], 'key-123')
   })
 
   it('should fetch multiple network summaries by IDs', async () => {
@@ -638,7 +657,7 @@ describe('fetchNdexSummaries', () => {
     expect(mockGetNdexClient).toHaveBeenCalledWith(undefined, undefined)
     expect(
       mockClient.networks.v2.getNetworkSummariesByUUIDs,
-    ).toHaveBeenCalledWith(mockNetworkIds)
+    ).toHaveBeenCalledWith(mockNetworkIds, undefined)
     expect(result).toHaveLength(3)
     expect(result[0].externalId).toBe('network-1')
     expect(result[1].externalId).toBe('network-2')
@@ -667,7 +686,7 @@ describe('fetchNdexSummaries', () => {
 
     expect(
       mockClient.networks.v2.getNetworkSummariesByUUIDs,
-    ).toHaveBeenCalledWith([mockNetworkId])
+    ).toHaveBeenCalledWith([mockNetworkId], undefined)
     expect(result).toHaveLength(1)
   })
 
@@ -725,7 +744,7 @@ describe('fetchNdexSummaries', () => {
     expect(mockGetNdexClient).toHaveBeenCalledWith(undefined, undefined)
     expect(
       mockClient.networks.v2.getNetworkSummariesByUUIDs,
-    ).toHaveBeenCalledWith([mockNetworkId])
+    ).toHaveBeenCalledWith([mockNetworkId], undefined)
   })
 
   it('should work without an access token', async () => {
@@ -843,7 +862,7 @@ describe('getNetworkValidationStatus', () => {
 
     expect(result).toBe(true)
     expect(mockWaitSeconds).toHaveBeenCalledWith(0.5) // initialDelaySeconds
-    expect(mockFetchSummaries).toHaveBeenCalledWith([mockUuid])
+    expect(mockFetchSummaries).toHaveBeenCalledWith([mockUuid], undefined)
   })
 
   it('should return false when network validation fails after max attempts', async () => {

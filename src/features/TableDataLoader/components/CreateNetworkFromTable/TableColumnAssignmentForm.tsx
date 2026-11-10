@@ -10,8 +10,11 @@ import { useTableStore } from '../../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../../data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '../../../../data/hooks/stores/ViewModelStore'
 import { useVisualStyleStore } from '../../../../data/hooks/stores/VisualStyleStore'
+import { useMessageStore } from '../../../../data/hooks/stores/MessageStore'
 import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
+import { MessageSeverity } from '../../../../models/MessageModel'
 import { ValueTypeName } from '../../../../models/TableModel'
+import { ColumnTypeConflictError } from '../../../../models/TableModel/impl/columnNames'
 import { BaseMenuItemProps } from '../../../ToolBar/BaseMenuItemProps'
 import { ColumnAssignmentState } from '../../model/ColumnAssignmentState'
 import { ColumnAssignmentType } from '../../model/ColumnAssignmentType'
@@ -50,6 +53,7 @@ import {
   ColumnAssignmentTypeRender,
 } from './ColumnMeaningForm'
 import { NetworkNameInput } from './NetworkNameInput'
+import { trackEvent } from '@/data/analytics/trackEvent'
 
 export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
   const text = useCreateNetworkFromTableStore((state) => state.rawText)
@@ -60,6 +64,7 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
   const options = useCreateNetworkFromTableStore((state) => state.options)
   const setOptions = useCreateNetworkFromTableStore((state) => state.setOptions)
   const addSummary = useNetworkSummaryStore((state) => state.add)
+  const addMessage = useMessageStore((state) => state.addMessage)
   const [loading, setLoading] = useState(false)
   const { navigateToNetwork } = useUrlNavigation()
   const workspace = useWorkspaceStore((state) => state.workspace)
@@ -300,7 +305,19 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
   )
 
   const handleConfirm = useCallback(async () => {
-    const res = createNetworkFromTableData(rows, columns, undefined, name)
+    let res: ReturnType<typeof createNetworkFromTableData>
+    try {
+      res = createNetworkFromTableData(rows, columns, undefined, name)
+    } catch (error) {
+      if (!(error instanceof ColumnTypeConflictError)) throw error
+      // Nothing was created: the dialog stays open so the types can be fixed
+      addMessage({
+        duration: 10000,
+        message: `Failed to import the table: ${error.message}`,
+        severity: MessageSeverity.ERROR,
+      })
+      return
+    }
 
     const { cyNetwork, summary } = res
     const {
@@ -334,11 +351,13 @@ export function TableColumnAssignmentForm(props: BaseMenuItemProps) {
       searchParams: new URLSearchParams(location.search),
       replace: false,
     })
+    trackEvent('network_open', { source: 'file', format: 'table' })
 
     setLoading(false)
     reset()
     props.onClick()
   }, [
+    addMessage,
     rows,
     columns,
     name,

@@ -4,7 +4,7 @@ import { MouseEvent, ReactElement } from 'react'
 import { Network } from '../../models/NetworkModel'
 import { Renderer } from '../../models/RendererModel/Renderer'
 import { FloatingToolBar } from '../FloatingToolBar'
-import { FloatingLayoutToolsPanel } from '../LayoutTools/FloatingLayoutToolsPanel'
+import { FloatingLayoutToolsPanel } from '../LayoutTools'
 
 interface NetworkTabProps {
   network: Network
@@ -38,6 +38,12 @@ export const NetworkTab = ({
     <Box
       data-testid="network-tab"
       sx={{
+        // The floating toolbar and Layout Tools panel are placed against this
+        // box. Without it they would be placed against the pane, which in a
+        // hierarchy also holds the view tabs (TREE VIEW / CELL VIEW), and
+        // react-draggable's parent bounds would let the Layout Tools panel
+        // be dragged over those tabs (#887).
+        position: 'relative',
         boxSizing: 'border-box',
         height: '100%',
         width: '100%',

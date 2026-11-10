@@ -163,10 +163,10 @@ export function generateValidCx2(options: GenerateCx2Options): any[] {
 
   cx2.push({ metaData })
 
-  // 3. Status (required). CX2 requires it to be the LAST aspect: readers such as
-  // Cytoscape Web's extractor slice off the first and last elements of the
-  // stream, so any aspect emitted after status is silently dropped. It is
-  // pushed here for readability and moved to the end by moveStatusLast() below.
+  // 3. Status (required). CX2 requires it to be the LAST aspect. Cytoscape Web
+  // reads aspects by name and only warns on a misplaced status (#830), but
+  // fixtures should model a conforming file. It is pushed here for readability
+  // and moved to the end by moveStatusLast() below.
   cx2.push({
     status: [
       {
@@ -308,9 +308,8 @@ export function generateValidCx2(options: GenerateCx2Options): any[] {
 /**
  * Move the status aspect to the end of the stream, where CX2 requires it.
  *
- * Readers identify the trailing status aspect positionally, so an aspect that
- * follows it is lost. Call this after appending any further aspects to a
- * generated network.
+ * validateCX2 warns when status is not last. Call this after appending any
+ * further aspects to a generated network.
  */
 export function moveStatusLast(cx2: any[]): any[] {
   const statusIndex = cx2.findIndex(

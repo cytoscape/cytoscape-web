@@ -8,6 +8,7 @@ import {
   getNetworkSummaryFromDb,
 } from '../db'
 import { fetchNdexNetwork } from '../external-api/ndex'
+import { getNdexAccessKey } from '../external-api/ndex/accessKeys'
 import { takePrefetchedCyNetwork } from '@/data/prefetch/networkPrefetch'
 import { getCyNetworkFromStores } from './getCyNetworkFromStores'
 import { useCredentialStore } from './stores/CredentialStore'
@@ -82,9 +83,18 @@ export const useLoadCyNetwork = () => {
         )
         const token =
           accessToken ?? (await useCredentialStore.getState().getToken())
-        const cxData: Cx2 = await fetchNdexNetwork(networkId, token)
+        // A deep link from an NDEx share link left its key here at boot.
+        const cxData: Cx2 = await fetchNdexNetwork(
+          networkId,
+          token,
+          undefined,
+          getNdexAccessKey(networkId),
+        )
         // getCyNetworkFromCx2 validates the CX2 data before processing
-        return getCyNetworkFromCx2(networkId, cxData)
+        // A network saved on NDEx is left as it is, duplicates included (#951)
+        return getCyNetworkFromCx2(networkId, cxData, {
+          keepDuplicateColumns: true,
+        })
       }
     } catch (error) {
       logApi.error(`[${loadCyNetwork.name}]: Failed to get network: ${error}`)

@@ -21,6 +21,8 @@ HierarchyViewer/
 │   ├── MainPanel.tsx                    # Main orchestrator component
 │   ├── CirclePackingLayout/              # Circle packing visualization
 │   │   ├── CirclePackingPanel.tsx       # D3.js-based circle packing renderer
+│   │   ├── CirclePackingRenderer.tsx    # The Cell View `Renderer`, lazy-loads the panel
+│   │   ├── memberNames.ts               # Protein-name lookup for member ids
 │   │   └── ...
 │   ├── SubNetworkPanel.tsx              # Interaction network viewer
 │   ├── FilterPanel/                     # Network filtering controls
@@ -46,7 +48,8 @@ HierarchyViewer/
 └── utils/                                # Utility functions
     ├── hierarchyUtil.ts
     ├── filterUtil.ts
-    └── subnetworkQueryUtil.ts
+    ├── subnetworkQueryUtil.ts
+    └── subsystemName.ts
 ```
 
 ## Components
@@ -61,10 +64,11 @@ The main orchestrator component that manages the hierarchy viewer layout and sta
   - `ndexSchema: "hierarchy_v0.1"` (required)
   - `HCX::modelFileCount` (required)
   - `HCX::interactionNetworkUUID` (optional - for networks with associated interaction networks)
-  - `HCX::interactionNetworkHost` (optional - host for interaction network queries)
-- Registers the Circle Packing renderer if hierarchy is detected
+  - `HCX::interactionNetworkHost` (optional - host for interaction network queries). Untrusted: requests to any host other than the configured NDEx host are anonymous, so a private interaction network on another host does not load (see `docs/specifications/EXTERNAL_INPUT_VALIDATION_POLICY.md`, #936)
 - Manages selection state and extracts subsystem information from selected nodes
+- Names the selected subsystem (`getSubsystemName`) by the attribute the node label is mapped to, else its `name` column, else its node id: HCX files need not have a `name` column (the test fixtures name nodes with `n`), and a null, absent or blank value, or a list with no non-blank item, counts as none
 - Coordinates between Circle Packing view and SubNetwork view
+- Derives the subsystem's name, members and interaction network during render, so `SubNetworkPanel` never gets a subsystem with another's members. A fetch started from such a pair could be stored as that subsystem's network for good (#931)
 - Handles multiple node selection and validates that selections are from the same branch
 - Displays appropriate messages when hierarchy is not detected or no subsystem is selected
 
@@ -73,7 +77,6 @@ The main orchestrator component that manages the hierarchy viewer layout and sta
 - Automatic hierarchy detection based on network metadata
 - Subsystem selection extraction from table data (nodes with `HCX::members` attribute)
 - Query generation for fetching interaction networks using `HCX::interactionNetworkUUID`
-- Root network ID and host management
 
 ### CirclePackingPanel
 
@@ -84,11 +87,13 @@ A D3.js-based visualization component that renders hierarchical structures as ne
 - Renders hierarchy as nested circles using D3.js circle packing algorithm
 - Supports zoom and pan interactions
 - Dynamically shows/hides labels based on zoom level
-- Handles node selection (subsystems and leaf nodes)
+- Handles node selection (subsystems and leaf nodes). Labels are drawn over the rings with `pointer-events: none`, so a click or hover on a label reaches the ring underneath
 - Supports multi-selection of leaf nodes (enables selecting multiple leaves simultaneously)
-- Synchronizes selection with SubNetworkPanel (bidirectional sync between subnetwork view and circle packing view)
+- Synchronizes selection with SubNetworkPanel (see [Selecting protein rings](#selecting-protein-rings))
+- Highlights the protein rings a search matched (see [Search and protein rings](#search-and-protein-rings))
 - Applies visual styles from the visual style store
 - Provides fit-to-viewport functionality
+- Labels protein rings with protein names (see [Protein ring labels](#protein-ring-labels))
 - On initial load with selected leaves (from URL parameters), automatically fits the viewport to show the subsystem containing those leaves
 
 **Key Features:**
@@ -158,6 +163,7 @@ Provides filtering capabilities for interaction networks.
 - Non-matching elements are set to `VisibilityType.None` (hidden)
 - When no options are selected, all elements are hidden
 - Filtering is applied through the visual style store's bypass map mechanism
+- The toolbar's Select › Show All, run on the subnetwork, removes these bypasses and switches the filter off, as applying a FILTER tab filter does (`SelectMenu_docs/SelectMenu.md`)
 
 **Note:** Filter configurations are extracted from the interaction network's `filterWidgets` opaque aspect. HCX networks do not contain filter widgets - only interaction networks (those referenced by `HCX::interactionNetworkUUID`) can have filter configurations.
 
@@ -190,6 +196,133 @@ Components for validating HCX network compliance.
 - Provides revalidation functionality
 - Warns users when saving invalid HCX networks
 
+### Protein ring labels
+
+When `HCX::members` holds node ids of the interaction network (MuSIC does),
+`createTreeLayout` looks their names up in that network
+(`resolveMemberNames` in `memberNames.ts`, via `fetchNodeNamesByIds`) and
+labels each ring with the name found for its id. A ring whose name is missing
+or blank, or a failed lookup, shows the id. `HCX::memberNames` lists are shown
+as they are, even when a name looks like a number.
+
+The interaction network and its host come from this hierarchy's own network
+summary (`interactionNetworkSource`), never from a shared store. The renderer
+is mounted hidden at startup, so it often builds before the summary has
+loaded. It waits for the summary and the primary view, and builds again whenever
+the interaction network changes or `NetworkTabs` reuses the panel for another
+hierarchy. It used to take the network id from `SubNetworkStore`, which
+`MainPanel` filled in only after reading the metadata, so after a reload the
+startup build looked names up in network `''` and the rings showed numbers
+(#933). The lookup returns names keyed by id: reading them back by position
+only worked because MuSIC's ids happen to be `0..n-1`.
+
+### Cell View size
+
+`NetworkTabs` reports the size of the box that holds the renderers
+(`useContainerSize`), and `CirclePackingPanel` receives it as `initialSize`. The
+size follows the real box, but the panel uses it for one thing only: the first
+layout of a hierarchy.
+
+- A first build waits until the box is at least 100 px each way
+  (`MIN_BOX_SIZE`). After a reload the box can be 0 x 0, or at Allotment's 30 px
+  pane minimum, until the panes have been laid out. A smaller box builds nothing
+  and draws nothing, and the build runs as soon as the box is large enough.
+- A rebuild packs into the size the current layout was built for, so nothing
+  moves on screen.
+- Resizing a drawn view neither rebuilds nor fits it, because that would throw
+  away the user's zoom and pan. `useCenterAnchoredZoom` keeps its center instead.
+  The view is fitted again only when the box comes back from below the minimum.
+
+The box was measured only once on mount, so a box that was not laid out yet left
+the Cell View blank, or tiny, until the next reload (#935).
+
+### Selecting protein rings
+
+A protein ring is selected by its protein's name (`terminalRingKey`, prefixed so
+that a protein named `7` can't match a subsystem with node id `7`), the one key
+the Sub Network Viewer shares with the Cell View. So a click outlines in red
+every ring of that protein, in whichever subsystems list it, whether the viewer
+is open or not. Only the clicked ring's parent is selected (orange), and that
+alone decides which subnetwork is shown. `originalId` is no use as the key: for
+a protein ring it is the member id, which the viewer never sees (#931).
+
+A subsystem with several parents is drawn once per path, and only its first
+drawing has the node's id. The others are copies, with an id like `110-2d` and
+`originalId` set. They all stand for one node. Clicking any of them, or a ring
+inside one, selects only that node's id (`subsystemNodeId`), since a copy has no
+table row and would count as a selected node with nothing behind it. Every
+drawing of a selected subsystem gets the orange border, however it was selected,
+Tree View and search included (`isSelectedSubsystem`). `MainPanel` still strips
+copy ids, because older shared URLs and saved selections can hold them.
+
+`displaySelectedNodes` is the only code that paints borders. It runs when the
+selection changes and after every drawing or repaint, since a rebuild leaves the
+selection as it was: a visual style change keeps the borders (#942). The selected
+rings are cleared when the panel moves to another hierarchy, where the same
+protein names may have rings of their own.
+
+The click and the viewer talk through `SubNetworkStore`:
+
+- A click names the protein (`selectedNodes`) and the subnetwork of the subsystem
+  it selected (`selectedNodesTarget`). `SubNetworkPanel` selects the protein once
+  `shownSubNetworkId` names that subnetwork, then clears the target. That
+  subnetwork usually has yet to load, and may not even be mounted, so the target
+  lives in the store. Waiting on `queryNetworkId` instead would write into the
+  previous subnetwork, which it keeps naming during the load. Selecting another
+  subsystem first cancels the click, so it can't land in the wrong subnetwork.
+  The Cell View does the cancelling, because it stays mounted while the viewer
+  comes and goes with its tab or the right panel. A click on the background
+  selects no subsystem, and has no target.
+- With nothing pending, a subnetwork arriving keeps the selection it has, such as
+  one restored from `selectedSubnetworkNodes` in the URL.
+- A ring's own selection is not sent back (`selectedHierarchyNodeNames`). The Cell
+  View already shows it, an empty one would clear the border of a protein with no
+  node in the subnetwork, and any other would start the expansion meant for an
+  initial selection from the URL. The store remembers it (`ringSelection`), so a
+  viewer that unmounted and came back does not send it either, until the selection
+  changes or another click replaces it. A selection made in the viewer itself is
+  sent, and outlines the rings of those names.
+
+### Search and protein rings
+
+A protein ring is generated from a subsystem's member list (`HCX::members`
+or `HCX::memberNames`) and has no row in the node table. A subsystem with no
+children is a terminal ring too, so only the flag tells them apart:
+`cyNetDag2tree2` marks these rings with
+`D3TreeNode.isMember`. The search can only select table rows, so a query for a
+protein selects the subsystems that list it (often the whole chain of
+ancestors, root included) and not the ring itself (#930).
+
+The Cell View closes that gap. `SearchBox` records each completed search in the
+FilterStore (`search.lastSearch`: network, query, options, selected node ids),
+and `findSearchMatchedRings` (`searchMatchedRings.ts`) finds the rings to
+highlight:
+
+- only after a search of the hierarchy itself (a search of the Sub Network
+  Viewer's network is ignored), and only while the selection is still that
+  search's result. Selecting anything else (Select ▸ Deselect All, clearing
+  the search) drops the highlight for good: `SearchBox` forgets the search
+  once the selection stops matching it, so selecting the same nodes again
+  later does not bring the highlight back. Any click on a Cell View circle clears
+  `lastSearch` too: when the search selected a single subsystem, clicking one
+  of its proteins selects that subsystem again, and the selection alone would
+  not change
+- only rings directly inside a subsystem the search selected, including every
+  copy of a subsystem the hierarchy reaches more than once
+- rings whose label matches any token of the query, using the search's own
+  Contains/Exact mode (the same Fuse.js options as the table index, through
+  `createFuseIndexFromRecords`). The AND operator already decided which
+  subsystems were selected
+
+Matched rings get the protein-ring selection border (red). They are not added
+to the Sub Network Viewer's selection. The search count still counts nodes,
+since rings are not nodes.
+
+Contains matches substrings, so `DR1` also matches a `WDR18` ring. In Exact
+mode, a subsystem whose protein list is one comma-separated string column (as
+in MuSIC's `Proteins`) does not equal `DR1`, so the search selects no subsystem
+and no ring is highlighted.
+
 ## Integration Points
 
 The HierarchyViewer integrates with the following stores and services:
@@ -199,7 +332,7 @@ The HierarchyViewer integrates with the following stores and services:
 - **TableStore** - Node and edge table data
 - **ViewModelStore** - Network views and selections
 - **VisualStyleStore** - Visual styling information
-- **FilterStore** - Filter configurations
+- **FilterStore** - Filter configurations, and the last search (`search.lastSearch`) for highlighting protein rings
 - **RendererStore** - Renderer registration (Circle Packing)
 - **RendererFunctionStore** - Renderer function registration (fit, etc.)
 - **WorkspaceStore** - Current network ID
@@ -237,7 +370,9 @@ The HierarchyViewer integrates with the following stores and services:
    - `HCX::modelFileCount` (required)
    - `HCX::interactionNetworkUUID` (optional)
    - `HCX::interactionNetworkHost` (optional)
-2. **Hierarchy Building**: CirclePackingPanel builds D3 hierarchy from network data using nodes with `HCX::members` attributes
+
+   `useHierarchyViewerManager`, always mounted in `WorkspaceEditor`, does the same check to register the Cell View renderer, which brings the Tree View and Cell View tabs. It registers it for a hierarchy whose edges all have one interaction type (#630) and removes it otherwise, whichever tab the right panel shows: `MainPanel` is unmounted while an app tab is selected (#946).
+2. **Hierarchy Building**: CirclePackingPanel builds D3 hierarchy from network data using nodes with `HCX::members` attributes, once the network summary has loaded, and looks protein names up in the interaction network named by `HCX::interactionNetworkUUID` / `HCX::interactionNetworkHost`
 3. **Subsystem Selection**: User selects subsystem in Circle Packing view
 4. **Query Generation**: MainPanel extracts member nodes from `HCX::members` attribute and interaction network UUID from `HCX::interactionNetworkUUID`
 5. **Network Fetching**: SubNetworkPanel fetches interaction network via NDEx query using the interaction network UUID

@@ -1,0 +1,188 @@
+[
+  {
+    "CXVersion": "2.0",
+    "hasFragments": false
+  },
+  {
+    "metaData": [
+      {
+        "name": "attributeDeclarations",
+        "elementCount": 1
+      },
+      {
+        "name": "networkAttributes",
+        "elementCount": 1
+      },
+      {
+        "name": "nodes",
+        "elementCount": 6
+      },
+      {
+        "name": "edges",
+        "elementCount": 6
+      }
+    ]
+  },
+  {
+    "attributeDeclarations": [
+      {
+        "networkAttributes": {
+          "name": {
+            "d": "string"
+          },
+          "description": {
+            "d": "string"
+          }
+        },
+        "nodes": {
+          "name": {
+            "d": "string"
+          },
+          "COMMON": {
+            "d": "string"
+          }
+        },
+        "edges": {
+          "name": {
+            "d": "string"
+          },
+          "interaction": {
+            "d": "string"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "networkAttributes": [
+      {
+        "name": "HSF1 neighborhood",
+        "description": "A small hand-made network for the manual's merge demo. Four of its nodes (YGL073W, YER103W, YHR053C, YBR072W) also appear in the galFiltered demo network."
+      }
+    ]
+  },
+  {
+    "nodes": [
+      {
+        "id": 1,
+        "x": 0,
+        "y": 0,
+        "v": {
+          "name": "YGL073W",
+          "COMMON": "HSF1"
+        }
+      },
+      {
+        "id": 2,
+        "x": 150,
+        "y": -60,
+        "v": {
+          "name": "YER103W",
+          "COMMON": "SSA4"
+        }
+      },
+      {
+        "id": 3,
+        "x": 150,
+        "y": 60,
+        "v": {
+          "name": "YHR053C",
+          "COMMON": "CUP1A"
+        }
+      },
+      {
+        "id": 4,
+        "x": -150,
+        "y": 0,
+        "v": {
+          "name": "YBR072W",
+          "COMMON": "HSP26"
+        }
+      },
+      {
+        "id": 5,
+        "x": 0,
+        "y": -150,
+        "v": {
+          "name": "YDR216W",
+          "COMMON": "ADR1"
+        }
+      },
+      {
+        "id": 6,
+        "x": 0,
+        "y": 150,
+        "v": {
+          "name": "YNL167C",
+          "COMMON": "SKO1"
+        }
+      }
+    ]
+  },
+  {
+    "edges": [
+      {
+        "id": 10,
+        "s": 1,
+        "t": 2,
+        "v": {
+          "name": "YGL073W (pd) YER103W",
+          "interaction": "pd"
+        }
+      },
+      {
+        "id": 11,
+        "s": 1,
+        "t": 3,
+        "v": {
+          "name": "YGL073W (pd) YHR053C",
+          "interaction": "pd"
+        }
+      },
+      {
+        "id": 12,
+        "s": 4,
+        "t": 1,
+        "v": {
+          "name": "YBR072W (pd) YGL073W",
+          "interaction": "pd"
+        }
+      },
+      {
+        "id": 13,
+        "s": 5,
+        "t": 1,
+        "v": {
+          "name": "YDR216W (pp) YGL073W",
+          "interaction": "pp"
+        }
+      },
+      {
+        "id": 14,
+        "s": 6,
+        "t": 1,
+        "v": {
+          "name": "YNL167C (pp) YGL073W",
+          "interaction": "pp"
+        }
+      },
+      {
+        "id": 15,
+        "s": 5,
+        "t": 2,
+        "v": {
+          "name": "YDR216W (pd) YER103W",
+          "interaction": "pd"
+        }
+      }
+    ]
+  },
+  {
+    "status": [
+      {
+        "error": "",
+        "success": true
+      }
+    ]
+  }
+]

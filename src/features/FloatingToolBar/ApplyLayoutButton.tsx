@@ -15,6 +15,9 @@ import { Network } from '../../models/NetworkModel'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { runEngineLayout } from '../../models/LayoutModel/impl/runEngineLayout'
 
+/** The button's icon; the manual draws the same one (UiIcon). */
+export const ApplyLayoutIcon = Refresh
+
 interface ApplyLayoutButtonProps {
   targetNetworkId?: IdType
   rendererId: string
@@ -147,7 +150,7 @@ export const ApplyLayoutButton = ({
       size="small"
       disableFocusRipple={true}
     >
-      <Refresh fontSize="inherit" />
+      <ApplyLayoutIcon fontSize="inherit" />
     </IconButton>
   )
 
@@ -160,7 +163,7 @@ export const ApplyLayoutButton = ({
       disableFocusRipple={true}
       disabled={disabled}
     >
-      <Refresh fontSize="inherit" />
+      <ApplyLayoutIcon fontSize="inherit" />
     </IconButton>
   )
   if (disabled) {

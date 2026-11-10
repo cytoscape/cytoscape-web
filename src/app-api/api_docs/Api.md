@@ -489,7 +489,8 @@ for `nodeLabel → name` is created automatically.
 The resulting `CyNetwork` is added to NetworkStore, TableStore, VisualStyleStore,
 ViewModelStore, and NetworkSummaryStore. If `addToWorkspace: true` (the default),
 the network is added to WorkspaceStore and set as the current network (firing
-`network:created` and `network:switched` events). Pass `addToWorkspace: false` to
+`network:created` and `network:switched` events), which the table browser,
+layout tools and toolbar search then act on. Pass `addToWorkspace: false` to
 create the network without adding it to the workspace.
 
 | Error Code | Condition                              |
@@ -525,9 +526,15 @@ importing. Infers network name and description from CX2 `networkAttributes`.
 If `addToWorkspace: true`, adds to WorkspaceStore (fires `network:created`).
 If `navigate: true`, sets as current network (fires `network:switched`).
 
+Attributes whose names differ only by case are merged as in Cytoscape Desktop:
+the first declared spelling and type are kept, in each element the last value
+in `v` order wins, and visual style mappings, named styles, table display
+configuration and hierarchy filter widgets follow the kept column. An attribute
+named `id` still imports as a column.
+
 | Error Code | Condition                        |
 | ---------- | -------------------------------- |
-| `APP8`     | CX2 structural validation failed |
+| `APP8`     | CX2 structural validation failed, or a value would be written to a merged column of another declared type |
 
 #### `deleteNetwork(networkId, options?): ApiResult`
 
@@ -628,6 +635,11 @@ import { useViewportApi } from 'cyweb/ViewportApi'
 ```typescript
 /** JSON-serializable position map: nodeId → [x, y, z?] */
 type PositionRecord = Record<IdType, [number, number, number?]>
+
+interface UpdateNodePositionsOptions {
+  /** Record the move as one undo entry. Default false; only `true` enables it. */
+  recordUndo?: boolean
+}
 ```
 
 ### Methods
@@ -652,16 +664,35 @@ position is returned. Requested ids with no view model entry are reported in
 | ---------- | -------------------------- |
 | `APP1`     | `networkId` does not exist |
 
-#### `updateNodePositions(networkId, positions): ApiResult`
+#### `updateNodePositions(networkId, positions, options?): ApiResult`
 
 Bulk-updates node positions in the view model. Accepts a `PositionRecord`
 (plain object) and converts it internally to a `Map` before writing to the store.
-Rejects (does not partially apply) if any key is not a node ID in the network.
+All or nothing: rejects the whole record, moving no node, if any key is not a
+node ID in the network or any value is not `[x, y]` or `[x, y, z]` of finite
+numbers.
 
-| Error Code | Condition                                   |
-| ---------- | ------------------------------------------- |
-| `APP1`     | `networkId` does not exist                  |
-| `GL1`      | A position key is not a node in the network |
+**Undo.** By default the move is not undoable. Pass `{ recordUndo: true }` to
+record it as **one** undo entry, so the user can put every node back with a
+single Edit ▸ Undo (Ctrl/⌘+Z), as after a drag or a layout. The entry holds
+only the nodes that actually move; a call that moves none records nothing.
+Undo does not refit the viewport. Leave it off for moves the user did not ask
+for, and for animations or step-by-step moves: each call is one entry, and the
+stack keeps only the last 20 by default, so a run of calls would push out the user's own
+edits. Record one entry for the final positions instead. Undo restores a
+node's previous `z`, but cannot remove a `z` the call gave a node that had
+none.
+
+```typescript
+// One undoable move of every node in `positions`
+api.viewport.updateNodePositions(networkId, positions, { recordUndo: true })
+```
+
+| Error Code | Condition                                                                   |
+| ---------- | --------------------------------------------------------------------------- |
+| `APP1`     | `networkId` does not exist                                                  |
+| `APP9`     | `positions` is not an object, or a value is not finite `[x, y]`/`[x, y, z]` |
+| `GL1`      | A position key is not a node in the network                                 |
 
 ---
 
@@ -713,12 +744,15 @@ Creates a new column with the given data type and default value. The
 `data:changed` event reports the name in `addedColumns` and includes any rows
 whose values changed.
 
-| Error Code  | Condition                                                   |
-| ----------- | ----------------------------------------------------------- |
-| `APP1`      | `networkId` does not exist                                  |
-| `FK1`/`FK2` | `columnName` is `"id"` (`FK1` node table, `FK2` edge table) |
-| `A8`        | `columnName` is `"s"`/`"t"` on an edge table                |
-| `AC6`       | `columnName` already exists on this table                   |
+Column names are compared ignoring case, as in Cytoscape Desktop: `NAME`
+duplicates `name`.
+
+| Error Code  | Condition                                                                 |
+| ----------- | ------------------------------------------------------------------------- |
+| `APP1`      | `networkId` does not exist                                                |
+| `FK1`/`FK2` | `columnName` is `"id"` in any letter case (`FK1` node table, `FK2` edge table) |
+| `A8`        | `columnName` is `"s"`/`"t"` on an edge table                              |
+| `AC6`       | A column of this name, ignoring case, already exists on this table       |
 | `A6`        | `defaultValue` is `null` or `undefined`                     |
 | `A1`        | `defaultValue` does not match the declared `dataType`       |
 
@@ -741,13 +775,16 @@ column, and updates the Table Browser display config. Renaming to the current
 name is a no-op, not a collision. The `data:changed` event reports the old name
 in `removedColumns`, the new name in `addedColumns`, and any affected rows.
 
-| Error Code  | Condition                                                |
-| ----------- | -------------------------------------------------------- |
-| `APP1`      | `networkId` does not exist                               |
-| `FK1`/`FK2` | `newName` is `"id"` (`FK1` node table, `FK2` edge table) |
-| `A8`        | `newName` is `"s"`/`"t"` on an edge table                |
-| `APP10`     | `currentName` does not exist in the table                |
-| `AC6`       | `newName` already exists and differs from `currentName`  |
+Names are compared ignoring case. Changing only the case of a column's own name
+(`foo` to `Foo`) is allowed, except to a variant of `id`, which is rejected.
+
+| Error Code  | Condition                                                                 |
+| ----------- | ------------------------------------------------------------------------- |
+| `APP1`      | `networkId` does not exist                                                |
+| `FK1`/`FK2` | `newName` is `"id"` in any letter case (`FK1` node table, `FK2` edge table) |
+| `A8`        | `newName` is `"s"`/`"t"` on an edge table                                 |
+| `APP10`     | `currentName` does not exist in the table                                 |
+| `AC6`       | Another column of this name, ignoring case, already exists                |
 
 #### `setValue(networkId, tableType, elementId, column, value): ApiResult`
 
@@ -877,6 +914,22 @@ Cell values are parsed strictly against the column's type, with no coercion
 - An empty cell for a non-string column is treated as "no value provided" and
   leaves the existing attribute untouched.
 
+Column names match ignoring case, as in Cytoscape Desktop:
+
+- A TSV column spelled like an existing column writes to that column, so
+  `Name` writes to `name` and no second column is created. The exact spelling
+  is preferred when a table already has several.
+- New TSV columns of one name merge, including a header repeated exactly: the
+  first keeps its spelling and type, and in each row the last non-empty value,
+  in file order, wins. An empty cell in a merged column never erases a value.
+  `newColumns` lists the kept spelling.
+- A value in a TSV column annotated with another type than the column it writes
+  to fails the import with `A1`, and nothing is changed. This holds for any
+  spelling, the exact name of an existing column included. A differently typed
+  column with no values does not fail. A value that cannot be parsed as its own
+  annotated type is still skipped and reported in `skippedCells`, so it never
+  raises a conflict.
+
 **Options:**
 
 - `keyColumn?: string` — column in the TSV to use as element ID (default: `'id'`)
@@ -899,8 +952,9 @@ if (result.success) {
 | ----------- | ----------------------------------------------------- |
 | `APP1`      | Table record for `networkId` not found                |
 | `APP9`      | TSV has < 2 lines or key column missing               |
-| `FK1`/`FK2` | A new column is named `"id"` (`FK1` node, `FK2` edge) |
+| `FK1`/`FK2` | A new column is named `"id"` in any letter case (`FK1` node, `FK2` edge) |
 | `A8`        | A new column is named `"s"`/`"t"` on an edge table    |
+| `A1`        | A value would be written to a merged column of another declared type |
 
 All methods in this API return `APP1` if the table record for `networkId` is not found.
 
@@ -1419,6 +1473,10 @@ Returns the currently active network ID.
 
 Switches the active network. Triggers `network:switched` via the Event Bus.
 
+The workspace's own tools — the table browser, the layout tools, the toolbar
+search — then act on the network switched to. Switching to the network already
+shown keeps a Sub Network Viewer subnetwork that is selected in it.
+
 | Error Code | Condition                           |
 | ---------- | ----------------------------------- |
 | `APP9`     | `networkId` is empty/whitespace     |
@@ -1463,11 +1521,11 @@ interface OpenPanelResult {
 }
 ```
 
-| Pane       | Holds                                 | Tab ids                                                                                                                                         |
-| ---------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `'left'`   | Workspace / Style / Filter (network browser) | `'workspace'`, `'style'`, `'filter'`, `'llm-query'` (only while the current network is a hierarchy)                                      |
-| `'right'`  | Side panel — `'right-panel'` app tabs | `'sub-network-viewer'`, plus the `id` each app tab was registered with (`registerPanel` or a resource declaration) |
-| `'bottom'` | Table browser                         | `'nodes'`, `'edges'`, `'network'`                                                                                                               |
+| Pane       | Holds                                        | Tab ids                                                                                                                                                            |
+| ---------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `'left'`   | Workspace / Style / Filter (network browser) | `'workspace'`, `'style'`, `'filter'`, `'llm-query'` (only while the current network is a hierarchy)                                                                |
+| `'right'`  | Side panel — `'right-panel'` app tabs        | `'sub-network-viewer'` (only while the current network is a hierarchy), plus the `id` each app tab was registered with (`registerPanel` or a resource declaration) |
+| `'bottom'` | Table browser                                | `'nodes'`, `'edges'`, `'network'`                                                                                                                                  |
 
 The built-in ids are exported as the `LeftPanelTabId`, `RightPanelTabId` and
 `BottomPanelTabId` constants from `cyweb/ApiTypes`.
@@ -1482,8 +1540,12 @@ is searched — a tab with the same id in another pane is ignored — and a call
 never touches the other panes.
 
 A tab the pane is not showing right now does not match: an app tab whose app is
-disabled or whose `requires.network` is unmet, or `'llm-query'` on a network
-that is not a hierarchy.
+disabled or whose `requires.network` is unmet, or `'llm-query'` and
+`'sub-network-viewer'` on a network that is not a hierarchy.
+
+The right pane is shown only while it has a tab. On a network that is not a
+hierarchy and with no app tab, `open('right')` succeeds and records the pane
+as open, but nothing appears until an app registers a tab.
 
 Selecting a tab does only that. In particular, selecting
 `'sub-network-viewer'` does not activate a network view the way a click on the
@@ -3059,6 +3121,40 @@ onClick: (apis) => {
 Closes a dialog. With no argument, closes this app's most recently opened
 dialog that is still open — the common case. Idempotent for an id that is not
 open; returns `APP7` when called without an id and the app has no dialog open.
+
+## Host Keyboard Shortcuts
+
+App components share the page's keyboard with the host, which listens on
+`window` (bubbling phase) for these shortcuts:
+
+| Shortcut                  | Runs                                              | Acts while                                                                                           |
+| ------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Ctrl+Z, ⌘Z                | Edit ▸ Undo                                       | no text field has the focus, no dialog, popover or menu has the keyboard, and no edge is being drawn |
+| Ctrl+Shift+Z, ⌘⇧Z, Ctrl+Y | Edit ▸ Redo                                       | the same as Undo                                                                                     |
+| Ctrl+A, ⌘A                | Select ▸ Select All                               | the network canvas has the keyboard: nothing focused, or the focus is inside it                      |
+| Delete, Backspace         | delete the selected nodes and edges (no menu row) | the canvas has the keyboard, as for Select All, no modal is open, and no edge is being drawn         |
+
+A text field is an `<input>` that takes text, a `<textarea>` or a
+`contenteditable` element, including one inside an **open** shadow root. A
+dialog opened with `apis.dialog.open` or `'modal-launcher'` is a modal, so
+Undo and Redo never act while one is open.
+
+**An app that gives one of these keys its own meaning must call
+`event.preventDefault()`** in a `keydown` handler on its own element (it runs
+before the host's `window` listener); the host skips any event whose default
+was prevented. Text fields need nothing. This matters for a widget that is not
+a text field but has its own undo (a drawing canvas, a graph editor), and for
+any text field inside a **closed** shadow root, where the host cannot see the
+focus.
+
+```typescript
+const onKeyDown = (event: React.KeyboardEvent): void => {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+    event.preventDefault() // the host's Undo now leaves this key alone
+    myEditor.undo()
+  }
+}
+```
 
 ## App Lifecycle
 

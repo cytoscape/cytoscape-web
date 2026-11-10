@@ -24,13 +24,13 @@ import { PanelState } from '../../models/UiModel/PanelState'
 import { useHierarchyViewerManager } from '../HierarchyViewer/store/useHierarchyViewerManager'
 import { isHCX } from '../HierarchyViewer/utils/hierarchyUtil'
 import { validateAndRecordHcx } from '../HierarchyViewer/utils/validateAndRecordHcx'
-import { LayoutToolsBasePanel } from '../LayoutTools'
 import { SnackbarMessageList } from '../Messages'
 import { setTabNetworkId } from '@/data/tabState/tabNetwork'
 import { createLayoutCompletionHandler } from './layoutCompletion'
 import { NetworkBrowserPanel } from './NetworkBrowserPanel/NetworkBrowserPanel'
 import { OpenRightPanelButton } from './SidePanel/OpenRightPanelButton'
 import { SidePanel } from './SidePanel/SidePanel'
+import { usePanelEntries } from './SidePanel/TabContents'
 import { toVerticalPaneSizes } from './splitPaneSizes'
 import { useUrlFollowsNetworkRemoval } from './useUrlFollowsNetworkRemoval'
 import { useUrlNetworkLoad } from './useUrlNetworkLoad'
@@ -127,6 +127,12 @@ const WorkSpaceEditor = (): JSX.Element => {
   )
 
   const { panels, activeNetworkView } = ui
+
+  // The right pane is shown only while it has a tab: a non-hierarchy network
+  // has no Sub Network Viewer, and with no app panels an open pane would be
+  // empty (#877). The stored panel state is left alone, so the pane comes
+  // back as it was once a tab does.
+  const hasRightPanelTabs = usePanelEntries().length > 0
 
   const setCurrentNetworkId: (id: IdType) => void = useWorkspaceStore(
     (state) => state.setCurrentNetworkId,
@@ -423,14 +429,6 @@ const WorkSpaceEditor = (): JSX.Element => {
                       allotmentDimensions={allotmentDimensions}
                     />
                   </Box>
-                  <Box
-                    sx={{
-                      borderTop: (theme) =>
-                        `2px solid ${theme.palette.divider}`,
-                    }}
-                  >
-                    <LayoutToolsBasePanel />
-                  </Box>
                 </Box>
               )}
             </Allotment.Pane>
@@ -520,7 +518,7 @@ const WorkSpaceEditor = (): JSX.Element => {
           </Allotment.Pane>
         </Allotment>
 
-        {panels.right === PanelState.OPEN && (
+        {hasRightPanelTabs && panels.right === PanelState.OPEN && (
           <Allotment.Pane>
             <Box
               data-testid="workspace-editor-right-pane"
@@ -557,7 +555,7 @@ const WorkSpaceEditor = (): JSX.Element => {
       <OpenRightPanelButton
         toOpen={true}
         title="Open panel"
-        show={panels.right === PanelState.CLOSED}
+        show={hasRightPanelTabs && panels.right === PanelState.CLOSED}
       />
       {/* Local Suspense on purpose: without it the first open would suspend
           up to the App-level boundary and flash the boot shell over the

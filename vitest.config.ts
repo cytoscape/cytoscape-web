@@ -16,7 +16,12 @@ export default defineConfig(async () => {
       environment: 'jsdom',
       // Worker threads spawn faster than the default child-process forks.
       pool: 'threads',
-      include: ['src/**/*.{test,spec}.{ts,tsx}'],
+      // The remote-app fixture's runtime plugin is real federation logic the
+      // e2e suite depends on, so its unit tests run with the app's.
+      include: [
+        'src/**/*.{test,spec}.{ts,tsx}',
+        'test/fixtures/remote-app/**/*.test.ts',
+      ],
       setupFiles: ['./vitest-setup.ts'],
       coverage: {
         // Measure app source only; generated types, tests, and test

@@ -30,7 +30,7 @@ describe('LLMQueryOptionsDialog', () => {
       const state = useLLMQueryStore.getState()
       state.setLLMProvider('openai')
       state.setLLMBaseUrl('')
-      state.setLLMModel('gpt-3.5-turbo')
+      state.setLLMModel('gpt-6-luna')
       state.setLLMApiKey('')
       state.setLLMCustomApiKey('')
     })
@@ -182,7 +182,7 @@ describe('LLMQueryOptionsDialog', () => {
 
     expect(screen.getByTestId('llm-query-options-model-input')).toHaveProperty(
       'value',
-      'gpt-3.5-turbo',
+      'gpt-6-luna',
     )
   })
 
@@ -217,7 +217,7 @@ describe('LLMQueryOptionsDialog', () => {
     expect(screen.queryByTestId('llm-query-options-base-url-input')).toBeNull()
     expect(screen.getByTestId('llm-query-options-model-input')).toHaveProperty(
       'value',
-      'gpt-3.5-turbo',
+      'gpt-6-luna',
     )
     expect(
       within(screen.getByTestId('llm-query-options-api-key-input')).getByRole(

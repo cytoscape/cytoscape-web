@@ -1,13 +1,17 @@
+import LinkIcon from '@mui/icons-material/Link'
 import {
   Box,
   Checkbox,
   FormControl,
   FormControlLabel,
+  FormGroup,
   InputLabel,
   MenuItem,
   Select,
   Slider,
+  Stack,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material'
 //@ts-expect-error no type declarations for file-saver
@@ -18,9 +22,11 @@ import { useRendererFunctionStore } from '../../../../data/hooks/stores/Renderer
 import { useUiStateStore } from '../../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
 import { IdType } from '../../../../models/IdType'
+import { addPngCitation } from './citationMetadata'
 import { ExportFormRef, ExportImageFormatProps } from './ExportImage'
 
-const MIN_ZOOM = 0
+// 0% would export a 0 × 0 image.
+const MIN_ZOOM = 0.1
 const MAX_ZOOM = 5
 
 type UnitType = 'pixels' | 'inches'
@@ -49,8 +55,19 @@ const NumberField = (props: {
       }
       props.onChange(e.target.value)
     }}
-    sx={{ width: 110, mr: 1.25 }}
+    sx={{ width: 110 }}
   />
+)
+
+/** Sits between the width and height fields, which always change together. */
+const ProportionLink = (): JSX.Element => (
+  <Tooltip title="Width and height stay in proportion">
+    <LinkIcon
+      fontSize="small"
+      aria-label="Width and height stay in proportion"
+      sx={{ alignSelf: 'center', color: 'text.secondary', mx: -0.5 }}
+    />
+  </Tooltip>
 )
 
 const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
@@ -118,7 +135,15 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
           customHeight,
           transparentBg,
         )
-        saveAs(result, `${props.fileName}.png`)
+        // cy.png() returns a base64 data URI.
+        const base64 = typeof result === 'string' ? result.split(',')[1] : ''
+        const bytes = Uint8Array.from(atob(base64 ?? ''), (ch) =>
+          ch.charCodeAt(0),
+        )
+        saveAs(
+          new Blob([addPngCitation(bytes)], { type: 'image/png' }),
+          `${props.fileName}.png`,
+        )
       },
     }))
 
@@ -227,15 +252,8 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
     }
 
     return (
-      <Box
-        sx={{
-          mt: 1,
-          height: 425,
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        <Box sx={{ mb: 0.25 }}>
+      <Stack spacing={2.5}>
+        <FormGroup row sx={{ columnGap: 2 }}>
           <FormControlLabel
             control={
               <Checkbox
@@ -245,8 +263,6 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
             }
             label="Export full network image"
           />
-        </Box>
-        <Box sx={{ mb: 1 }}>
           <FormControlLabel
             control={
               <Checkbox
@@ -256,68 +272,75 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
             }
             label="Transparent background"
           />
-        </Box>
-        <Box sx={{ mb: 1 }}>
-          <Typography variant="subtitle1" style={{ margin: '0 0 5px 0' }}>
-            Units
-          </Typography>
-          <Select
-            size="small"
-            labelId="label"
-            value={unit}
-            onChange={handleUnitChange}
-          >
-            <MenuItem value={'pixels' as UnitType}>Pixels</MenuItem>
-            <MenuItem value={'inches' as UnitType}>Inches</MenuItem>
-          </Select>
-        </Box>
-        <Box sx={{ mb: 1.5 }}>
-          <Typography variant="subtitle1" style={{ margin: '0 0 7px 0' }}>
-            Size
-          </Typography>
+        </FormGroup>
+        <Box sx={{ display: 'flex', gap: 1.5 }}>
           {unit === 'pixels' ? (
-            <Box sx={{ display: 'flex', pt: 0.5 }}>
+            <>
               <NumberField
                 min={0}
                 max={maxWidth}
                 value={customWidth}
                 onChange={handleWidthChange}
-                label="Width (pixels)"
+                label="Width (px)"
               />
+              <ProportionLink />
               <NumberField
                 min={0}
                 max={maxHeight}
                 value={customHeight}
                 onChange={handleHeightChange}
-                label="Height (pixels)"
+                label="Height (px)"
               />
-            </Box>
+              <FormControl size="small" sx={{ width: 110 }}>
+                <InputLabel id="png-units-label">Units</InputLabel>
+                <Select
+                  labelId="png-units-label"
+                  label="Units"
+                  value={unit}
+                  onChange={handleUnitChange}
+                >
+                  <MenuItem value={'pixels' as UnitType}>Pixels</MenuItem>
+                  <MenuItem value={'inches' as UnitType}>Inches</MenuItem>
+                </Select>
+              </FormControl>
+            </>
           ) : (
-            <Box sx={{ display: 'flex', alignItems: 'center', pt: 0.5 }}>
+            <>
               <NumberField
                 min={0}
                 max={maxWidthInches}
                 step={0.01}
                 value={widthInches}
                 onChange={handleWidthInchesChange}
-                label="Width (inches)"
+                label="Width (in)"
               />
+              <ProportionLink />
               <NumberField
                 min={0}
                 max={maxHeightInches}
                 step={0.01}
                 value={heightInches}
                 onChange={handleHeightInchesChange}
-                label="Height (inches)"
+                label="Height (in)"
               />
-              <FormControl sx={{ ml: 1, mt: 3 }}>
+              <FormControl size="small" sx={{ width: 110 }}>
+                <InputLabel id="png-units-label">Units</InputLabel>
+                <Select
+                  labelId="png-units-label"
+                  label="Units"
+                  value={unit}
+                  onChange={handleUnitChange}
+                >
+                  <MenuItem value={'pixels' as UnitType}>Pixels</MenuItem>
+                  <MenuItem value={'inches' as UnitType}>Inches</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ width: 90 }}>
                 <InputLabel id="dpi-label">DPI</InputLabel>
                 <Select
                   defaultValue={72}
                   labelId="dpi-label"
                   label="DPI"
-                  sx={{ width: 100 }}
-                  size="small"
                   onChange={(e) => handleDpiChange(e.target.value as number)}
                 >
                   <MenuItem value={72}>72</MenuItem>
@@ -327,48 +350,31 @@ const PngExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
                   <MenuItem value={600}>600</MenuItem>
                 </Select>
               </FormControl>
-            </Box>
+            </>
           )}
         </Box>
         <Box>
-          <Box>Zoom</Box>
-          <Slider
-            sx={{ ml: 1.5, width: '85%' }}
-            value={zoom}
-            min={MIN_ZOOM}
-            max={MAX_ZOOM}
-            step={0.1}
-            valueLabelDisplay="auto"
-            onChange={handleZoomChange}
-            marks={[
-              {
-                value: MIN_ZOOM,
-                label: '0%',
-              },
-              {
-                value: 1,
-                label: '100%',
-              },
-              {
-                value: 2,
-                label: '200%',
-              },
-              {
-                value: 3,
-                label: '300%',
-              },
-              {
-                value: 4,
-                label: '400%',
-              },
-              {
-                value: MAX_ZOOM,
-                label: '500%',
-              },
-            ]}
-          />
+          <Typography variant="body2" color="text.secondary">
+            Zoom: {Math.round(zoom * 100)}%
+          </Typography>
+          {/* Inset by half a mark label, so "500%" ends at the gutter. */}
+          <Box sx={{ px: 2.5 }}>
+            <Slider
+              value={zoom}
+              min={MIN_ZOOM}
+              max={MAX_ZOOM}
+              step={0.1}
+              valueLabelDisplay="auto"
+              valueLabelFormat={(value) => `${Math.round(value * 100)}%`}
+              onChange={handleZoomChange}
+              marks={[MIN_ZOOM, 1, 2, 3, 4, 5].map((value) => ({
+                value,
+                label: `${Math.round(value * 100)}%`,
+              }))}
+            />
+          </Box>
         </Box>
-      </Box>
+      </Stack>
     )
   },
 )

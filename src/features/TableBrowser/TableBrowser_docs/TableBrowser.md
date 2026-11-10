@@ -47,8 +47,8 @@ The TableBrowser is a complex component that manages three separate data grids:
 - Multi-select is supported with checkboxes
 
 ### Column Operations
-- **Create Column**: Add new attribute columns to node or edge tables
-- **Edit Column**: Modify column name and data type
+- **Create Column**: Add new attribute columns to node or edge tables. Names are compared ignoring case, as in Cytoscape Desktop: a name another column already has is rejected, and so is `id` in any letter case
+- **Edit Column**: Modify column name and data type. The same name rules apply, but changing only the case of the column's own name is allowed (except to a variant of `id`)
 - **Delete Column**: Remove columns from tables
 - **Sort**: Sort table rows by column values (ascending/descending)
 - **Resize**: Adjust column widths

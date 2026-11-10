@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 
+import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useOpaqueAspectStore } from '../../../data/hooks/stores/OpaqueAspectStore'
@@ -20,8 +21,10 @@ import {
   getNodes,
 } from '../../../models/CxModel/impl/extractor'
 import { validateCX2 } from '../../../models/CxModel/impl/validator'
+import { MessageSeverity } from '../../../models/MessageModel'
 import { NetworkProperty } from '../../../models/NetworkSummaryModel'
 import { ValueType, ValueTypeName } from '../../../models/TableModel'
+import { ColumnTypeConflictError } from '../../../models/TableModel/impl/columnNames'
 import { generateUniqueName } from '../../../utils/generateUniqueName'
 import { ActionHandlerProps } from './serviceResultHandlerManager'
 
@@ -44,6 +47,7 @@ export const useUpdateNetwork = (): (({
   const setNetworkModified = useWorkspaceStore(
     (state) => state.setNetworkModified,
   )
+  const addMessage = useMessageStore((state) => state.addMessage)
   const updateNetwork = useCallback(
     async ({ responseObj, networkId }: ActionHandlerProps) => {
       // Validate CX2 data from service app before processing
@@ -95,9 +99,11 @@ export const useUpdateNetwork = (): (({
           (n) => n.x !== undefined && n.y !== undefined,
         )
 
+        // Convert first: a response that cannot be converted must leave the
+        // current view and its selection in place
+        const res = getCyNetworkFromCx2(networkId, responseObj as Cx2)
         // Delete the old view model
         deleteViewModel(networkId)
-        const res = getCyNetworkFromCx2(networkId, responseObj as Cx2)
         const {
           network,
           nodeTable,
@@ -145,9 +151,17 @@ export const useUpdateNetwork = (): (({
           `[${updateNetwork.name}]: Failed to update the current network. `,
           e,
         )
+        if (e instanceof ColumnTypeConflictError) {
+          addMessage({
+            duration: 10000,
+            message: `Failed to update the network: ${e.message}`,
+            severity: MessageSeverity.ERROR,
+          })
+        }
       }
     },
     [
+      addMessage,
       updateNetworkSummary,
       setNetwork,
       summaries,

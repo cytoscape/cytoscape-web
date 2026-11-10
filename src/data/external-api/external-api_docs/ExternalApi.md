@@ -22,6 +22,7 @@ The NDEx client is configured via `config.ts`:
 - Base URL is loaded from `config.json` at module initialization
 - Can be overridden at runtime for testing or custom deployments
 - Authentication tokens are passed per-request
+- `getNdexClient` sends the token only to the configured host: a `url` on any other origin gets an anonymous client, because `url` can come from untrusted network data (#936)
 
 ### Main Exports
 
@@ -31,15 +32,16 @@ From `ndex/index.ts`:
 - `getNdexClient(accessToken?, url?)`: Creates a configured NDEx client instance
 
 **Network Operations:**
-- `fetchNdexNetwork(ndexUuid, accessToken?, ndexUrl?)`: Fetches a network from NDEx as CX2
+- `fetchNdexNetwork(ndexUuid, accessToken?, ndexUrl?, accessKey?)`: Fetches a network from NDEx as CX2; `accessKey` is an NDEx share-link key
 - `updateNdexNetwork(networkId, cx, accessToken?, ndexUrl?)`: Updates a network in NDEx
 
 **Network Summary Operations:**
-- `fetchNdexSummaries(accessToken?, ndexUrl?)`: Fetches network summaries from NDEx
+- `fetchNdexSummaries(id, accessToken?, ndexUrl?, accessKey?)`: Fetches network summaries from NDEx; `accessKey` is an NDEx share-link key
 - `getNetworkValidationStatus(networkId, accessToken?, ndexUrl?)`: Gets validation status
 
 **Query Operations:**
 - `fetchGeneNamesFromIds(geneIds, accessToken?, ndexUrl?)`: Converts gene IDs to names
+- `fetchNodeNamesByIds(networkUUID, ids, accessToken?, ndexUrl?)`: Gets node names as a `Map` keyed by node id; validates the response shape and skips entries without a string name. The Cell View uses it to label protein rings
 - `fetchNdexInterconnectQuery(query, accessToken?, ndexUrl?)`: Performs interconnect queries
 
 **Workspace Operations:**

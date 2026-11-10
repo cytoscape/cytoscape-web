@@ -10,7 +10,6 @@ import ShareIcon from '@mui/icons-material/Share'
 import {
   Badge,
   Box,
-  Chip,
   CircularProgress,
   Divider,
   IconButton,
@@ -43,6 +42,7 @@ import { useSaveCurrentNetworkToNDEx } from '../../data/hooks/useSaveCurrentNetw
 import { KeycloakContext } from '@/boot/keycloak'
 import { IdType } from '../../models/IdType'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
+import { NetworkSourceChip } from './NetworkSourceChip'
 import { getRowActionStates } from './networkRowActions'
 import { getSaveButtonState, getSaveMenuItemState } from './networkSaveStatus'
 
@@ -376,6 +376,7 @@ export const NetworkPropertyPanel = ({
             networkId: id,
             searchParams: new URLSearchParams(location.search),
             replace: false,
+            userInitiated: true,
           })
           if (anchorEl !== null) {
             showEditNetworkSummaryForm(anchorEl)
@@ -503,6 +504,7 @@ export const NetworkPropertyPanel = ({
   return (
     <>
       <Box
+        data-testid={`workspace-network-${id}`}
         sx={{
           backgroundColor: (theme) =>
             currentNetworkId === id
@@ -523,6 +525,7 @@ export const NetworkPropertyPanel = ({
             networkId: id,
             searchParams: new URLSearchParams(location.search),
             replace: false,
+            userInitiated: true,
           })
         }}
       >
@@ -552,16 +555,7 @@ export const NetworkPropertyPanel = ({
                   : 'A network stored on your local machine'
               }
             >
-              <Chip
-                color={summary.isNdex ? 'primary' : 'success'}
-                size="small"
-                sx={{ opacity: 0.8 }}
-                label={
-                  <Typography sx={{ fontSize: 10 }} variant="caption">
-                    {summary.isNdex ? 'NDEx' : 'Local'}
-                  </Typography>
-                }
-              />
+              <NetworkSourceChip isNdex={summary.isNdex} />
             </Tooltip>
             <Typography
               variant={'body2'}

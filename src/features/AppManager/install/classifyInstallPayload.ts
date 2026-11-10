@@ -42,6 +42,11 @@ export type ClassifiedInstallPayload =
  *    `serviceInputDefinition`) means service.
  * 4. Otherwise try the manifest parser on a single-object payload — it requires
  *    a valid `url`, which service metadata never has.
+ * 5. Last, an object with neither `url` nor `id` that validates as service
+ *    metadata is a service. Service apps in the wild register with only `name`
+ *    and `parameters`, no marker, and the Manage Apps dialog's one URL field
+ *    (#827) has to add them as the old service field did. The `url`/`id` guard
+ *    keeps a broken manifest entry from registering as a service.
  *
  * Rules 2-4 handle a bare object rather than an array because a manifest may be
  * served either way (the React example in cytoscape-web#639 is a single object).
@@ -84,5 +89,15 @@ export const classifyInstallPayload = (
   }
 
   const entry = parseSingleEntryManifest([data])
-  return entry === undefined ? undefined : { type: AppType.Client, entry }
+  if (entry !== undefined) {
+    return { type: AppType.Client, entry }
+  }
+
+  if ('url' in data || 'id' in data) {
+    return undefined
+  }
+  const metadata = parseServiceMetadata(data)
+  return metadata === undefined
+    ? undefined
+    : { type: AppType.Service, metadata }
 }

@@ -8,6 +8,7 @@ import { useUndoStack } from '../../../data/hooks/useUndoStack'
 import { IdType } from '../../../models'
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
 import { DropdownMenuItem } from '../DropdownMenu'
+import { undoShortcutLabel } from './useUndoRedoShortcuts'
 
 export const UndoMenuItem = (props: BaseMenuItemProps): ReactElement => {
   const { undoLastEdit } = useUndoStack()
@@ -41,6 +42,7 @@ export const UndoMenuItem = (props: BaseMenuItemProps): ReactElement => {
     <DropdownMenuItem
       label={disabled ? 'Undo' : `Undo - ${description}`}
       icon={<UndoIcon />}
+      shortcut={undoShortcutLabel()}
       disabled={disabled}
       onClick={handleUndo}
     />

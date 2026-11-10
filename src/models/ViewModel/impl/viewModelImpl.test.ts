@@ -29,6 +29,7 @@ import {
   deleteObjects,
   exclusiveSelect,
   getNetworkViewId,
+  isNodePosition,
   setNodePosition,
   toggleSelected,
   updateNodePositions,
@@ -1233,5 +1234,30 @@ describe('ViewModel Implementation', () => {
       expect(updated.nodeViews['n1'].values).toBeInstanceOf(Map)
       expect(updated.nodeViews['n1'].values.size).toBe(0)
     })
+  })
+})
+
+describe('isNodePosition', () => {
+  it.each([[[0, 0]], [[-1.5, 2e6]], [[1, 2, 3]]])('accepts %j', (value) => {
+    expect(isNodePosition(value)).toBe(true)
+  })
+
+  it.each([
+    ['a non-array', { 0: 1, 1: 2, length: 2 }],
+    ['null', null],
+    ['one coordinate', [1]],
+    ['four coordinates', [1, 2, 3, 4]],
+    ['a string coordinate', ['1', 2]],
+    ['NaN', [NaN, 0]],
+    ['Infinity', [0, Infinity]],
+    ['a non-finite z', [0, 0, NaN]],
+    // every() skips holes, so each index must be read
+    // oxlint-disable-next-line no-sparse-arrays -- the hole is the case
+    ['a hole in x', [, 0]],
+    // oxlint-disable-next-line no-sparse-arrays -- the hole is the case
+    ['a hole in z', [0, 0, ,]],
+    ['undefined coordinates', Array.from({ length: 2 })],
+  ])('rejects %s', (_label, value) => {
+    expect(isNodePosition(value)).toBe(false)
   })
 })

@@ -1,4 +1,4 @@
-import { Box, Checkbox, FormControlLabel } from '@mui/material'
+import { Checkbox, FormControlLabel, FormGroup } from '@mui/material'
 //@ts-expect-error no type declarations for file-saver
 import { saveAs } from 'file-saver'
 import { forwardRef, useImperativeHandle, useState } from 'react'
@@ -7,6 +7,7 @@ import { useRendererFunctionStore } from '../../../../data/hooks/stores/Renderer
 import { useUiStateStore } from '../../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
 import { IdType } from '../../../../models/IdType'
+import { addSvgCitation } from './citationMetadata'
 import { ExportFormRef, ExportImageFormatProps } from './ExportImage'
 
 const SvgExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
@@ -31,32 +32,27 @@ const SvgExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
 
     useImperativeHandle(ref, () => ({
       save: async () => {
-        const result = await svgFunction?.(fullBg)
-        saveAs(result, `${props.fileName}.svg`)
+        const result: Blob | undefined = await svgFunction?.(fullBg)
+        const svg = addSvgCitation((await result?.text()) ?? '')
+        saveAs(
+          new Blob([svg], { type: 'image/svg+xml' }),
+          `${props.fileName}.svg`,
+        )
       },
     }))
 
     return (
-      <Box
-        sx={{
-          mt: 1,
-          height: 425,
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        <Box>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={fullBg}
-                onChange={(e) => setFullBg(e.target.checked)}
-              />
-            }
-            label="Export full network image"
-          />
-        </Box>
-      </Box>
+      <FormGroup>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={fullBg}
+              onChange={(e) => setFullBg(e.target.checked)}
+            />
+          }
+          label="Export full network image"
+        />
+      </FormGroup>
     )
   },
 )

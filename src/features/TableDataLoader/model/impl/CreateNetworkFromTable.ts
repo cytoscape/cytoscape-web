@@ -6,6 +6,13 @@ import { Network } from '../../../../models/NetworkModel'
 import { NetworkSummary } from '../../../../models/NetworkSummaryModel'
 import { createNetworkSummary } from '../../../../models/NetworkSummaryModel/impl/networkSummaryImpl'
 import { Table, ValueType, ValueTypeName } from '../../../../models/TableModel'
+import {
+  assertSameColumnType,
+  columnNamesMatch,
+  DeclaredColumn,
+  mergeDeclaredColumns,
+  setCellValue,
+} from '../../../../models/TableModel/impl/columnNames'
 import { valueTypeNameLabel } from '../../../../models/TableModel/impl/valueTypeNameDisplay'
 import { createViewModel } from '../../../../models/ViewModel/impl/viewModelImpl'
 import {
@@ -163,6 +170,21 @@ export const unselectAllColumns = (
   }))
 }
 
+/** A file column and how it is declared for merging */
+interface TabularColumn extends DeclaredColumn {
+  readonly source: ColumnAssignmentState
+}
+
+const declareColumn = (c: ColumnAssignmentState): TabularColumn => ({
+  name: c.name,
+  type: c.dataType,
+  source: c,
+})
+
+// In a column shared by several spellings, an empty cell means "no value"
+const isEmptyCell = (value: unknown): boolean =>
+  value === undefined || value === null || value === ''
+
 export function createNetworkFromTableData(
   rows: ParsedRow[],
   columns: ColumnAssignmentState[],
@@ -191,17 +213,41 @@ export function createNetworkFromTableData(
     (c) => c.meaning === ColumnAssignmentType.EdgeAttribute,
   )
 
+  const nodeNameColumn: ColumnAssignmentState = {
+    name: 'name',
+    dataType: ValueTypeName.String,
+    meaning: ColumnAssignmentType.NotImported,
+    invalidValues: [] as number[],
+  }
+
+  // Columns of one name merge, as in Cytoscape Desktop: the first declared
+  // keeps its spelling and type, in file order. The built-in name column
+  // comes before any file column.
+  const nodeAttributeColumnsInFileOrder = columns.filter(
+    (c) =>
+      c.meaning === ColumnAssignmentType.SourceNodeAttribute ||
+      c.meaning === ColumnAssignmentType.TargetNodeAttribute,
+  )
+  const nodeColumnMerge = mergeDeclaredColumns(
+    [nodeNameColumn, ...nodeAttributeColumnsInFileOrder].map(declareColumn),
+  )
+  const edgeColumnsInFileOrder = columns.filter(
+    (c) =>
+      c.meaning === ColumnAssignmentType.EdgeAttribute ||
+      c === interactionTypeCol,
+  )
+  const edgeColumnMerge = mergeDeclaredColumns(
+    edgeColumnsInFileOrder.map(declareColumn),
+  )
+
   const nodeTableColumns: ColumnAssignmentState[] = [
-    {
-      name: 'name',
-      dataType: ValueTypeName.String,
-      meaning: ColumnAssignmentType.NotImported,
-      invalidValues: [] as number[],
-    },
+    nodeNameColumn,
     ...srcNodeAttrCols,
     ...tgtNodeAttrCols,
-  ]
-  const edgeTableColumns = edgeAttrCols.concat(interactionTypeCol ?? [])
+  ].filter((c) => nodeColumnMerge.keptColumn(c.name)?.source === c)
+  const edgeTableColumns = edgeAttrCols
+    .concat(interactionTypeCol ?? [])
+    .filter((c) => edgeColumnMerge.keptColumn(c.name)?.source === c)
 
   const networkId = uuid ?? uuidv4()
 
@@ -227,59 +273,84 @@ export function createNetworkFromTableData(
   let nodeIdIndex = 0
   let edgeIdIndex = 0
   const nodeIdMap = new Map<string, number>()
+  // Nodes whose name is still the node column's value. The first explicit
+  // value of a column merged into `name` replaces it, in whichever row and
+  // role the node was first seen.
+  const nodeColumnNames = new Set<number>()
+
+  const ensureNode = (nodeName: string): number => {
+    const known = nodeIdMap.get(nodeName)
+    if (known !== undefined) return known
+    const nodeId = nodeIdIndex++
+    nodeIdMap.set(nodeName, nodeId)
+    network.nodes.push({ id: `${nodeId}` })
+    nodeTable.rows.set(`${nodeId}`, { name: nodeName })
+    nodeColumnNames.add(nodeId)
+    return nodeId
+  }
+
   rows.forEach((row) => {
-    let srcNodeId: number | undefined = undefined
-    let tgtNodeId: number | undefined = undefined
+    const srcNodeId: number | undefined =
+      srcNodeCol === undefined ? undefined : ensureNode(row[srcNodeCol.name])
+    const tgtNodeId: number | undefined =
+      tgtNodeCol === undefined ? undefined : ensureNode(row[tgtNodeCol.name])
     let eId: number | undefined = undefined
-    if (srcNodeCol !== undefined) {
-      const nodeName: string = row[srcNodeCol.name]
-      const nodeExists = nodeIdMap.has(nodeName)
 
-      const nodeData: Record<string, ValueType> = !nodeExists
-        ? { name: nodeName }
-        : (nodeTable.rows.get(`${nodeIdMap.get(nodeName)}`) ?? {})
-      srcNodeId = !nodeExists
-        ? nodeIdIndex++
-        : (nodeIdMap.get(nodeName) as number)
-
-      if (!nodeExists) {
-        nodeIdMap.set(nodeName, srcNodeId)
-        network.nodes.push({ id: `${srcNodeId}` })
+    // This row's node values, per node and in file order across the source
+    // and target roles, so in a merged column the last value wins even when
+    // both ends are the same node
+    const incoming = new Map<number, Map<string, ValueType>>()
+    nodeAttributeColumnsInFileOrder.forEach((c) => {
+      const isSource = c.meaning === ColumnAssignmentType.SourceNodeAttribute
+      const nodeId = isSource ? srcNodeId : tgtNodeId
+      const nodeColumn = isSource ? srcNodeCol : tgtNodeCol
+      const raw = row[c.name]
+      const kept = nodeColumnMerge.keptColumn(c.name)
+      if (
+        nodeId === undefined ||
+        nodeColumn === undefined ||
+        raw === undefined ||
+        kept === undefined
+      ) {
+        return
       }
-
-      srcNodeAttrCols.forEach((c) => {
-        if (nodeData[c.name] === undefined && row[c.name] !== undefined) {
-          nodeData[c.name] = parseValue(row[c.name], c.dataType, c.delimiter)
+      if (nodeColumnMerge.isMerged(c.name)) {
+        if (isEmptyCell(raw)) return
+        assertSameColumnType(kept, declareColumn(c))
+        // The node column's own value comes later in the file, so it wins
+        if (
+          kept.source === nodeNameColumn &&
+          columnNamesMatch(nodeColumn.name, nodeNameColumn.name) &&
+          columns.indexOf(c) < columns.indexOf(nodeColumn)
+        ) {
+          return
         }
-      })
-
-      nodeTable.rows.set(`${srcNodeId}`, nodeData)
-    }
-
-    if (tgtNodeCol !== undefined) {
-      const nodeName = row[tgtNodeCol.name]
-      const nodeExists = nodeIdMap.has(nodeName)
-
-      const nodeData: Record<string, ValueType> = !nodeExists
-        ? { name: nodeName }
-        : (nodeTable.rows.get(`${nodeIdMap.get(nodeName)}`) ?? {})
-      tgtNodeId = !nodeExists
-        ? nodeIdIndex++
-        : (nodeIdMap.get(nodeName) as number)
-
-      if (!nodeExists) {
-        nodeIdMap.set(nodeName, tgtNodeId)
-        network.nodes.push({ id: `${tgtNodeId}` })
       }
+      let values = incoming.get(nodeId)
+      if (values === undefined) {
+        values = new Map()
+        incoming.set(nodeId, values)
+      }
+      values.set(kept.name, parseValue(raw, c.dataType, c.delimiter))
+    })
 
-      tgtNodeAttrCols.forEach((c) => {
-        if (nodeData[c.name] === undefined && row[c.name] !== undefined) {
-          nodeData[c.name] = parseValue(row[c.name], c.dataType, c.delimiter)
+    // A value from an earlier row is kept, except a name that is still the
+    // node column's value
+    incoming.forEach((values, nodeId) => {
+      const nodeData = nodeTable.rows.get(`${nodeId}`) as Record<
+        string,
+        ValueType
+      >
+      values.forEach((value, name) => {
+        const isName = name === nodeNameColumn.name
+        if (isName && nodeColumnNames.has(nodeId)) {
+          nodeColumnNames.delete(nodeId)
+        } else if (Object.hasOwn(nodeData, name)) {
+          return
         }
+        setCellValue(nodeData, name, value)
       })
-
-      nodeTable.rows.set(`${tgtNodeId}`, nodeData)
-    }
+    })
 
     if (
       srcNodeCol !== undefined &&
@@ -296,11 +367,20 @@ export function createNetworkFromTableData(
       })
       const rowData: Record<string, any> = {}
 
-      if (interactionTypeCol !== undefined) {
-        rowData[interactionTypeCol.name] = row[interactionTypeCol.name]
-      }
-      edgeAttrCols.forEach((c) => {
-        rowData[c.name] = parseValue(row[c.name], c.dataType, c.delimiter)
+      edgeColumnsInFileOrder.forEach((c) => {
+        const raw = row[c.name]
+        const kept = edgeColumnMerge.keptColumn(c.name) as TabularColumn
+        if (edgeColumnMerge.isMerged(c.name)) {
+          if (isEmptyCell(raw)) return
+          assertSameColumnType(kept, declareColumn(c))
+        }
+        setCellValue(
+          rowData,
+          kept.name,
+          c === interactionTypeCol
+            ? raw
+            : parseValue(raw, c.dataType, c.delimiter),
+        )
       })
 
       edgeTable.rows.set(`e${eId}`, rowData)

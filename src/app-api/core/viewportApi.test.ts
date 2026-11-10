@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // src/app-api/core/viewportApi.test.ts
 // Plain Jest tests for viewportApi core — no renderHook, no React context.
+import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { AppCodes, ElementCodes } from '../types/ApiResult'
 import { viewportApi } from './viewportApi'
 
@@ -14,6 +15,21 @@ vi.mock('../../data/hooks/stores/WorkspaceStore', () => ({
     getState: vi.fn(() => ({
       workspace: { currentNetworkId: 'net1', networkModified: {} },
       setNetworkModified: mockSetNetworkModified,
+    })),
+  },
+}))
+
+// ── Mock: UndoStore (corePostEdit) ───────────────────────────────────────────
+
+const mockSetUndoStack = vi.fn()
+const mockSetRedoStack = vi.fn()
+
+vi.mock('../../data/hooks/stores/UndoStore', () => ({
+  useUndoStore: {
+    getState: vi.fn(() => ({
+      undoRedoStacks: {},
+      setUndoStack: mockSetUndoStack,
+      setRedoStack: mockSetRedoStack,
     })),
   },
 }))
@@ -359,5 +375,182 @@ describe('networkModified (#680)', () => {
 
     expect(result.success).toBe(false)
     expect(mockSetNetworkModified).not.toHaveBeenCalled()
+  })
+})
+
+// --- position validation (#874) ----------------------------------------------
+
+describe('updateNodePositions validates positions (#874)', () => {
+  beforeEach(() => {
+    mockUpdateNodePositions.mockReset()
+    mockNetworks.set('net1', {
+      id: 'net1',
+      nodes: [{ id: 'n1' }, { id: 'n2' }],
+      edges: [],
+    })
+    mockGetViewModel.mockReturnValue(makeNetworkView())
+  })
+
+  it.each([
+    ['a string coordinate', ['10', 20]],
+    ['NaN', [NaN, 0]],
+    ['Infinity', [0, Infinity]],
+    ['one coordinate', [1]],
+    ['four coordinates', [1, 2, 3, 4]],
+    ['a non-array', { x: 1, y: 2 }],
+    ['null', null],
+    // oxlint-disable-next-line no-sparse-arrays -- the hole is the case
+    ['a hole', [, 0]],
+  ])('rejects %s with INVALID_INPUT and writes nothing', (_label, value) => {
+    const result = viewportApi.updateNodePositions('net1', {
+      n1: [1, 2],
+      n2: value as any,
+    })
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
+      expect(result.error.message).toContain('n2')
+    }
+    // All or nothing: n1's valid position is not applied either
+    expect(mockUpdateNodePositions).not.toHaveBeenCalled()
+    expect(mockSetNetworkModified).not.toHaveBeenCalled()
+    expect(mockSetUndoStack).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['null', null],
+    ['an array', [[1, 2]]],
+    ['a string', 'n1'],
+  ])('rejects a position record that is %s', (_label, positions) => {
+    const result = viewportApi.updateNodePositions('net1', positions as any)
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(AppCodes.INVALID_INPUT.code)
+    }
+    expect(mockUpdateNodePositions).not.toHaveBeenCalled()
+  })
+
+  it('still reports an unknown network before a malformed record', () => {
+    mockGetViewModel.mockReturnValue(undefined)
+
+    const result = viewportApi.updateNodePositions('missing', null as any)
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.code).toBe(AppCodes.NETWORK_NOT_FOUND.code)
+    }
+  })
+})
+
+// --- recordUndo (#874) -------------------------------------------------------
+
+describe('updateNodePositions with recordUndo (#874)', () => {
+  beforeEach(() => {
+    mockUpdateNodePositions.mockReset()
+    mockNetworks.set('net1', {
+      id: 'net1',
+      nodes: [{ id: 'n1' }, { id: 'n2' }, { id: 'n3' }],
+      edges: [],
+    })
+    // n3 is in the network but has no view
+    mockGetViewModel.mockReturnValue(
+      makeNetworkView({
+        n1: { id: 'n1', x: 0, y: 0 },
+        n2: { id: 'n2', x: 5, y: 5, z: 1 },
+      }),
+    )
+  })
+
+  const recordedEdits = (): any[] =>
+    mockSetUndoStack.mock.calls.length === 0
+      ? []
+      : mockSetUndoStack.mock.calls[mockSetUndoStack.mock.calls.length - 1][1]
+
+  it('records one MOVE_NODES entry with the moved nodes only', () => {
+    const result = viewportApi.updateNodePositions(
+      'net1',
+      { n1: [10, 20], n2: [5, 5], n3: [7, 7] },
+      { recordUndo: true },
+    )
+
+    expect(result.success).toBe(true)
+    expect(mockSetUndoStack).toHaveBeenCalledTimes(1)
+    expect(mockSetUndoStack.mock.calls[0][0]).toBe('net1')
+    const edits = recordedEdits()
+    expect(edits).toHaveLength(1)
+    expect(edits[0].undoCommand).toBe(UndoCommandType.MOVE_NODES)
+    expect(edits[0].description).toBe('Move Nodes')
+    // n2 does not move; n3 has no view, so there is nothing to put back
+    expect(edits[0].undoParams).toEqual(['net1', new Map([['n1', [0, 0]]])])
+    expect(edits[0].redoParams).toEqual(['net1', new Map([['n1', [10, 20]]])])
+    // The write itself is unchanged: the whole validated record
+    expect(mockUpdateNodePositions).toHaveBeenCalledWith(
+      'net1',
+      new Map([
+        ['n1', [10, 20]],
+        ['n2', [5, 5]],
+        ['n3', [7, 7]],
+      ]),
+    )
+    expect(mockSetNetworkModified).toHaveBeenCalledWith('net1', true)
+  })
+
+  it('records a z change, and undo restores the previous z', () => {
+    viewportApi.updateNodePositions(
+      'net1',
+      { n2: [5, 5, 2] },
+      { recordUndo: true },
+    )
+
+    const edits = recordedEdits()
+    expect(edits[0].undoParams).toEqual(['net1', new Map([['n2', [5, 5, 1]]])])
+    expect(edits[0].redoParams).toEqual(['net1', new Map([['n2', [5, 5, 2]]])])
+  })
+
+  it('records nothing when no node moves', () => {
+    const result = viewportApi.updateNodePositions(
+      'net1',
+      { n1: [0, 0], n2: [5, 5, 1] },
+      { recordUndo: true },
+    )
+
+    expect(result.success).toBe(true)
+    expect(mockSetUndoStack).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['no options', undefined],
+    ['recordUndo: false', { recordUndo: false }],
+    ['a truthy non-boolean', { recordUndo: 'yes' }],
+    ['null options', null],
+  ])('records nothing with %s', (_label, options) => {
+    const result = viewportApi.updateNodePositions(
+      'net1',
+      { n1: [10, 20] },
+      options as any,
+    )
+
+    expect(result.success).toBe(true)
+    expect(mockUpdateNodePositions).toHaveBeenCalled()
+    expect(mockSetUndoStack).not.toHaveBeenCalled()
+    // Still marked, as before #874
+    expect(mockSetNetworkModified).toHaveBeenCalledWith('net1', true)
+  })
+
+  it('records nothing when the store write throws', () => {
+    mockUpdateNodePositions.mockImplementation(() => {
+      throw new Error('store error')
+    })
+
+    const result = viewportApi.updateNodePositions(
+      'net1',
+      { n1: [10, 20] },
+      { recordUndo: true },
+    )
+
+    expect(result.success).toBe(false)
+    expect(mockSetUndoStack).not.toHaveBeenCalled()
   })
 })

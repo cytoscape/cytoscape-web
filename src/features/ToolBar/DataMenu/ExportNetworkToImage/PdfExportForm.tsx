@@ -3,10 +3,13 @@ import {
   Checkbox,
   FormControl,
   FormControlLabel,
+  FormGroup,
+  InputAdornment,
+  InputLabel,
   MenuItem,
   Select,
+  Stack,
   TextField,
-  Typography,
 } from '@mui/material'
 //@ts-expect-error no type declarations for file-saver
 import { saveAs } from 'file-saver'
@@ -16,6 +19,7 @@ import { useRendererFunctionStore } from '../../../../data/hooks/stores/Renderer
 import { useUiStateStore } from '../../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../../data/hooks/stores/WorkspaceStore'
 import { IdType } from '../../../../models/IdType'
+import { addPdfCitation } from './citationMetadata'
 import { ExportFormRef, ExportImageFormatProps } from './ExportImage'
 
 export const PaperSize = {
@@ -38,6 +42,24 @@ export const Orientation = {
   LANDSCAPE: 'LANDSCAPE',
 } as const
 export type Orientation = (typeof Orientation)[keyof typeof Orientation]
+
+const PAPER_SIZE_LABELS: Record<PaperSize, string> = {
+  LETTER: 'Letter',
+  LEGAL: 'Legal',
+  TABLOID: 'Tabloid',
+  A0: 'A0',
+  A1: 'A1',
+  A2: 'A2',
+  A3: 'A3',
+  A4: 'A4',
+  A5: 'A5',
+  CUSTOM: 'Custom',
+}
+
+const ORIENTATION_LABELS: Record<Orientation, string> = {
+  PORTRAIT: 'Portrait',
+  LANDSCAPE: 'Landscape',
+}
 
 const PdfExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
   (props, ref) => {
@@ -84,20 +106,17 @@ const PdfExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
           paperSize === PaperSize.CUSTOM ? customWidth : undefined,
           paperSize === PaperSize.CUSTOM ? customHeight : undefined,
         )
-        saveAs(result, `${props.fileName}.pdf`)
+        const bytes = new Uint8Array((await result?.arrayBuffer()) ?? [])
+        saveAs(
+          new Blob([addPdfCitation(bytes)], { type: 'application/pdf' }),
+          `${props.fileName}.pdf`,
+        )
       },
     }))
 
     return (
-      <Box
-        sx={{
-          mt: 1,
-          height: 425,
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        <Box sx={{ mb: 1 }}>
+      <Stack spacing={2.5}>
+        <FormGroup>
           <FormControlLabel
             control={
               <Checkbox
@@ -107,92 +126,82 @@ const PdfExportForm = forwardRef<ExportFormRef, ExportImageFormatProps>(
             }
             label="Export full network image"
           />
-        </Box>
-        <Box sx={{ mb: 1 }}>
-          <FormControl variant="outlined">
-            <Typography variant="subtitle1" style={{ margin: '0 0 5px 0' }}>
-              Paper Size
-            </Typography>
+        </FormGroup>
+        <Box sx={{ display: 'flex', gap: 1.5 }}>
+          <FormControl size="small" sx={{ width: 140 }}>
+            <InputLabel id="pdf-paper-size-label">Paper size</InputLabel>
             <Select
-              size="small"
-              labelId="label"
+              labelId="pdf-paper-size-label"
+              label="Paper size"
               value={paperSize}
               onChange={handlePaperSizeChange}
             >
-              {Object.keys(PaperSize).map((key) => (
-                <MenuItem key={key} value={key as PaperSize}>
-                  {key}
+              {Object.values(PaperSize).map((size) => (
+                <MenuItem key={size} value={size}>
+                  {PAPER_SIZE_LABELS[size]}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
-        </Box>
-        {paperSize === PaperSize.CUSTOM && (
-          <Box sx={{ mb: 1 }}>
-            <Typography variant="subtitle1" style={{ margin: '0 0 7px 0' }}>
-              Size
-            </Typography>
-            <TextField
-              size="small"
-              sx={{ mr: 1 }}
-              id="outlined-number"
-              label="Width (inches)"
-              type="number"
-              onChange={(e) => setCustomWidth(Number(e.target.value))}
-              value={customWidth}
-              InputLabelProps={{
-                shrink: true,
-              }}
-            />
-            <TextField
-              size="small"
-              id="outlined-number"
-              label="Height (inches)"
-              type="number"
-              onChange={(e) => setCustomHeight(Number(e.target.value))}
-              value={customHeight}
-              InputLabelProps={{
-                shrink: true,
-              }}
-            />
-          </Box>
-        )}
-
-        <Box sx={{ mb: 1 }}>
-          <FormControl variant="outlined">
-            <Typography variant="subtitle1" style={{ margin: '0 0 5px 0' }}>
-              Orientation
-            </Typography>
+          <FormControl size="small" sx={{ width: 140 }}>
+            <InputLabel id="pdf-orientation-label">Orientation</InputLabel>
             <Select
-              size="small"
-              labelId="label"
+              labelId="pdf-orientation-label"
+              label="Orientation"
               value={orientation}
               onChange={handleOrientationChange}
             >
-              {Object.keys(Orientation).map((key) => (
-                <MenuItem key={key} value={key as Orientation}>
-                  {key}
+              {Object.values(Orientation).map((value) => (
+                <MenuItem key={value} value={value}>
+                  {ORIENTATION_LABELS[value]}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
-        </Box>
-        <Box sx={{ mb: 1 }}>
-          <Typography variant="subtitle1" style={{ margin: '0 0 5px 0' }}>
-            Margin
-          </Typography>
+          {/* pdfkit measures in PostScript points, 72 to the inch. */}
           <TextField
             size="small"
-            id="outlined-number"
             type="number"
+            label="Margin"
             value={margin}
             onChange={(e) => setMargin(Number(e.target.value))}
-            InputLabelProps={{
-              shrink: true,
+            InputProps={{
+              endAdornment: <InputAdornment position="end">pt</InputAdornment>,
             }}
+            sx={{ width: 110 }}
           />
         </Box>
-      </Box>
+        {paperSize === PaperSize.CUSTOM && (
+          <Box sx={{ display: 'flex', gap: 1.5 }}>
+            <TextField
+              size="small"
+              type="number"
+              label="Page width"
+              value={customWidth}
+              onChange={(e) => setCustomWidth(Number(e.target.value))}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">in</InputAdornment>
+                ),
+              }}
+              sx={{ width: 140 }}
+            />
+            <TextField
+              size="small"
+              type="number"
+              label="Page height"
+              value={customHeight}
+              onChange={(e) => setCustomHeight(Number(e.target.value))}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">in</InputAdornment>
+                ),
+              }}
+              sx={{ width: 140 }}
+            />
+          </Box>
+        )}
+      </Stack>
     )
   },
 )
