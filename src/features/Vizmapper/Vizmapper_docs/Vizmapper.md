@@ -90,6 +90,10 @@ The Vizmapper is organized around visual properties, which are grouped into thre
 - Supports custom node graphics (images, charts) with associated size properties
 - Only the first valid custom graphic is displayed in the editor
 - Custom graphics require special handling for size properties
+- In the Custom Graphics dialog, switching between pie and donut
+  (`useCustomGraphicState.selectKind`) carries over the selected attributes,
+  colors, palette, data range and start angle, as Cytoscape Desktop does. The
+  donut's hole size and image settings stay with their own kind.
 
 ### Disabled States
 

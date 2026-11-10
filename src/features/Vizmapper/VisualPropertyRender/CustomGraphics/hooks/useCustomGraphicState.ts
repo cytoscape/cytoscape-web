@@ -42,6 +42,33 @@ const defaultImageProps: ImagePropertiesType = {
   url: '',
 }
 
+type ChartKind =
+  | typeof CustomGraphicsNameType.PieChart
+  | typeof CustomGraphicsNameType.RingChart
+
+const isChartKind = (kind: CustomGraphicKind): kind is ChartKind =>
+  kind === CustomGraphicsNameType.PieChart ||
+  kind === CustomGraphicsNameType.RingChart
+
+// The properties every chart kind understands. Arrays are copied so the two
+// kinds never share a reference.
+const pickSharedChartProperties = (
+  props: PieChartPropertiesType | RingChartPropertiesType,
+): Pick<
+  PieChartPropertiesType,
+  | 'cy_dataColumns'
+  | 'cy_colors'
+  | 'cy_colorScheme'
+  | 'cy_range'
+  | 'cy_startAngle'
+> => ({
+  cy_dataColumns: [...props.cy_dataColumns],
+  cy_colors: [...props.cy_colors],
+  cy_colorScheme: props.cy_colorScheme,
+  cy_range: [props.cy_range[0], props.cy_range[1]],
+  cy_startAngle: props.cy_startAngle,
+})
+
 interface UseCustomGraphicStateProps {
   open: boolean
   initialValue: CustomGraphicsType | null
@@ -119,6 +146,26 @@ export const useCustomGraphicState = ({
     }
   }, [open, initialValue])
 
+  // Switch the graphic kind. Between chart kinds (pie and donut) the settings
+  // both share come along — the selected attributes, their colors and palette,
+  // the data range and the start angle — so the user does not have to pick
+  // them again; Cytoscape Desktop behaves the same way. Kind-only settings
+  // (the donut's hole size) and image settings stay with their own kind.
+  const selectKind = (next: CustomGraphicKind) => {
+    if (next === kind) return
+    if (isChartKind(kind) && isChartKind(next)) {
+      const shared = pickSharedChartProperties(
+        kind === CustomGraphicsNameType.PieChart ? pieProps : ringProps,
+      )
+      if (next === CustomGraphicsNameType.PieChart) {
+        setPieProps((prev) => ({ ...prev, ...shared }))
+      } else {
+        setRingProps((prev) => ({ ...prev, ...shared }))
+      }
+    }
+    setKind(next)
+  }
+
   const currentProps =
     kind === CustomGraphicsNameType.PieChart
       ? pieProps
@@ -187,7 +234,7 @@ export const useCustomGraphicState = ({
 
   return {
     kind,
-    setKind,
+    selectKind,
     currentProps,
     hasNumericProperties,
     handleRemoveCharts,

@@ -77,7 +77,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
 }) => {
   const {
     kind,
-    setKind,
+    selectKind,
     currentProps,
     hasNumericProperties,
     handleRemoveCharts,
@@ -378,7 +378,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                         return (
                           <Box
                             key={k}
-                            onClick={() => !isDisabled && setKind(k)}
+                            onClick={() => !isDisabled && selectKind(k)}
                             sx={{
                               cursor: !isDisabled ? 'pointer' : 'not-allowed',
                               display: 'flex',
@@ -704,7 +704,7 @@ export const CustomGraphicDialog: React.FC<CustomGraphicDialogProps> = ({
                         return (
                           <Box
                             key={k}
-                            onClick={() => setKind(k)}
+                            onClick={() => selectKind(k)}
                             sx={{
                               cursor: 'pointer',
                               display: 'flex',
