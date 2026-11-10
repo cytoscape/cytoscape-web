@@ -1,6 +1,7 @@
 import { Box, Typography } from '@mui/material'
 import * as React from 'react'
 
+import { chartStartAngle } from '../../../../models/VisualStyleModel/impl/customGraphicsImpl'
 import { RingChartPropertiesType } from '../../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
 import {
   calculateChartDimensions,
@@ -37,7 +38,7 @@ export const RingChartRender: React.FC<RingChartRenderProps> = ({
     ? containerHeight + 20
     : containerHeight
 
-  const { cy_startAngle, cy_colors, cy_dataColumns, cy_holeSize } = properties
+  const { cy_colors, cy_dataColumns, cy_holeSize } = properties
 
   // Calculate slice angles (equal distribution for preview)
   const sliceAngle = calculateSliceAngle(cy_dataColumns.length)
@@ -49,7 +50,8 @@ export const RingChartRender: React.FC<RingChartRenderProps> = ({
   // Convert start angle to match Cytoscape.js coordinate system
   // Cytoscape uses: (90 - angle) % 360, where 90deg = 12 o'clock
   // We need to apply the same conversion for alignment
-  const cytoscapeStartAngle = (((90 - cy_startAngle) % 360) + 360) % 360
+  const cytoscapeStartAngle =
+    (((90 - chartStartAngle(properties)) % 360) + 360) % 360
 
   // Remove stroke for preview charts to prevent gaps (only use stroke for very large charts)
   const useStroke = chartSize > 120

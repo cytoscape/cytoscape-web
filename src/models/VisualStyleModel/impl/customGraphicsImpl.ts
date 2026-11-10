@@ -3,6 +3,22 @@
 
 export const VALID_PIE_CHART_SLICE_INDEX_RANGE = [1, 16] as const
 
+/** The start angle Cytoscape Desktop uses when a chart omits `cy_startAngle`. */
+export const DEFAULT_CHART_START_ANGLE = 0
+
+/**
+ * A pie or ring chart's start angle in degrees. Cytoscape Desktop omits
+ * `cy_startAngle` at its default, so a chart read from a CX2 (or saved from
+ * one) may have none (#842); a non-finite value falls back to the default too.
+ */
+export const chartStartAngle = (properties: {
+  cy_startAngle?: unknown
+}): number =>
+  typeof properties.cy_startAngle === 'number' &&
+  Number.isFinite(properties.cy_startAngle)
+    ? properties.cy_startAngle
+    : DEFAULT_CHART_START_ANGLE
+
 import { logModel } from '../../../debug'
 import { IdType } from '../../IdType'
 import { AttributeName, ValueType } from '../../TableModel'
@@ -271,7 +287,7 @@ export const computePieChartProperties = (
   const padding = 4 // padding between pie chart and node border, this is an attempt to render things similarly to Cytoscape Desktop
   const size = Math.min(width, height) - padding
 
-  const angle = pieValues.cy_startAngle ?? 0
+  const angle = chartStartAngle(pieValues)
 
   piePairsToAdd.push([
     SpecialPropertyName.PieSize,
@@ -334,7 +350,7 @@ export const computeRingChartProperties = (
   const padding = 4 // padding between pie chart and node border, this is an attempt to render things similarly to Cytoscape Desktop
   const size = Math.min(width, height) - padding
 
-  const angle = pieValues.cy_startAngle ?? 0
+  const angle = chartStartAngle(pieValues)
 
   const holeSize = pieValues.cy_holeSize ?? 0.4
 
