@@ -704,4 +704,26 @@ describe('LLMQueryOptionsDialog', () => {
       expect(useLLMQueryStore.getState().hydrateOptions).toBe(realHydrate)
     })
   })
+
+  describe('a key too long to keep', () => {
+    it('is not confirmed, and the field says why', () => {
+      render(<LLMQueryOptionsDialog open={true} handleClose={() => {}} />)
+
+      fireEvent.change(apiKeyInput(), { target: { value: 'k'.repeat(4097) } })
+
+      expect(
+        screen.getByTestId('llm-query-options-confirm-button'),
+      ).toHaveProperty('disabled', true)
+      expect(screen.getByText(/API key is too long/)).toBeTruthy()
+    })
+
+    it('accepts a long bearer token within the limit', () => {
+      render(<LLMQueryOptionsDialog open={true} handleClose={() => {}} />)
+
+      fireEvent.change(apiKeyInput(), { target: { value: 'k'.repeat(4096) } })
+      fireEvent.click(screen.getByTestId('llm-query-options-confirm-button'))
+
+      expect(loadLLMSessionKeys().openAiKey).toBe('k'.repeat(4096))
+    })
+  })
 })

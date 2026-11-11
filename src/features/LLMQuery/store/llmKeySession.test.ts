@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { logStore } from '../../../debug'
+import { MAX_API_KEY_LENGTH } from '../model/LLMProvider'
 import {
   clearLLMSessionKeys,
+  discardLLMSessionKeysInManualTab,
   loadLLMSessionKeys,
   saveLLMSessionKeys,
 } from './llmKeySession'
@@ -105,7 +107,10 @@ describe('LLM API keys in sessionStorage', () => {
   it('drops an implausibly long value', () => {
     window.sessionStorage.setItem(
       LLM_API_KEYS_SESSION_KEY,
-      JSON.stringify({ openAiKey: 'k'.repeat(1025), customKey: 'ok' }),
+      JSON.stringify({
+        openAiKey: 'k'.repeat(MAX_API_KEY_LENGTH + 1),
+        customKey: 'ok',
+      }),
     )
 
     expect(loadLLMSessionKeys()).toEqual({ ...NO_KEYS, customKey: 'ok' })
@@ -183,5 +188,61 @@ describe('LLM API keys in sessionStorage', () => {
     ).not.toThrow()
     expect(warn).toHaveBeenCalled()
     expect(JSON.stringify(warn.mock.calls)).not.toContain('sk-secret')
+  })
+
+  it('keeps the longest key the dialog accepts', () => {
+    const longest = 'k'.repeat(MAX_API_KEY_LENGTH)
+
+    saveLLMSessionKeys({ ...NO_KEYS, openAiKey: longest })
+
+    expect(loadLLMSessionKeys().openAiKey).toBe(longest)
+  })
+
+  /**
+   * Help > User Manual opens the manual with `window.open` and an opener, so
+   * the new tab starts with a COPY of the editor tab's sessionStorage, keys
+   * included. The manual has no use for them and no Forget key button, and
+   * "Go to Cytoscape Web" can turn that tab into an editor, where a copy
+   * would bring back a key the user had since forgotten.
+   */
+  describe('a copy carried into the manual tab', () => {
+    beforeEach(() => {
+      saveLLMSessionKeys({
+        openAiKey: 'sk-openai',
+        customKey: 'custom-key',
+        customKeyOrigin: 'https://llm.example.org',
+      })
+    })
+
+    it('is removed when the manual starts', () => {
+      discardLLMSessionKeysInManualTab('manual')
+
+      expect(window.sessionStorage.getItem(LLM_API_KEYS_SESSION_KEY)).toBeNull()
+    })
+
+    it('leaves the editor tab its keys', () => {
+      discardLLMSessionKeysInManualTab('app')
+
+      expect(loadLLMSessionKeys().openAiKey).toBe('sk-openai')
+    })
+
+    it('follows the address bar when no scope is given', () => {
+      window.history.replaceState(null, '', '/manual/introduction')
+      try {
+        discardLLMSessionKeysInManualTab()
+      } finally {
+        window.history.replaceState(null, '', '/')
+      }
+
+      expect(window.sessionStorage.getItem(LLM_API_KEYS_SESSION_KEY)).toBeNull()
+    })
+
+    it('leaves other per-tab state alone', () => {
+      window.sessionStorage.setItem('cyweb.tab.viewState', '{}')
+
+      discardLLMSessionKeysInManualTab('manual')
+
+      expect(window.sessionStorage.getItem('cyweb.tab.viewState')).toBe('{}')
+    })
   })
 })

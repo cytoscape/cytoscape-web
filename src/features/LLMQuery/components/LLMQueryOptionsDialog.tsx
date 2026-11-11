@@ -30,6 +30,7 @@ import { listLLMModels } from '../api/chatgpt'
 import { getModelNameError, LLMModel } from '../model/LLMModel'
 import {
   endpointOrigin,
+  getApiKeyError,
   getEndpointError,
   getLLMProvider,
   LLMProviderId,
@@ -221,6 +222,9 @@ const LLMQueryOptionsDialogContent = (
   // The same limits the saved row has, so what is confirmed here can always
   // be read back after a reload.
   const modelError = getModelNameError(localLLMModel)
+  // And the limit of what the tab keeps: a longer key would be accepted here
+  // and then be gone after a reload.
+  const apiKeyError = getApiKeyError(typedApiKey)
   const modelOptions = Array.from(
     new Set([...fetchedModels, ...provider.suggestedModels]),
   )
@@ -422,7 +426,8 @@ const LLMQueryOptionsDialogContent = (
                   disabled={
                     fetchingModels ||
                     localBaseUrl.trim() === '' ||
-                    endpointError !== undefined
+                    endpointError !== undefined ||
+                    apiKeyError !== undefined
                   }
                   onClick={() => {
                     void handleRefreshModels()
@@ -470,7 +475,8 @@ const LLMQueryOptionsDialogContent = (
                 value={localLLMApiKey}
                 fullWidth
                 label={apiKeyLabel}
-                helperText={apiKeyHelp}
+                error={apiKeyError !== undefined}
+                helperText={apiKeyError ?? apiKeyHelp}
                 onChange={(e) => {
                   onEdit()
                   setLocalLLMApiKey(e.target.value)
@@ -579,7 +585,11 @@ const LLMQueryOptionsDialogContent = (
         <Button
           data-testid="llm-query-options-confirm-button"
           variant="contained"
-          disabled={modelError !== undefined || endpointError !== undefined}
+          disabled={
+            modelError !== undefined ||
+            endpointError !== undefined ||
+            apiKeyError !== undefined
+          }
           onClick={() => {
             // Options first: the store forgets any key that is not for this
             // provider and endpoint, and a key typed here is then bound to

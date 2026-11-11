@@ -177,6 +177,19 @@ The LLMQuery feature consists of:
   (`dangerouslyAllowBrowser`), so the key has to be in the page whenever a
   query runs. "Duplicate tab" copies sessionStorage, and a browser that
   restores a session may restore it
+- **The manual tab drops its copy.** Help > User Manual opens the manual with
+  `window.open` and an opener (its "Go to Cytoscape Web" needs one), and a tab
+  opened that way starts with a copy of the editor tab's sessionStorage, keys
+  included. The manual has no use for them and no Forget key button, and "Go
+  to Cytoscape Web" can load the editor in that tab, where the copy would
+  bring back a key the user had since forgotten. `App.tsx` calls
+  `discardLLMSessionKeysInManualTab()` when a manual document starts. Opening
+  the manual in the editor's own tab therefore forgets the key there too
+- **One limit for a key.** `getApiKeyError` (`MAX_API_KEY_LENGTH`, 4096, enough
+  for a gateway's bearer token) is applied by the dialog before Confirm, by
+  the store's key setters and by `llmKeySession`. A key the store accepted is
+  a key the tab keeps; a longer one is refused with a message, not dropped
+  silently on save
 - **Never write a key anywhere else.** Not in the options row, not in
   `cyweb-db`, not in a snapshot, not in `exportApplicationState`. The store
   spec asserts a typed key reaches neither IndexedDB nor localStorage

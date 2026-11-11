@@ -369,4 +369,42 @@ test.describe('LLM Query Options Dialog', () => {
     ).not.toBeVisible()
     expect(await sessionKeys()).toBeNull()
   })
+
+  // #849: Help > User Manual opens with an opener, so the new tab starts
+  // with a copy of this tab's sessionStorage. The key must not stay in it.
+  test('the manual tab does not keep a copy of the API key', async ({
+    page,
+    context,
+  }) => {
+    const sessionKeys = (target: Page): Promise<string | null> =>
+      target.evaluate(
+        (name) => window.sessionStorage.getItem(name),
+        LLM_API_KEYS_SESSION_KEY,
+      )
+
+    await openDialog(page)
+    await page
+      .locator('[data-testid="llm-query-options-api-key-input"] input')
+      .fill('sk-e2e-not-a-real-key')
+    await page
+      .locator('[data-testid="llm-query-options-confirm-button"]')
+      .click()
+    await expect(
+      page.locator('[data-testid="llm-query-options-dialog"]'),
+    ).not.toBeVisible()
+    expect(await sessionKeys(page)).toContain('sk-e2e-not-a-real-key')
+
+    await page.locator('[data-testid="toolbar-help-menu-menu-button"]').click()
+    const [manual] = await Promise.all([
+      context.waitForEvent('page'),
+      page.locator('[data-testid="help-menu-user-manual"]').click(),
+    ])
+    await expect(manual.locator('[data-testid="manual-page"]')).toBeVisible({
+      timeout: 30_000,
+    })
+
+    expect(await sessionKeys(manual)).toBeNull()
+    // The editor tab keeps its own
+    expect(await sessionKeys(page)).toContain('sk-e2e-not-a-real-key')
+  })
 })

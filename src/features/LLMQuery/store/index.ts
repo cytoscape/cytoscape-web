@@ -4,7 +4,12 @@ import { immer } from 'zustand/middleware/immer'
 import config from '../../../assets/config.json'
 import { logStore } from '../../../debug'
 import { LLMModel, models } from '../model/LLMModel'
-import { endpointOrigin, LLMProviderId, providers } from '../model/LLMProvider'
+import {
+  endpointOrigin,
+  getApiKeyError,
+  LLMProviderId,
+  providers,
+} from '../model/LLMProvider'
 import { LLMTemplate, templates } from '../model/LLMTemplate'
 import { loadLLMSessionKeys, saveLLMSessionKeys } from './llmKeySession'
 import {
@@ -131,6 +136,22 @@ export const hasEnteredLLMApiKey = (
 // minification.
 const STORE_LABEL = 'LLMQueryStore'
 
+/**
+ * Whether a key can be both held here and kept for the tab. A key over the
+ * limit would be dropped by `saveLLMSessionKeys`, so accepting it here would
+ * leave the store saying "a key is set" for a key that is gone after the
+ * next reload. The dialog applies the same rule before Confirm; this stops
+ * every other caller. The key itself is never logged.
+ */
+const isKeepableKey = (key: string): boolean => {
+  const error = getApiKeyError(key)
+  if (error !== undefined) {
+    logStore.warn(`[${STORE_LABEL}]: API key not set. ${error}`)
+    return false
+  }
+  return true
+}
+
 // sessionStorage is synchronous, so the keys typed earlier in this tab are
 // there from the first render (see llmKeySession.ts).
 const sessionKeys = loadLLMSessionKeys()
@@ -180,12 +201,18 @@ export const useLLMQueryStore = create(
       })
     },
     setLLMApiKey: (LLMApiKey: string) => {
+      if (!isKeepableKey(LLMApiKey)) {
+        return
+      }
       set((state) => {
         state.LLMApiKey = LLMApiKey
       })
       persistKeys(get())
     },
     setLLMCustomApiKey: (LLMCustomApiKey: string) => {
+      if (!isKeepableKey(LLMCustomApiKey)) {
+        return
+      }
       set((state) => {
         state.LLMCustomApiKey = LLMCustomApiKey
         // The key belongs to the endpoint in use when it is entered. Callers

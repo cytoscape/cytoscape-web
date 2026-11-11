@@ -1,5 +1,10 @@
+import { currentDbScope, DbScope } from '../../../data/db/dbScope'
 import { logStore } from '../../../debug'
-import { endpointOrigin, LLMApiKeys } from '../model/LLMProvider'
+import {
+  endpointOrigin,
+  getApiKeyError,
+  LLMApiKeys,
+} from '../model/LLMProvider'
 import { LLM_API_KEYS_SESSION_KEY } from './storageKeys'
 
 /**
@@ -18,10 +23,6 @@ import { LLM_API_KEYS_SESSION_KEY } from './storageKeys'
  *
  * Nothing here logs a stored value or an exception that could quote one.
  */
-
-// Provider keys are well under 300 characters. The cap only keeps a tampered
-// blob from being carried around as a "key".
-const MAX_KEY_LENGTH = 1024
 
 // Longer than any origin a browser will accept in a URL field
 const MAX_ORIGIN_LENGTH = 2048
@@ -47,8 +48,10 @@ const asKey = (value: unknown): string => {
   if (typeof value !== 'string') {
     return ''
   }
+  // The same limit the dialog and the store apply (getApiKeyError), so this
+  // only ever drops a stored value that did not come from them.
   const key = value.trim()
-  return key.length > MAX_KEY_LENGTH ? '' : key
+  return getApiKeyError(key) === undefined ? key : ''
 }
 
 /**
@@ -125,4 +128,26 @@ export const saveLLMSessionKeys = (keys: LLMSessionKeys): void => {
 /** Forget every key stored for this tab. */
 export const clearLLMSessionKeys = (): void => {
   saveLLMSessionKeys(NO_KEYS)
+}
+
+/**
+ * Remove the keys from a manual tab. Call it when the manual starts.
+ *
+ * Help > User Manual opens the manual with `window.open` and an opener (the
+ * manual's "Go to Cytoscape Web" needs it), and a tab opened that way starts
+ * with a COPY of the opener's sessionStorage, the keys included. The manual
+ * never sends a query and has no Forget key button, so the copy is exposure
+ * with no use. Worse, "Go to Cytoscape Web" can load the editor in that tab,
+ * where the copy would bring back a key the user had since forgotten in the
+ * editor tab.
+ *
+ * It follows that opening the manual in the editor's own tab (by typing its
+ * address) also forgets the key there.
+ */
+export const discardLLMSessionKeysInManualTab = (
+  scope: DbScope = currentDbScope(),
+): void => {
+  if (scope === 'manual') {
+    clearLLMSessionKeys()
+  }
 }

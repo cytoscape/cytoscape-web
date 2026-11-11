@@ -2,6 +2,7 @@ import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { deleteProfileDb, getProfileSetting } from '../../../data/db/profileDb'
+import { logStore } from '../../../debug'
 import { models } from '../model/LLMModel'
 import { OLLAMA_DEFAULT_BASE_URL } from '../model/LLMProvider'
 import { useLLMQueryStore } from './index'
@@ -593,6 +594,39 @@ describe('LLMQueryStore', () => {
       expect(useLLMQueryStore.getState().LLMBaseUrl).toBe(
         OLLAMA_DEFAULT_BASE_URL,
       )
+    })
+  })
+
+  /**
+   * What the store holds and what the tab keeps must agree: a key the store
+   * accepted but sessionStorage dropped would read as "a key is set" until
+   * the next reload, and then be gone.
+   */
+  describe('a key too long to keep', () => {
+    const tooLong = 'k'.repeat(4097)
+
+    it('is not accepted as the OpenAI key', () => {
+      vi.spyOn(logStore, 'warn').mockImplementation(() => {})
+      act(() => {
+        const state = useLLMQueryStore.getState()
+        state.setLLMApiKey('sk-openai')
+        state.setLLMApiKey(tooLong)
+      })
+
+      expect(useLLMQueryStore.getState().LLMApiKey).toBe('sk-openai')
+      expect(loadLLMSessionKeys().openAiKey).toBe('sk-openai')
+    })
+
+    it('is not accepted as the custom key, and is not logged', () => {
+      const warn = vi.spyOn(logStore, 'warn').mockImplementation(() => {})
+      act(() => {
+        useLLMQueryStore.getState().setLLMCustomApiKey(tooLong)
+      })
+
+      expect(useLLMQueryStore.getState().LLMCustomApiKey).toBe('')
+      expect(window.sessionStorage.getItem(LLM_API_KEYS_SESSION_KEY)).toBeNull()
+      expect(warn).toHaveBeenCalled()
+      expect(JSON.stringify(warn.mock.calls)).not.toContain('kkkk')
     })
   })
 })

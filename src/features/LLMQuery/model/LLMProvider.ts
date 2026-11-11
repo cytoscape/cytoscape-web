@@ -60,6 +60,22 @@ export const isLLMConfigured = (
   return provider.requiresApiKey ? apiKey.trim() !== '' : baseUrl.trim() !== ''
 }
 
+// The longest API key this tab keeps (store/llmKeySession.ts). Provider keys
+// are well under 300 characters; a custom endpoint behind a gateway may take
+// a bearer token instead, and those run to a few thousand.
+export const MAX_API_KEY_LENGTH = 4096
+
+/**
+ * Why an API key cannot be used, or undefined when it is fine (no key is
+ * fine: not every provider needs one). The dialog, the store and the saved
+ * session value share this rule, so a key that was accepted is a key that is
+ * kept. The message never includes the key.
+ */
+export const getApiKeyError = (apiKey: string): string | undefined =>
+  apiKey.trim().length > MAX_API_KEY_LENGTH
+    ? `The API key is too long (${MAX_API_KEY_LENGTH} characters at most)`
+    : undefined
+
 export const resolveApiKey = (apiKey: string): string =>
   apiKey.trim() === '' ? PLACEHOLDER_API_KEY : apiKey.trim()
 

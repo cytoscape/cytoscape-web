@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest'
 
 import {
   endpointOrigin,
+  getApiKeyError,
+  MAX_API_KEY_LENGTH,
   MAX_ENDPOINT_URL_LENGTH,
   getEndpointError,
   getLLMProvider,
@@ -162,5 +164,29 @@ describe('endpoint URL length', () => {
     expect(
       getEndpointError(urlOfLength(MAX_ENDPOINT_URL_LENGTH + 1), ''),
     ).toMatch(/too long/)
+  })
+})
+
+describe('getApiKeyError', () => {
+  it.each([
+    ['no key', ''],
+    ['an ordinary key', 'sk-proj-abc123'],
+    ['a key at the limit', 'k'.repeat(MAX_API_KEY_LENGTH)],
+    [
+      'a key at the limit with spaces around it',
+      ` ${'k'.repeat(MAX_API_KEY_LENGTH)} `,
+    ],
+  ])('accepts %s', (_label, key) => {
+    expect(getApiKeyError(key)).toBeUndefined()
+  })
+
+  it('rejects a longer one, which this tab could not keep', () => {
+    expect(getApiKeyError('k'.repeat(MAX_API_KEY_LENGTH + 1))).toMatch(
+      /too long/,
+    )
+  })
+
+  it('has room for a bearer token, which is longer than a provider key', () => {
+    expect(MAX_API_KEY_LENGTH).toBeGreaterThanOrEqual(4096)
   })
 })
