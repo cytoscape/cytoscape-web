@@ -51,7 +51,7 @@ or removing a spec.
 - **`annotation-canvas-lifecycle.spec.ts`** — Annotation canvas lifecycle (2 tests)
 - **`app-api-active-network-view.spec.ts`** — App API network changes move the active view (#927) (1 test)
 - **`cookie-consent.spec.ts`** — Cookie Consent (3 tests)
-- **`core-apps.spec.ts`** — core apps from the deployment catalog: on at start, kept off once turned off, failures reported; install links update an older version in place and keep a newer one; a failed one can be turned off, an incompatible one is not started, and a fixed version loads after a reload (8 tests)
+- **`core-apps.spec.ts`** — core apps from the deployment catalog: on at start, kept off once turned off, failures reported; install links update an older version in place and keep a newer one; an install link adds an app this Cytoscape Web cannot run turned off, with the reason and no switch; catalog Refresh keeps a running app's switch and makes an app available once a compatible version arrives; a failed core app can be turned off, an incompatible one is not started, and a fixed version loads after a reload (11 tests)
 - **`cross-tab-sync.spec.ts`** — cross-tab synchronization (4 tests)
 - **`cywebapi-ready.spec.ts`** — window.CyWebApi public surface (1 test)
 - **`hierarchy-cell-view.spec.ts`** — Cell View availability for hierarchies (#630) (2 tests)
