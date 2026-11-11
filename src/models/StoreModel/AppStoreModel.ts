@@ -38,6 +38,13 @@ export interface AppState {
   // AppLoadState so the four bare string comparisons in the UI keep working.
   loadErrors: Record<string, AppLoadFailure>
 
+  // The catalog entry each loaded module came from, keyed by app id
+  // (session-local). It differs from catalog[id] while an older version keeps
+  // running after a Refresh brought another (runtime spec §7.5), so the App
+  // Manager names the running version from here, and a different catalog URL
+  // tells activation to swap the module.
+  loadedEntries: Record<string, AppCatalogEntry>
+
   // User-configured manifest source (persisted to appSettings IndexedDB)
   manifestSource?: ManifestSource
 }
@@ -162,13 +169,19 @@ export interface AppAction {
   setLoadFailed: (id: string, failure: AppLoadFailure) => void
 
   /**
+   * Record the catalog entry a loaded module came from, or clear it with
+   * `undefined` when the module is dropped from memory.
+   */
+  setLoadedEntry: (id: string, entry: AppCatalogEntry | undefined) => void
+
+  /**
    * Set or clear the manifest source (persisted to IndexedDB appSettings)
    */
   setManifestSource: (source: ManifestSource | undefined) => void
 
   /**
-   * Remove an app completely: delete from apps, loadStates, loadErrors, and
-   * IndexedDB
+   * Remove an app completely: delete from apps, loadStates, loadErrors,
+   * loadedEntries, and IndexedDB
    */
   remove: (id: string) => void
 }

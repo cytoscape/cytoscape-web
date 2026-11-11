@@ -88,17 +88,21 @@ The AppManager feature consists of:
 5. App status is tracked (Active, Inactive, Error). A load that fails is
    reported in a toast (one per startup pass) and on the app's row
 6. Versions: when the catalog and an install carry the same app, the newer
-   *compatible* semantic version wins (`compareAppVersions`, with
-   `compatibleHostVersions` checked first). An app this host cannot run is
-   never loaded, at startup or by its switch. `installApp` updates an older
-   installed version in place, keeps a newer or equal one (only turning it on
-   for an install link), and returns what it did (`AppInstallOutcome`).
-   `AppInstallConfirmationDialog` says what confirming will do to an installed
-   app (`appInstallPreview`), deciding with the same `runsOnThisHost` check as
-   `installApp` and the merge (`install/installGate.ts`; required by
-   `appVersionChange` and `composeCatalog`), and the toast and Install from URL name the
-   version kept or installed (`appInstallMessage`). Activations of one app run
-   one at a time, after its startup load
+   *loadable* semantic version wins (`compareAppVersions`, after
+   `canLoadHere` in `useAppManager`: `compatibleHostVersions` and the origin
+   check activation applies, which exempts the default `apps.json`). An app
+   this host cannot run is never loaded, at startup or by its switch.
+   `installApp` updates an older installed version in place, keeps a newer or
+   equal one (only turning it on for an install link, or swapping it in when
+   an older module still runs after a Refresh), and returns what it did
+   (`AppInstallOutcome`). `AppInstallConfirmationDialog` says what confirming
+   will do to an installed app (`appInstallPreview` of `installPreview`, the
+   `AppManagerCommands` member that makes `installApp`'s decision without
+   installing), and the toast and Install from URL name the version kept or
+   installed (`appInstallMessage`). A running app's row names the version it
+   was loaded from (`AppStore.loadedEntries`), which a Refresh can make differ
+   from the catalog's. Activations of one app run one at a time, after its
+   startup load
 7. Design: `docs/design/module-federation/specifications/workspace-app-install-design.md`
    §7.5 (version upgrades), §8.5 (core apps) and
    `runtime-app-registration-specification.md` §8–§10

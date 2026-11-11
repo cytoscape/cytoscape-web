@@ -25,7 +25,7 @@ import { getAppSettingFromDb } from '../../db'
 import { mountApp, unmountApp } from './appLifecycle'
 import { useAppStore } from './AppStore'
 import { useMessageStore } from './MessageStore'
-import { appRegistry, loadedAppUrls, useAppManager } from './useAppManager'
+import { appRegistry, useAppManager } from './useAppManager'
 import { useWorkspaceStore } from './WorkspaceStore'
 
 // Stub the app-api/core barrel — its layout API transitively imports the
@@ -125,7 +125,7 @@ describe('useAppManager — install / uninstall', () => {
     mockIsCatalogEntryAllowed.mockReturnValue(true)
     mockIsHostCompatible.mockReturnValue(true)
     appRegistry.clear()
-    loadedAppUrls.clear()
+    useAppStore.setState({ loadedEntries: {} })
     // Hydrated workspace so addInstalledApp persists and the readiness gate
     // resolves immediately.
     useWorkspaceStore.getState().set({
@@ -571,7 +571,7 @@ describe('useAppManager — load failure reasons', () => {
     mockIsCatalogEntryAllowed.mockReturnValue(true)
     mockIsHostCompatible.mockReturnValue(true)
     appRegistry.clear()
-    loadedAppUrls.clear()
+    useAppStore.setState({ loadedEntries: {} })
     seedWorkspace([])
     useAppStore.setState({ loadStates: {}, loadErrors: {}, apps: {} })
     useAppStore.getState().setCatalog([])
@@ -722,7 +722,7 @@ describe('useAppManager — core apps', () => {
   /** Forget the session, as a page reload does; the workspace stays. */
   const resetSession = (): void => {
     appRegistry.clear()
-    loadedAppUrls.clear()
+    useAppStore.setState({ loadedEntries: {} })
     useAppStore.setState({
       apps: {},
       loadStates: {},
@@ -1090,7 +1090,7 @@ describe('useAppManager — install link versions', () => {
       },
     )
     appRegistry.clear()
-    loadedAppUrls.clear()
+    useAppStore.setState({ loadedEntries: {} })
     seedWorkspace([])
     useAppStore.setState({
       apps: {},
@@ -1116,7 +1116,7 @@ describe('useAppManager — install link versions', () => {
     expect(outcome).toEqual({ kind: 'update', from: '3.1.23', to: '3.2.0' })
     expect(catalogVersion()).toBe('3.2.0')
     expect(loadedFrom()).toBe(at('3.2.0').url)
-    expect(loadedAppUrls.get(ID)).toBe(at('3.2.0').url)
+    expect(useAppStore.getState().loadedEntries[ID]?.url).toBe(at('3.2.0').url)
     expect(mockUnmountApp).toHaveBeenCalledWith(
       expect.objectContaining({ url: at('3.1.23').url }),
       expect.any(Set),
@@ -1227,6 +1227,103 @@ describe('useAppManager — install link versions', () => {
     expect(installed()).toEqual([])
   })
 
+  // Review: Refresh leaves a running version alone (runtime spec §7.5), so a
+  // link to the version Refresh brought found it already installed and left
+  // the old code running.
+  it('runs the catalog version a link offers while an older one still runs', async () => {
+    mockObtainCatalogEntries.mockResolvedValue([at('1.0.0')])
+    const rendered = await renderManager()
+    await waitFor(() => expect(loadedFrom()).toBe(at('1.0.0').url))
+    mockObtainCatalogEntries.mockResolvedValue([at('2.0.0')])
+    await act(async () => {
+      await rendered.result.current.refreshCatalog()
+    })
+    expect(loadedFrom()).toBe(at('1.0.0').url)
+
+    const outcome = await install(rendered, at('2.0.0'))
+
+    expect(outcome).toEqual({ kind: 'same', version: '2.0.0' })
+    expect(loadedFrom()).toBe(at('2.0.0').url)
+    expect(useAppStore.getState().loadedEntries[ID]?.version).toBe('2.0.0')
+    expect(useAppStore.getState().apps[ID]?.status).toBe(AppStatus.Active)
+    // Turning it on records it as the manifest's, never as an App Store pin.
+    expect(installed().map((record) => record.source)).toEqual(['manifest'])
+  })
+
+  // Review: a user-set catalog may list an app's id at an origin this
+  // deployment does not allow, which the startup gate refuses to load. Ranking
+  // by version alone let that entry displace a loadable App Store install.
+  describe('a user-set catalog entry the origin check blocks', () => {
+    const blocked = (version: string): AppCatalogEntry => ({
+      ...at(version),
+      url: `https://blocked.example/${ID}/${version}/remoteEntry.js`,
+    })
+
+    beforeEach(() => {
+      mockGetAppSettingFromDb.mockImplementation(async (key: string) =>
+        key === 'manifestSource'
+          ? { type: 'url', url: 'https://catalog.example/apps.json' }
+          : undefined,
+      )
+      // As the real gate: the default catalog is exempt, the rest must come
+      // from an allowed origin.
+      mockIsCatalogEntryAllowed.mockImplementation(
+        (url: string, fromDefaultManifest: boolean) =>
+          fromDefaultManifest || !url.startsWith('https://blocked.example/'),
+      )
+    })
+
+    it('does not displace a loadable App Store install, even when newer', async () => {
+      seedWorkspace([
+        {
+          entry: at('1.0.0'),
+          status: AppStatus.Active,
+          source: 'appstore',
+          installedAt: '2026-11-11T00:00:00.000Z',
+        },
+      ])
+      mockObtainCatalogEntries.mockResolvedValue([blocked('2.0.0')])
+
+      await renderManager()
+
+      await waitFor(() => expect(loadedFrom()).toBe(at('1.0.0').url))
+      expect(catalogVersion()).toBe('1.0.0')
+      expect(useAppStore.getState().loadErrors[ID]).toBeUndefined()
+    })
+
+    it('is replaced by a loadable version from a link, even an older one', async () => {
+      mockObtainCatalogEntries.mockResolvedValue([blocked('2.0.0')])
+      const rendered = await renderManager()
+
+      const outcome = await install(rendered, at('1.0.0'))
+
+      expect(outcome).toEqual({ kind: 'update', from: '2.0.0', to: '1.0.0' })
+      expect(catalogVersion()).toBe('1.0.0')
+      expect(loadedFrom()).toBe(at('1.0.0').url)
+    })
+
+    it('is what the install dialog previews, too', async () => {
+      mockObtainCatalogEntries.mockResolvedValue([blocked('2.0.0')])
+      const rendered = await renderManager()
+
+      expect(rendered.result.current.installPreview(at('1.0.0'))).toEqual({
+        kind: 'update',
+        from: '2.0.0',
+        to: '1.0.0',
+      })
+    })
+  })
+
+  it('previews a link from an origin the install refuses as rejected', async () => {
+    mockObtainCatalogEntries.mockResolvedValue([at('1.0.0')])
+    const rendered = await renderManager()
+    mockIsAllowedOrigin.mockReturnValue(false)
+
+    expect(rendered.result.current.installPreview(at('2.0.0'))).toEqual({
+      kind: 'rejected',
+    })
+  })
+
   it('compares against the catalog even when called before it has loaded', async () => {
     let releaseCatalog: (entries: AppCatalogEntry[]) => void = () => {}
     mockObtainCatalogEntries.mockReturnValue(
@@ -1279,7 +1376,7 @@ describe('useAppManager — install link versions', () => {
     // The startup's 1.0.0 was mounted, then swapped for 1.1.0; the bookkeeping
     // names the version that is running.
     expect(loadedFrom()).toBe(at('1.1.0').url)
-    expect(loadedAppUrls.get(ID)).toBe(at('1.1.0').url)
+    expect(useAppStore.getState().loadedEntries[ID]?.url).toBe(at('1.1.0').url)
     expect(mockMountApp).toHaveBeenLastCalledWith(
       expect.objectContaining({ url: at('1.1.0').url }),
       expect.anything(),

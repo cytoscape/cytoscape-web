@@ -194,7 +194,7 @@ bootstrap publication. Highest value, highest setup.
 - **Playwright setup:** build the fixture remote, serve it on a fixed port (a
   second `webServer` entry or a `test.beforeAll` static server), and point the
   host's runtime apps config at its `remoteEntry.js` (via
-  `apps.local.json` / the `/apps.json` dev middleware in `vite.config.ts`, or a
+  `apps.local.json` / the `<base>apps.json` dev middleware in `vite.config.ts`, or a
   URL search-param add-app flow if one exists).
 - **New file:** `test/playwright/remote-app-load.spec.ts`
 - **Two versions (added with core apps, 11/2026):** `npm run build:test-remote`
@@ -265,7 +265,7 @@ the best value-per-effort and cover the most probable migration regressions.
   approval (CLAUDE.md §1, Dependency Changes). Confirm `ts-node` runs the
   script under the repo's ESM/`module` settings, or compile-on-the-fly if not.
 - **Runtime apps-config injection for Tier 3.2** — confirm the supported way to
-  register a remote at runtime (`apps.local.json`, the `/apps.json` middleware,
+  register a remote at runtime (`apps.local.json`, the `<base>apps.json` middleware,
   or an in-app "add app by URL" flow) so the fixture remote can be wired without
   hacking internals.
 - **The 26-entry frozen list** — confirm whether the raw `*Store` exposes are

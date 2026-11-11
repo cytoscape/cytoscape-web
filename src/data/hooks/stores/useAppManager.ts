@@ -45,13 +45,6 @@ import { useWorkspaceStore } from './WorkspaceStore'
 export const appRegistry = new Map<string, CyApp>()
 
 /**
- * The remote entry URL each module in `appRegistry` was loaded from. The App
- * Store publishes every version at its own URL, so a catalog URL that differs
- * from this one means the installed version changed under a running module.
- */
-export const loadedAppUrls = new Map<string, string>()
-
-/**
  * Command surface exposed by useAppManager.
  * UI components call these instead of manipulating AppStore directly.
  */
@@ -66,6 +59,11 @@ export interface AppManagerCommands {
     entry: AppCatalogEntry,
     opts?: { activate?: boolean },
   ) => Promise<AppInstallOutcome>
+  /**
+   * What `installApp` would do with this entry now, for the install dialog to
+   * promise: the same origin check and version decision, without installing.
+   */
+  installPreview: (entry: AppCatalogEntry) => AppInstallOutcome
   uninstallApp: (id: string) => Promise<void>
 }
 
@@ -148,6 +146,7 @@ export const useAppManager = (): AppManagerCommands => {
   const setCatalog = useAppStore((state) => state.setCatalog)
   const setLoadState = useAppStore((state) => state.setLoadState)
   const setLoadFailed = useAppStore((state) => state.setLoadFailed)
+  const setLoadedEntry = useAppStore((state) => state.setLoadedEntry)
   const storeSetManifestSource = useAppStore((state) => state.setManifestSource)
   const setStatus = useAppStore((state) => state.setStatus)
   const removeApp = useAppStore((state) => state.remove)
@@ -187,6 +186,26 @@ export const useAppManager = (): AppManagerCommands => {
   }
 
   /**
+   * True if this Cytoscape Web would load `entry`: it runs on this host version
+   * and passes the origin check activation applies (`isCatalogEntryAllowed`,
+   * which exempts the deployment's own default catalog). The catalog merge and
+   * the install decide with it, so neither picks a version that activation
+   * then refuses over one it would load (§7.5, §8.1).
+   */
+  const canLoadHere = (entry: AppCatalogEntry): boolean =>
+    runsOnThisHost(entry) &&
+    isCatalogEntryAllowed(
+      entry.url,
+      isFromDefaultManifest(
+        entry.id,
+        entry.url,
+        useAppStore.getState().manifestSource,
+      ),
+      appInstallAllowedOrigins,
+      allowsLocalhostAppsOn,
+    )
+
+  /**
    * Recompose the catalog (manifest ∪ workspace.installedApps) and write it
    * back. Used after install/uninstall so the change is immediately visible.
    */
@@ -195,7 +214,7 @@ export const useAppManager = (): AppManagerCommands => {
     const { entries, sources, manifestIds } = composeCatalog(
       manifestEntriesRef.current,
       installed,
-      runsOnThisHost,
+      canLoadHere,
     )
     setCatalog(entries, sources, manifestIds)
   }
@@ -408,7 +427,7 @@ export const useAppManager = (): AppManagerCommands => {
     // A version update (#810): the catalog now names a different remote entry
     // than the module in memory came from. Re-enabling that module would keep
     // the old version running until a reload, so retire it and load anew.
-    const loadedUrl = loadedAppUrls.get(id)
+    const loadedUrl = useAppStore.getState().loadedEntries[id]?.url
     if (
       currentLoadState === 'loaded' &&
       loadedUrl !== undefined &&
@@ -419,7 +438,7 @@ export const useAppManager = (): AppManagerCommands => {
         await unmountApp(previous, mountedApps.current)
       }
       appRegistry.delete(id)
-      loadedAppUrls.delete(id)
+      setLoadedEntry(id, undefined)
       currentLoadState = 'unloaded'
       logApp.info(
         `[useAppManager]: App "${id}" changed from ${loadedUrl} to ${catalogEntry.url}; reloading`,
@@ -462,7 +481,7 @@ export const useAppManager = (): AppManagerCommands => {
       )
       return
     }
-    loadedAppUrls.set(id, catalogEntry.url)
+    setLoadedEntry(id, catalogEntry)
 
     try {
       await activateAndMount(id)
@@ -514,7 +533,7 @@ export const useAppManager = (): AppManagerCommands => {
     const { entries, sources, manifestIds } = composeCatalog(
       manifestEntries,
       installedApps,
-      runsOnThisHost,
+      canLoadHere,
     )
     setCatalog(entries, sources, manifestIds)
     logApp.info(
@@ -530,25 +549,34 @@ export const useAppManager = (): AppManagerCommands => {
    * intent and the App Manager "Install from URL" both call this.
    *
    * The offered version is compared with the catalog's entry for the same id
-   * (§7.5, `appVersionChange`). A newer version replaces it, swapping the
-   * running module in place, and an app that was on stays on. The same or an
-   * older version leaves the installed one and its record alone; with
-   * `activate` it is only turned on.
+   * (§7.5, `appVersionChange`), ranking by what this Cytoscape Web can load
+   * (`canLoadHere`). A newer version replaces it, swapping the running module
+   * in place, and an app that was on stays on. The same or an older version
+   * leaves the installed one and its record alone; with `activate` it is
+   * turned on, or swapped in when an older module still runs after a Refresh.
+   * `installPreview` makes the same decision for the install dialog.
    *
    * @returns what the install did, for the caller to tell the user
    */
+  /** Whether an install may take `entry` at all (§9): its origin is allowed. */
+  const isInstallableOrigin = (entry: AppCatalogEntry): boolean =>
+    isAllowedOrigin(entry.url, appInstallAllowedOrigins, allowsLocalhostAppsOn)
+
+  const installPreview = (entry: AppCatalogEntry): AppInstallOutcome =>
+    isInstallableOrigin(entry)
+      ? appVersionChange(
+          entry,
+          useAppStore.getState().catalog[entry.id],
+          canLoadHere,
+        )
+      : { kind: 'rejected' }
+
   const installApp = async (
     entry: AppCatalogEntry,
     opts?: { activate?: boolean },
   ): Promise<AppInstallOutcome> => {
     // 1. Trust boundary (§9)
-    if (
-      !isAllowedOrigin(
-        entry.url,
-        appInstallAllowedOrigins,
-        allowsLocalhostAppsOn,
-      )
-    ) {
+    if (!isInstallableOrigin(entry)) {
       addMessage({
         message: `Cannot install "${entry.name ?? entry.id}": its URL is not from an allowed origin.`,
         duration: 5000,
@@ -564,9 +592,14 @@ export const useAppManager = (): AppManagerCommands => {
     //    catalog is composed by the init pass, which an install link can
     //    outrun.
     await catalogReady.promise
-    const { catalog, apps: currentApps } = useAppStore.getState()
+    const {
+      catalog,
+      apps: currentApps,
+      loadStates,
+      loadedEntries,
+    } = useAppStore.getState()
     const current = catalog[entry.id]
-    const change = appVersionChange(entry, current, runsOnThisHost)
+    const change = appVersionChange(entry, current, canLoadHere)
     const keepInstalled =
       current !== undefined &&
       (change.kind === 'same' ||
@@ -590,7 +623,14 @@ export const useAppManager = (): AppManagerCommands => {
       logApp.info(
         `[useAppManager]: Kept installed "${entry.id}" ${current.version ?? ''} over offered ${entry.version ?? entry.url} (${change.kind})`,
       )
-      if (activate && !wasActive) {
+      // A Refresh leaves a running app on the version it loaded (runtime spec
+      // §7.5), so the kept catalog entry may not be what runs: activating
+      // swaps it in.
+      const runsAnotherVersion =
+        loadStates[entry.id] === 'loaded' &&
+        loadedEntries[entry.id] !== undefined &&
+        loadedEntries[entry.id].url !== current.url
+      if (activate && (!wasActive || runsAnotherVersion)) {
         await activateApp(entry.id)
       }
       return change
@@ -645,7 +685,6 @@ export const useAppManager = (): AppManagerCommands => {
     useWorkspaceStore.getState().removeInstalledApp(id)
     removeApp(id)
     appRegistry.delete(id)
-    loadedAppUrls.delete(id)
     recomposeCatalog()
     logApp.info(`[useAppManager]: Uninstalled app "${id}"`)
   }
@@ -657,7 +696,6 @@ export const useAppManager = (): AppManagerCommands => {
   const removeOrphan = (id: string): void => {
     removeApp(id)
     appRegistry.delete(id)
-    loadedAppUrls.delete(id)
     logApp.info(`[useAppManager]: Orphan app "${id}" removed`)
   }
 
@@ -698,7 +736,7 @@ export const useAppManager = (): AppManagerCommands => {
         const { entries, sources, manifestIds } = composeCatalog(
           manifestEntries,
           installedApps,
-          runsOnThisHost,
+          canLoadHere,
         )
         setCatalog(entries, sources, manifestIds)
         logApp.info(
@@ -862,7 +900,7 @@ export const useAppManager = (): AppManagerCommands => {
                 )
                 continue
               }
-              loadedAppUrls.set(id, catalog[id].url)
+              setLoadedEntry(id, catalog[id])
               try {
                 await activateAndMount(id)
                 setLoadState(id, 'loaded')
@@ -952,6 +990,7 @@ export const useAppManager = (): AppManagerCommands => {
     setManifestSource: cmdSetManifestSource,
     removeOrphan,
     installApp,
+    installPreview,
     uninstallApp,
   }
 }

@@ -26,24 +26,27 @@ export const compareAppVersions = (
  * What installing `offered` would do to `installed`, the catalog's current
  * entry for the same id. See `AppVersionChange`.
  *
- * Compatibility comes first: an offer this host cannot run never replaces an
- * installed entry it can run, and one it can run replaces one it cannot,
- * whatever their versions. Versions decide only between two entries that
- * both run here, or both do not.
+ * Loadability comes first: an offer this Cytoscape Web cannot load never
+ * replaces an installed entry it can, and one it can load replaces one it
+ * cannot, whatever their versions. Versions decide only between two entries
+ * that both load here, or both do not.
  *
- * @param isCompatible Whether this Cytoscape Web can run an entry
- *   (`compatibleHostVersions`; `runsOnThisHost` in the host). Required, so no
- *   caller can decide without it: the install dialog once did, and promised
- *   the opposite of what the install did.
+ * @param canLoad Whether this Cytoscape Web would load an entry: it runs on
+ *   this host version (`compatibleHostVersions`) and passes the origin check
+ *   (`canLoadHere` in useAppManager). Required, so no caller can decide
+ *   without it: the install dialog once did, and promised the opposite of
+ *   what the install did. Callers refuse an offer from a disallowed origin
+ *   before asking, so an offer that cannot load is one this host version
+ *   cannot run, and `incompatible` names its range.
  */
 export const appVersionChange = (
   offered: AppCatalogEntry,
   installed: AppCatalogEntry | undefined,
-  isCompatible: (entry: AppCatalogEntry) => boolean,
+  canLoad: (entry: AppCatalogEntry) => boolean,
 ): AppVersionChange => {
   if (installed === undefined) return { kind: 'new' }
-  const offeredRuns = isCompatible(offered)
-  const installedRuns = isCompatible(installed)
+  const offeredRuns = canLoad(offered)
+  const installedRuns = canLoad(installed)
   if (!offeredRuns && installedRuns && offered.url !== installed.url) {
     return {
       kind: 'incompatible',

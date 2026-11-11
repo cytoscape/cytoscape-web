@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 
+import { AppCatalogEntry } from '../../AppModel/AppCatalogEntry'
 import { AppStatus } from '../../AppModel/AppStatus'
 import { CyApp } from '../../AppModel/CyApp'
 import { ServiceApp } from '../../AppModel/ServiceApp'
@@ -12,10 +13,12 @@ import {
   AppState,
   refreshService,
   clearCurrentTask,
+  removeApp,
   removeService,
   restore,
   setCatalog,
   setCurrentTask,
+  setLoadedEntry,
   setLoadFailed,
   setStatus,
   updateInputColumn,
@@ -32,6 +35,7 @@ const createDefaultState = (): AppState => {
     manifestIds: [],
     loadStates: {},
     loadErrors: {},
+    loadedEntries: {},
     manifestSource: undefined,
   }
 }
@@ -613,6 +617,40 @@ describe('AppStoreImpl', () => {
 
       expect(refreshed.loadErrors.a).toBeUndefined()
       expect(refreshed.loadStates.a).toBeUndefined()
+    })
+  })
+
+  describe('setLoadedEntry', () => {
+    const v1: AppCatalogEntry = {
+      id: 'a',
+      url: 'https://apps.cytoscape.org/web/a/1.0.0/remoteEntry.js',
+      author: 'Test',
+      version: '1.0.0',
+    }
+
+    it('records the entry a module was loaded from, and clears it', () => {
+      const loaded = setLoadedEntry(createDefaultState(), 'a', v1)
+      expect(loaded.loadedEntries.a).toEqual(v1)
+
+      const cleared = setLoadedEntry(loaded, 'a', undefined)
+      expect(cleared.loadedEntries.a).toBeUndefined()
+    })
+
+    it('outlives a catalog refresh, which does not touch running apps', () => {
+      const loaded = setLoadedEntry(createDefaultState(), 'a', v1)
+      const refreshed = setCatalog(loaded, [
+        {
+          ...v1,
+          version: '2.0.0',
+          url: 'https://apps.cytoscape.org/web/a/2.0.0/remoteEntry.js',
+        },
+      ])
+      expect(refreshed.loadedEntries.a).toEqual(v1)
+    })
+
+    it('is cleared when the app is removed', () => {
+      const loaded = setLoadedEntry(createDefaultState(), 'a', v1)
+      expect(removeApp(loaded, 'a').loadedEntries.a).toBeUndefined()
     })
   })
 })

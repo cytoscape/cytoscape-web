@@ -1,5 +1,6 @@
 # Runtime App Registration Specification
 
+- **Rev. 12 (11/11/2026): Jing Chen and Claude** — The entry each loaded module came from is store state (`AppStore.loadedEntries`, replacing the module-level `loadedAppUrls`), so App Manager names the running version while a refresh lists another; an install link to the version a refresh brought swaps it in (§7.5 Refresh Behavior, §9.6)
 - **Rev. 11 (11/11/2026): Jing Chen and Claude** — Refresh and compatibility: a running app keeps its switch when a refresh brings a version the host cannot run, and a refresh retires recorded `incompatible-host` failures (§7.5 Refresh Behavior, §11.2)
 - **Rev. 10 (11/11/2026): Jing Chen and Claude** — Overview, goals, startup responsibilities, the Step 4 verification and the startup-footprint rule now state the core-app and compatibility policy of §8.1; App Manager derives `incompatible-host` for every row (§11.2)
 - **Rev. 9 (11/11/2026): Jing Chen and Claude** — The in-place version update (§9.6) is verified end to end with two builds of the fixture app whose code differs
@@ -802,6 +803,11 @@ Effect on already-loaded apps:
   app manager UI, these apps are shown as session-only entries with Disable as
   the only available action (they cannot be re-enabled since they are no
   longer in the catalog). See the `No` / `loaded` row in Section 11.2.
+- **The row names the running version.** App Manager shows the version of
+  the entry a running module was loaded from (`AppStore.loadedEntries`), not
+  the refreshed entry's, until the app is turned off. Turning it off and on,
+  or confirming an install link to the refreshed version, swaps the new
+  version in (§9.6; workspace-app-install-design.md §7.5).
 - **A running app whose new entry cannot run on this host** (a refresh
   offering a version with a `compatibleHostVersions` the host does not meet,
   while an older compatible version is loaded and active) keeps running and
@@ -1121,9 +1127,9 @@ The orchestrator uses `loadStates` to decide the re-enable path:
 - `loaded` → skip `loadRemoteApp`, reuse `appRegistry` entry
 - `unloaded` or `failed` → call `loadRemoteApp` (full fetch)
 
-A version update is the exception (#810). `useAppManager` records the remote
-entry URL each module was loaded from (`loadedAppUrls`). When the catalog entry
-names a different URL — an App Store install of a newer version — `activateApp`
+A version update is the exception (#810). `useAppManager` records the catalog
+entry each module was loaded from (`AppStore.loadedEntries`, session-local).
+When the catalog entry names a different URL — an App Store install of a newer version — `activateApp`
 unmounts the running module, drops it from `appRegistry`, and takes the full
 fetch path. The App Store publishes each version at its own URL, so a changed
 URL is a changed version. A version update at an unchanged URL is not detected:
@@ -1143,7 +1149,7 @@ and `activateApp` runs after whatever is queued for the same id. An update
 confirmed while the startup load of the old version is still in flight
 therefore starts from the module that load left, and the version-update path
 above swaps it. Without the queue both versions were fetched, whichever
-finished first was mounted, and `appRegistry`/`loadedAppUrls` could name the
+finished first was mounted, and `appRegistry`/`loadedEntries` could name the
 other one. Which version an install keeps or replaces is decided before this,
 by semver (workspace-app-install-design.md §7.5).
 

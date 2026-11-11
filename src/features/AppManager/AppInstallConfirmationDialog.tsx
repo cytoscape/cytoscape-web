@@ -16,11 +16,11 @@ import { CyDialog } from '@/components/CyDialog'
 import { useAppStore } from '@/data/hooks/stores/AppStore'
 import type { AppCatalogEntry } from '@/models/AppModel/AppCatalogEntry'
 import { AppType } from '@/models/AppModel/AppType'
+import type { AppInstallOutcome } from '@/models/AppModel/AppVersionChange'
 import { appInstallPreview } from '@/models/AppModel/impl/appInstallMessage'
-import { appVersionChange } from '@/models/AppModel/impl/appVersion'
-import { runsOnThisHost } from './install/installGate'
 import type { PendingAppInstall } from '@/models/AppModel/PendingAppInstall'
 import { pendingInstallName } from '@/models/AppModel/PendingAppInstall'
+import { useAppManagerCommands } from './AppManagerCommandsContext'
 
 interface AppInstallConfirmationDialogProps {
   /** Apps the URL asked to install. The dialog is hidden when empty. */
@@ -59,23 +59,19 @@ const descriptionOf = (pending: PendingAppInstall): string => {
 
 /**
  * What confirming does to a React app the catalog already has: updates it,
- * keeps a newer or compatible installed version, or finds the same version
- * (§7.5). Decided with the same compatibility check `installApp` uses, so the
- * dialog promises what the install does.
+ * keeps a newer or loadable installed version, or finds the same version
+ * (§7.5). Asked of the App Manager's `installPreview`, which decides with
+ * `installApp`'s own checks, so the dialog promises what the install does. An
+ * app the install will refuse gets no note; the install says why.
  */
 const versionNoteOf = (
   pending: PendingAppInstall,
-  catalog: Record<string, AppCatalogEntry>,
-): string | undefined =>
-  pending.type === AppType.Client
-    ? appInstallPreview(
-        appVersionChange(
-          pending.entry,
-          catalog[pending.entry.id],
-          runsOnThisHost,
-        ),
-      )
-    : undefined
+  installPreview: (entry: AppCatalogEntry) => AppInstallOutcome,
+): string | undefined => {
+  if (pending.type !== AppType.Client) return undefined
+  const outcome = installPreview(pending.entry)
+  return outcome.kind === 'rejected' ? undefined : appInstallPreview(outcome)
+}
 
 /**
  * Asks the user to confirm apps an `?installApp=` link wants to add.
@@ -92,7 +88,13 @@ export const AppInstallConfirmationDialog = ({
   onConfirm,
   onCancel,
 }: AppInstallConfirmationDialogProps): JSX.Element => {
-  const catalog = useAppStore((state) => state.catalog)
+  const { installPreview } = useAppManagerCommands()
+  // installPreview reads the catalog when called. Subscribing re-renders the
+  // notes when it changes, as when startup finishes composing it.
+  useAppStore((state) => state.catalog)
+  const versionNotes = new Map(
+    pending.map((item) => [item.url, versionNoteOf(item, installPreview)]),
+  )
   return (
     <CyDialog
       data-testid="app-install-confirmation-dialog"
@@ -148,13 +150,13 @@ export const AppInstallConfirmationDialog = ({
                 secondary={
                   <Box>
                     {item.type === AppType.Client &&
-                      versionNoteOf(item, catalog) !== undefined && (
+                      versionNotes.get(item.url) !== undefined && (
                         <Typography
                           variant="body2"
                           color="info.main"
                           data-testid={`app-install-version-${item.entry.id}`}
                         >
-                          {versionNoteOf(item, catalog)}
+                          {versionNotes.get(item.url)}
                         </Typography>
                       )}
                     {descriptionOf(item) !== '' && (

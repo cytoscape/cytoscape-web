@@ -40,6 +40,7 @@ export interface AppState {
   manifestIds: string[]
   loadStates: Record<string, AppLoadState>
   loadErrors: Record<string, AppLoadFailure>
+  loadedEntries: Record<string, AppCatalogEntry>
   manifestSource?: ManifestSource
 }
 
@@ -420,6 +421,24 @@ export const setLoadFailed = (
 }
 
 /**
+ * Record the catalog entry a loaded module came from, or clear it with
+ * `undefined` when the module is dropped from memory.
+ */
+export const setLoadedEntry = (
+  state: AppState,
+  id: string,
+  entry: AppCatalogEntry | undefined,
+): AppState => {
+  const loadedEntries = { ...state.loadedEntries }
+  if (entry === undefined) {
+    delete loadedEntries[id]
+  } else {
+    loadedEntries[id] = entry
+  }
+  return { ...state, loadedEntries }
+}
+
+/**
  * Set or clear the manifest source
  */
 export const setManifestSource = (
@@ -442,10 +461,13 @@ export const removeApp = (state: AppState, id: string): AppState => {
   delete restLoadStates[id]
   const restLoadErrors = { ...state.loadErrors }
   delete restLoadErrors[id]
+  const restLoadedEntries = { ...state.loadedEntries }
+  delete restLoadedEntries[id]
   return {
     ...state,
     apps: restApps,
     loadStates: restLoadStates,
     loadErrors: restLoadErrors,
+    loadedEntries: restLoadedEntries,
   }
 }

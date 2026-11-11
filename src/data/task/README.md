@@ -74,12 +74,14 @@ Turning a core app off writes an `inactive` record to the workspace, which is
 what keeps it off at the next startup.
 
 **Installing:** `installApp` compares the offered entry with the catalog's
-entry for the same id: compatibility with this host first
-(`runsOnThisHost`), then version, as semver. A newer version that runs here
-replaces the installed one in place (a running app stays on); the same or an
-older version is kept, and only turned on for an install link; an older
-version that runs replaces a newer one that cannot. It returns what it did
-(`AppInstallOutcome`). It waits for the catalog to be
+entry for the same id: whether this Cytoscape Web can load each first
+(`canLoadHere`: host version and the origin check), then version, as semver. A
+newer version that loads here replaces the installed one in place (a running
+app stays on); the same or an older version is kept, and only turned on for an
+install link (or swapped in, when an older module still runs after a
+Refresh); an older version that loads replaces a newer one that cannot. It
+returns what it did (`AppInstallOutcome`); `installPreview` returns the same
+decision without installing, for the install dialog. It waits for the catalog to be
 composed first, and activations of one app run one at a time, after its
 startup load.
 
@@ -136,7 +138,9 @@ The deployment's app catalog. The build emits it at the root of `dist`
 from `<base>apps.json`, under the `urlBaseName` in `config.json`
 (`DEFAULT_MANIFEST_URL` in `src/app-api/constants.ts`). A deployment's build
 script copies its own list over this file; the dev server serves
-`src/assets/apps.local.json` instead.
+`src/assets/apps.local.json` instead, at the same `<base>apps.json` path. Both
+sides build that path with `buildDefaultManifestUrl` (`src/utils/baseUrl.ts`),
+so a dev server with a base such as `/cytoscape/` serves the local list.
 
 Every entry is a **core app**: it is on when Cytoscape Web starts, unless the
 current workspace records that the user turned it off. See

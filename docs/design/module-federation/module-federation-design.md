@@ -1,5 +1,7 @@
 # Module Federation App API Design and Priorities
 
+**Rev. 8 (11/11/2026): Jing Chen and Claude — version precedence ranks by what the host can load, origin check included (§1.4)**
+
 **Rev. 7 (11/11/2026): Jing Chen and Claude — core apps, version and compatibility precedence (§1.4)**
 
 **Rev. 6 (7/28/2026): current App API, error catalogs, and federation toolchain reconciled**
@@ -209,8 +211,8 @@ runtime app discovery.
   and unknown apps remain visible in the app manager but consume no network or
   memory resources ([workspace-app-install-design.md §8.5](specifications/workspace-app-install-design.md#85-core-apps-on-by-default))
 - **Version precedence:** when the catalog and an install carry the same app,
-  the newer *compatible* semantic version wins, in the catalog merge and on
-  install; an install updates an older version in place, swapping the running
+  the newer *loadable* semantic version wins (it runs on this host and passes
+  the origin check), in the catalog merge and on install; an install updates an older version in place, swapping the running
   module without a reload ([workspace-app-install-design.md §7.5](specifications/workspace-app-install-design.md#75-version-upgrades))
 - **Two-layer architecture:** `loadRemoteApp(id, url)` is a pure async
   per-app loader; `useAppManager` is the orchestrator that coordinates

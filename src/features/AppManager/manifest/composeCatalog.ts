@@ -7,10 +7,10 @@ import { AppSource, InstalledApp } from '../../../models/AppModel/InstalledApp'
  * apps (workspace-app-install-design.md §8.1).
  *
  * Union by `id`. On collision:
- * - for `source: 'appstore' | 'snapshot'` the newer *compatible* version
- *   wins. An entry this host can run (`isCompatible`) beats one it cannot,
- *   whatever the versions. Between two that both run, or both do not, the
- *   newer semver wins: an App Store install newer than the manifest's entry
+ * - for `source: 'appstore' | 'snapshot'` the newer *loadable* version
+ *   wins. An entry this Cytoscape Web can load (`canLoad`) beats one it
+ *   cannot, whatever the versions. Between two that both load, or both do
+ *   not, the newer semver wins: an App Store install newer than the manifest's entry
  *   replaces it, and a manifest entry newer than the install replaces the
  *   install. Equal versions keep the manifest entry. When either version is
  *   missing or not semver the install wins, pinning its immutable URL as
@@ -25,16 +25,19 @@ import { AppSource, InstalledApp } from '../../../models/AppModel/InstalledApp'
  * tag, so `sources` alone cannot answer "does the manifest still ship this
  * app?" — which is what removability turns on (§12.3).
  *
- * @param isCompatible whether this Cytoscape Web can run an entry
- * (`compatibleHostVersions`; `runsOnThisHost` in the host). Required, so the
- * merge and the install decide with the same check.
+ * @param canLoad whether this Cytoscape Web would load an entry: it runs on
+ * this host version and passes the origin check (`canLoadHere` in
+ * useAppManager). Required, so the merge and the install decide with the
+ * same check. Without the origin check, a user-set catalog listing an app's
+ * id at a disallowed origin displaced a loadable App Store install with an
+ * entry startup then refused to load.
  * @returns the merged entries, a parallel `sources` map keyed by id, and the
  * ids present in the manifest.
  */
 export function composeCatalog(
   manifestEntries: AppCatalogEntry[],
   installedApps: InstalledApp[],
-  isCompatible: (entry: AppCatalogEntry) => boolean,
+  canLoad: (entry: AppCatalogEntry) => boolean,
 ): {
   entries: AppCatalogEntry[]
   sources: Record<string, AppSource>
@@ -65,13 +68,13 @@ export function composeCatalog(
 
     // Collision. A 'manifest' record only mirrors the manifest, so the
     // manifest entry already in place wins. An appstore/snapshot install
-    // competes: one this host can run beats one it cannot, and otherwise the
+    // competes: one this host can load beats one it cannot, and otherwise the
     // newer version wins, a tie keeps the manifest's, and an install whose
     // version cannot be compared stays pinned.
     if (installed.source === 'appstore' || installed.source === 'snapshot') {
       const manifestEntry = entryById.get(id) as AppCatalogEntry
-      const installedRuns = isCompatible(installed.entry)
-      const manifestRuns = isCompatible(manifestEntry)
+      const installedRuns = canLoad(installed.entry)
+      const manifestRuns = canLoad(manifestEntry)
       const order = compareAppVersions(
         installed.entry.version,
         manifestEntry.version,

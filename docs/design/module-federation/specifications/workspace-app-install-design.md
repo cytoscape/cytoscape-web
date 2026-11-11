@@ -13,6 +13,13 @@
 > `mountApp`) are reused; this design adds a persisted, workspace-scoped install
 > layer on top.
 
+- Rev. 9 (11/11/2026): Jing Chen and Claude (Opus 5.5) — Versions are ranked
+  by what this Cytoscape Web can *load*: host version plus the origin check
+  (`canLoadHere`), so a user-set catalog's entry at a disallowed origin no
+  longer displaces a loadable install (§7.5, §8.1, §8.2); the dialog asks
+  `installPreview`, which makes `installApp`'s own decision (§7.5); a link to
+  the version a Refresh brought swaps it in while an older one still runs, and
+  the row names the running version (§7.5, §8.5, §15)
 - Rev. 8 (11/11/2026): Jing Chen and Claude (Opus 5.5) — App Manager derives
   `incompatible-host` for every row from the entry, so an app installed off
   is explained too, while a running app keeps its switch and a refresh
@@ -93,9 +100,10 @@
   default. They load at startup unless the workspace records that the user
   turned them off, and only that choice is written down (§8.5).
 - **Versions:** when `apps.json` and an install carry the same app,
-  compatibility comes first and version second. An entry this host can run
-  (`compatibleHostVersions`) beats one it cannot; between two that both run,
-  or both do not, the newer semantic version wins, whichever side it is on. An
+  loadability comes first and version second. An entry this Cytoscape Web can
+  load (it runs on this host, `compatibleHostVersions`, and passes the origin
+  check) beats one it cannot; between two that both load, or both do not, the
+  newer semantic version wins, whichever side it is on. An
   install updates an older version in place and keeps a newer one, and an
   older version that runs replaces a newer one that cannot (§7.5).
 - **One source of truth:** manifest apps also get an `InstalledApp` record
@@ -463,17 +471,20 @@ Versions are compared as semantic versions (`compareAppVersions`, the `semver`
 package): 3.1.2 is newer than 3.1.1, 3.2.0 is newer than 3.1.23, and a
 pre-release sorts before its release.
 
-Compatibility is decided first: the newer *compatible* version wins. An entry
+Loadability is decided first: the newer *loadable* version wins. An entry
 whose `compatibleHostVersions` excludes this Cytoscape Web never replaces one
 that this host can run, and one it can run replaces one it cannot, whatever
-their versions. Versions decide between two entries that both run here, or
-both do not.
+their versions. The origin check activation applies counts the same way: an
+entry from a user-set catalog at an origin this deployment does not allow
+(§9; the deployment's own `apps.json` is exempt) never displaces an install
+that loads. Versions decide between two entries that both load here, or both
+do not.
 
 | Offered vs. catalog | `installApp` does | Returns |
 | --- | --- | --- |
 | No entry for the id | Installs it, as before | `new` |
 | Newer, or either version missing or not semver | Writes the `appstore` record and recomposes, so the offered entry wins (§8.1). An app that was running stays on and is swapped to the new version in place (`activateApp`'s version-update path) | `update` |
-| Same version, or the same remote entry URL | Leaves the record and catalog alone; turns the app on when `activate` is set | `same` |
+| Same version, or the same remote entry URL | Leaves the record and catalog alone; turns the app on when `activate` is set. If an older module still runs because a Refresh brought this version (runtime spec §7.5), activating swaps this one in | `same` |
 | Older | Leaves the newer version and its record alone; turns the app on when `activate` is set | `older` |
 | Cannot run on this host, while the installed one can | Leaves the installed version, running or not, and its record alone; turns it on when `activate` is set. "NetworkAnalyzer 2.0.0 needs Cytoscape Web >=2.0.0; kept 1.0.0" | `incompatible` |
 
@@ -494,13 +505,19 @@ confirming will do to an installed app ("Updates the installed version 1.0.0 to
 the installed one cannot run here, is worded as a replacement: "Replaces the
 installed version 2.0.0, which cannot run on this Cytoscape Web, with 1.0.0".
 
-The dialog, `installApp` and the catalog merge decide with one compatibility
-check, `runsOnThisHost` (`src/features/AppManager/install/installGate.ts`).
-`appVersionChange` and `composeCatalog` take it as a required parameter. It
-used to default to "every entry is compatible", and the dialog, which did not
-pass it, promised the opposite of what the install did whenever compatibility
-decided: an update to an incompatible v2 that the install refused, or keeping
-an incompatible v2 that the install replaced. The toast after confirming says "Updated NetworkAnalyzer
+The dialog, `installApp` and the catalog merge decide with one check,
+`canLoadHere` in `useAppManager`: `runsOnThisHost`
+(`src/features/AppManager/install/installGate.ts`) and the origin check
+activation applies (`isCatalogEntryAllowed`). `appVersionChange` and
+`composeCatalog` take it as a required parameter. It used to default to "every
+entry is compatible", and the dialog, which did not pass it, promised the
+opposite of what the install did whenever compatibility decided: an update to
+an incompatible v2 that the install refused, or keeping an incompatible v2
+that the install replaced. The dialog now makes no decision of its own: it
+asks `installPreview` (an `AppManagerCommands` member), which runs
+`installApp`'s origin check and version decision without installing. An offer
+from a disallowed origin previews as `rejected` and gets no note; the install
+states the refusal. The toast after confirming says "Updated NetworkAnalyzer
 to 1.1.0", or "NetworkAnalyzer 1.1.0 is already installed; kept it instead of
 1.0.0" (`appInstallMessage`). Install from URL shows the second kind of message
 under its field.
@@ -537,8 +554,11 @@ flowchart TD
 ```
 
 Merge rule: union by `id`. On a collision with a `source === 'appstore' |
-'snapshot'` record the **newer compatible version wins**. An entry this host can
-run (`compatibleHostVersions`) beats one it cannot, whatever the versions.
+'snapshot'` record the **newer loadable version wins**. An entry this
+Cytoscape Web can load beats one it cannot, whatever the versions: it runs on
+this host (`compatibleHostVersions`) and passes the origin check (§9), so a
+user-set catalog entry at a disallowed origin, which startup would refuse to
+load, never displaces a loadable install.
 Otherwise the newer semantic version wins: an install newer than
 the manifest's entry replaces it, and a manifest entry newer than the install
 replaces the install (§7.5). Equal versions keep the manifest entry. When either
@@ -561,8 +581,8 @@ that rebuilds the catalog, not only at startup:
 | Manifest source change | `AppSettingsDialog` → `setManifestSource()` → `refreshCatalog()` |
 
 Centralize the merge in one helper,
-`composeCatalog(manifestEntries, workspace.installedApps, runsOnThisHost)`,
-shared by all three paths. The compatibility check is a required argument, so
+`composeCatalog(manifestEntries, workspace.installedApps, canLoadHere)`,
+shared by all three paths. The loadability check is a required argument, so
 every path ranks entries the same way as the install and its dialog (§7.5); otherwise a manual Refresh silently drops installed apps from the
 available list until the next reload.
 
@@ -657,7 +677,8 @@ session from it before the auto-load pass.
   startup checks only the apps it would load, so an app installed off, or
   with an inactive record, would otherwise keep a switch and no reason. Two
   Refresh cases: an app still running an older compatible version keeps its
-  switch until turned off (the row goes by the version in memory), and a
+  switch until turned off (the row goes by the version in memory, and names
+  it: `AppStore.loadedEntries` holds the entry each module came from), and a
   refresh to a compatible version makes the app available at once, because
   `setCatalog` retires recorded incompatibilities
   (runtime-app-registration-specification.md §7.5).
@@ -1145,6 +1166,12 @@ restore-after-reload defect (P1–P3).
   offering such a version keeps the installed compatible version running.
 - The install dialog promises what the install does in both compatibility
   cases: keeping a working v1 over an incompatible v2, and replacing an
-  incompatible v2 with a working v1.
+  incompatible v2 with a working v1. It shows `installPreview`, `installApp`'s
+  own decision.
+- A user-set catalog listing an installed app's id at a disallowed origin does
+  not displace the install, even with a newer version; a link replaces such an
+  entry with a loadable one, even an older one.
+- After a Refresh brings a version while an older one keeps running, the row
+  names the running version, and a link to the new version swaps it in.
 - After an in-place update the new version's code runs, not only its URL
   (`core-apps.spec.ts`, two builds of the fixture app).

@@ -393,18 +393,21 @@ test.describe('catalog Refresh', () => {
       compatibleHostVersions: '>=999.0.0',
     })
     await openAppManager(page)
+    const refreshed = page.waitForResponse('**/apps.json')
     await page.getByTestId('app-settings-refresh-button').click()
-    await expect(
-      page.locator('[data-testid="app-settings-dialog"]'),
-    ).toContainText('v2.0.0')
+    await refreshed
 
-    // 3. Version 1 still runs, and its switch can turn it off
+    // 3. Version 1 still runs: its row names it, and its switch turns it off
+    const version = page.getByTestId(`app-version-${APP_ID}`)
+    await expect(version).toHaveText('v1.0.0')
     const toggle = page.locator(`[data-testid="app-toggle-${APP_ID}"]`)
     await expect(toggle.locator('input')).toBeChecked()
     await toggle.click()
     await expect(marker).toHaveCount(0)
 
-    // 4. Off, it is explained like any app this host cannot run
+    // 4. Off, the row goes by version 2, explained like any app this host
+    //    cannot run
+    await expect(version).toHaveText('v2.0.0')
     await expect(
       page.locator(`[data-testid="app-failure-${APP_ID}"]`),
     ).toContainText('Needs Cytoscape Web >=999.0.0')
@@ -517,6 +520,15 @@ test.describe('when a core app cannot run', () => {
         json: [{ ...fixture, compatibleHostVersions: '>=999.0.0' }],
       })
     })
+    // The marker appears only on mount, after the code is fetched, so watch
+    // the fetch itself: startup must not even download it.
+    const fixtureEntryRequests: string[] = []
+    page.on('request', (request) => {
+      const url = new URL(request.url())
+      if (url.port === '4191' && url.pathname.endsWith('/remoteEntry.js')) {
+        fixtureEntryRequests.push(request.url())
+      }
+    })
 
     // 2. Open Cytoscape Web
     await gotoAndWaitReady(page)
@@ -530,7 +542,8 @@ test.describe('when a core app cannot run', () => {
       page.locator(`[data-testid="app-toggle-${APP_ID}"]`),
     ).toHaveCount(0)
 
-    // 4. Its code never ran
+    // 4. Its code was never fetched, let alone run
+    expect(fixtureEntryRequests).toEqual([])
     await expect(page.locator('[data-testid="remote-app-marker"]')).toHaveCount(
       0,
     )

@@ -390,6 +390,44 @@ describe('AppListPanel — load failure reasons', () => {
       expect(cmds.deactivateApp).toHaveBeenCalledWith('future')
     })
 
+    // Review: the row named the refreshed entry's version while the older one
+    // kept running.
+    it('shows the version that is running, not the one a refresh brought', () => {
+      const running = entry('refreshed')
+      useAppStore.getState().setCatalog(
+        [
+          {
+            ...running,
+            version: '2.0.0',
+            url: 'https://apps.cytoscape.org/web/refreshed/2.0.0/remoteEntry.js',
+          },
+        ],
+        { refreshed: 'manifest' },
+        ['refreshed'],
+      )
+      useAppStore.setState({
+        apps: {
+          refreshed: {
+            id: 'refreshed',
+            name: 'refreshed app',
+            status: AppStatus.Active,
+          } as any,
+        },
+        loadStates: { refreshed: 'loaded' },
+        loadErrors: {},
+        loadedEntries: { refreshed: running },
+      })
+      render(
+        <AppManagerCommandsProvider value={commands()}>
+          <AppListPanel />
+        </AppManagerCommandsProvider>,
+      )
+
+      expect(screen.getByTestId('app-version-refreshed').textContent).toBe(
+        'v1.0.0',
+      )
+    })
+
     it('offers the switch again once a refresh brings a compatible version', () => {
       useAppStore
         .getState()

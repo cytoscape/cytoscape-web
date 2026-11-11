@@ -34,6 +34,8 @@ All notable changes to Cytoscape Web are documented here.
   leaves the old version running, or the app manager tracking the wrong one
 - The app catalog is fetched fresh on every load. Served without Cache-Control, it could
   be reused from the browser cache after a site shipped a new `apps.json`
+- After Refresh brings a new version of an app that is on, Manage Apps shows the version
+  still running, not the new one
 
 ## [1.1.1] — 2026-10-28
 

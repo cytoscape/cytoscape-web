@@ -122,6 +122,9 @@ export const AppListPanel = () => {
   const loadErrors: Record<string, AppLoadFailure> = useAppStore(
     (state) => state.loadErrors,
   )
+  const loadedEntries: Record<string, AppCatalogEntry> = useAppStore(
+    (state) => state.loadedEntries,
+  )
   const { activateApp, deactivateApp, retryApp, removeOrphan, uninstallApp } =
     useAppManagerCommands()
 
@@ -152,7 +155,12 @@ export const AppListPanel = () => {
       id: entry.id,
       name: entry.name ?? entry.id,
       description: entry.description ?? app?.description,
-      version: entry.version ?? app?.version,
+      // A running app names the version it was loaded from: Refresh can list
+      // another while that one keeps running (runtime spec §7.5).
+      version:
+        (running ? loadedEntries[entry.id]?.version : undefined) ??
+        entry.version ??
+        app?.version,
       author: entry.author,
       inCatalog: true,
       loadState: loadStates[entry.id],
@@ -243,7 +251,11 @@ export const AppListPanel = () => {
                       {entry.name}
                     </Typography>
                     {entry.version && (
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        data-testid={`app-version-${entry.id}`}
+                      >
                         v{entry.version}
                       </Typography>
                     )}
