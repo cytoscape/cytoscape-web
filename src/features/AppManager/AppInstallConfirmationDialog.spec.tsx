@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { useAppStore } from '@/data/hooks/stores/AppStore'
 import { AppType } from '@/models/AppModel/AppType'
 import type { PendingAppInstall } from '@/models/AppModel/PendingAppInstall'
 import { RootMenu } from '@/models/AppModel/RootMenu'
@@ -89,6 +90,57 @@ describe('AppInstallConfirmationDialog', () => {
     renderDialog([])
 
     expect(screen.queryByTestId('app-install-confirmation-dialog')).toBeNull()
+  })
+
+  // The link may offer an app the catalog already has, often a core app from
+  // apps.json. The user should see what confirming does to it (§7.5).
+  describe('an app the catalog already has', () => {
+    const installedAt = (version: string): void => {
+      useAppStore.getState().setCatalog([
+        {
+          ...REACT_APP.entry,
+          version,
+          url: `https://apps-stage.cytoscape.org/web/mcodeweb/${version}/remoteEntry.js`,
+        },
+      ])
+    }
+
+    afterEach(() => {
+      useAppStore.getState().setCatalog([])
+    })
+
+    it('says a newer version updates the installed one', () => {
+      installedAt('0.0.9')
+      renderDialog([REACT_APP])
+
+      expect(
+        screen.getByTestId('app-install-version-mcodeweb').textContent,
+      ).toBe('Updates the installed version 0.0.9 to 0.1.0')
+    })
+
+    it('says a newer installed version is kept', () => {
+      installedAt('0.2.0')
+      renderDialog([REACT_APP])
+
+      expect(
+        screen.getByTestId('app-install-version-mcodeweb').textContent,
+      ).toBe('Version 0.2.0 is installed, which is newer; it is kept')
+    })
+
+    it('says the same version is already installed', () => {
+      installedAt('0.1.0')
+      renderDialog([REACT_APP])
+
+      expect(
+        screen.getByTestId('app-install-version-mcodeweb').textContent,
+      ).toBe('Version 0.1.0 is already installed')
+    })
+
+    it('adds nothing for an app that is not installed', () => {
+      renderDialog([REACT_APP])
+
+      expect(screen.queryByTestId('app-install-version-mcodeweb')).toBeNull()
+    })
   })
 
   it('reports confirm and cancel separately', () => {

@@ -13,7 +13,11 @@ import {
 } from '@mui/material'
 
 import { CyDialog } from '@/components/CyDialog'
+import { useAppStore } from '@/data/hooks/stores/AppStore'
+import type { AppCatalogEntry } from '@/models/AppModel/AppCatalogEntry'
 import { AppType } from '@/models/AppModel/AppType'
+import { appInstallPreview } from '@/models/AppModel/impl/appInstallMessage'
+import { appVersionChange } from '@/models/AppModel/impl/appVersion'
 import type { PendingAppInstall } from '@/models/AppModel/PendingAppInstall'
 import { pendingInstallName } from '@/models/AppModel/PendingAppInstall'
 
@@ -53,18 +57,35 @@ const descriptionOf = (pending: PendingAppInstall): string => {
 }
 
 /**
+ * What confirming does to a React app the catalog already has: updates it,
+ * keeps a newer installed version, or finds the same version (§7.5).
+ */
+const versionNoteOf = (
+  pending: PendingAppInstall,
+  catalog: Record<string, AppCatalogEntry>,
+): string | undefined =>
+  pending.type === AppType.Client
+    ? appInstallPreview(
+        appVersionChange(pending.entry, catalog[pending.entry.id]),
+      )
+    : undefined
+
+/**
  * Asks the user to confirm apps an `?installApp=` link wants to add.
  *
  * A URL can install either a React app or a service app, from an arbitrary
  * origin, so the user is told what each item actually is before anything is
- * added — name, kind, version, author, description and source URL. Confirm is
- * all-or-nothing; Cancel installs nothing.
+ * added — name, kind, version, author, description and source URL. A React
+ * app the catalog already has also says whether confirming updates it or
+ * keeps the installed version. Confirm is all-or-nothing; Cancel installs
+ * nothing.
  */
 export const AppInstallConfirmationDialog = ({
   pending,
   onConfirm,
   onCancel,
 }: AppInstallConfirmationDialogProps): JSX.Element => {
+  const catalog = useAppStore((state) => state.catalog)
   return (
     <CyDialog
       data-testid="app-install-confirmation-dialog"
@@ -119,6 +140,16 @@ export const AppInstallConfirmationDialog = ({
                 }
                 secondary={
                   <Box>
+                    {item.type === AppType.Client &&
+                      versionNoteOf(item, catalog) !== undefined && (
+                        <Typography
+                          variant="body2"
+                          color="info.main"
+                          data-testid={`app-install-version-${item.entry.id}`}
+                        >
+                          {versionNoteOf(item, catalog)}
+                        </Typography>
+                      )}
                     {descriptionOf(item) !== '' && (
                       <Typography variant="body2" color="text.secondary">
                         {descriptionOf(item)}

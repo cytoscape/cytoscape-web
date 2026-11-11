@@ -13,6 +13,10 @@
 > `mountApp`) are reused; this design adds a persisted, workspace-scoped install
 > layer on top.
 
+- Rev. 5 (11/10/2026): Jing Chen and Claude (Opus 5.5) — Version upgrades:
+  when the manifest and an `appstore`/`snapshot` install carry the same app,
+  the newer semver wins (§8.1); an install never replaces a newer version, it
+  updates an older one in place and keeps a running app running (§7.5)
 - Rev. 4 (11/10/2026): Jing Chen and Claude (Opus 5.5) — Core apps: every
   entry of the deployment's own `apps.json` is on unless the workspace records
   the user turning it off; turning one off now writes an `inactive` record
@@ -73,6 +77,9 @@
 - **Core apps:** the entries of the deployment's own `apps.json` are on by
   default. They load at startup unless the workspace records that the user
   turned them off, and only that choice is written down (§8.5).
+- **Versions:** when `apps.json` and an install carry the same app, the newer
+  semantic version wins, whichever side it is on. An install link updates an
+  older version in place and never replaces a newer one (§7.5).
 - **One source of truth:** manifest apps also get an `InstalledApp` record
   when activated, so `workspace.installedApps` holds *all* durable app state.
   The legacy global `apps` IndexedDB store is absorbed by an idempotent
@@ -421,6 +428,49 @@ origins (§11.3).
 server-side manifest only needs to obtain a validated `AppCatalogEntry` and call
 the same command; no further host changes are required.
 
+### 7.5 Version upgrades
+
+An install often offers an app the catalog already carries: an App Store link
+for a core app from `apps.json` (§8.5), or a newer release of an app installed
+earlier. `installApp` compares the offered entry with the catalog's entry for
+the same id (`appVersionChange`, `src/models/AppModel/impl/appVersion.ts`).
+Versions are compared as semantic versions (`compareAppVersions`, the `semver`
+package): 3.1.2 is newer than 3.1.1, 3.2.0 is newer than 3.1.23, and a
+pre-release sorts before its release.
+
+| Offered vs. catalog | `installApp` does | Returns |
+| --- | --- | --- |
+| No entry for the id | Installs it, as before | `new` |
+| Newer, or either version missing or not semver | Writes the `appstore` record and recomposes, so the offered entry wins (§8.1). An app that was running stays on and is swapped to the new version in place (`activateApp`'s version-update path) | `update` |
+| Same version, or the same remote entry URL | Leaves the record and catalog alone; turns the app on when `activate` is set | `same` |
+| Older | Leaves the newer version and its record alone; turns the app on when `activate` is set | `older` |
+
+An install link always passes `activate: true`, so keeping a newer version
+still turns it on: the user asked for the app. Install from URL passes
+`activate: false`, but an update keeps an app that was running running, since
+writing the new record as inactive would turn it off at the next start.
+
+The user is told which of these happened. The confirmation dialog says what
+confirming will do to an installed app ("Updates the installed version 1.0.0 to
+1.1.0", "Version 1.1.0 is installed, which is newer; it is kept",
+`appInstallPreview`). The toast after confirming says "Updated NetworkAnalyzer
+to 1.1.0", or "NetworkAnalyzer 1.1.0 is already installed; kept it instead of
+1.0.0" (`appInstallMessage`). Install from URL shows the second kind of message
+under its field.
+
+Two ordering rules make this hold when the user confirms quickly:
+
+- **Compare against the composed catalog.** `installApp` waits until the init
+  pass has composed the catalog and seeded app statuses. An install link can
+  be confirmed before the manifest has been fetched, and comparing against an
+  empty catalog would treat every app as new.
+- **One activation at a time per app.** `useAppManager` keeps a queue of load
+  and activate work per app id. The startup auto-load queues each load, and
+  `activateApp` runs after whatever is queued for the same id. An update
+  confirmed while the startup load of the old version is in flight therefore
+  waits for it, then swaps the version, instead of loading both and keeping
+  whichever finished first.
+
 ---
 
 ## 8. Catalog Composition & Restore
@@ -439,9 +489,13 @@ flowchart TD
     D --> E["Auto-load apps seeded Active (catalog[id] exists)"]
 ```
 
-Merge rule: union by `id`; on collision, the **workspace installed entry wins**
-for `source === 'appstore' | 'snapshot'` (it pins an immutable version URL),
-otherwise the manifest entry wins. Because installed apps now appear in the
+Merge rule: union by `id`. On a collision with a `source === 'appstore' |
+'snapshot'` record the **newer semantic version wins**: an install newer than
+the manifest's entry replaces it, and a manifest entry newer than the install
+replaces the install (§7.5). Equal versions keep the manifest entry. When either
+version is missing or not semver the installed entry wins, pinning its
+immutable URL as before. A `source === 'manifest'` record always yields to the
+manifest. Because installed apps now appear in the
 merged catalog, the existing `restore(catalogAppIds)` and auto-load passes work
 unchanged for them.
 
@@ -792,7 +846,9 @@ manifest entry returned (issue #699).
 refuses any id it contains.
 
 **Cost:** a pinned App Store version installed over a manifest id can no longer
-be reverted to the manifest version from the UI. Reverting was never labelled
+be reverted to the manifest version from the UI. Since Rev. 5 this applies only
+while the install is the newer version (§8.1): a manifest that ships a newer
+version replaces the install by itself. Reverting was never labelled
 as such — it was an **Uninstall** that appeared to fail — so nothing
 discoverable is lost. A dedicated `Revert to manifest version` action is the
 place to add it back.
@@ -939,7 +995,8 @@ restore-after-reload defect (P1–P3).
 > - *Catalog precedence* — the installed entry wins for
 >   `source: 'appstore' | 'snapshot'` (version pin preserved);
 >   `source: 'manifest'` always follows the manifest (§8.1). Update
->   detection/notification UX is future work.
+>   detection/notification UX is future work. **Superseded in Rev. 5:** the
+>   newer semver wins a collision, and installs compare versions (§7.5).
 > - *Migration of legacy global apps* — migrated at runtime into the
 >   **current** workspace at startup (§10.1).
 > - *Restore activation* — allow-listed origins honor saved Active status;
@@ -995,3 +1052,12 @@ restore-after-reload defect (P1–P3).
   row; no record is written, and the next startup tries it again.
 - An app listed only by a user-set Manifest Source is not loaded until the user
   turns it on.
+- An install link offering a newer version of an installed app (3.2.0 over
+  3.1.23) says so in the dialog, replaces the running version in place, and
+  the newer version runs after a reload.
+- An install link offering an older version leaves the newer one installed,
+  turns it on if it was off, and says the newer version was kept.
+- A manifest that ships a newer version than an earlier App Store install
+  replaces it at the next start.
+- An update confirmed while the old version is still loading at startup ends
+  with only the new version running.

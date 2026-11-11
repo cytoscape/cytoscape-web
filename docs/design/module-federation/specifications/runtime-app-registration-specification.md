@@ -1,6 +1,6 @@
 # Runtime App Registration Specification
 
-- **Rev. 7 (11/10/2026): Jing Chen and Claude** — Core apps: the default manifest's entries auto-load unless the workspace persists them as inactive (§8.1, §8.5, §10.1); the default manifest is fetched under the deployment's base path (§7.2)
+- **Rev. 7 (11/10/2026): Jing Chen and Claude** — Core apps: the default manifest's entries auto-load unless the workspace persists them as inactive (§8.1, §8.5, §10.1); the default manifest is fetched under the deployment's base path (§7.2); activations of one app run one at a time, after its startup load (§9.6)
 - **Rev. 6 (3/23/2026): Keiichiro ONO and Claude** — `author` field relaxed from required to optional with `"unknown"` default for backward compatibility with legacy `{ name, url }` manifests (§6.4, §7.1)
 - **Rev. 5 (3/20/2026): Keiichiro ONO and Claude** — Manifest schema extension for App Store readiness: added `author` (required), `tags`, `icon`, `license`, `repository`, `compatibleHostVersions` fields to `AppCatalogEntry` (§6.4) and `AppManifestEntrySchema` (§7.1)
 - **Rev. 4 (3/19/2026): Keiichiro ONO, GitHub Copilot, and Claude** — Second code review round: `manifestSource` hydration responsibility unified to `useAppManager` (§7.2); state transition table cleanup calls updated to use `unmountApp` (§9.7 rows 6/12); `obtainCatalogEntries` introduced as source-agnostic manifest resolution entry point (§7.2); remaining `manifestUrl` naming remnants fixed throughout
@@ -1098,6 +1098,16 @@ unmounts the running module, drops it from `appRegistry`, and takes the full
 fetch path. The App Store publishes each version at its own URL, so a changed
 URL is a changed version. A version update at an unchanged URL is not detected:
 the browser's module cache would return the old code anyway.
+
+Activations of one app run one at a time. `useAppManager` queues load and
+activate work per app id; the startup auto-load (§8.3) queues each app's load,
+and `activateApp` runs after whatever is queued for the same id. An update
+confirmed while the startup load of the old version is still in flight
+therefore starts from the module that load left, and the version-update path
+above swaps it. Without the queue both versions were fetched, whichever
+finished first was mounted, and `appRegistry`/`loadedAppUrls` could name the
+other one. Which version an install keeps or replaces is decided before this,
+by semver (workspace-app-install-design.md §7.5).
 
 ### 9.7 Lifecycle State Machine
 

@@ -51,7 +51,10 @@ A row can carry other marks:
    of a `remoteEntry.js` file.
 3. Click **Install**.
 
-The app is added to the list turned off. Turn it on with its switch.
+The app is added to the list turned off. Turn it on with its switch. If you
+already have the app, a newer version replaces it and an app that was on
+stays on; an older version, or the same one, is not installed, and a message
+under the field says which version you kept.
 
 Cytoscape Web installs apps only from the Cytoscape App Store's servers
 (`https://apps.cytoscape.org`). An app from any other address is refused
@@ -76,6 +79,19 @@ Nothing is installed until you agree. Cytoscape Web shows the dialog
 or **Service**), version, author, description and URL. Click Install to
 add all of them, or **Cancel** to add none. Apps installed this way are
 turned on.
+
+If you already have the app, the newer version wins. Versions are compared
+part by part, so 3.2.0 is newer than 3.1.23:
+
+- A link to a **newer** version updates the app. The dialog says, for example,
+  "Updates the installed version 1.0.0 to 1.1.0", and the new version replaces
+  the old one at once, without a reload.
+- A link to an **older** version, or the same one, keeps the version you have.
+  The dialog says so, and the app is turned on if it was off.
+
+This also applies to apps from the catalog. If the catalog later ships a
+version newer than one you installed from a link, the catalog's version
+replaces it the next time Cytoscape Web starts.
 
 Only install apps from sources you trust. If a Service App in the link is
 already installed, Cytoscape Web skips it and says "Already installed".

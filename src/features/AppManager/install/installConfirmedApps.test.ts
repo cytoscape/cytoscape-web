@@ -23,7 +23,7 @@ const serviceApp = (name: string): PendingAppInstall => ({
 })
 
 const makeDeps = () => ({
-  installApp: vi.fn().mockResolvedValue(undefined),
+  installApp: vi.fn().mockResolvedValue({ kind: 'new' }),
   addService: vi.fn().mockResolvedValue(undefined),
   addMessage: vi.fn(),
   warn: vi.fn(),
@@ -54,6 +54,43 @@ describe('installConfirmedApps', () => {
       'Added App alpha',
       'Added beta',
     ])
+  })
+
+  // An app the catalog already has is updated or kept, not added (§7.5), and
+  // "Added" would hide which version the user now runs.
+  it('says an app was updated or kept rather than added', async () => {
+    const deps = makeDeps()
+    deps.installApp
+      .mockResolvedValueOnce({ kind: 'update', from: '1.0.0', to: '1.1.0' })
+      .mockResolvedValueOnce({
+        kind: 'older',
+        installed: '1.1.0',
+        offered: '1.0.0',
+      })
+
+    await installConfirmedApps([reactApp('alpha'), reactApp('beta')], deps)
+
+    expect(deps.addMessage.mock.calls.map((c) => c[0])).toEqual([
+      expect.objectContaining({
+        message: 'Updated App alpha to 1.1.0',
+        severity: 'success',
+      }),
+      expect.objectContaining({
+        message:
+          'App beta 1.1.0 is already installed; kept it instead of 1.0.0',
+        severity: 'info',
+      }),
+    ])
+  })
+
+  it('adds no message of its own to a rejected install', async () => {
+    const deps = makeDeps()
+    deps.installApp.mockResolvedValueOnce({ kind: 'rejected' })
+
+    await installConfirmedApps([reactApp('alpha')], deps)
+
+    // installApp already said why; "Added App alpha" would contradict it.
+    expect(deps.addMessage).not.toHaveBeenCalled()
   })
 
   it('keeps installing after one app fails, and says which failed', async () => {

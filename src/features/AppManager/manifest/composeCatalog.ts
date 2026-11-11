@@ -1,4 +1,5 @@
 import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
+import { compareAppVersions } from '../../../models/AppModel/impl/appVersion'
 import { AppSource, InstalledApp } from '../../../models/AppModel/InstalledApp'
 
 /**
@@ -6,9 +7,11 @@ import { AppSource, InstalledApp } from '../../../models/AppModel/InstalledApp'
  * apps (workspace-app-install-design.md §8.1).
  *
  * Union by `id`. On collision:
- * - the installed entry wins for `source: 'appstore' | 'snapshot'` (it pins an
- *   immutable, versioned remote URL that must not be overwritten by the
- *   manifest)
+ * - for `source: 'appstore' | 'snapshot'` the newer version wins, compared as
+ *   semver: an App Store install newer than the manifest's entry replaces it,
+ *   and a manifest entry newer than the install replaces the install. Equal
+ *   versions keep the manifest entry. When either version is missing or not
+ *   semver the install wins, pinning its immutable URL as before (§7.5)
  * - the manifest entry wins for `source: 'manifest'` (the manifest is
  *   authoritative for manifest-sourced apps)
  *
@@ -53,11 +56,19 @@ export function composeCatalog(
       continue
     }
 
-    // Collision: installed wins only for pinned (appstore/snapshot) sources;
-    // for 'manifest' the manifest entry already in place wins.
+    // Collision. A 'manifest' record only mirrors the manifest, so the
+    // manifest entry already in place wins. An appstore/snapshot install
+    // competes by version: the newer one wins, a tie keeps the manifest's, and
+    // an install whose version cannot be compared stays pinned.
     if (installed.source === 'appstore' || installed.source === 'snapshot') {
-      entryById.set(id, installed.entry)
-      sources[id] = installed.source
+      const order = compareAppVersions(
+        installed.entry.version,
+        entryById.get(id)?.version,
+      )
+      if (order === undefined || order > 0) {
+        entryById.set(id, installed.entry)
+        sources[id] = installed.source
+      }
     }
   }
 

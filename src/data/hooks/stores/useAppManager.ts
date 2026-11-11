@@ -24,8 +24,10 @@ import { obtainCatalogEntries } from '../../../features/AppManager/manifest/obta
 import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
 import { AppLoadFailure } from '../../../models/AppModel/AppLoadFailure'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
+import { AppInstallOutcome } from '../../../models/AppModel/AppVersionChange'
 import { CyApp } from '../../../models/AppModel/CyApp'
 import { appLoadFailureToast } from '../../../models/AppModel/impl/appLoadFailureMessage'
+import { appVersionChange } from '../../../models/AppModel/impl/appVersion'
 import { startupAppStatus } from '../../../models/AppModel/impl/startupAppStatus'
 import { ManifestSource } from '../../../models/AppModel/ManifestSource'
 import { MessageSeverity } from '../../../models/MessageModel'
@@ -62,8 +64,21 @@ export interface AppManagerCommands {
   installApp: (
     entry: AppCatalogEntry,
     opts?: { activate?: boolean },
-  ) => Promise<void>
+  ) => Promise<AppInstallOutcome>
   uninstallApp: (id: string) => Promise<void>
+}
+
+interface Deferred {
+  readonly promise: Promise<void>
+  readonly resolve: () => void
+}
+
+const createDeferred = (): Deferred => {
+  let resolve: () => void = () => {}
+  const promise = new Promise<void>((done) => {
+    resolve = done
+  })
+  return { promise, resolve }
 }
 
 /**
@@ -116,6 +131,15 @@ export const useAppManager = (): AppManagerCommands => {
   // Manifest entries from the last catalog load, used to recompose the catalog
   // (manifest ∪ installedApps) after install/uninstall.
   const manifestEntriesRef = useRef<AppCatalogEntry[]>([])
+  // Settles once the init pass has composed the catalog and seeded the app
+  // statuses. installApp compares the offered version with the catalog's, and
+  // an install link can be confirmed before init gets there.
+  const [catalogReady] = useState(createDeferred)
+  // The tail of the load/activate work queued for each app id. Activation runs
+  // after it, so an activation never races a load of the same app already in
+  // flight (the startup auto-load included): it starts from the module that
+  // load left in memory, and a version swap replaces it cleanly.
+  const appWork = useRef(new Map<string, Promise<void>>())
 
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
   const restore = useAppStore((state) => state.restore)
@@ -292,9 +316,33 @@ export const useAppManager = (): AppManagerCommands => {
     }
   }
 
+  /**
+   * Run `task` after the work already queued for app `id` settles, whatever
+   * its outcome, and make it the new tail of that queue.
+   */
+  const queueAppWork = (
+    id: string,
+    task: () => Promise<void>,
+  ): Promise<void> => {
+    const previous = appWork.current.get(id) ?? Promise.resolve()
+    const next = previous.then(
+      () => task(),
+      () => task(),
+    )
+    appWork.current.set(id, next)
+    const forget = (): void => {
+      if (appWork.current.get(id) === next) appWork.current.delete(id)
+    }
+    next.then(forget, forget)
+    return next
+  }
+
   // ── Command implementations ──────────────────────────────────────
 
-  const activateApp = async (id: string): Promise<void> => {
+  const activateApp = (id: string): Promise<void> =>
+    queueAppWork(id, () => activateAppNow(id))
+
+  const activateAppNow = async (id: string): Promise<void> => {
     const {
       catalog,
       manifestSource,
@@ -457,11 +505,19 @@ export const useAppManager = (): AppManagerCommands => {
    * to workspace.installedApps (upsert → idempotent), merges it into the
    * catalog, and optionally activates it. Transport-agnostic: the URL install
    * intent and the App Manager "Install from URL" both call this.
+   *
+   * The offered version is compared with the catalog's entry for the same id
+   * (§7.5, `appVersionChange`). A newer version replaces it, swapping the
+   * running module in place, and an app that was on stays on. The same or an
+   * older version leaves the installed one and its record alone; with
+   * `activate` it is only turned on.
+   *
+   * @returns what the install did, for the caller to tell the user
    */
   const installApp = async (
     entry: AppCatalogEntry,
     opts?: { activate?: boolean },
-  ): Promise<void> => {
+  ): Promise<AppInstallOutcome> => {
     // 1. Trust boundary (§9)
     if (
       !isAllowedOrigin(
@@ -478,20 +534,44 @@ export const useAppManager = (): AppManagerCommands => {
       logApp.warn(
         `[useAppManager]: installApp rejected "${entry.id}" — origin not allowed: ${entry.url}`,
       )
-      return
+      return { kind: 'rejected' }
     }
 
-    let activate = opts?.activate ?? false
-    if (activate && !isHostCompatible(entry.compatibleHostVersions)) {
+    // 2. Compare with what the catalog carries under this id (§7.5). The
+    //    catalog is composed by the init pass, which an install link can
+    //    outrun.
+    await catalogReady.promise
+    const { catalog, apps: currentApps } = useAppStore.getState()
+    const current = catalog[entry.id]
+    const change = appVersionChange(entry, current)
+    const keepInstalled =
+      current !== undefined &&
+      (change.kind === 'same' || change.kind === 'older')
+    const wasActive = currentApps[entry.id]?.status === AppStatus.Active
+    const target = keepInstalled ? current : entry
+
+    // An update keeps a running app running, on the new version.
+    let activate = (opts?.activate ?? false) || wasActive
+    if (activate && !isHostCompatible(target.compatibleHostVersions)) {
       activate = false
       addMessage({
-        message: `"${entry.name ?? entry.id}" is not compatible with this host version; installed but not enabled.`,
+        message: `"${target.name ?? target.id}" is not compatible with this host version; installed but not enabled.`,
         duration: 5000,
         severity: MessageSeverity.WARNING,
       })
     }
 
-    // 2. Persist into the workspace (upsert → idempotent)
+    if (keepInstalled) {
+      logApp.info(
+        `[useAppManager]: Kept installed "${entry.id}" ${current.version ?? ''} over offered ${entry.version ?? entry.url} (${change.kind})`,
+      )
+      if (activate && !wasActive) {
+        await activateApp(entry.id)
+      }
+      return change
+    }
+
+    // 3. Persist into the workspace (upsert → idempotent)
     useWorkspaceStore.getState().addInstalledApp({
       entry,
       status: activate ? AppStatus.Active : AppStatus.Inactive,
@@ -499,16 +579,18 @@ export const useAppManager = (): AppManagerCommands => {
       installedAt: new Date().toISOString(),
     })
 
-    // 3. Merge into the catalog so it appears immediately
+    // 4. Merge into the catalog so it appears immediately
     recomposeCatalog()
     logApp.info(
-      `[useAppManager]: Installed app "${entry.id}" (activate=${activate})`,
+      `[useAppManager]: Installed app "${entry.id}" ${entry.version ?? ''} (${change.kind}, activate=${activate})`,
     )
 
-    // 4. Optionally load + mount
+    // 5. Optionally load + mount. A newer version of a running app is swapped
+    //    in by activateApp's version-update path.
     if (activate) {
       await activateApp(entry.id)
     }
+    return change
   }
 
   /**
@@ -691,65 +773,88 @@ export const useAppManager = (): AppManagerCommands => {
           logApp.info(
             `[${useAppManager.name}]: No active apps to auto-load at startup`,
           )
+          catalogReady.resolve()
           reportStartupFailures(startupFailures)
           return
         }
 
-        // Set loadStates to 'loading' for all active apps
+        // Set loadStates to 'loading' for all active apps, and queue each
+        // load as that app's work, so an activation of the same app (an
+        // install link confirmed meanwhile) waits for it rather than loading
+        // alongside it.
+        const startupLoads = new Map<string, Deferred>()
         for (const id of activeAppIds) {
           setLoadState(id, 'loading')
+          const done = createDeferred()
+          startupLoads.set(id, done)
+          void queueAppWork(id, () => done.promise)
         }
 
-        // Load all active apps in parallel. loadRemoteApp resolves with the
-        // failure rather than throwing, so the reason survives to the store
-        // instead of being flattened into a synthetic Error.
-        const results = await Promise.all(
-          activeAppIds.map(async (id) => ({
-            id,
-            loaded: await loadRemoteApp(id, catalog[id].url, appRegistry),
-          })),
-        )
+        // The catalog is composed and the startup loads are queued, with no
+        // await since: an install can now compare versions and queue behind
+        // the load of the app it replaces.
+        catalogReady.resolve()
 
-        // Process results
-        for (const { id, loaded } of results) {
-          if (!loaded.ok) {
-            failApp(id, loaded.failure, { toast: false })
-            startupFailures.push(id)
-            setStatus(id, AppStatus.Error)
-            logApp.warn(
-              `[${useAppManager.name}]: Failed to load app "${id}" — ${loaded.failure.code}`,
-            )
-            continue
-          }
-          loadedAppUrls.set(id, catalog[id].url)
-          try {
-            await activateAndMount(id)
-            setLoadState(id, 'loaded')
-            logApp.info(
-              `[${useAppManager.name}]: App "${id}" auto-loaded and mounted`,
-            )
-          } catch (error) {
-            failApp(
+        try {
+          // Load all active apps in parallel. loadRemoteApp resolves with the
+          // failure rather than throwing, so the reason survives to the store
+          // instead of being flattened into a synthetic Error.
+          const results = await Promise.all(
+            activeAppIds.map(async (id) => ({
               id,
-              {
-                code: 'mount-failed',
-                message: error instanceof Error ? error.message : String(error),
-              },
-              { toast: false },
-            )
-            startupFailures.push(id)
-            setStatus(id, AppStatus.Error)
-            logApp.warn(
-              `[${useAppManager.name}]: App "${id}" loaded but mount failed:`,
-              error,
-            )
+              loaded: await loadRemoteApp(id, catalog[id].url, appRegistry),
+            })),
+          )
+
+          // Process results
+          for (const { id, loaded } of results) {
+            try {
+              if (!loaded.ok) {
+                failApp(id, loaded.failure, { toast: false })
+                startupFailures.push(id)
+                setStatus(id, AppStatus.Error)
+                logApp.warn(
+                  `[${useAppManager.name}]: Failed to load app "${id}" — ${loaded.failure.code}`,
+                )
+                continue
+              }
+              loadedAppUrls.set(id, catalog[id].url)
+              try {
+                await activateAndMount(id)
+                setLoadState(id, 'loaded')
+                logApp.info(
+                  `[${useAppManager.name}]: App "${id}" auto-loaded and mounted`,
+                )
+              } catch (error) {
+                failApp(
+                  id,
+                  {
+                    code: 'mount-failed',
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  },
+                  { toast: false },
+                )
+                startupFailures.push(id)
+                setStatus(id, AppStatus.Error)
+                logApp.warn(
+                  `[${useAppManager.name}]: App "${id}" loaded but mount failed:`,
+                  error,
+                )
+              }
+            } finally {
+              startupLoads.get(id)?.resolve()
+            }
           }
+        } finally {
+          for (const done of startupLoads.values()) done.resolve()
         }
 
         reportStartupFailures(startupFailures)
       }
 
-      void init()
+      // An init that throws must not leave installApp waiting for ever.
+      void init().finally(catalogReady.resolve)
     }
 
     return () => {

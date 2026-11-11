@@ -26,6 +26,37 @@ const serveFixtureAsCoreApp = async (page: Page): Promise<void> => {
   })
 }
 
+// The same bundle under a second URL: to the host, another version.
+const V2_ENTRY_URL = 'http://localhost:4191/remoteEntry.js?v=2'
+// An install link's single-entry manifest, answered by `serveFixtureManifest`.
+const LINK_MANIFEST_URL = 'http://localhost:4191/link-manifest.json'
+
+/**
+ * Answer requests matching `pattern` with the fixture's manifest entry,
+ * declaring `version` and, when given, loading from `entryUrl`.
+ */
+const serveFixtureManifest = async (
+  page: Page,
+  pattern: string,
+  version: string,
+  entryUrl?: string,
+): Promise<void> => {
+  await page.route(pattern, async (route) => {
+    const response = await route.fetch({ url: FIXTURE_REMOTE_MANIFEST_URL })
+    const [fixture] = (await response.json()) as Array<Record<string, unknown>>
+    await route.fulfill({
+      json: [
+        {
+          ...fixture,
+          version,
+          ...(entryUrl !== undefined && { url: entryUrl }),
+        },
+      ],
+      headers: { 'access-control-allow-origin': '*' },
+    })
+  })
+}
+
 const openAppManager = async (page: Page): Promise<void> => {
   const appsMenuButton = page.locator(
     '[data-testid="toolbar-apps-menu-menu-button"]',
@@ -158,5 +189,97 @@ test.describe('core apps from the deployment catalog', () => {
         .locator('[data-testid="snackbar-message-list"]')
         .getByText('Could not load "Broken Core App"', { exact: false }),
     ).toBeVisible({ timeout: 15_000 })
+  })
+})
+
+// An App Store install link for an app apps.json already ships. The newer
+// version wins, compared as semver: a newer link replaces the running version
+// in place, and an older one leaves the installed version alone.
+test.describe('install links for a core app', () => {
+  test('a newer version from an install link replaces the core app', async ({
+    page,
+  }) => {
+    // 1. apps.json ships the app at 1.0.0; the link offers 2.0.0
+    await serveFixtureManifest(page, '**/apps.json', '1.0.0')
+    await serveFixtureManifest(page, LINK_MANIFEST_URL, '2.0.0', V2_ENTRY_URL)
+
+    // 2. Open Cytoscape Web through the link; 1.0.0 starts as a core app
+    await gotoAndWaitReady(
+      page,
+      `/?installApp=${encodeURIComponent(LINK_MANIFEST_URL)}`,
+    )
+    const marker = page.locator('[data-testid="remote-app-marker"]')
+    await expect(marker).toBeVisible({ timeout: 15_000 })
+
+    // 3. The dialog says the link updates the installed version
+    await expect(
+      page.locator(`[data-testid="app-install-version-${APP_ID}"]`),
+    ).toHaveText('Updates the installed version 1.0.0 to 2.0.0')
+
+    // 4. Confirm
+    await page
+      .locator('[data-testid="app-install-confirmation-dialog-confirm"]')
+      .click()
+    await expect(
+      page.getByText('Updated Test Remote App to 2.0.0'),
+    ).toBeVisible({ timeout: 15_000 })
+
+    // 5. One copy runs, and App Manager lists 2.0.0
+    await expect(marker).toHaveCount(1)
+    await openAppManager(page)
+    await expect(
+      page.locator('[data-testid="app-settings-dialog"]'),
+    ).toContainText('v2.0.0')
+    await page
+      .locator('[data-testid="app-settings-dialog-close-button"]')
+      .click()
+
+    // 6. After a reload, 2.0.0 still runs
+    await page.unroute(LINK_MANIFEST_URL)
+    await gotoAndWaitReady(page)
+    await expect(marker).toBeVisible({ timeout: 15_000 })
+    await expect(marker).toHaveCount(1)
+    await openAppManager(page)
+    await expect(
+      page.locator('[data-testid="app-settings-dialog"]'),
+    ).toContainText('v2.0.0')
+  })
+
+  test('an older version from an install link keeps the newer core app', async ({
+    page,
+  }) => {
+    // 1. apps.json ships the app at 2.0.0; the link offers 1.0.0
+    await serveFixtureManifest(page, '**/apps.json', '2.0.0', V2_ENTRY_URL)
+    await serveFixtureManifest(page, LINK_MANIFEST_URL, '1.0.0')
+
+    // 2. Open Cytoscape Web through the link
+    await gotoAndWaitReady(
+      page,
+      `/?installApp=${encodeURIComponent(LINK_MANIFEST_URL)}`,
+    )
+    await expect(page.locator('[data-testid="remote-app-marker"]')).toBeVisible(
+      { timeout: 15_000 },
+    )
+
+    // 3. The dialog says the installed, newer version is kept
+    await expect(
+      page.locator(`[data-testid="app-install-version-${APP_ID}"]`),
+    ).toHaveText('Version 2.0.0 is installed, which is newer; it is kept')
+
+    // 4. Confirm: the user is told 2.0.0 was kept
+    await page
+      .locator('[data-testid="app-install-confirmation-dialog-confirm"]')
+      .click()
+    await expect(
+      page.getByText(
+        'Test Remote App 2.0.0 is already installed; kept it instead of 1.0.0',
+      ),
+    ).toBeVisible({ timeout: 15_000 })
+
+    // 5. App Manager still lists 2.0.0
+    await openAppManager(page)
+    await expect(
+      page.locator('[data-testid="app-settings-dialog"]'),
+    ).toContainText('v2.0.0')
   })
 })

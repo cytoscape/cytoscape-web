@@ -71,6 +71,13 @@ loads apps at startup, and returns the commands App Manager calls
 Turning a core app off writes an `inactive` record to the workspace, which is
 what keeps it off at the next startup.
 
+**Installing:** `installApp` compares the offered entry's version with the
+catalog's entry for the same id, as semver. A newer version replaces the
+installed one in place (a running app stays on); the same or an older version
+is kept, and only turned on for an install link. It waits for the catalog to be
+composed first, and activations of one app run one at a time, after its
+startup load.
+
 **Design:**
 `docs/design/module-federation/specifications/workspace-app-install-design.md`
 (§8) and `runtime-app-registration-specification.md` (§8–§10) in the same

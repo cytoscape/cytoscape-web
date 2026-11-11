@@ -848,3 +848,241 @@ describe('useAppManager — core apps', () => {
     expect(coreStatus()).toBeUndefined()
   })
 })
+
+// An install link offers a version of an app the catalog may already carry,
+// often a core app from apps.json. The newer version wins (semver); an older
+// offer keeps what is there and only turns it on.
+describe('useAppManager — install link versions', () => {
+  const ID = 'coreApp'
+  const at = (version: string): AppCatalogEntry => entry(ID, version)
+
+  /** A loadRemoteApp that registers a module remembering its URL. */
+  const loadsFine = async (
+    id: string,
+    url: string,
+    registry: Map<string, unknown>,
+  ) => {
+    const app = { id, name: id, status: AppStatus.Inactive, url }
+    registry.set(id, app)
+    return { ok: true, app }
+  }
+
+  const seedWorkspace = (records: InstalledApp[]): void => {
+    useWorkspaceStore.getState().set({
+      id: 'ws-test',
+      name: 'Test',
+      isRemote: false,
+      networkIds: [],
+      networkModified: {},
+      creationTime: new Date(),
+      localModificationTime: new Date(),
+      currentNetworkId: '',
+      installedApps: records,
+    })
+  }
+
+  const catalogVersion = () => useAppStore.getState().catalog[ID]?.version
+  const loadedFrom = () =>
+    (appRegistry.get(ID) as unknown as { url?: string } | undefined)?.url
+
+  const install = async (
+    rendered: Awaited<ReturnType<typeof renderManager>>,
+    offered: AppCatalogEntry,
+  ) => {
+    let outcome: unknown
+    await act(async () => {
+      outcome = await rendered.result.current.installApp(offered, {
+        activate: true,
+      })
+    })
+    return outcome
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockIsAllowedOrigin.mockReturnValue(true)
+    mockIsCatalogEntryAllowed.mockReturnValue(true)
+    mockIsHostCompatible.mockReturnValue(true)
+    mockGetAppSettingFromDb.mockResolvedValue(undefined)
+    mockLoadRemoteApp.mockImplementation(loadsFine)
+    // The real lifecycle keeps the mounted-id set; the version swap uses it.
+    mockMountApp.mockImplementation(
+      async (app: { id: string }, _ctx: unknown, mounted: Set<string>) => {
+        mounted.add(app.id)
+      },
+    )
+    mockUnmountApp.mockImplementation(
+      async (app: { id: string }, mounted: Set<string>) => {
+        mounted.delete(app.id)
+      },
+    )
+    appRegistry.clear()
+    loadedAppUrls.clear()
+    seedWorkspace([])
+    useAppStore.setState({
+      apps: {},
+      loadStates: {},
+      loadErrors: {},
+      manifestSource: undefined,
+    })
+    useAppStore.getState().setCatalog([])
+    useMessageStore.getState().resetMessages()
+  })
+
+  afterEach(() => {
+    mockObtainCatalogEntries.mockResolvedValue([])
+  })
+
+  it('replaces the running version with a newer one', async () => {
+    mockObtainCatalogEntries.mockResolvedValue([at('3.1.23')])
+    const rendered = await renderManager()
+    await waitFor(() => expect(loadedFrom()).toBe(at('3.1.23').url))
+
+    const outcome = await install(rendered, at('3.2.0'))
+
+    expect(outcome).toEqual({ kind: 'update', from: '3.1.23', to: '3.2.0' })
+    expect(catalogVersion()).toBe('3.2.0')
+    expect(loadedFrom()).toBe(at('3.2.0').url)
+    expect(loadedAppUrls.get(ID)).toBe(at('3.2.0').url)
+    expect(mockUnmountApp).toHaveBeenCalledWith(
+      expect.objectContaining({ url: at('3.1.23').url }),
+      expect.any(Set),
+    )
+    expect(useAppStore.getState().apps[ID]?.status).toBe(AppStatus.Active)
+    expect(installed()).toEqual([
+      expect.objectContaining({
+        entry: expect.objectContaining({ version: '3.2.0' }),
+        source: 'appstore',
+        status: AppStatus.Active,
+      }),
+    ])
+  })
+
+  it('keeps a newer version when offered an older one, and turns it on', async () => {
+    mockObtainCatalogEntries.mockResolvedValue([at('3.1.2')])
+    // The user had turned the core app off.
+    seedWorkspace([
+      {
+        entry: at('3.1.2'),
+        status: AppStatus.Inactive,
+        source: 'manifest',
+        installedAt: '2026-01-01T00:00:00.000Z',
+      },
+    ])
+    const rendered = await renderManager()
+    await waitFor(() =>
+      expect(useAppStore.getState().apps[ID]?.status).toBe(AppStatus.Inactive),
+    )
+
+    const outcome = await install(rendered, at('3.1.1'))
+
+    expect(outcome).toEqual({
+      kind: 'older',
+      installed: '3.1.2',
+      offered: '3.1.1',
+    })
+    expect(catalogVersion()).toBe('3.1.2')
+    expect(loadedFrom()).toBe(at('3.1.2').url)
+    expect(useAppStore.getState().apps[ID]?.status).toBe(AppStatus.Active)
+    // The record keeps the newer entry; only its status changed.
+    expect(installed()).toEqual([
+      expect.objectContaining({
+        entry: expect.objectContaining({ version: '3.1.2' }),
+        source: 'manifest',
+        status: AppStatus.Active,
+      }),
+    ])
+  })
+
+  it('keeps a running app running when Install from URL updates it', async () => {
+    // Install from URL passes activate: false. Writing the new record as
+    // inactive would turn the app off at the next start.
+    mockObtainCatalogEntries.mockResolvedValue([at('1.0.0')])
+    const rendered = await renderManager()
+    await waitFor(() => expect(loadedFrom()).toBe(at('1.0.0').url))
+
+    let outcome: unknown
+    await act(async () => {
+      outcome = await rendered.result.current.installApp(at('1.1.0'), {
+        activate: false,
+      })
+    })
+
+    expect(outcome).toEqual({ kind: 'update', from: '1.0.0', to: '1.1.0' })
+    expect(loadedFrom()).toBe(at('1.1.0').url)
+    expect(installed()[0]?.status).toBe(AppStatus.Active)
+  })
+
+  it('changes nothing when offered the version already running', async () => {
+    mockObtainCatalogEntries.mockResolvedValue([at('1.0.0')])
+    const rendered = await renderManager()
+    await waitFor(() => expect(loadedFrom()).toBe(at('1.0.0').url))
+
+    const outcome = await install(rendered, at('1.0.0'))
+
+    expect(outcome).toEqual({ kind: 'same', version: '1.0.0' })
+    expect(mockLoadRemoteApp).toHaveBeenCalledTimes(1)
+    // No App Store record pinning what apps.json already ships.
+    expect(installed()).toEqual([])
+  })
+
+  it('compares against the catalog even when called before it has loaded', async () => {
+    let releaseCatalog: (entries: AppCatalogEntry[]) => void = () => {}
+    mockObtainCatalogEntries.mockReturnValue(
+      new Promise<AppCatalogEntry[]>((resolve) => {
+        releaseCatalog = resolve
+      }),
+    )
+    const rendered = renderHook(() => useAppManager(), { wrapper })
+
+    let outcome: unknown
+    await act(async () => {
+      const pending = rendered.result.current.installApp(at('1.0.0'), {
+        activate: true,
+      })
+      releaseCatalog([at('1.1.0')])
+      outcome = await pending
+    })
+
+    expect(outcome).toEqual({
+      kind: 'older',
+      installed: '1.1.0',
+      offered: '1.0.0',
+    })
+    expect(catalogVersion()).toBe('1.1.0')
+  })
+
+  it('waits for a startup load of the same app before updating it', async () => {
+    mockObtainCatalogEntries.mockResolvedValue([at('1.0.0')])
+    // Hold the startup load of 1.0.0 until the install is under way.
+    let finishStartupLoad: () => void = () => {}
+    mockLoadRemoteApp.mockImplementationOnce(
+      (id: string, url: string, registry: Map<string, unknown>) =>
+        new Promise((resolve) => {
+          finishStartupLoad = () => resolve(loadsFine(id, url, registry))
+        }),
+    )
+    const rendered = await renderManager()
+    await waitFor(() => expect(mockLoadRemoteApp).toHaveBeenCalledTimes(1))
+
+    let outcome: unknown
+    await act(async () => {
+      const pending = rendered.result.current.installApp(at('1.1.0'), {
+        activate: true,
+      })
+      finishStartupLoad()
+      outcome = await pending
+    })
+
+    expect(outcome).toEqual({ kind: 'update', from: '1.0.0', to: '1.1.0' })
+    // The startup's 1.0.0 was mounted, then swapped for 1.1.0; the bookkeeping
+    // names the version that is running.
+    expect(loadedFrom()).toBe(at('1.1.0').url)
+    expect(loadedAppUrls.get(ID)).toBe(at('1.1.0').url)
+    expect(mockMountApp).toHaveBeenLastCalledWith(
+      expect.objectContaining({ url: at('1.1.0').url }),
+      expect.anything(),
+      expect.any(Set),
+    )
+  })
+})

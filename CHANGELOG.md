@@ -12,11 +12,18 @@ All notable changes to Cytoscape Web are documented here.
   that fails to load is reported in a message and tried again at the next start
 - The repository's `apps.json` is empty. The example apps are no longer listed by
   default; each deployment ships its own catalog
+- Installing an app you already have compares versions as semver (3.2.0 is newer than
+  3.1.23). A newer version from an App Store link or Install from URL replaces the
+  installed one at once and keeps it on; an older or equal one keeps what you have and
+  says so. The install dialog shows which will happen, and a site's `apps.json` that ships
+  a newer version than an earlier App Store install replaces it at the next start
 
 ### Fixed
 
 - The default app catalog loads on a site served from a subpath, such as
   `/cytoscape/`. It was fetched from the site root, so App Manager listed no apps there
+- An app update confirmed while the old version was still loading at startup no longer
+  leaves the old version running, or the app manager tracking the wrong one
 
 ## [1.1.1] — 2026-10-28
 

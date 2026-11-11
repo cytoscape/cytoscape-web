@@ -65,6 +65,56 @@ describe('composeCatalog', () => {
     expect(sources.hello).toBe('snapshot')
   })
 
+  // The newer version wins a collision, whichever side it is on: a newer
+  // apps.json must replace an older App Store install, not stay hidden behind
+  // its pin.
+  describe('appstore and snapshot collisions are decided by version', () => {
+    it('lets a newer manifest entry replace an older appstore install', () => {
+      const { entries, sources } = composeCatalog(
+        [entry('hello', '3.2.0')],
+        [installed('hello', 'appstore', '3.1.23')],
+      )
+      const hello = entries.find((e) => e.id === 'hello')
+      expect(hello?.version).toBe('3.2.0')
+      expect(hello?.url).toContain('/3.2.0/')
+      expect(sources.hello).toBe('manifest')
+    })
+
+    it('lets a newer manifest entry replace an older snapshot entry', () => {
+      const { entries, sources } = composeCatalog(
+        [entry('hello', '3.1.2')],
+        [installed('hello', 'snapshot', '3.1.1')],
+      )
+      expect(entries.find((e) => e.id === 'hello')?.version).toBe('3.1.2')
+      expect(sources.hello).toBe('manifest')
+    })
+
+    it('keeps the manifest entry when the versions are equal', () => {
+      const { entries, sources } = composeCatalog(
+        [entry('hello', '2.0.0')],
+        [installed('hello', 'appstore', '2.0.0')],
+      )
+      expect(entries.find((e) => e.id === 'hello')?.url).toBe(
+        entry('hello', '2.0.0').url,
+      )
+      expect(sources.hello).toBe('manifest')
+    })
+
+    it('keeps the install pinned when the versions cannot be compared', () => {
+      const unversioned: AppCatalogEntry = {
+        id: 'hello',
+        url: 'https://apps.cytoscape.org/web/hello/latest/remoteEntry.js',
+        author: 'Test',
+      }
+      const { entries, sources } = composeCatalog(
+        [unversioned],
+        [installed('hello', 'appstore', '1.0.0')],
+      )
+      expect(entries.find((e) => e.id === 'hello')?.version).toBe('1.0.0')
+      expect(sources.hello).toBe('appstore')
+    })
+  })
+
   it('lets the manifest entry win on collision for manifest source', () => {
     const { entries, sources } = composeCatalog(
       [entry('hello', '1.0.0')],

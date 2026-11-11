@@ -86,8 +86,17 @@ The AppManager feature consists of:
    `workspace.installedApps`
 5. App status is tracked (Active, Inactive, Error). A load that fails is
    reported in a toast (one per startup pass) and on the app's row
-6. Design: `docs/design/module-federation/specifications/workspace-app-install-design.md`
-   §8.5 (core apps) and `runtime-app-registration-specification.md` §8–§10
+6. Versions: when the catalog and an install carry the same app, the newer
+   semantic version wins (`compareAppVersions`). `installApp` updates an older
+   installed version in place, keeps a newer or equal one (only turning it on
+   for an install link), and returns what it did (`AppInstallOutcome`).
+   `AppInstallConfirmationDialog` says what confirming will do to an installed
+   app (`appInstallPreview`), and the toast and Install from URL name the
+   version kept or installed (`appInstallMessage`). Activations of one app run
+   one at a time, after its startup load
+7. Design: `docs/design/module-federation/specifications/workspace-app-install-design.md`
+   §7.5 (version upgrades), §8.5 (core apps) and
+   `runtime-app-registration-specification.md` §8–§10
 
 ### Service Management
 1. Services are added via URL input
