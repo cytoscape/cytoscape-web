@@ -79,7 +79,11 @@ or removing a spec.
 
 None. Playwright starts what it needs: it builds the app and serves it with
 `vite preview` on `http://localhost:5500`, and serves the Module Federation
-fixture remote on `http://localhost:4191`.
+fixture remote on `http://localhost:4191`. The fixture is built twice (by
+`npm run build:test-remote`, which the e2e scripts run first): version 1 at
+`/remoteEntry.js` and version 2 at `/v2/remoteEntry.js`, whose marker says
+`fixture v2`. `core-apps.spec.ts` uses version 2 to check that an update runs
+the new code.
 
 Because of that, **port 5500 must be free**: if you have a dev server running
 there, the run fails with "already used" rather than silently testing whatever

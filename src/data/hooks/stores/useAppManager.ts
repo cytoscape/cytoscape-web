@@ -16,7 +16,7 @@ import {
   hostVersion,
   isAllowedOrigin,
   isCatalogEntryAllowed,
-  isHostCompatible,
+  runsOnThisHost,
 } from '../../../features/AppManager/install/installGate'
 import { migrateLegacyApps } from '../../../features/AppManager/install/migrateLegacyApps'
 import { loadRemoteApp } from '../../../features/AppManager/loader/loadRemoteApp'
@@ -81,10 +81,6 @@ const createDeferred = (): Deferred => {
   })
   return { promise, resolve }
 }
-
-/** Whether this Cytoscape Web can run the entry (`compatibleHostVersions`). */
-const runsOnThisHost = (entry: AppCatalogEntry): boolean =>
-  isHostCompatible(entry.compatibleHostVersions)
 
 /** The failure recorded for an entry this Cytoscape Web cannot run. */
 const incompatibleHost = (entry: AppCatalogEntry): AppLoadFailure => {
@@ -591,7 +587,7 @@ export const useAppManager = (): AppManagerCommands => {
 
     // An update keeps a running app running, on the new version.
     let activate = (opts?.activate ?? false) || wasActive
-    if (activate && !isHostCompatible(target.compatibleHostVersions)) {
+    if (activate && !runsOnThisHost(target)) {
       activate = false
       addMessage({
         message: `"${target.name ?? target.id}" is not compatible with this host version; installed but not enabled.`,

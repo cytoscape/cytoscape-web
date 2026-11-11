@@ -1,5 +1,7 @@
 # Module Federation App API Design and Priorities
 
+**Rev. 7 (11/11/2026): Jing Chen and Claude — core apps, version and compatibility precedence (§1.4)**
+
 **Rev. 6 (7/28/2026): current App API, error catalogs, and federation toolchain reconciled**
 
 - Rev. 5 (3/19/2026): Keiichiro ONO and Claude Code w/ Opus 4.6 - Updated Section 1.4 and Phase 4 with runtime app registration design (specification complete)
@@ -196,12 +198,20 @@ runtime app discovery.
   pre-populated state from `useAppManager.ts`. After this step the host
   build has zero knowledge of external apps
 - **Runtime manifest fetch:** The host fetches an app catalog (JSON array)
-  at startup from a configurable URL. The default points to a Cytoscape Web
-  App Store; users can override with a custom manifest URL (same-origin
-  relative paths or absolute HTTPS URLs)
-- **Selective loading:** Only apps persisted as `AppStatus.Active` are loaded
-  at startup. Inactive and unknown apps remain visible in the app manager
-  but consume no network or memory resources
+  at startup. The default is the deployment's own `apps.json`, served at
+  `<base>apps.json` under `urlBaseName` and fetched with `cache: 'no-cache'`;
+  users can override it with a custom manifest URL (same-origin relative paths
+  or absolute HTTPS URLs)
+- **Selective loading:** Apps persisted as `AppStatus.Active` are loaded at
+  startup, and so are **core apps**, the entries of the deployment's own
+  `apps.json`, unless the workspace records the user turning them off. An app
+  whose `compatibleHostVersions` excludes this host is never loaded. Inactive
+  and unknown apps remain visible in the app manager but consume no network or
+  memory resources ([workspace-app-install-design.md §8.5](specifications/workspace-app-install-design.md#85-core-apps-on-by-default))
+- **Version precedence:** when the catalog and an install carry the same app,
+  the newer *compatible* semantic version wins, in the catalog merge and on
+  install; an install updates an older version in place, swapping the running
+  module without a reload ([workspace-app-install-design.md §7.5](specifications/workspace-app-install-design.md#75-version-upgrades))
 - **Two-layer architecture:** `loadRemoteApp(id, url)` is a pure async
   per-app loader; `useAppManager` is the orchestrator that coordinates
   manifest fetch → selective loading → lifecycle

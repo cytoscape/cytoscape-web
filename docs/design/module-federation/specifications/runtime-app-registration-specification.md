@@ -1,5 +1,6 @@
 # Runtime App Registration Specification
 
+- **Rev. 9 (11/11/2026): Jing Chen and Claude** — The in-place version update (§9.6) is verified end to end with two builds of the fixture app whose code differs
 - **Rev. 8 (11/10/2026): Jing Chen and Claude** — `compatibleHostVersions` is enforced before any load, at startup and on activation (`incompatible-host`, §8.1, §9.1); a failed app keeps its switch so it can be turned off (§10.1, §11.2, §9.7 rows 5 and 15)
 - **Rev. 7 (11/10/2026): Jing Chen and Claude** — Core apps: the default manifest's entries auto-load unless the workspace persists them as inactive (§8.1, §8.5, §10.1); the default manifest is fetched under the deployment's base path (§7.2); activations of one app run one at a time, after its startup load (§9.6)
 - **Rev. 6 (3/23/2026): Keiichiro ONO and Claude** — `author` field relaxed from required to optional with `"unknown"` default for backward compatibility with legacy `{ name, url }` manifests (§6.4, §7.1)
@@ -1108,6 +1109,14 @@ unmounts the running module, drops it from `appRegistry`, and takes the full
 fetch path. The App Store publishes each version at its own URL, so a changed
 URL is a changed version. A version update at an unchanged URL is not detected:
 the browser's module cache would return the old code anyway.
+
+The swap runs the new version's code in the same tab, without a reload, even
+though both versions register under the same federation name.
+`test/playwright/core-apps.spec.ts` proves it with two builds of the fixture
+app (`vite build` and `vite build --mode v2`, served at `/` and `/v2/`) whose
+markers say "fixture v1" and "fixture v2". The same bundle served at a second
+URL could not prove it: its chunks keep their URLs, so the browser hands back
+v1's modules.
 
 Activations of one app run one at a time. `useAppManager` queues load and
 activate work per app id; the startup auto-load (§8.3) queues each app's load,

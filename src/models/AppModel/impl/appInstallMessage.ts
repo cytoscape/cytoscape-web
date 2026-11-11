@@ -1,4 +1,14 @@
 import { AppInstallOutcome, AppVersionChange } from '../AppVersionChange'
+import { compareAppVersions } from './appVersion'
+
+/**
+ * True for an update to an older version: compatibility decided it, because
+ * the installed version cannot run on this Cytoscape Web (`appVersionChange`).
+ */
+const replacesWithOlder = (from?: string, to?: string): boolean => {
+  const order = compareAppVersions(to, from)
+  return order !== undefined && order < 0
+}
 
 /**
  * User-facing text for what an install did (`installApp`'s outcome).
@@ -18,6 +28,9 @@ export const appInstallMessage = (
     case 'new':
       return `Added ${name}`
     case 'update':
+      if (replacesWithOlder(outcome.from, outcome.to)) {
+        return `Replaced ${name} ${outcome.from}, which cannot run on this Cytoscape Web, with ${outcome.to}`
+      }
       return outcome.to === undefined
         ? `Updated ${name}`
         : `Updated ${name} to ${outcome.to}`
@@ -51,6 +64,9 @@ export const appInstallPreview = (
     case 'new':
       return undefined
     case 'update':
+      if (replacesWithOlder(change.from, change.to)) {
+        return `Replaces the installed version ${change.from}, which cannot run on this Cytoscape Web, with ${change.to}`
+      }
       return change.from !== undefined && change.to !== undefined
         ? `Updates the installed version ${change.from} to ${change.to}`
         : 'Replaces the installed version'

@@ -30,8 +30,17 @@ const mfRuntimePlugin = normalizePath(
 // It ALSO covers the reverse direction — remote → host — by importing
 // `cyweb/WorkspaceApi` and calling it at runtime. Nothing else in the suite
 // does, and that is the direction the runtime host resolution below changes.
-export default defineConfig({
+// Two builds of the same app (same federation name and id) whose code differs
+// in one constant, so an E2E can tell which version is running:
+//   vite build             → dist/,    marker "fixture v1"
+//   vite build --mode v2   → dist/v2/, marker "fixture v2"
+// dist/v2 sits inside dist so the fixture server serves it at /v2/ and the
+// repository's `dist` ignore rule covers it. Build v1 first: it empties dist/.
+export default defineConfig(({ mode }) => ({
   root: fixtureRoot,
+  define: {
+    __FIXTURE_VERSION__: JSON.stringify(mode === 'v2' ? '2' : '1'),
+  },
   plugins: [
     react(),
     federation({
@@ -70,10 +79,10 @@ export default defineConfig({
     }),
   ],
   build: {
-    outDir: 'dist',
+    outDir: mode === 'v2' ? 'dist/v2' : 'dist',
     // esnext so the MF runtime's top-level await is allowed under Rolldown,
     // matching the host build.
     target: 'esnext',
     minify: false,
   },
-})
+}))

@@ -26,14 +26,15 @@ import { AppSource, InstalledApp } from '../../../models/AppModel/InstalledApp'
  * app?" — which is what removability turns on (§12.3).
  *
  * @param isCompatible whether this Cytoscape Web can run an entry
- * (`compatibleHostVersions`); every entry counts as compatible by default
+ * (`compatibleHostVersions`; `runsOnThisHost` in the host). Required, so the
+ * merge and the install decide with the same check.
  * @returns the merged entries, a parallel `sources` map keyed by id, and the
  * ids present in the manifest.
  */
 export function composeCatalog(
   manifestEntries: AppCatalogEntry[],
-  installedApps: InstalledApp[] = [],
-  isCompatible: (entry: AppCatalogEntry) => boolean = () => true,
+  installedApps: InstalledApp[],
+  isCompatible: (entry: AppCatalogEntry) => boolean,
 ): {
   entries: AppCatalogEntry[]
   sources: Record<string, AppSource>

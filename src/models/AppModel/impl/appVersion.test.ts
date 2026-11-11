@@ -35,6 +35,9 @@ describe('compareAppVersions', () => {
 })
 
 describe('appVersionChange', () => {
+  /** Every entry runs here: versions alone decide. */
+  const runsAnywhere = (): boolean => true
+
   const entry = (version?: string, url?: string): AppCatalogEntry => ({
     id: 'networkAnalyzer',
     author: 'Test',
@@ -45,13 +48,15 @@ describe('appVersionChange', () => {
   })
 
   it('is new when nothing is installed under the id', () => {
-    expect(appVersionChange(entry('1.0.0'), undefined)).toEqual({
+    expect(appVersionChange(entry('1.0.0'), undefined, runsAnywhere)).toEqual({
       kind: 'new',
     })
   })
 
   it('is an update when the offered version is newer', () => {
-    expect(appVersionChange(entry('1.1.0'), entry('1.0.0'))).toEqual({
+    expect(
+      appVersionChange(entry('1.1.0'), entry('1.0.0'), runsAnywhere),
+    ).toEqual({
       kind: 'update',
       from: '1.0.0',
       to: '1.1.0',
@@ -59,7 +64,9 @@ describe('appVersionChange', () => {
   })
 
   it('keeps the installed version when the offered one is older', () => {
-    expect(appVersionChange(entry('1.0.0'), entry('1.1.0'))).toEqual({
+    expect(
+      appVersionChange(entry('1.0.0'), entry('1.1.0'), runsAnywhere),
+    ).toEqual({
       kind: 'older',
       installed: '1.1.0',
       offered: '1.0.0',
@@ -67,7 +74,9 @@ describe('appVersionChange', () => {
   })
 
   it('is the same app when the versions match', () => {
-    expect(appVersionChange(entry('1.1.0'), entry('1.1.0'))).toEqual({
+    expect(
+      appVersionChange(entry('1.1.0'), entry('1.1.0'), runsAnywhere),
+    ).toEqual({
       kind: 'same',
       version: '1.1.0',
     })
@@ -76,18 +85,26 @@ describe('appVersionChange', () => {
   it('is the same app when the remote entry URL matches', () => {
     const url = 'https://apps.cytoscape.org/web/networkanalyzer/remoteEntry.js'
     expect(
-      appVersionChange(entry(undefined, url), entry('1.0.0', url)),
+      appVersionChange(
+        entry(undefined, url),
+        entry('1.0.0', url),
+        runsAnywhere,
+      ),
     ).toEqual({ kind: 'same', version: '1.0.0' })
   })
 
   it('replaces, as before, when the versions cannot be compared', () => {
     // No usable version on one side: the link's entry wins, which is what an
     // install did before versions were compared.
-    expect(appVersionChange(entry(undefined), entry('1.0.0'))).toEqual({
+    expect(
+      appVersionChange(entry(undefined), entry('1.0.0'), runsAnywhere),
+    ).toEqual({
       kind: 'update',
       from: '1.0.0',
     })
-    expect(appVersionChange(entry('2.0.0'), entry('nightly'))).toEqual({
+    expect(
+      appVersionChange(entry('2.0.0'), entry('nightly'), runsAnywhere),
+    ).toEqual({
       kind: 'update',
       from: 'nightly',
       to: '2.0.0',

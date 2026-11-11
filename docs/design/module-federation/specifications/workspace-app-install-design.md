@@ -13,6 +13,11 @@
 > `mountApp`) are reused; this design adds a persisted, workspace-scoped install
 > layer on top.
 
+- Rev. 7 (11/11/2026): Jing Chen and Claude (Opus 5.5) — The install
+  confirmation dialog decides with the same compatibility check as the
+  install (`runsOnThisHost`), which `appVersionChange` and `composeCatalog`
+  now require; an older compatible version replacing one that cannot run is
+  worded as a replacement (§7.5, §15)
 - Rev. 6 (11/10/2026): Jing Chen and Claude (Opus 5.5) — The newer
   *compatible* version wins: `compatibleHostVersions` is checked before
   versions in the merge and on install, and an app the host cannot run is never
@@ -470,7 +475,17 @@ writing the new record as inactive would turn it off at the next start.
 The user is told which of these happened. The confirmation dialog says what
 confirming will do to an installed app ("Updates the installed version 1.0.0 to
 1.1.0", "Version 1.1.0 is installed, which is newer; it is kept",
-`appInstallPreview`). The toast after confirming says "Updated NetworkAnalyzer
+`appInstallPreview`). An update to an older version, which happens only when
+the installed one cannot run here, is worded as a replacement: "Replaces the
+installed version 2.0.0, which cannot run on this Cytoscape Web, with 1.0.0".
+
+The dialog, `installApp` and the catalog merge decide with one compatibility
+check, `runsOnThisHost` (`src/features/AppManager/install/installGate.ts`).
+`appVersionChange` and `composeCatalog` take it as a required parameter. It
+used to default to "every entry is compatible", and the dialog, which did not
+pass it, promised the opposite of what the install did whenever compatibility
+decided: an update to an incompatible v2 that the install refused, or keeping
+an incompatible v2 that the install replaced. The toast after confirming says "Updated NetworkAnalyzer
 to 1.1.0", or "NetworkAnalyzer 1.1.0 is already installed; kept it instead of
 1.0.0" (`appInstallMessage`). Install from URL shows the second kind of message
 under its field.
@@ -1104,3 +1119,8 @@ restore-after-reload defect (P1–P3).
 - A core app, or an install, whose `compatibleHostVersions` excludes this host
   is not loaded; its row says which version it needs. An install link
   offering such a version keeps the installed compatible version running.
+- The install dialog promises what the install does in both compatibility
+  cases: keeping a working v1 over an incompatible v2, and replacing an
+  incompatible v2 with a working v1.
+- After an in-place update the new version's code runs, not only its URL
+  (`core-apps.spec.ts`, two builds of the fixture app).

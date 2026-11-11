@@ -23,6 +23,17 @@ const HOST_VERSION: string | undefined =
 export const hostVersion = (): string | undefined => HOST_VERSION
 
 /**
+ * Whether this Cytoscape Web can run `entry`, by its `compatibleHostVersions`.
+ *
+ * The one compatibility check every version decision passes to
+ * `appVersionChange` and `composeCatalog`: the install, the catalog merge and
+ * the install confirmation dialog. A dialog that decided without it promised
+ * the opposite of what the install then did.
+ */
+export const runsOnThisHost = (entry: AppCatalogEntry): boolean =>
+  isHostCompatible(entry.compatibleHostVersions)
+
+/**
  * Validate a fetched single-entry manifest and return its one entry.
  *
  * Runs the standard `parseManifest()` unchanged (so a one-element

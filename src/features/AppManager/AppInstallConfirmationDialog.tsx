@@ -18,6 +18,7 @@ import type { AppCatalogEntry } from '@/models/AppModel/AppCatalogEntry'
 import { AppType } from '@/models/AppModel/AppType'
 import { appInstallPreview } from '@/models/AppModel/impl/appInstallMessage'
 import { appVersionChange } from '@/models/AppModel/impl/appVersion'
+import { runsOnThisHost } from './install/installGate'
 import type { PendingAppInstall } from '@/models/AppModel/PendingAppInstall'
 import { pendingInstallName } from '@/models/AppModel/PendingAppInstall'
 
@@ -58,7 +59,9 @@ const descriptionOf = (pending: PendingAppInstall): string => {
 
 /**
  * What confirming does to a React app the catalog already has: updates it,
- * keeps a newer installed version, or finds the same version (§7.5).
+ * keeps a newer or compatible installed version, or finds the same version
+ * (§7.5). Decided with the same compatibility check `installApp` uses, so the
+ * dialog promises what the install does.
  */
 const versionNoteOf = (
   pending: PendingAppInstall,
@@ -66,7 +69,11 @@ const versionNoteOf = (
 ): string | undefined =>
   pending.type === AppType.Client
     ? appInstallPreview(
-        appVersionChange(pending.entry, catalog[pending.entry.id]),
+        appVersionChange(
+          pending.entry,
+          catalog[pending.entry.id],
+          runsOnThisHost,
+        ),
       )
     : undefined
 

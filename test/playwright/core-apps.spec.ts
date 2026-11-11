@@ -26,8 +26,10 @@ const serveFixtureAsCoreApp = async (page: Page): Promise<void> => {
   })
 }
 
-// The same bundle under a second URL: to the host, another version.
-const V2_ENTRY_URL = 'http://localhost:4191/remoteEntry.js?v=2'
+// A second build of the fixture app (vite.config.ts, `--mode v2`) whose marker
+// says "fixture v2". Its code differs from v1's, so the tests can tell which
+// version actually runs, not only which URL the host loaded.
+const V2_ENTRY_URL = 'http://localhost:4191/v2/remoteEntry.js'
 // An install link's single-entry manifest, answered by `serveFixtureManifest`.
 const LINK_MANIFEST_URL = 'http://localhost:4191/link-manifest.json'
 
@@ -209,7 +211,9 @@ test.describe('install links for a core app', () => {
       `/?installApp=${encodeURIComponent(LINK_MANIFEST_URL)}`,
     )
     const marker = page.locator('[data-testid="remote-app-marker"]')
+    const runningVersion = page.locator('[data-testid="remote-app-version"]')
     await expect(marker).toBeVisible({ timeout: 15_000 })
+    await expect(runningVersion).toHaveText('fixture v1')
 
     // 3. The dialog says the link updates the installed version
     await expect(
@@ -224,8 +228,11 @@ test.describe('install links for a core app', () => {
       page.getByText('Updated Test Remote App to 2.0.0'),
     ).toBeVisible({ timeout: 15_000 })
 
-    // 5. One copy runs, and App Manager lists 2.0.0
+    // 5. One copy runs, and it is version 2's code, without a reload
+    await expect(runningVersion).toHaveText('fixture v2', { timeout: 15_000 })
     await expect(marker).toHaveCount(1)
+
+    // 6. App Manager lists 2.0.0
     await openAppManager(page)
     await expect(
       page.locator('[data-testid="app-settings-dialog"]'),
@@ -234,11 +241,12 @@ test.describe('install links for a core app', () => {
       .locator('[data-testid="app-settings-dialog-close-button"]')
       .click()
 
-    // 6. After a reload, 2.0.0 still runs
+    // 7. After a reload, version 2 still runs
     await page.unroute(LINK_MANIFEST_URL)
     await gotoAndWaitReady(page)
     await expect(marker).toBeVisible({ timeout: 15_000 })
     await expect(marker).toHaveCount(1)
+    await expect(runningVersion).toHaveText('fixture v2')
     await openAppManager(page)
     await expect(
       page.locator('[data-testid="app-settings-dialog"]'),
@@ -252,14 +260,13 @@ test.describe('install links for a core app', () => {
     await serveFixtureManifest(page, '**/apps.json', '2.0.0', V2_ENTRY_URL)
     await serveFixtureManifest(page, LINK_MANIFEST_URL, '1.0.0')
 
-    // 2. Open Cytoscape Web through the link
+    // 2. Open Cytoscape Web through the link; version 2 runs
     await gotoAndWaitReady(
       page,
       `/?installApp=${encodeURIComponent(LINK_MANIFEST_URL)}`,
     )
-    await expect(page.locator('[data-testid="remote-app-marker"]')).toBeVisible(
-      { timeout: 15_000 },
-    )
+    const runningVersion = page.locator('[data-testid="remote-app-version"]')
+    await expect(runningVersion).toHaveText('fixture v2', { timeout: 15_000 })
 
     // 3. The dialog says the installed, newer version is kept
     await expect(
@@ -276,7 +283,11 @@ test.describe('install links for a core app', () => {
       ),
     ).toBeVisible({ timeout: 15_000 })
 
-    // 5. App Manager still lists 2.0.0
+    // 5. Version 2 still runs, and App Manager still lists 2.0.0
+    await expect(runningVersion).toHaveText('fixture v2')
+    await expect(page.locator('[data-testid="remote-app-marker"]')).toHaveCount(
+      1,
+    )
     await openAppManager(page)
     await expect(
       page.locator('[data-testid="app-settings-dialog"]'),

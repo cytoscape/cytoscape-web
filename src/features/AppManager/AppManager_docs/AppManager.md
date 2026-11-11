@@ -94,7 +94,9 @@ The AppManager feature consists of:
    installed version in place, keeps a newer or equal one (only turning it on
    for an install link), and returns what it did (`AppInstallOutcome`).
    `AppInstallConfirmationDialog` says what confirming will do to an installed
-   app (`appInstallPreview`), and the toast and Install from URL name the
+   app (`appInstallPreview`), deciding with the same `runsOnThisHost` check as
+   `installApp` and the merge (`install/installGate.ts`; required by
+   `appVersionChange` and `composeCatalog`), and the toast and Install from URL name the
    version kept or installed (`appInstallMessage`). Activations of one app run
    one at a time, after its startup load
 7. Design: `docs/design/module-federation/specifications/workspace-app-install-design.md`

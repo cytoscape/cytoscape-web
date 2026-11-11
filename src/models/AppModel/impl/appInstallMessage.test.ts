@@ -13,6 +13,16 @@ describe('appInstallPreview', () => {
     )
   })
 
+  // Compatibility can make an install replace a newer version with an older
+  // one (the installed one cannot run here); "Updates … to" would misstate it.
+  it('says an older version replaces one that cannot run here', () => {
+    expect(
+      appInstallPreview({ kind: 'update', from: '2.0.0', to: '1.0.0' }),
+    ).toBe(
+      'Replaces the installed version 2.0.0, which cannot run on this Cytoscape Web, with 1.0.0',
+    )
+  })
+
   it('says an unversioned app is already installed', () => {
     expect(appInstallPreview({ kind: 'same' })).toBe('Already installed')
   })
@@ -52,6 +62,18 @@ describe('appInstallMessage', () => {
     ).toBe('Updated NetworkAnalyzer to 1.1.0')
     expect(appInstallMessage('NetworkAnalyzer', { kind: 'update' })).toBe(
       'Updated NetworkAnalyzer',
+    )
+  })
+
+  it('says an older version replaced one that cannot run here', () => {
+    expect(
+      appInstallMessage('NetworkAnalyzer', {
+        kind: 'update',
+        from: '2.0.0',
+        to: '1.0.0',
+      }),
+    ).toBe(
+      'Replaced NetworkAnalyzer 2.0.0, which cannot run on this Cytoscape Web, with 1.0.0',
     )
   })
 

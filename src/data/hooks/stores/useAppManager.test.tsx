@@ -55,12 +55,19 @@ vi.mock('../../../features/AppManager/install/migrateLegacyApps', () => ({
   migrateLegacyApps: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('../../../features/AppManager/install/installGate', () => ({
-  isAllowedOrigin: vi.fn(() => true),
-  isCatalogEntryAllowed: vi.fn(() => true),
-  isHostCompatible: vi.fn(() => true),
-  hostVersion: vi.fn(() => '1.1.1'),
-}))
+vi.mock('../../../features/AppManager/install/installGate', () => {
+  const isHostCompatible = vi.fn((_range?: string) => true)
+  return {
+    isAllowedOrigin: vi.fn(() => true),
+    isCatalogEntryAllowed: vi.fn(() => true),
+    isHostCompatible,
+    // As in the real module: the entry's range through isHostCompatible, so
+    // a test that stubs isHostCompatible decides compatibility everywhere.
+    runsOnThisHost: (entry: { compatibleHostVersions?: string }) =>
+      isHostCompatible(entry.compatibleHostVersions),
+    hostVersion: vi.fn(() => '1.1.1'),
+  }
+})
 
 vi.mock('./appLifecycle', () => ({
   mountApp: vi.fn().mockResolvedValue(undefined),

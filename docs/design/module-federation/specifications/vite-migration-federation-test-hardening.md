@@ -197,6 +197,12 @@ bootstrap publication. Highest value, highest setup.
   `apps.local.json` / the `/apps.json` dev middleware in `vite.config.ts`, or a
   URL search-param add-app flow if one exists).
 - **New file:** `test/playwright/remote-app-load.spec.ts`
+- **Two versions (added with core apps, 11/2026):** `npm run build:test-remote`
+  builds the fixture twice, `vite build` into `dist/` and `vite build --mode v2`
+  into `dist/v2/`, served at `/` and `/v2/`. Same federation name and id; the
+  marker says "fixture v1" or "fixture v2" (`__FIXTURE_VERSION__`).
+  `core-apps.spec.ts` uses it to prove an in-place version update runs the new
+  code. `serve.mjs` builds either one when it is missing.
 - Assert: host injects `remoteEntry.js`, the app appears in the App Manager
   registry, and the remote component renders (marker `data-testid` visible).
   Optionally assert `window.React` identity / single-React invariant to prove

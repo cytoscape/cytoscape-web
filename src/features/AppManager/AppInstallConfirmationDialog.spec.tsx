@@ -136,6 +136,47 @@ describe('AppInstallConfirmationDialog', () => {
       ).toBe('Version 0.1.0 is already installed')
     })
 
+    // Review: the dialog decided without the host compatibility check that
+    // installApp applies, so it could promise the opposite of the install.
+    // Unit tests run as host 1.1.1 (REACT_APP_VERSION from vite.config.ts).
+    describe('with versions this Cytoscape Web cannot run', () => {
+      const FUTURE_HOST = '>=999.0.0'
+
+      it('keeps a working installed version over an offer that cannot run here', () => {
+        installedAt('0.0.9')
+        renderDialog([
+          {
+            ...REACT_APP,
+            entry: { ...REACT_APP.entry, compatibleHostVersions: FUTURE_HOST },
+          },
+        ])
+
+        expect(
+          screen.getByTestId('app-install-version-mcodeweb').textContent,
+        ).toBe(
+          'Version 0.1.0 needs Cytoscape Web >=999.0.0; the installed 0.0.9 is kept',
+        )
+      })
+
+      it('replaces an installed version that cannot run here, even with an older one', () => {
+        useAppStore.getState().setCatalog([
+          {
+            ...REACT_APP.entry,
+            version: '0.2.0',
+            url: 'https://apps-stage.cytoscape.org/web/mcodeweb/0.2.0/remoteEntry.js',
+            compatibleHostVersions: FUTURE_HOST,
+          },
+        ])
+        renderDialog([REACT_APP])
+
+        expect(
+          screen.getByTestId('app-install-version-mcodeweb').textContent,
+        ).toBe(
+          'Replaces the installed version 0.2.0, which cannot run on this Cytoscape Web, with 0.1.0',
+        )
+      })
+    })
+
     it('adds nothing for an app that is not installed', () => {
       renderDialog([REACT_APP])
 

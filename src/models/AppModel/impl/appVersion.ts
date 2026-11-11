@@ -32,12 +32,14 @@ export const compareAppVersions = (
  * both run here, or both do not.
  *
  * @param isCompatible Whether this Cytoscape Web can run an entry
- *   (`compatibleHostVersions`); every entry counts as compatible by default
+ *   (`compatibleHostVersions`; `runsOnThisHost` in the host). Required, so no
+ *   caller can decide without it: the install dialog once did, and promised
+ *   the opposite of what the install did.
  */
 export const appVersionChange = (
   offered: AppCatalogEntry,
   installed: AppCatalogEntry | undefined,
-  isCompatible: (entry: AppCatalogEntry) => boolean = () => true,
+  isCompatible: (entry: AppCatalogEntry) => boolean,
 ): AppVersionChange => {
   if (installed === undefined) return { kind: 'new' }
   const offeredRuns = isCompatible(offered)
