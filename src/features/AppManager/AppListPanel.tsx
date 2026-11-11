@@ -32,6 +32,7 @@ import { CyApp } from '../../models/AppModel/CyApp'
 import { appLoadFailureMessage } from '../../models/AppModel/impl/appLoadFailureMessage'
 import { AppSource } from '../../models/AppModel/InstalledApp'
 import { useAppManagerCommands } from './AppManagerCommandsContext'
+import { incompatibleHostFailure, runsOnThisHost } from './install/installGate'
 
 /**
  * Merged view of a catalog entry with its runtime state.
@@ -70,11 +71,11 @@ function getAction(
   entry: AppDisplayEntry,
 ): 'enable' | 'disable' | 'loading' | 'remove' | 'none' {
   if (entry.inCatalog) {
+    // An app this Cytoscape Web cannot run is never loaded: there is nothing
+    // to turn on, or off, whatever its status. The row states why.
+    if (entry.failure?.code === 'incompatible-host') return 'none'
     if (entry.loadState === 'loading') return 'loading'
     if (entry.loadState === 'failed') {
-      // An app this Cytoscape Web cannot run is never loaded: there is
-      // nothing to turn on, or off. The row states why.
-      if (entry.failure?.code === 'incompatible-host') return 'none'
       // Any other failed app keeps its switch, so it can be turned off: a
       // core app is tried again at every start and cannot be uninstalled.
       // The switch is on while the app is meant to run, failed or not.
@@ -150,7 +151,11 @@ export const AppListPanel = () => {
       author: entry.author,
       inCatalog: true,
       loadState: loadStates[entry.id],
-      failure: loadErrors[entry.id],
+      // Derived from the entry, not only from what startup or activation
+      // recorded: an app installed off is never checked by either.
+      failure: runsOnThisHost(entry)
+        ? loadErrors[entry.id]
+        : incompatibleHostFailure(entry),
       status: app?.status,
       source,
       // Only workspace-installed apps are uninstallable; anything the manifest

@@ -13,7 +13,7 @@ import type {
 import { AppConfigContext } from '../../../AppConfigContext'
 import { logApp } from '../../../debug'
 import {
-  hostVersion,
+  incompatibleHostFailure,
   isAllowedOrigin,
   isCatalogEntryAllowed,
   runsOnThisHost,
@@ -80,16 +80,6 @@ const createDeferred = (): Deferred => {
     resolve = done
   })
   return { promise, resolve }
-}
-
-/** The failure recorded for an entry this Cytoscape Web cannot run. */
-const incompatibleHost = (entry: AppCatalogEntry): AppLoadFailure => {
-  const version = hostVersion()
-  return {
-    code: 'incompatible-host',
-    range: entry.compatibleHostVersions ?? '',
-    ...(version !== undefined && { hostVersion: version }),
-  }
 }
 
 /**
@@ -408,7 +398,7 @@ export const useAppManager = (): AppManagerCommands => {
       logApp.warn(
         `[useAppManager]: activateApp: "${id}" needs host ${catalogEntry.compatibleHostVersions}`,
       )
-      failApp(id, incompatibleHost(catalogEntry), { toast: false })
+      failApp(id, incompatibleHostFailure(catalogEntry), { toast: false })
       return
     }
 
@@ -815,7 +805,7 @@ export const useAppManager = (): AppManagerCommands => {
             // the user cannot fix it, and a toast would recur at every start.
             // The record is left alone, so a later host that fits loads it.
             if (runsOnThisHost(catalog[id])) return true
-            failApp(id, incompatibleHost(catalog[id]), { toast: false })
+            failApp(id, incompatibleHostFailure(catalog[id]), { toast: false })
             setStatus(id, AppStatus.Inactive)
             logApp.info(
               `[useAppManager]: startup auto-load: "${id}" skipped — needs host ${catalog[id].compatibleHostVersions}`,

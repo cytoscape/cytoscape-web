@@ -2,6 +2,7 @@ import { satisfies, valid, validRange } from 'semver'
 
 import { logApp } from '../../../debug'
 import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
+import { AppLoadFailure } from '../../../models/AppModel/AppLoadFailure'
 import { parseManifest } from '../manifest/parseManifest'
 
 /**
@@ -32,6 +33,20 @@ export const hostVersion = (): string | undefined => HOST_VERSION
  */
 export const runsOnThisHost = (entry: AppCatalogEntry): boolean =>
   isHostCompatible(entry.compatibleHostVersions)
+
+/**
+ * The failure an entry this Cytoscape Web cannot run carries. App Manager
+ * derives it for every row from the entry itself, whatever the app's status,
+ * and startup and activation record it when they skip the entry. Recording it
+ * only there left an app installed off with a switch and no reason.
+ */
+export const incompatibleHostFailure = (
+  entry: AppCatalogEntry,
+): AppLoadFailure => ({
+  code: 'incompatible-host',
+  range: entry.compatibleHostVersions ?? '',
+  ...(HOST_VERSION !== undefined && { hostVersion: HOST_VERSION }),
+})
 
 /**
  * Validate a fetched single-entry manifest and return its one entry.

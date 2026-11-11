@@ -13,15 +13,18 @@ All notable changes to Cytoscape Web are documented here.
 - The repository's `apps.json` is empty. The example apps are no longer listed by
   default; each deployment ships its own catalog
 - An app made for a different Cytoscape Web (`compatibleHostVersions`) is not started,
-  at startup or by its switch; its row says which version it needs. A newer version
+  at startup or by its switch; its row says which version it needs, also when it was
+  installed turned off. A newer version
   that cannot run here never replaces one that can, from `apps.json` or an install link
 - A failed app keeps its switch in Manage Apps, so a core app that fails at every start
   can be turned off. A fixed version a site ships in `apps.json` loads at the next start
-- Installing an app you already have compares versions as semver (3.2.0 is newer than
-  3.1.23). A newer version from an App Store link or Install from URL replaces the
-  installed one at once and keeps it on; an older or equal one keeps what you have and
-  says so. The install dialog shows which will happen, and a site's `apps.json` that ships
-  a newer version than an earlier App Store install replaces it at the next start
+- Installing an app you already have keeps the newest version that runs on this
+  Cytoscape Web: versions it cannot run are set aside first, then versions compare as
+  semver (3.2.0 is newer than 3.1.23). A newer version from an App Store link or Install
+  from URL replaces the installed one at once and keeps it on; an older or equal one keeps
+  what you have and says so. The install dialog shows which will happen, and a site's
+  `apps.json` that ships a newer version that runs here replaces an earlier App Store
+  install at the next start
 
 ### Fixed
 

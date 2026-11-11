@@ -1,5 +1,6 @@
 # Runtime App Registration Specification
 
+- **Rev. 10 (11/11/2026): Jing Chen and Claude** — Overview, goals, startup responsibilities, the Step 4 verification and the startup-footprint rule now state the core-app and compatibility policy of §8.1; App Manager derives `incompatible-host` for every row (§11.2)
 - **Rev. 9 (11/11/2026): Jing Chen and Claude** — The in-place version update (§9.6) is verified end to end with two builds of the fixture app whose code differs
 - **Rev. 8 (11/10/2026): Jing Chen and Claude** — `compatibleHostVersions` is enforced before any load, at startup and on activation (`incompatible-host`, §8.1, §9.1); a failed app keeps its switch so it can be turned off (§10.1, §11.2, §9.7 rows 5 and 15)
 - **Rev. 7 (11/10/2026): Jing Chen and Claude** — Core apps: the default manifest's entries auto-load unless the workspace persists them as inactive (§8.1, §8.5, §10.1); the default manifest is fetched under the deployment's base path (§7.2); activations of one app run one at a time, after its startup load (§9.6)
@@ -51,7 +52,9 @@ Additional goals:
 - Allow users to override the manifest source with their own custom catalog URL
 - Avoid rebuilding the host when the app list or remote URLs change
 - Avoid loading every app listed in the manifest at startup
-- Auto-load only apps persisted as active
+- Auto-load only apps persisted as active and the deployment's core apps the
+  user has not turned off, never an app whose `compatibleHostVersions`
+  excludes the host (§8.1)
 - Keep inactive or never-used apps visible in the UI without increasing startup
   footprint
 - Keep app state consistent across restore, enable, disable, failure, and retry
@@ -142,7 +145,8 @@ catalog, while actual app loading happens only when needed.
 
 - Make external app registration fully runtime-configurable
 - Keep the external app catalog in host state
-- Load only persisted active apps at startup
+- Load at startup only persisted active apps and the deployment's core apps
+  not turned off, and never an app the host cannot run (§8.1)
 - Allow unloaded apps to remain visible in the app manager UI
 - Track runtime load progress explicitly
 - Support a default App Store manifest source plus a user-configured override
@@ -192,8 +196,8 @@ This means:
 - The host build has zero knowledge of which external apps exist
 - `apps.json` is no longer read at build time by webpack
 - The `useAppManager.ts` top-level `await loadModules()` is removed; module
-  loading is triggered on demand (at startup for persisted active apps, or on
-  user-initiated enable)
+  loading is triggered on demand (at startup for persisted active apps and
+  core apps, §8.1, or on user-initiated enable)
 - The module-level variables (`loadedApps`, `activatedAppIdSet`) are removed;
   `appRegistry` becomes a dynamically growing Map managed by the orchestrator
 - `ExternalComponent.tsx`'s `loadRemoteEntry()` and `initAndGetModule()`
@@ -1024,7 +1028,8 @@ AppStatus policy:
 ### 9.3 Subsequent Startups
 
 Once an app has been enabled successfully, it participates in the normal
-auto-load path like any other persisted active app.
+auto-load path like any other persisted active app. A core app needs no first
+enable: it auto-loads unless the user turned it off (§8.1).
 
 ### 9.4 Deactivation
 
@@ -1269,7 +1274,7 @@ activation state.
 | Yes     | loaded     | inactive            | Show Enable (fast, no network fetch)         |
 | Yes     | failed     | active or error     | Show the switch on; also Retry for `mount-failed` |
 | Yes     | failed     | inactive or missing | Show the switch off; also Retry for `mount-failed` |
-| Yes     | failed (`incompatible-host`) | any | No switch; the row states the required host version |
+| Yes     | any (`incompatible-host`) | any | No switch; the row states the required host version. Derived from the entry for every row, not only when startup or activation recorded it |
 | No      | loaded     | active              | Show Disable only (session-only, see below)  |
 | No      | loaded     | inactive            | Show Remove only (re-enable not possible)    |
 | No      | failed     | any                 | Do not display (no catalog entry, no retry)  |
@@ -1369,7 +1374,8 @@ useAppManager owns orchestration:
 - resolve manifest source via `obtainCatalogEntries`
 - populate catalog
 - restore persisted app state
-- auto-load persisted active apps
+- auto-load persisted active apps and core apps not turned off, skipping any
+  the host cannot run (§8.1)
 - handle in-page dynamic activation
 - coordinate mount and unmount
 
@@ -1505,12 +1511,14 @@ independently, and the host must build and start after each one.
 
 ### Step 4 — Selective startup loading
 
-- After `restore(catalogAppIds)`, select apps with `AppStatus.Active`
+- After `restore(...)`, select the apps `startupAppStatus` seeds active:
+  persisted active apps and core apps not turned off (§8.1)
 - Load them via `Promise.allSettled` calling `loadRemoteApp` for each
 - Update `loadStates` (loading → loaded / failed) around each load
 - Run register → processDeclarativeResources → mountApp for each success
-- Verify: only previously active apps are loaded at startup; inactive apps
-  remain unloaded
+- Verify: only previously active apps and core apps not turned off are loaded
+  at startup; inactive apps remain unloaded, and an app the host cannot run is
+  not loaded and its row shows `incompatible-host`
 
 ### Step 5 — User-initiated in-page activation
 
@@ -1555,7 +1563,10 @@ independently, and the host must build and start after each one.
 ### 14.1 Startup Footprint
 
 With many apps in the manifest, startup must not fetch every remote entry.
-Only persisted active apps may issue remote loading requests.
+Only persisted active apps and the deployment's core apps (the default
+manifest's entries the user has not turned off) may issue remote loading
+requests, and never one the host cannot run. A deployment keeps startup small
+by keeping its `apps.json` short; a user-set manifest adds no core apps.
 
 ### 14.2 Restore Behavior
 
@@ -1631,6 +1642,7 @@ The key architectural decisions are:
 - use in-page dynamic first activation with rollback and immediate cleanup-based deactivation
 
 This preserves existing rendering assumptions, supports App Store generated
-catalogs with user override, supports persisted active app restore, and allows
+catalogs with user override, supports persisted active app restore and
+core apps that are on by default, and allows
 the host to scale to large app catalogs without loading every remote at
 startup.

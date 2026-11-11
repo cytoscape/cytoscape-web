@@ -13,6 +13,10 @@
 > `mountApp`) are reused; this design adds a persisted, workspace-scoped install
 > layer on top.
 
+- Rev. 8 (11/11/2026): Jing Chen and Claude (Opus 5.5) — App Manager derives
+  `incompatible-host` for every row from the entry, so an app installed off
+  is explained too (§8.5); the summary, the command signature (§7.1) and the
+  merge helper (§8.2) state compatibility first, then version
 - Rev. 7 (11/11/2026): Jing Chen and Claude (Opus 5.5) — The install
   confirmation dialog decides with the same compatibility check as the
   install (`runsOnThisHost`), which `appVersionChange` and `composeCatalog`
@@ -87,9 +91,12 @@
 - **Core apps:** the entries of the deployment's own `apps.json` are on by
   default. They load at startup unless the workspace records that the user
   turned them off, and only that choice is written down (§8.5).
-- **Versions:** when `apps.json` and an install carry the same app, the newer
-  semantic version wins, whichever side it is on. An install link updates an
-  older version in place and never replaces a newer one (§7.5).
+- **Versions:** when `apps.json` and an install carry the same app,
+  compatibility comes first and version second. An entry this host can run
+  (`compatibleHostVersions`) beats one it cannot; between two that both run,
+  or both do not, the newer semantic version wins, whichever side it is on. An
+  install updates an older version in place and keeps a newer one, and an
+  older version that runs replaces a newer one that cannot (§7.5).
 - **One source of truth:** manifest apps also get an `InstalledApp` record
   when activated, so `workspace.installedApps` holds *all* durable app state.
   The legacy global `apps` IndexedDB store is absorbed by an idempotent
@@ -326,9 +333,16 @@ roles are clarified:
 Add two commands to `useAppManager` (`AppManagerCommands`):
 
 ```typescript
-installApp(entry: AppCatalogEntry, opts?: { activate?: boolean }): Promise<void>
+installApp(
+  entry: AppCatalogEntry,
+  opts?: { activate?: boolean },
+): Promise<AppInstallOutcome> // what it did: new | update | same | older | incompatible | rejected
 uninstallApp(id: string): Promise<void>
 ```
+
+`AppInstallOutcome` (`src/models/AppModel/AppVersionChange.ts`) lets the
+caller tell the user what happened (`appInstallMessage`); §7.5 defines each
+case. Steps 2–4 below run for `new` and `update` only.
 
 `installApp`:
 
@@ -545,9 +559,10 @@ that rebuilds the catalog, not only at startup:
 | Manual **Refresh** button | `refreshCatalog()` |
 | Manifest source change | `AppSettingsDialog` → `setManifestSource()` → `refreshCatalog()` |
 
-Centralize the merge in one helper (e.g.
-`composeCatalog(manifestEntries, workspace.installedApps)`) shared by all three
-paths; otherwise a manual Refresh silently drops installed apps from the
+Centralize the merge in one helper,
+`composeCatalog(manifestEntries, workspace.installedApps, runsOnThisHost)`,
+shared by all three paths. The compatibility check is a required argument, so
+every path ranks entries the same way as the install and its dialog (§7.5); otherwise a manual Refresh silently drops installed apps from the
 available list until the next reload.
 
 ### 8.3 Ordering dependency (highest implementation risk)
@@ -636,7 +651,10 @@ session from it before the auto-load pass.
   excludes this Cytoscape Web is not loaded at startup or by its switch. Its
   row states the required version (`incompatible-host`) and has no switch;
   there is no startup toast, since the user cannot fix it and it would recur
-  at every start.
+  at every start. App Manager derives this from the entry for every row
+  (`incompatibleHostFailure` in `installGate.ts`), whatever the app's status:
+  startup checks only the apps it would load, so an app installed off, or
+  with an inactive record, would otherwise keep a switch and no reason.
 - **Deployment consequence.** Adding an app to a deployment's `apps.json` turns
   it on for every user who has not turned it off. The repository's `apps.json`
   is empty; each deployment's build swaps in its own list.

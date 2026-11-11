@@ -50,16 +50,19 @@ A row can carry other marks:
 
 ### Installing an App from a URL
 
-1. Open **Apps → Manage Apps...** and stay on the Apps tab.
-2. Under **Install from URL**, paste the app's manifest URL into
-   **Single-entry manifest URL**. This is a `.json` address, not the address
-   of a `remoteEntry.js` file.
+1. Open **Apps → Manage Apps...**.
+2. Under **Install from URL**, above the tabs, paste the app's manifest URL
+   into **App manifest or service URL**. This is a `.json` address, not the
+   address of a `remoteEntry.js` file.
 3. Click **Install**.
 
 The app is added to the list turned off. Turn it on with its switch. If you
-already have the app, a newer version replaces it and an app that was on
-stays on; an older version, or the same one, is not installed, and a message
-under the field says which version you kept.
+already have the app, the version you end up with follows the same rule as
+for a link (see [Installing from a Link](#installing-from-a-link)): when the
+URL's version replaces yours, an app that was on stays on; when yours is
+kept, a message under the field says so. An app made for a newer Cytoscape
+Web than yours is not installed: the field says "The app is not compatible
+with this host version".
 
 Cytoscape Web installs apps only from the Cytoscape App Store's servers
 (`https://apps.cytoscape.org`). An app from any other address is refused
@@ -85,22 +88,28 @@ or **Service**), version, author, description and URL. Click Install to
 add all of them, or **Cancel** to add none. Apps installed this way are
 turned on.
 
-If you already have the app, the newer version wins. Versions are compared
-part by part, so 3.2.0 is newer than 3.1.23:
+If you already have the app, Cytoscape Web keeps the newest version that runs
+on your Cytoscape Web. It first sets aside a version made for a newer
+Cytoscape Web than yours, then compares versions part by part, so 3.2.0 is
+newer than 3.1.23:
 
-- A link to a **newer** version updates the app. The dialog says, for example,
-  "Updates the installed version 1.0.0 to 1.1.0", and the new version replaces
-  the old one at once, without a reload.
+- A link to a **newer** version that runs here updates the app. The dialog
+  says, for example, "Updates the installed version 1.0.0 to 1.1.0", and the
+  new version replaces the old one at once, without a reload.
 - A link to an **older** version, or the same one, keeps the version you have.
   The dialog says so, and the app is turned on if it was off.
-- A link to a version made for a newer Cytoscape Web than yours also keeps the
+- A link to a version made for a newer Cytoscape Web than yours keeps the
   version you have, and the dialog says which Cytoscape Web it needs.
 - If the version you have cannot run on your Cytoscape Web, a link to one that
   can replaces it, even an older one. The dialog says so.
 
-This also applies to apps from the catalog. If the catalog later ships a
-version newer than one you installed from a link, the catalog's version
-replaces it the next time Cytoscape Web starts.
+If you do not have the app yet and the link's version is made for a newer
+Cytoscape Web, it is added turned off, without a switch; its row says which
+version it needs.
+
+The same rule decides between an app you installed from a link and the same
+app in the catalog: if the catalog later ships a newer version that runs on
+your Cytoscape Web, it replaces yours the next time Cytoscape Web starts.
 
 Only install apps from sources you trust. If a Service App in the link is
 already installed, Cytoscape Web skips it and says "Already installed".
@@ -127,9 +136,11 @@ columns. Use only services you trust with your data.
 
 To add a Service App:
 
-1. Open **Apps → Manage Apps...** and click the **Service Apps** tab.
-2. Paste the service's URL into **Enter new external service URL**.
-3. Click **Add**.
+1. Open **Apps → Manage Apps...**.
+2. Under **Install from URL**, above the tabs, paste the service's URL into
+   **App manifest or service URL**.
+3. Click **Install**. Cytoscape Web recognizes a Service App and switches to
+   the **Service Apps** tab, which lists it.
 
 For example, this URL adds the **Update tables example** Service App:
 

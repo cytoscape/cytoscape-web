@@ -65,6 +65,11 @@ vi.mock('../../../features/AppManager/install/installGate', () => {
     // a test that stubs isHostCompatible decides compatibility everywhere.
     runsOnThisHost: (entry: { compatibleHostVersions?: string }) =>
       isHostCompatible(entry.compatibleHostVersions),
+    incompatibleHostFailure: (entry: { compatibleHostVersions?: string }) => ({
+      code: 'incompatible-host',
+      range: entry.compatibleHostVersions ?? '',
+      hostVersion: '1.1.1',
+    }),
     hostVersion: vi.fn(() => '1.1.1'),
   }
 })

@@ -295,6 +295,69 @@ test.describe('install links for a core app', () => {
   })
 })
 
+// Review: an app installed off was never checked for host compatibility, so
+// its row had a switch and no reason. The row now derives it from the entry.
+test.describe('an app this Cytoscape Web cannot run', () => {
+  test('an install link adds it turned off, with the reason and no switch', async ({
+    page,
+  }) => {
+    // 1. The site ships no core apps; a link offers an app that needs a
+    //    Cytoscape Web that does not exist yet
+    await page.route('**/apps.json', async (route) => {
+      await route.fulfill({ json: [] })
+    })
+    await page.route(LINK_MANIFEST_URL, async (route) => {
+      const response = await route.fetch({ url: FIXTURE_REMOTE_MANIFEST_URL })
+      const [fixture] = (await response.json()) as Array<
+        Record<string, unknown>
+      >
+      await route.fulfill({
+        json: [{ ...fixture, compatibleHostVersions: '>=999.0.0' }],
+        headers: { 'access-control-allow-origin': '*' },
+      })
+    })
+
+    // 2. Open Cytoscape Web through the link and confirm
+    await gotoAndWaitReady(
+      page,
+      `/?installApp=${encodeURIComponent(LINK_MANIFEST_URL)}`,
+    )
+    await page
+      .locator('[data-testid="app-install-confirmation-dialog-confirm"]')
+      .click({ timeout: 15_000 })
+    await expect(
+      page.getByText('is not compatible with this host version', {
+        exact: false,
+      }),
+    ).toBeVisible({ timeout: 15_000 })
+
+    // 3. App Manager lists it with the reason, and no switch; it never ran
+    await openAppManager(page)
+    const reason = page.locator(`[data-testid="app-failure-${APP_ID}"]`)
+    await expect(reason).toContainText('Needs Cytoscape Web >=999.0.0')
+    await expect(
+      page.locator(`[data-testid="app-toggle-${APP_ID}"]`),
+    ).toHaveCount(0)
+    await expect(page.locator('[data-testid="remote-app-marker"]')).toHaveCount(
+      0,
+    )
+
+    // 4. After a reload it is still explained, not offered a switch
+    await expect
+      .poll(async () => await storedAppStatus(page, APP_ID), {
+        timeout: 15_000,
+      })
+      .toBe('inactive')
+    await page.unroute(LINK_MANIFEST_URL)
+    await gotoAndWaitReady(page)
+    await openAppManager(page)
+    await expect(reason).toContainText('Needs Cytoscape Web >=999.0.0')
+    await expect(
+      page.locator(`[data-testid="app-toggle-${APP_ID}"]`),
+    ).toHaveCount(0)
+  })
+})
+
 // A core app is tried at every start and cannot be uninstalled, so a broken
 // one must be possible to turn off; one this host cannot run is not started;
 // and a fixed version shipped in apps.json replaces a broken one on reload.

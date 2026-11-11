@@ -317,6 +317,41 @@ describe('AppListPanel — load failure reasons', () => {
       expect(cmds.activateApp).toHaveBeenCalledWith('broken')
     })
 
+    // Review: only startup and activation recorded `incompatible-host`, so an
+    // incompatible app installed off (or with an inactive record) kept an
+    // enable switch and no reason, also after a reload. The row now derives it
+    // from the entry. Unit tests run as host 1.1.1 (vite.config.ts).
+    it('explains and offers no switch for an incompatible app that never loaded', () => {
+      useAppStore
+        .getState()
+        .setCatalog(
+          [{ ...entry('future'), compatibleHostVersions: '>=999.0.0' }],
+          { future: 'appstore' },
+          [],
+        )
+      useAppStore.setState({
+        apps: {
+          future: {
+            id: 'future',
+            name: 'future app',
+            status: AppStatus.Inactive,
+          } as any,
+        },
+        loadStates: {},
+        loadErrors: {},
+      })
+      render(
+        <AppManagerCommandsProvider value={commands()}>
+          <AppListPanel />
+        </AppManagerCommandsProvider>,
+      )
+
+      expect(screen.queryByTestId('app-toggle-future')).toBeNull()
+      expect(screen.getByTestId('app-failure-future').textContent).toBe(
+        'Needs Cytoscape Web >=999.0.0; this is 1.1.1. It stays off until a version that supports this Cytoscape Web is available.',
+      )
+    })
+
     it('offers no switch for an app this host cannot run', () => {
       renderFailedAs(AppStatus.Inactive, {
         code: 'incompatible-host',

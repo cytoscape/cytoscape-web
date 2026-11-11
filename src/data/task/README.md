@@ -73,10 +73,13 @@ loads apps at startup, and returns the commands App Manager calls
 Turning a core app off writes an `inactive` record to the workspace, which is
 what keeps it off at the next startup.
 
-**Installing:** `installApp` compares the offered entry's version with the
-catalog's entry for the same id, as semver. A newer version replaces the
-installed one in place (a running app stays on); the same or an older version
-is kept, and only turned on for an install link. It waits for the catalog to be
+**Installing:** `installApp` compares the offered entry with the catalog's
+entry for the same id: compatibility with this host first
+(`runsOnThisHost`), then version, as semver. A newer version that runs here
+replaces the installed one in place (a running app stays on); the same or an
+older version is kept, and only turned on for an install link; an older
+version that runs replaces a newer one that cannot. It returns what it did
+(`AppInstallOutcome`). It waits for the catalog to be
 composed first, and activations of one app run one at a time, after its
 startup load.
 
