@@ -27,7 +27,7 @@ import { CyDialog } from '@/components/CyDialog'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { listLLMModels } from '../api/chatgpt'
-import { LLMModel } from '../model/LLMModel'
+import { getModelNameError, LLMModel } from '../model/LLMModel'
 import {
   endpointOrigin,
   getEndpointError,
@@ -75,17 +75,25 @@ export const LLMQueryOptionsDialog = (
   // with the defaults, so it is re-created once more. Confirm also sets
   // `optionsHydrated`, but in the same render that closes the dialog, so it
   // never re-creates a form the user is leaving.
+  //
+  // Not once the user has typed in it, though: re-creating the form then
+  // would silently discard what they entered, a key included. Their edits
+  // stand, as a choice made in the store before a late read does.
   useHydrateLLMQueryOptions()
   const optionsHydrated = useLLMQueryStore((state) => state.optionsHydrated)
   const [wasOpen, setWasOpen] = useState(open)
   const [wasHydrated, setWasHydrated] = useState(optionsHydrated)
+  const [edited, setEdited] = useState(false)
   const [formKey, setFormKey] = useState(0)
   if (open !== wasOpen || optionsHydrated !== wasHydrated) {
     const opened = open && !wasOpen
     const hydratedWhileOpen = open && optionsHydrated && !wasHydrated
     setWasOpen(open)
     setWasHydrated(optionsHydrated)
-    if (opened || hydratedWhileOpen) {
+    if (opened) {
+      setEdited(false)
+    }
+    if (opened || (hydratedWhileOpen && !edited)) {
       setFormKey(formKey + 1)
     }
   }
@@ -95,6 +103,11 @@ export const LLMQueryOptionsDialog = (
       key={formKey}
       open={open}
       handleClose={handleClose}
+      onEdit={() => {
+        if (!edited) {
+          setEdited(true)
+        }
+      }}
     />
   )
 }
@@ -105,9 +118,12 @@ export const LLMQueryOptionsDialog = (
  * CyDialog block, where the dismissal policy test looks for it.
  */
 const LLMQueryOptionsDialogContent = (
-  props: LLMQueryOptionsDialogProps,
+  props: LLMQueryOptionsDialogProps & {
+    // Called when the user changes any field (see the wrapper)
+    onEdit: () => void
+  },
 ): JSX.Element => {
-  const { open, handleClose } = props
+  const { open, handleClose, onEdit } = props
 
   const [showTemplatePreview, setShowTemplatePreview] = useState(false)
   const addMessage = useMessageStore((state) => state.addMessage)
@@ -202,11 +218,15 @@ const LLMQueryOptionsDialogContent = (
     localProvider === 'openai'
       ? undefined
       : getEndpointError(localBaseUrl, effectiveApiKey)
+  // The same limits the saved row has, so what is confirmed here can always
+  // be read back after a reload.
+  const modelError = getModelNameError(localLLMModel)
   const modelOptions = Array.from(
     new Set([...fetchedModels, ...provider.suggestedModels]),
   )
 
   const handleProviderChange = (id: LLMProviderId): void => {
+    onEdit()
     const next = getLLMProvider(id)
     setLocalProvider(next.id)
     setLocalBaseUrl(next.defaultBaseUrl)
@@ -218,11 +238,13 @@ const LLMQueryOptionsDialogContent = (
   }
 
   const handleBaseUrlChange = (value: string): void => {
+    onEdit()
     setLocalBaseUrl(value)
     invalidateRefresh()
   }
 
   const handleRefreshModels = async (): Promise<void> => {
+    onEdit()
     refreshRequestRef.current += 1
     const requestId = refreshRequestRef.current
     const isCurrent = (): boolean => requestId === refreshRequestRef.current
@@ -284,6 +306,7 @@ const LLMQueryOptionsDialogContent = (
   // and then cancels must not be left with the key still in place.
   const keyEntered = hasEnteredLLMApiKey(localProvider, storedKeys)
   const handleForgetKeyClick = (): void => {
+    onEdit()
     clearLLMApiKey(localProvider)
     setLocalLLMApiKey('')
     addMessage({
@@ -364,11 +387,24 @@ const LLMQueryOptionsDialogContent = (
             // Only the typed text is controlled: the model name is whatever
             // the field shows, whether picked from the list or typed.
             inputValue={localLLMModel}
-            onInputChange={(_e, value) => setLocalLLMModel(value)}
+            onInputChange={(_e, value) => {
+              // Autocomplete also reports the value it already shows; only a
+              // change is an edit.
+              if (value !== localLLMModel) {
+                onEdit()
+              }
+              setLocalLLMModel(value)
+            }}
             renderInput={(params) => (
               <TextField
                 {...params}
                 label="LLM Model"
+                // A blank name only disables Confirm, as before; a name that
+                // is too long says why.
+                error={localLLMModel.trim() !== '' && modelError !== undefined}
+                helperText={
+                  localLLMModel.trim() !== '' ? modelError : undefined
+                }
                 inputProps={{
                   ...params.inputProps,
                   'data-testid': 'llm-query-options-model-input',
@@ -435,7 +471,10 @@ const LLMQueryOptionsDialogContent = (
                 fullWidth
                 label={apiKeyLabel}
                 helperText={apiKeyHelp}
-                onChange={(e) => setLocalLLMApiKey(e.target.value)}
+                onChange={(e) => {
+                  onEdit()
+                  setLocalLLMApiKey(e.target.value)
+                }}
               ></TextField>
             </Tooltip>
             {keyEntered && (
@@ -477,6 +516,7 @@ const LLMQueryOptionsDialogContent = (
                   (t) => t.name === e.target.value,
                 )
                 if (nextTemplate !== undefined) {
+                  onEdit()
                   setLocalLLMTemplate(nextTemplate)
                 }
               }}
@@ -539,7 +579,7 @@ const LLMQueryOptionsDialogContent = (
         <Button
           data-testid="llm-query-options-confirm-button"
           variant="contained"
-          disabled={localLLMModel.trim() === '' || endpointError !== undefined}
+          disabled={modelError !== undefined || endpointError !== undefined}
           onClick={() => {
             // Options first: the store forgets any key that is not for this
             // provider and endpoint, and a key typed here is then bound to

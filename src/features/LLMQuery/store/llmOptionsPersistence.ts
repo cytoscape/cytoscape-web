@@ -5,10 +5,11 @@ import {
   putProfileSetting,
 } from '../../../data/db/profileDb'
 import { logStore } from '../../../debug'
-import { LLMModel, models } from '../model/LLMModel'
+import { LLMModel, MAX_MODEL_NAME_LENGTH, models } from '../model/LLMModel'
 import {
   getEndpointError,
   LLMProviderId,
+  MAX_ENDPOINT_URL_LENGTH,
   providers,
 } from '../model/LLMProvider'
 import { LLM_QUERY_OPTIONS_SETTING } from './storageKeys'
@@ -28,9 +29,6 @@ export interface LLMQueryOptions {
   readonly model: LLMModel
 }
 
-const MAX_BASE_URL_LENGTH = 2048
-const MAX_MODEL_LENGTH = 200
-
 const PROVIDER_IDS = providers.map((p) => p.id) as [
   LLMProviderId,
   ...LLMProviderId[],
@@ -46,13 +44,13 @@ const storedOptionsSchema = z.object({
   baseUrl: z
     .string()
     .trim()
-    .max(MAX_BASE_URL_LENGTH)
+    .max(MAX_ENDPOINT_URL_LENGTH)
     // Same rule the dialog applies: empty, or an http(s) URL. Checked without
     // a key; whether a key may travel to this endpoint is decided again when
     // a request is built (api/chatgpt.ts).
     .refine((url) => getEndpointError(url, '') === undefined),
   // Absent means "the default model": see toStoredOptions.
-  model: z.string().trim().min(1).max(MAX_MODEL_LENGTH).optional(),
+  model: z.string().trim().min(1).max(MAX_MODEL_NAME_LENGTH).optional(),
 })
 
 type StoredLLMQueryOptions = z.infer<typeof storedOptionsSchema>
@@ -117,9 +115,19 @@ export const loadLLMQueryOptions = async (): Promise<
   return options
 }
 
-/** Remember the options in this browser. Rejects when the write fails. */
+/**
+ * Remember the options in this browser. Rejects when the write fails, and
+ * when the options are not ones the reader would accept: a row that cannot be
+ * read back is worse than no row, because the next reload would put the
+ * defaults in its place. The dialog applies the same limits before Confirm,
+ * so this only stops other callers; the row already saved is left as it is.
+ */
 export const saveLLMQueryOptions = async (
   options: LLMQueryOptions,
 ): Promise<void> => {
-  await putProfileSetting(LLM_QUERY_OPTIONS_SETTING, toStoredOptions(options))
+  const row = storedOptionsSchema.safeParse(toStoredOptions(options))
+  if (!row.success) {
+    throw new Error('LLM Query options are not valid and were not saved')
+  }
+  await putProfileSetting(LLM_QUERY_OPTIONS_SETTING, row.data)
 }

@@ -1,5 +1,5 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   closeProfileDb,
@@ -20,6 +20,7 @@ beforeEach(async () => {
 })
 
 afterEach(async () => {
+  vi.restoreAllMocks()
   await deleteProfileDb()
 })
 
@@ -45,11 +46,21 @@ describe('BrowserStorageView', () => {
   })
 
   it('does not create the profile database by looking for it', async () => {
+    // The view lists the databases once per database it inspects, and only
+    // opens one that is listed. Waiting for both listings to settle is what
+    // makes the assertions below mean "after the inspection finished": the
+    // session table is on the page from the first render.
+    const listDatabases = vi.spyOn(indexedDB, 'databases')
+    const openDatabase = vi.spyOn(indexedDB, 'open')
+
     render(<BrowserStorageView />)
 
-    await waitFor(() => {
-      expect(screen.getByTestId('manual-browser-storage-session')).toBeTruthy()
-    })
+    await waitFor(() => expect(listDatabases).toHaveBeenCalledTimes(2))
+    await Promise.all(listDatabases.mock.results.map((call) => call.value))
+    // One more turn of the event loop, for an open that would follow
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(openDatabase).not.toHaveBeenCalledWith(PROFILE_DB_NAME)
     expect(screen.queryByTestId('manual-browser-storage-profile-db')).toBeNull()
     expect(await databaseNames()).not.toContain(PROFILE_DB_NAME)
   })

@@ -234,14 +234,19 @@ export const useLLMQueryStore = create(
       })
     },
     setLLMOptions: (options) => {
+      // OpenAI is always the OpenAI endpoint. The query callers send the key
+      // to `LLMBaseUrl` whatever the provider, so provider `openai` beside
+      // another endpoint would hand the OpenAI key to that endpoint. The
+      // saved row has the same rule (parseLLMQueryOptions).
+      const baseUrl = options.provider === 'openai' ? '' : options.baseUrl
       set((state) => {
         state.LLMProvider = options.provider
-        state.LLMBaseUrl = options.baseUrl
+        state.LLMBaseUrl = baseUrl
         state.LLMModel = options.model
         // From here on the user's choice stands: a read of the saved options
         // that is still in flight must not replace it.
         state.optionsHydrated = true
-        Object.assign(state, keysFor(options.provider, options.baseUrl, state))
+        Object.assign(state, keysFor(options.provider, baseUrl, state))
       })
       persistKeys(get())
       // Outside the recipe: an Immer producer must be pure. Not awaited, and
@@ -249,7 +254,7 @@ export const useLLMQueryStore = create(
       // workspace reset flips; the profile database is not part of a reset.
       void saveLLMQueryOptions({
         provider: options.provider,
-        baseUrl: options.baseUrl,
+        baseUrl,
         model: options.model,
       }).catch((e) => {
         logStore.error(

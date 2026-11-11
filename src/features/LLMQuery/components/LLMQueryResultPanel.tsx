@@ -21,6 +21,9 @@ export const LLMQueryResultPanel = (props: {
 }): ReactElement => {
   // The provider, endpoint and model saved in this browser
   useHydrateLLMQueryOptions()
+  // Until that read is back the store holds the defaults (OpenAI, the default
+  // model). A query sent then could go to a provider the user did not choose.
+  const optionsHydrated = useLLMQueryStore((state) => state.optionsHydrated)
   const geneQuery = useLLMQueryStore((state) => state.geneQuery)
   const [localQueryValue, setLocalQueryValue] = useState(geneQuery)
   const loading = useLLMQueryStore((state) => state.loading)
@@ -95,14 +98,17 @@ export const LLMQueryResultPanel = (props: {
     customKey: LLMCustomApiKey,
   })
   const llmConfigured = isLLMConfigured(LLMProvider, providerApiKey, LLMBaseUrl)
-  const disabled = loading || !llmConfigured || localQueryValue === ''
+  const disabled =
+    loading || !optionsHydrated || !llmConfigured || localQueryValue === ''
 
   const regenerateResponseButton = disabled ? (
     <Tooltip
       title={
         loading
           ? 'Loading LLM Response'
-          : 'Configure an LLM provider (OpenAI API key, or a local Ollama endpoint) in the Analysis -> LLM Query Options menu item to run LLM queries'
+          : !optionsHydrated
+            ? 'Loading the LLM Query options...'
+            : 'Configure an LLM provider (OpenAI API key, or a local Ollama endpoint) in the Analysis -> LLM Query Options menu item to run LLM queries'
       }
     >
       <Box>

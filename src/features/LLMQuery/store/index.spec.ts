@@ -545,4 +545,54 @@ describe('LLMQueryStore', () => {
       })
     })
   })
+
+  /**
+   * Both query callers send the key to `LLMBaseUrl`, whatever the provider.
+   * So provider `openai` beside another endpoint would hand the OpenAI key to
+   * that endpoint. The saved row never pairs them; the store must not either.
+   */
+  describe('the OpenAI provider and its endpoint', () => {
+    it('drops an endpoint passed with the OpenAI provider', () => {
+      act(() => {
+        useLLMQueryStore.getState().setLLMOptions({
+          provider: 'openai',
+          baseUrl: 'https://evil.example/v1',
+          model: models[0],
+        })
+      })
+
+      expect(useLLMQueryStore.getState().LLMBaseUrl).toBe('')
+    })
+
+    it('drops the custom endpoint when the provider is set back to OpenAI', () => {
+      act(() => {
+        const state = useLLMQueryStore.getState()
+        state.setLLMOptions({
+          provider: 'custom',
+          baseUrl: 'https://llm.example.org/v1',
+          model: 'my-model',
+        })
+        state.setLLMApiKey('sk-openai')
+        state.setLLMProvider('openai')
+      })
+
+      const state = useLLMQueryStore.getState()
+      expect(state.LLMProvider).toBe('openai')
+      expect(state.LLMBaseUrl).toBe('')
+    })
+
+    it('keeps the endpoint of every other provider', () => {
+      act(() => {
+        useLLMQueryStore.getState().setLLMOptions({
+          provider: 'ollama',
+          baseUrl: OLLAMA_DEFAULT_BASE_URL,
+          model: 'llama3.1',
+        })
+      })
+
+      expect(useLLMQueryStore.getState().LLMBaseUrl).toBe(
+        OLLAMA_DEFAULT_BASE_URL,
+      )
+    })
+  })
 })

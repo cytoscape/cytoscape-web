@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   endpointOrigin,
+  MAX_ENDPOINT_URL_LENGTH,
   getEndpointError,
   getLLMProvider,
   isLLMConfigured,
@@ -144,5 +145,22 @@ describe('endpointOrigin', () => {
     expect(endpointOrigin('http://llm.example.org/v1')).not.toBe(
       endpointOrigin('https://llm.example.org/v1'),
     )
+  })
+})
+
+describe('endpoint URL length', () => {
+  const urlOfLength = (length: number): string =>
+    'https://h/'.padEnd(length, 'a')
+
+  it('accepts a URL at the limit', () => {
+    expect(
+      getEndpointError(urlOfLength(MAX_ENDPOINT_URL_LENGTH), ''),
+    ).toBeUndefined()
+  })
+
+  it('rejects a longer one, which could not be saved', () => {
+    expect(
+      getEndpointError(urlOfLength(MAX_ENDPOINT_URL_LENGTH + 1), ''),
+    ).toMatch(/too long/)
   })
 })

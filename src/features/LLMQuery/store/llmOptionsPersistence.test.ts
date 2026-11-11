@@ -7,8 +7,11 @@ import {
   putProfileSetting,
 } from '../../../data/db/profileDb'
 import { logStore } from '../../../debug'
-import { models } from '../model/LLMModel'
-import { OLLAMA_DEFAULT_BASE_URL } from '../model/LLMProvider'
+import { MAX_MODEL_NAME_LENGTH, models } from '../model/LLMModel'
+import {
+  MAX_ENDPOINT_URL_LENGTH,
+  OLLAMA_DEFAULT_BASE_URL,
+} from '../model/LLMProvider'
 import {
   LLM_QUERY_OPTIONS_SETTING,
   loadLLMQueryOptions,
@@ -210,5 +213,53 @@ describe('saveLLMQueryOptions and loadLLMQueryOptions', () => {
 
     expect(await loadLLMQueryOptions()).toBeUndefined()
     expect(warn).toHaveBeenCalled()
+  })
+
+  /**
+   * Whatever is saved must be readable again. A row the reader rejects would
+   * put the defaults back on the next reload, and with them forget the key of
+   * the custom endpoint.
+   */
+  describe('limits', () => {
+    const longestUrl = 'https://h/'.padEnd(MAX_ENDPOINT_URL_LENGTH, 'a')
+    const longestModel = 'm'.repeat(MAX_MODEL_NAME_LENGTH)
+
+    it('round-trips the longest endpoint and model it accepts', async () => {
+      const options = {
+        provider: 'custom',
+        baseUrl: longestUrl,
+        model: longestModel,
+      } as const
+
+      await saveLLMQueryOptions(options)
+
+      expect(await loadLLMQueryOptions()).toEqual(options)
+    })
+
+    it.each([
+      [
+        'an over-long model',
+        { baseUrl: longestUrl, model: `${longestModel}m` },
+      ],
+      ['an over-long endpoint', { baseUrl: `${longestUrl}a`, model: 'm' }],
+      ['an endpoint that is not http(s)', { baseUrl: 'file:///x', model: 'm' }],
+      ['a blank model', { baseUrl: longestUrl, model: '  ' }],
+    ])(
+      'refuses to save %s, and leaves the saved row alone',
+      async (_l, bad) => {
+        const saved = {
+          provider: 'custom',
+          baseUrl: 'https://llm.example.org/v1',
+          model: 'my-model',
+        } as const
+        await saveLLMQueryOptions(saved)
+
+        await expect(
+          saveLLMQueryOptions({ provider: 'custom', ...bad }),
+        ).rejects.toThrow()
+
+        expect(await loadLLMQueryOptions()).toEqual(saved)
+      },
+    )
   })
 })

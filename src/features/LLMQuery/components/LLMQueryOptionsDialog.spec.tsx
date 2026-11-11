@@ -600,4 +600,108 @@ describe('LLMQueryOptionsDialog', () => {
       })
     })
   })
+
+  /**
+   * The saved row has limits. An option the dialog accepted but the row
+   * cannot hold would come back as the defaults after a reload.
+   */
+  describe('options that could not be saved', () => {
+    const confirmButton = (): HTMLElement =>
+      screen.getByTestId('llm-query-options-confirm-button')
+
+    it('does not confirm an over-long model name', () => {
+      render(<LLMQueryOptionsDialog open={true} handleClose={() => {}} />)
+
+      fireEvent.change(screen.getByTestId('llm-query-options-model-input'), {
+        target: { value: 'm'.repeat(201) },
+      })
+
+      expect(confirmButton()).toHaveProperty('disabled', true)
+      expect(screen.getByText(/model name is too long/)).toBeTruthy()
+    })
+
+    it('does not confirm an over-long endpoint URL', () => {
+      render(<LLMQueryOptionsDialog open={true} handleClose={() => {}} />)
+
+      selectProvider('custom')
+      fireEvent.change(
+        within(
+          screen.getByTestId('llm-query-options-base-url-input'),
+        ).getByRole('textbox'),
+        { target: { value: 'https://h/'.padEnd(2049, 'a') } },
+      )
+      fireEvent.change(screen.getByTestId('llm-query-options-model-input'), {
+        target: { value: 'my-model' },
+      })
+
+      expect(confirmButton()).toHaveProperty('disabled', true)
+      expect(screen.getByText(/endpoint URL is too long/)).toBeTruthy()
+    })
+  })
+
+  /**
+   * The saved options can arrive after the dialog opened. An untouched form
+   * re-seeds from them (tested above); a form the user already typed in must
+   * keep what they typed, a key above all.
+   */
+  describe('saved options that arrive while the user is typing', () => {
+    const realHydrate = useLLMQueryStore.getState().hydrateOptions
+
+    beforeEach(() => {
+      act(() => {
+        useLLMQueryStore.setState({
+          optionsHydrated: false,
+          // The read is still pending when the dialog opens
+          hydrateOptions: async () => {},
+        })
+      })
+    })
+
+    const savedOptionsArrive = (): void => {
+      act(() => {
+        useLLMQueryStore.setState({
+          LLMModel: 'gpt-5',
+          optionsHydrated: true,
+        })
+      })
+    }
+
+    it('keeps a key typed before they arrived', () => {
+      render(<LLMQueryOptionsDialog open={true} handleClose={() => {}} />)
+      fireEvent.change(apiKeyInput(), { target: { value: 'sk-typed' } })
+
+      savedOptionsArrive()
+
+      expect(apiKeyInput().value).toBe('sk-typed')
+    })
+
+    it('keeps a model typed before they arrived', () => {
+      render(<LLMQueryOptionsDialog open={true} handleClose={() => {}} />)
+      fireEvent.change(screen.getByTestId('llm-query-options-model-input'), {
+        target: { value: 'my-choice' },
+      })
+
+      savedOptionsArrive()
+
+      expect(
+        screen.getByTestId('llm-query-options-model-input'),
+      ).toHaveProperty('value', 'my-choice')
+    })
+
+    it('still shows them in a form that was not touched', () => {
+      render(<LLMQueryOptionsDialog open={true} handleClose={() => {}} />)
+
+      savedOptionsArrive()
+
+      expect(
+        screen.getByTestId('llm-query-options-model-input'),
+      ).toHaveProperty('value', 'gpt-5')
+    })
+
+    // Restored here, not in afterEach, so the describe needs no extra import
+    it('restores the real read', () => {
+      act(() => useLLMQueryStore.setState({ hydrateOptions: realHydrate }))
+      expect(useLLMQueryStore.getState().hydrateOptions).toBe(realHydrate)
+    })
+  })
 })

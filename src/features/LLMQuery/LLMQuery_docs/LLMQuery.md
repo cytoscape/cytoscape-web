@@ -185,11 +185,22 @@ The LLMQuery feature consists of:
   OpenAI default whenever the provider is `openai`: both query callers pass
   the stored endpoint whatever the provider, so a row `{ provider: 'openai',
 baseUrl: 'https://evil.example/v1' }` would otherwise send the OpenAI key
-  to that host
+  to that host. `setLLMOptions` applies the same rule to the store, so the
+  pairing cannot exist in memory either
+- **What is confirmed can be saved, and what is saved can be read.** The
+  dialog, the save and the read share one set of limits (`getEndpointError`
+  with `MAX_ENDPOINT_URL_LENGTH`, `getModelNameError` with
+  `MAX_MODEL_NAME_LENGTH`). `saveLLMQueryOptions` rejects options the reader
+  would not accept and leaves the saved row alone: a row that cannot be read
+  back would put the defaults in its place on the next reload
 - **Hydration.** IndexedDB is asynchronous, so the store starts on defaults and
   `hydrateOptions` applies the saved row once. It never overwrites a choice
   the user made before the read came back (`optionsHydrated`). The dialog
-  re-seeds its form if the read lands while it is open
+  re-seeds its form if the read lands while it is open, unless the user has
+  already typed in it. Run LLM Query and Regenerate response stay disabled
+  until `optionsHydrated`: before it the store holds the defaults (OpenAI,
+  the default model), and a query sent then could go to a provider the user
+  did not choose
 - **Writes** are fire-and-forget from `setLLMOptions`, outside the Immer recipe,
   and do not go through `scheduleWrite`: `suspendWritesUntilReload()` is a
   global switch a workspace reset flips, and it would drop them

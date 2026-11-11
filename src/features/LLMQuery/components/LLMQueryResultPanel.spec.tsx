@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
 import { OLLAMA_DEFAULT_BASE_URL } from '../model/LLMProvider'
@@ -70,5 +70,52 @@ describe('LLMQueryResultPanel key scoping', () => {
     expect(vi.mocked(analyzeSubsystemGeneSet).mock.calls[0][1].apiKey).toBe(
       'custom-key',
     )
+  })
+})
+
+/**
+ * Until the saved options have been read, the store holds the defaults:
+ * OpenAI and the default model. A query started then would go to OpenAI even
+ * if the saved provider is another one, and it cannot be taken back.
+ */
+describe('LLMQueryResultPanel before the saved options are read', () => {
+  const realHydrate = useLLMQueryStore.getState().hydrateOptions
+
+  beforeEach(() => {
+    vi.mocked(analyzeSubsystemGeneSet).mockReset()
+    act(() => {
+      useLLMQueryStore.setState({
+        LLMProvider: 'openai',
+        LLMBaseUrl: '',
+        LLMApiKey: 'sk-openai',
+        optionsHydrated: false,
+        // The read never comes back during the test
+        hydrateOptions: async () => {},
+      })
+      useLLMQueryStore.getState().setGeneQuery('FOXA1, HNF1A')
+    })
+  })
+
+  afterEach(() => {
+    act(() => {
+      useLLMQueryStore.setState({ hydrateOptions: realHydrate })
+    })
+  })
+
+  it('does not offer to run a query', () => {
+    render(<LLMQueryResultPanel />)
+
+    expect(screen.queryByTestId('llm-query-regenerate-button')).toBeNull()
+    expect(
+      screen.getByRole('button', { name: 'Regenerate response' }),
+    ).toHaveProperty('disabled', true)
+  })
+
+  it('offers it once the options are known', () => {
+    render(<LLMQueryResultPanel />)
+
+    act(() => useLLMQueryStore.setState({ optionsHydrated: true }))
+
+    expect(screen.getByTestId('llm-query-regenerate-button')).toBeTruthy()
   })
 })

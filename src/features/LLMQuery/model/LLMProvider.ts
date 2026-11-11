@@ -117,6 +117,10 @@ const isLoopbackHost = (hostname: string): boolean => {
   )
 }
 
+// The longest endpoint URL the saved options row accepts
+// (store/llmOptionsPersistence.ts)
+export const MAX_ENDPOINT_URL_LENGTH = 2048
+
 /**
  * Why an endpoint must not be used, or undefined when it is fine. Plain HTTP
  * is accepted on loopback hosts (a local Ollama) and for keyless requests,
@@ -130,6 +134,9 @@ export const getEndpointError = (
   const trimmed = baseUrl.trim()
   if (trimmed === '') {
     return undefined
+  }
+  if (trimmed.length > MAX_ENDPOINT_URL_LENGTH) {
+    return `The endpoint URL is too long (${MAX_ENDPOINT_URL_LENGTH} characters at most)`
   }
   let url: URL
   try {
