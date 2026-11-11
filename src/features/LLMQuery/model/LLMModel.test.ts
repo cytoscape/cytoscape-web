@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 
-import { models } from './LLMModel'
+import { getModelNameError, MAX_MODEL_NAME_LENGTH, models } from './LLMModel'
 
 describe('LLM models', () => {
   it('uses gpt-6-luna as the default (first) model (#832)', () => {
@@ -19,4 +19,29 @@ describe('LLM models', () => {
       expect(models).not.toContain(retired)
     },
   )
+})
+
+describe('getModelNameError', () => {
+  it('accepts an ordinary model name', () => {
+    expect(getModelNameError('gpt-5')).toBeUndefined()
+  })
+
+  it.each([
+    ['an empty name', ''],
+    ['a blank name', '   '],
+  ])('rejects %s', (_label, model) => {
+    expect(getModelNameError(model)).toBeDefined()
+  })
+
+  it('accepts a name at the limit, ignoring surrounding spaces', () => {
+    expect(
+      getModelNameError(` ${'m'.repeat(MAX_MODEL_NAME_LENGTH)} `),
+    ).toBeUndefined()
+  })
+
+  it('rejects a longer one, which could not be saved', () => {
+    expect(getModelNameError('m'.repeat(MAX_MODEL_NAME_LENGTH + 1))).toMatch(
+      /too long/,
+    )
+  })
 })

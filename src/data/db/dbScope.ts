@@ -34,6 +34,15 @@ export const resolveDbScope = (pathname: string, baseUrl: string): DbScope => {
 export const dbNameFor = (scope: DbScope): string =>
   scope === 'manual' ? 'cyweb-manual-db' : 'cyweb-db'
 
+/**
+ * The browser-level database (`profileDb.ts`): settings that belong to this
+ * browser rather than to a workspace, so no workspace reset deletes it. The
+ * manual gets its own for the same reason it gets its own workspace database:
+ * a manual page must never change the user's real settings.
+ */
+export const profileDbNameFor = (scope: DbScope): string =>
+  scope === 'manual' ? 'cyweb-manual-profile-db' : 'cyweb-profile-db'
+
 export const uiEventsChannelFor = (scope: DbScope): string =>
   scope === 'manual' ? 'cyweb-manual-ui-events' : 'cyweb-ui-events'
 

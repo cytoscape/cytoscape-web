@@ -45,6 +45,43 @@ change. Links between the manual and the editor are full page loads.
 localStorage keys (onboarding, crash consent, network search, debug flag) stay
 shared across scopes. They are per-browser preferences, not workspace data.
 
+### Profile Database
+
+`profileDb.ts` holds a second database, for what belongs to this browser
+rather than to a workspace (#705, #849):
+
+| Scope | Database |
+| --- | --- |
+| `app` | `cyweb-profile-db` |
+| `manual` | `cyweb-manual-profile-db` |
+
+- **No reset path deletes it.** `deleteDb()` deletes `DB_NAME` only, so Clear
+  Local Workspace, Load Workspace and the boot-failure reset leave it alone.
+  `deleteDb.test.ts` guards this.
+- **Schema.** One key/value store, `settings` (`{ key, value }`), at version 1. A
+  new setting is a new key and needs no version bump. A new store needs a new
+  version number.
+- **API.** `getProfileSetting(key)` returns `unknown`, or `undefined` when the
+  setting is missing or the database cannot be read. Callers validate what
+  they get: a stored row can be edited by the user and outlives the build
+  that wrote it. `putProfileSetting` and `deleteProfileSetting` reject on
+  failure.
+- **Not part of boot.** It opens on first use and a failure is never fatal.
+  `openDatabaseForStartup`, the boot error shell, `lifecycle.ts` and
+  `SyncTabs` know nothing about it. There is no cross-tab sync.
+- **`addons: []`.** `dexie-observable` registers itself globally when
+  `index.ts` loads. Without the opt-out, this database would get `_changes`
+  and `_syncNodes` stores and have every write tracked.
+- **Not written through `scheduleWrite`.** `suspendWritesUntilReload()` is
+  global and a workspace reset flips it.
+- **Not in snapshots or crash reports.** Both read `getDb()` only.
+- **No secrets.** IndexedDB is plaintext on disk, readable by every script in
+  the origin, with no expiry. API keys stay in sessionStorage (see
+  `src/features/LLMQuery/LLMQuery_docs/LLMQuery.md`).
+
+Today it holds one row: `llmQueryOptions` (the LLM Query provider, endpoint
+and model).
+
 ### Database Versioning
 
 The database uses version-based migrations. The current version is defined in `currentVersion` (currently version 7). When the database schema changes:
