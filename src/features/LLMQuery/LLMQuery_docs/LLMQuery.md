@@ -12,6 +12,7 @@ The LLMQuery feature consists of:
 - **Result Panel**: Displays query results and allows regeneration
 - **API Layer**: Handles communication with an OpenAI-compatible chat completions API
 - **Store**: Manages LLM query state (provider, endpoint, API key, model, template, results)
+- **Persistence**: Provider, endpoint and model in the profile database; API keys in sessionStorage
 
 ## Component Structure
 
@@ -57,6 +58,15 @@ The LLMQuery feature consists of:
   - Model and template selection
   - Query and result state
   - Loading state
+  - `setLLMOptions` (provider, endpoint and model in one change), `hydrateOptions`
+    and `clearLLMApiKey`
+- **store/llmOptionsPersistence.ts**: reads and writes provider, endpoint and
+  model as one `settings` row of `cyweb-profile-db`, validated with zod on read
+- **store/llmKeySession.ts**: reads and writes the API keys in sessionStorage
+- **store/storageKeys.ts**: the two storage names, in a leaf module so a
+  Playwright spec can import them
+- **store/useHydrateLLMQueryOptions.ts**: hook that loads the saved options
+  when a component that uses them first mounts
 
 ### Models
 
@@ -96,7 +106,8 @@ The LLMQuery feature consists of:
 ### Configuration
 
 - Provider, endpoint URL, API key and model are set in the options dialog
-- API key is stored in store (not persisted to server)
+- Provider, endpoint URL and model are remembered in this browser; the API key
+  is kept for the current tab (see [What Outlives a Reload](#what-outlives-a-reload))
 - Any model name can be typed; suggestions come from the provider and from the
   endpoint's model listing
 - Model selection affects response quality and cost
@@ -142,13 +153,92 @@ The LLMQuery feature consists of:
 - `gpt-6-luna` is a reasoning model, and its reasoning tokens are billed as
   output. The request sends only `model` and `messages`, so it needs no
   reasoning-specific parameters
-- The settings are not persisted, so changing the default needs no migration
+- The default OpenAI model is saved as "no model", so changing the default
+  needs no migration: a user who never picked a model follows the new default.
+  A user who picked another model keeps it, and gets the provider's error if
+  that model is later retired
 
-### API Key Storage
+### What Outlives a Reload
 
-- API key stored in client-side store
-- Not persisted to server for security
-- User must enter key each session (or use config)
+| What                                | Where                                                | Until                                                                                                                       |
+| ----------------------------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Provider, endpoint URL, model       | `cyweb-profile-db`, `settings` row `llmQueryOptions` | The user changes them, or clears this site's data. A workspace reset does not touch them                                    |
+| API keys (OpenAI and custom)        | sessionStorage, `cyweb.llm.apiKeys`                  | The tab closes, the user clicks Forget key, or the provider or endpoint the key was entered for is no longer the one in use |
+| Prompt template, gene query, result | Memory                                               | The next reload                                                                                                             |
+
+- **Why two places.** The three options are harmless and belong to the browser,
+  not to a workspace, so they go in the profile database (#705), which no
+  reset path deletes. A key is a credential. IndexedDB and localStorage keep
+  it in plaintext on disk with no expiry, readable by every script that ever
+  runs in this origin, including third-party apps, which are not sandboxed.
+  sessionStorage ends with the tab
+- **What sessionStorage does not do.** It does not protect a key from a script
+  running in the same tab. The browser calls the provider directly
+  (`dangerouslyAllowBrowser`), so the key has to be in the page whenever a
+  query runs. "Duplicate tab" copies sessionStorage, and a browser that
+  restores a session may restore it
+- **Never write a key anywhere else.** Not in the options row, not in
+  `cyweb-db`, not in a snapshot, not in `exportApplicationState`. The store
+  spec asserts a typed key reaches neither IndexedDB nor localStorage
+- **Stored rows are untrusted.** `parseLLMQueryOptions` validates with zod and
+  builds a new object from three fields. It also forces the endpoint to the
+  OpenAI default whenever the provider is `openai`: both query callers pass
+  the stored endpoint whatever the provider, so a row `{ provider: 'openai',
+baseUrl: 'https://evil.example/v1' }` would otherwise send the OpenAI key
+  to that host
+- **Hydration.** IndexedDB is asynchronous, so the store starts on defaults and
+  `hydrateOptions` applies the saved row once. It never overwrites a choice
+  the user made before the read came back (`optionsHydrated`). The dialog
+  re-seeds its form if the read lands while it is open
+- **Writes** are fire-and-forget from `setLLMOptions`, outside the Immer recipe,
+  and do not go through `scheduleWrite`: `suspendWritesUntilReload()` is a
+  global switch a workspace reset flips, and it would drop them
+- **No cross-tab sync.** Another tab sees changed options after its next reload.
+  The options are shared by every tab and the keys are per tab, so that
+  reload can meet options another tab changed; `hydrateOptions` applies the
+  key rule below for that reason
+- **A `config.openAIAPIKey` key is never written to sessionStorage.** It is in
+  the bundle already and seeds the store on every load
+
+### API Key Field
+
+- Masked (`type="password"`) and never seeded from the store: a blank field
+  means "keep the stored key", so a stored key is never in the DOM
+- Sits in a small `<form>` beside a visually hidden `username` input, with
+  `autoComplete="current-password"`. That is what a password manager needs
+  before it offers to save or fill; whether it does is up to the browser
+- **Forget key** acts at once, not on Confirm. It is the only way to remove a
+  key without closing the tab, and a user who clicks it and then cancels must
+  not be left with the key in place. Every other field waits for Confirm
+
+### A Key Lasts Only While Its Provider and Endpoint Are in Use
+
+- `keysFor` in `store/index.ts` is the rule, applied in `setLLMOptions` and
+  in `hydrateOptions`: the OpenAI key stays only while the provider is OpenAI;
+  the custom key stays only while the provider is the custom endpoint and the
+  endpoint is on the origin the key was entered for. Anything else is
+  forgotten, in memory and in sessionStorage
+- **Why.** A user who switches provider reasonably thinks the old key is out
+  of the picture, the same way the old endpoint and model are (only one
+  provider's options are saved). A key that silently stays is exposure they
+  no longer know about. For a custom endpoint it is worse: a key kept across
+  a change of URL would be sent, on the next query, to a host it was never
+  entered for
+- **Origin, not URL.** `endpointOrigin` (scheme, host, port) identifies the
+  server. `https://host/v1` to `https://host/v2` keeps the key;
+  `https://host.evil.test`, another port, or plain HTTP does not
+- **The origin is stored beside the key** (`LLMCustomApiKeyOrigin`, and
+  `customKeyOrigin` in sessionStorage), not worked out again later, because
+  the saved endpoint can change in another tab. `setLLMCustomApiKey` records
+  the origin of the endpoint in use, so a caller that changes both sets the
+  options first, as the dialog's Confirm does. A stored origin that is not
+  exactly an http(s) origin reads as none, which no endpoint matches
+- **The dialog says so first.** While the selection differs from what the key
+  was entered for, an alert names the key Confirm will forget
+  (`llm-query-options-forget-warning`). Cancel keeps the key
+- **Before Confirm too.** The dialog's model listing goes to whatever URL is
+  in the endpoint field. It sends the stored custom key only while that URL
+  is on the key's origin
 
 ### API Key Scoping
 
@@ -195,7 +285,8 @@ The LLMQuery feature consists of:
 ## Future Improvements
 
 - Support for providers without an OpenAI-compatible API (Anthropic, etc.)
-- Persist the provider and endpoint choice across sessions
+- An opt-in "Remember on this device" for the API key, encrypted with a
+  passkey (WebAuthn PRF) or a passphrase
 - Query history and saved queries
 - Custom template creation
 - Batch query processing

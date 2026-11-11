@@ -23,6 +23,7 @@ import { DropdownMenuItem } from '../../ToolBar/DropdownMenu'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
 import { isLLMConfigured, selectApiKey } from '../model/LLMProvider'
 import { useLLMQueryStore } from '../store'
+import { useHydrateLLMQueryOptions } from '../store/useHydrateLLMQueryOptions'
 import { HcxDisabledTooltip } from './HcxDisabledTooltip'
 import { LLM_QUERY_TAB_INDEX } from '@/models/UiModel/impl/panelTabs'
 
@@ -38,6 +39,8 @@ export const RunLLMQueryMenuItem = (props: BaseMenuItemProps): ReactElement => {
     (state) => state.summaries[currentNetworkId],
   )
 
+  // The provider, endpoint and model saved in this browser
+  useHydrateLLMQueryOptions()
   const loading = useLLMQueryStore((state) => state.loading)
   const setLoading = useLLMQueryStore((state) => state.setLoading)
   const setLLMResult = useLLMQueryStore((state) => state.setLLMResult)

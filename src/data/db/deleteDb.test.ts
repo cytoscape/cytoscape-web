@@ -2,6 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { logDb } from '../../debug'
 import { DB_NAME, deleteDb, getDb, initializeDb } from './index'
+import {
+  closeProfileDb,
+  deleteProfileDb,
+  getProfileSetting,
+  PROFILE_DB_NAME,
+  putProfileSetting,
+} from './profileDb'
 
 /**
  * `deleteDb` used to return a single boolean and wait forever.
@@ -27,6 +34,7 @@ const openUncooperativeConnection = async (): Promise<IDBDatabase> =>
 
 afterEach(async () => {
   vi.restoreAllMocks()
+  await deleteProfileDb()
 })
 
 describe('deleteDb', () => {
@@ -61,5 +69,42 @@ describe('deleteDb', () => {
     // it, which is exactly why the caller must not keep writing: it lands as
     // soon as the blocker lets go.
     await initializeDb()
+  })
+})
+
+/**
+ * Browser-level settings live in a second database so that no workspace reset
+ * takes them along (#705, #849). `deleteDb` is what every reset path calls.
+ */
+describe('deleteDb and the profile database', () => {
+  it('leaves browser-level settings in place', async () => {
+    await initializeDb()
+    await putProfileSetting('llmQueryOptions', { provider: 'ollama' })
+
+    expect(await deleteDb()).toBe('deleted')
+
+    expect(await getProfileSetting('llmQueryOptions')).toEqual({
+      provider: 'ollama',
+    })
+  })
+
+  it('keeps dexie-observable out of the profile database', async () => {
+    // `./index` has loaded dexie-observable by now, and it attaches itself to
+    // every Dexie instance that does not opt out.
+    await initializeDb()
+    await putProfileSetting('k', 'v')
+    closeProfileDb()
+
+    const stores = await new Promise<string[]>((resolve, reject) => {
+      const request = indexedDB.open(PROFILE_DB_NAME)
+      request.onsuccess = () => {
+        const names = Array.from(request.result.objectStoreNames)
+        request.result.close()
+        resolve(names)
+      }
+      request.onerror = () => reject(request.error)
+    })
+
+    expect(stores).toEqual(['settings'])
   })
 })

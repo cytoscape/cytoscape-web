@@ -88,6 +88,25 @@ export const selectApiKey = (
   }
 }
 
+/**
+ * The origin (scheme, host and port) of an endpoint, or '' when it has none:
+ * an empty endpoint, text that is not a URL, or a URL that is not http(s).
+ *
+ * This is what a custom endpoint's API key is bound to. The key was entered
+ * for one server, and the origin is what identifies a server: a different
+ * path on the same origin is the same server, while a look-alike host, another
+ * port or plain HTTP is not.
+ */
+export const endpointOrigin = (baseUrl: string): string => {
+  let url: URL
+  try {
+    url = new URL(baseUrl.trim())
+  } catch {
+    return ''
+  }
+  return url.protocol === 'http:' || url.protocol === 'https:' ? url.origin : ''
+}
+
 const isLoopbackHost = (hostname: string): boolean => {
   const host = hostname.toLowerCase()
   return (

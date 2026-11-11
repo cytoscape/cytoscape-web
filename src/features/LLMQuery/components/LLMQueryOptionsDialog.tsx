@@ -1,7 +1,9 @@
-import ContentCopy from '@mui/icons-material/ContentCopy'
-import Preview from '@mui/icons-material/Preview'
-import Refresh from '@mui/icons-material/Refresh'
+import ContentCopyIcon from '@mui/icons-material/ContentCopy'
+import KeyOffIcon from '@mui/icons-material/KeyOff'
+import PreviewIcon from '@mui/icons-material/Preview'
+import RefreshIcon from '@mui/icons-material/Refresh'
 import {
+  Alert,
   Autocomplete,
   Box,
   Button,
@@ -27,6 +29,7 @@ import { MessageSeverity } from '../../../models/MessageModel'
 import { listLLMModels } from '../api/chatgpt'
 import { LLMModel } from '../model/LLMModel'
 import {
+  endpointOrigin,
   getEndpointError,
   getLLMProvider,
   LLMProviderId,
@@ -34,7 +37,22 @@ import {
   selectApiKey,
 } from '../model/LLMProvider'
 import { LLMTemplate, templates } from '../model/LLMTemplate'
-import { useLLMQueryStore } from '../store'
+import { hasEnteredLLMApiKey, useLLMQueryStore } from '../store'
+import { useHydrateLLMQueryOptions } from '../store/useHydrateLLMQueryOptions'
+
+// Present for password managers only: they file a saved secret under a
+// username, and offer nothing for a password field that has none beside it.
+const visuallyHidden = {
+  position: 'absolute',
+  width: 1,
+  height: 1,
+  overflow: 'hidden',
+  clip: 'rect(0 0 0 0)',
+  whiteSpace: 'nowrap',
+  border: 0,
+  padding: 0,
+  margin: -1,
+} as const
 
 interface LLMQueryOptionsDialogProps {
   open: boolean
@@ -51,11 +69,23 @@ export const LLMQueryOptionsDialog = (
   // store, and edits abandoned with Cancel are discarded. The key is stable
   // while closing, so the exit transition still plays. Adjusting state during render
   // (rather than in an effect) means the first opened frame is already fresh.
+  //
+  // The saved options are read from the profile database after mount. If
+  // that read lands while the dialog is already open, the form was seeded
+  // with the defaults, so it is re-created once more. Confirm also sets
+  // `optionsHydrated`, but in the same render that closes the dialog, so it
+  // never re-creates a form the user is leaving.
+  useHydrateLLMQueryOptions()
+  const optionsHydrated = useLLMQueryStore((state) => state.optionsHydrated)
   const [wasOpen, setWasOpen] = useState(open)
+  const [wasHydrated, setWasHydrated] = useState(optionsHydrated)
   const [formKey, setFormKey] = useState(0)
-  if (open !== wasOpen) {
+  if (open !== wasOpen || optionsHydrated !== wasHydrated) {
+    const opened = open && !wasOpen
+    const hydratedWhileOpen = open && optionsHydrated && !wasHydrated
     setWasOpen(open)
-    if (open) {
+    setWasHydrated(optionsHydrated)
+    if (opened || hydratedWhileOpen) {
       setFormKey(formKey + 1)
     }
   }
@@ -81,18 +111,20 @@ const LLMQueryOptionsDialogContent = (
 
   const [showTemplatePreview, setShowTemplatePreview] = useState(false)
   const addMessage = useMessageStore((state) => state.addMessage)
-  const setLLMModel = useLLMQueryStore((state) => state.setLLMModel)
+  const setLLMOptions = useLLMQueryStore((state) => state.setLLMOptions)
   const setLLMApiKey = useLLMQueryStore((state) => state.setLLMApiKey)
   const setLLMCustomApiKey = useLLMQueryStore(
     (state) => state.setLLMCustomApiKey,
   )
-  const setLLMProvider = useLLMQueryStore((state) => state.setLLMProvider)
-  const setLLMBaseUrl = useLLMQueryStore((state) => state.setLLMBaseUrl)
+  const clearLLMApiKey = useLLMQueryStore((state) => state.clearLLMApiKey)
   const LLMModel = useLLMQueryStore((state) => state.LLMModel)
   const LLMProvider = useLLMQueryStore((state) => state.LLMProvider)
   const LLMBaseUrl = useLLMQueryStore((state) => state.LLMBaseUrl)
   const LLMApiKey = useLLMQueryStore((state) => state.LLMApiKey)
   const LLMCustomApiKey = useLLMQueryStore((state) => state.LLMCustomApiKey)
+  const LLMCustomApiKeyOrigin = useLLMQueryStore(
+    (state) => state.LLMCustomApiKeyOrigin,
+  )
   const LLMTemplate = useLLMQueryStore((state) => state.LLMTemplate)
   const setLLMTemplate = useLLMQueryStore((state) => state.setLLMTemplate)
 
@@ -126,16 +158,46 @@ const LLMQueryOptionsDialogContent = (
   // Keys are provider-scoped: a key typed here belongs to the selected
   // provider, a blank field keeps that provider's stored key, and Ollama is
   // never sent one. The OpenAI key must not reach any other endpoint.
+  //
+  // The custom key is also bound to the endpoint it was entered for. While
+  // the endpoint field points at another origin, the stored key is not this
+  // form's to use: the model listing below goes out before Confirm, to
+  // whatever URL is typed.
+  const storedKeys = { LLMApiKey, LLMCustomApiKey }
+  const customKeyIsForThisEndpoint =
+    LLMCustomApiKeyOrigin === endpointOrigin(localBaseUrl)
+  const storedApiKey =
+    localProvider === 'custom' && !customKeyIsForThisEndpoint
+      ? ''
+      : selectApiKey(localProvider, {
+          openAiKey: LLMApiKey,
+          customKey: LLMCustomApiKey,
+        })
   const typedApiKey = localLLMApiKey.trim()
   const effectiveApiKey =
     localProvider === 'ollama'
       ? ''
       : typedApiKey !== ''
         ? typedApiKey
-        : selectApiKey(localProvider, {
-            openAiKey: LLMApiKey,
-            customKey: LLMCustomApiKey,
-          })
+        : storedApiKey
+
+  // What Confirm will forget (the store does the forgetting, in
+  // `setLLMOptions`). Said here first, so a key never disappears, or stays,
+  // without the user having been told.
+  const keysToForget: string[] = []
+  if (localProvider !== 'openai' && hasEnteredLLMApiKey('openai', storedKeys)) {
+    keysToForget.push('your OpenAI API key')
+  }
+  if (
+    hasEnteredLLMApiKey('custom', storedKeys) &&
+    (localProvider !== 'custom' || !customKeyIsForThisEndpoint)
+  ) {
+    keysToForget.push(
+      LLMCustomApiKeyOrigin === ''
+        ? 'the API key of the custom endpoint'
+        : `the API key entered for ${LLMCustomApiKeyOrigin}`,
+    )
+  }
   const endpointError =
     localProvider === 'openai'
       ? undefined
@@ -217,7 +279,26 @@ const LLMQueryOptionsDialogContent = (
     })
   }
 
+  // Forgetting a key is the one edit that does not wait for Confirm. It is
+  // how a key leaves this tab without closing it, and a user who clicks it
+  // and then cancels must not be left with the key still in place.
+  const keyEntered = hasEnteredLLMApiKey(localProvider, storedKeys)
+  const handleForgetKeyClick = (): void => {
+    clearLLMApiKey(localProvider)
+    setLocalLLMApiKey('')
+    addMessage({
+      message: `${provider.label} API key forgotten`,
+      duration: 4000,
+      severity: MessageSeverity.INFO,
+    })
+  }
+
   const apiKeyLabel = provider.requiresApiKey ? 'OpenAI API Key' : 'API Key'
+  const apiKeyHelp =
+    (keyEntered && storedApiKey !== ''
+      ? 'A key is set for this tab. Leave this blank to keep it. '
+      : 'Kept for this tab only: it survives a reload and is removed when you close the tab. ') +
+    'Use a dedicated key with only the permissions it needs and a spending limit.'
   const apiKeyTooltip = provider.requiresApiKey
     ? 'You need to add an API key generated in your PAID account'
     : 'Optional. Sent only to this endpoint, never your OpenAI key.'
@@ -314,7 +395,7 @@ const LLMQueryOptionsDialogContent = (
                   {fetchingModels ? (
                     <CircularProgress size={20} />
                   ) : (
-                    <Refresh />
+                    <RefreshIcon />
                   )}
                 </IconButton>
               </span>
@@ -322,16 +403,65 @@ const LLMQueryOptionsDialogContent = (
           )}
         </Box>
         {localProvider !== 'ollama' && (
-          <Tooltip title={apiKeyTooltip}>
-            <TextField
-              data-testid="llm-query-options-api-key-input"
-              size="small"
-              value={localLLMApiKey}
-              fullWidth
-              label={apiKeyLabel}
-              onChange={(e) => setLocalLLMApiKey(e.target.value)}
-            ></TextField>
-          </Tooltip>
+          // A real form with a username beside the password, which is what a
+          // password manager needs before it offers to save or fill the key.
+          // Whether it does is up to the browser; the masking does not depend
+          // on it. Submitting does nothing: Confirm saves.
+          <Box
+            component="form"
+            autoComplete="on"
+            onSubmit={(e) => e.preventDefault()}
+            sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}
+          >
+            <Box
+              component="input"
+              type="text"
+              name="username"
+              autoComplete="username"
+              value={`${provider.label} API key`}
+              readOnly
+              tabIndex={-1}
+              aria-hidden="true"
+              sx={visuallyHidden}
+            />
+            <Tooltip title={apiKeyTooltip}>
+              <TextField
+                data-testid="llm-query-options-api-key-input"
+                size="small"
+                type="password"
+                name="password"
+                autoComplete="current-password"
+                value={localLLMApiKey}
+                fullWidth
+                label={apiKeyLabel}
+                helperText={apiKeyHelp}
+                onChange={(e) => setLocalLLMApiKey(e.target.value)}
+              ></TextField>
+            </Tooltip>
+            {keyEntered && (
+              <Button
+                data-testid="llm-query-options-forget-key-button"
+                variant="outlined"
+                color="warning"
+                startIcon={<KeyOffIcon />}
+                sx={{ flexShrink: 0, mt: 0.25 }}
+                onClick={handleForgetKeyClick}
+              >
+                Forget key
+              </Button>
+            )}
+          </Box>
+        )}
+
+        {keysToForget.length > 0 && (
+          <Alert
+            data-testid="llm-query-options-forget-warning"
+            severity="warning"
+            sx={{ mt: 1 }}
+          >
+            Confirming will forget {keysToForget.join(' and ')}. A key is kept
+            only for the provider and endpoint it was entered for.
+          </Alert>
         )}
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
@@ -372,7 +502,7 @@ const LLMQueryOptionsDialogContent = (
                   setShowTemplatePreview(!showTemplatePreview)
                 }}
               >
-                <Preview />
+                <PreviewIcon />
               </IconButton>
             </Tooltip>
             <Tooltip title="Copy selected prompt text">
@@ -381,7 +511,7 @@ const LLMQueryOptionsDialogContent = (
                 aria-label="copy"
                 onClick={handleCopyTemplateClick}
               >
-                <ContentCopy />
+                <ContentCopyIcon />
               </IconButton>
             </Tooltip>
           </ButtonGroup>
@@ -411,9 +541,14 @@ const LLMQueryOptionsDialogContent = (
           variant="contained"
           disabled={localLLMModel.trim() === '' || endpointError !== undefined}
           onClick={() => {
-            setLLMProvider(localProvider)
-            setLLMBaseUrl(localBaseUrl.trim())
-            setLLMModel(localLLMModel.trim())
+            // Options first: the store forgets any key that is not for this
+            // provider and endpoint, and a key typed here is then bound to
+            // the endpoint just saved.
+            setLLMOptions({
+              provider: localProvider,
+              baseUrl: localBaseUrl.trim(),
+              model: localLLMModel.trim(),
+            })
             setLLMTemplate(localLLMTemplate)
             if (typedApiKey !== '') {
               if (localProvider === 'openai') {

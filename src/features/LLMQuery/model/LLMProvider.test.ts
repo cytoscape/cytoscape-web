@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  endpointOrigin,
   getEndpointError,
   getLLMProvider,
   isLLMConfigured,
@@ -112,5 +113,36 @@ describe('getEndpointError', () => {
   it('rejects malformed URLs and non-HTTP schemes', () => {
     expect(getEndpointError('not a url', '')).toBeDefined()
     expect(getEndpointError('ftp://host/v1', '')).toBeDefined()
+  })
+})
+
+describe('endpointOrigin', () => {
+  it.each([
+    ['https://llm.example.org/v1', 'https://llm.example.org'],
+    ['https://llm.example.org/other/path?x=1', 'https://llm.example.org'],
+    ['https://LLM.Example.org:443/v1', 'https://llm.example.org'],
+    ['https://llm.example.org:8443/v1', 'https://llm.example.org:8443'],
+    ['http://localhost:11434/v1', 'http://localhost:11434'],
+    ['  https://llm.example.org/v1  ', 'https://llm.example.org'],
+  ])('%s is %s', (baseUrl, origin) => {
+    expect(endpointOrigin(baseUrl)).toBe(origin)
+  })
+
+  it.each([
+    ['an empty endpoint', ''],
+    ['text that is not a URL', 'not a url'],
+    ['a javascript: URL', 'javascript:alert(1)'],
+    ['a file: URL', 'file:///etc/passwd'],
+  ])('has no origin for %s', (_label, baseUrl) => {
+    expect(endpointOrigin(baseUrl)).toBe('')
+  })
+
+  it('tells a look-alike host apart', () => {
+    expect(endpointOrigin('https://llm.example.org.evil.test/v1')).not.toBe(
+      endpointOrigin('https://llm.example.org/v1'),
+    )
+    expect(endpointOrigin('http://llm.example.org/v1')).not.toBe(
+      endpointOrigin('https://llm.example.org/v1'),
+    )
   })
 })

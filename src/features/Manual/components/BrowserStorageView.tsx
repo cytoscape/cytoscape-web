@@ -1,8 +1,14 @@
 import { Alert, Box, Button, Typography } from '@mui/material'
 import { type ReactElement, useCallback, useEffect, useState } from 'react'
 
-import { dbNameFor } from '@/data/db/dbScope'
+import { dbNameFor, profileDbNameFor } from '@/data/db/dbScope'
 import { ObjectStoreNames } from '@/data/db'
+import { ProfileStoreNames } from '@/data/db/profileDb'
+import {
+  TAB_NETWORK_KEY,
+  TAB_VIEW_STATE_KEY,
+} from '@/data/tabState/storageKeys'
+import { LLM_API_KEYS_SESSION_KEY } from '@/features/LLMQuery/store/storageKeys'
 
 /**
  * What each object store of the editor's database holds, in reader terms.
@@ -30,6 +36,27 @@ const STORE_LABELS: Record<ObjectStoreNames, string> = {
   appliedWorkspaceFilters: 'Applied filters',
 }
 
+/**
+ * What each object store of the profile database holds. That database keeps
+ * what belongs to this browser rather than to a workspace, so clearing the
+ * workspace leaves it. Typed over every store, like `STORE_LABELS`.
+ */
+const PROFILE_STORE_LABELS: Record<ProfileStoreNames, string> = {
+  settings: 'LLM Query provider, endpoint and model',
+}
+
+/**
+ * sessionStorage keys Cytoscape Web writes, with what they hold. Listed
+ * without a "stored" column: sessionStorage belongs to one tab, and this
+ * page usually runs in a different tab from the editor, so it cannot see
+ * what the editor's tab holds.
+ */
+const SESSION_STORAGE_LABELS: Record<string, string> = {
+  [TAB_VIEW_STATE_KEY]: 'Which panels and tabs are open',
+  [TAB_NETWORK_KEY]: 'Which network is shown',
+  [LLM_API_KEYS_SESSION_KEY]: 'The LLM Query API key you entered, if any',
+}
+
 /** localStorage keys Cytoscape Web writes, with what they hold. */
 const LOCAL_STORAGE_LABELS: Record<string, string> = {
   'cyweb.onboarding': 'Whether you have seen the welcome dialog and tours',
@@ -53,12 +80,15 @@ type Snapshot =
   | { kind: 'ready'; version: number; counts: StoreCount[] }
 
 /**
- * Counts the rows in the editor's database without opening it for writing.
- * Checks `indexedDB.databases()` first: `indexedDB.open` on a missing name
- * would create an empty database, which this view must never do.
+ * Counts the rows in one of the editor's databases without opening it for
+ * writing. Checks `indexedDB.databases()` first: `indexedDB.open` on a
+ * missing name would create an empty database, which this view must never do.
  */
-const readEditorDatabase = async (): Promise<Snapshot> => {
-  const editorDb = dbNameFor('app')
+const readDatabase = async <S extends string>(
+  editorDb: string,
+  storeNames: readonly S[],
+  labels: Record<S, string>,
+): Promise<Snapshot> => {
   if (typeof indexedDB.databases !== 'function') {
     return { kind: 'unsupported' }
   }
@@ -83,7 +113,7 @@ const readEditorDatabase = async (): Promise<Snapshot> => {
       const db = request.result
       // Let an editor tab upgrade its schema without waiting on this view.
       db.onversionchange = () => db.close()
-      const stores = Object.values(ObjectStoreNames).filter((name) =>
+      const stores = storeNames.filter((name) =>
         db.objectStoreNames.contains(name),
       )
       if (stores.length === 0) {
@@ -96,14 +126,12 @@ const readEditorDatabase = async (): Promise<Snapshot> => {
       for (const store of stores) {
         const count = transaction.objectStore(store).count()
         count.onsuccess = () =>
-          counts.push({ store, label: STORE_LABELS[store], rows: count.result })
+          counts.push({ store, label: labels[store], rows: count.result })
       }
       transaction.oncomplete = () => {
         db.close()
         counts.sort(
-          (a, b) =>
-            stores.indexOf(a.store as ObjectStoreNames) -
-            stores.indexOf(b.store as ObjectStoreNames),
+          (a, b) => stores.indexOf(a.store as S) - stores.indexOf(b.store as S),
         )
         resolve({ kind: 'ready', version: db.version, counts })
       }
@@ -114,6 +142,20 @@ const readEditorDatabase = async (): Promise<Snapshot> => {
     }
   })
 }
+
+const readEditorDatabase = async (): Promise<Snapshot> =>
+  await readDatabase(
+    dbNameFor('app'),
+    Object.values(ObjectStoreNames),
+    STORE_LABELS,
+  )
+
+const readProfileDatabase = async (): Promise<Snapshot> =>
+  await readDatabase(
+    profileDbNameFor('app'),
+    Object.values(ProfileStoreNames),
+    PROFILE_STORE_LABELS,
+  )
 
 const readLocalStorageKeys = (): string[] => {
   try {
@@ -127,11 +169,13 @@ const readLocalStorageKeys = (): string[] => {
 
 /**
  * A read-only look at what Cytoscape Web keeps in this browser: row counts
- * from the editor's database, the app's localStorage keys, and cookie names.
- * It never shows the stored values, and it never writes.
+ * from the editor's two databases, the app's localStorage keys, what it
+ * keeps per tab in sessionStorage, and cookie names. It never shows the
+ * stored values, and it never writes.
  */
 export const BrowserStorageView = (): ReactElement => {
   const [snapshot, setSnapshot] = useState<Snapshot>({ kind: 'loading' })
+  const [profile, setProfile] = useState<Snapshot>({ kind: 'loading' })
   const [localKeys, setLocalKeys] = useState<string[]>([])
   const [cookies, setCookies] = useState<string[]>([])
   const [error, setError] = useState<string>()
@@ -147,6 +191,9 @@ export const BrowserStorageView = (): ReactElement => {
     )
     readEditorDatabase()
       .then(setSnapshot)
+      .catch((cause: unknown) => setError(String(cause)))
+    readProfileDatabase()
+      .then(setProfile)
       .catch((cause: unknown) => setError(String(cause)))
   }, [])
 
@@ -203,6 +250,28 @@ export const BrowserStorageView = (): ReactElement => {
         </table>
       ) : null}
 
+      {profile.kind === 'ready' ? (
+        <table data-testid="manual-browser-storage-profile-db">
+          <thead>
+            <tr>
+              <th>
+                Kept when you clear the workspace (database{' '}
+                {profileDbNameFor('app')})
+              </th>
+              <th>Entries</th>
+            </tr>
+          </thead>
+          <tbody>
+            {profile.counts.map((row) => (
+              <tr key={row.store}>
+                <td>{row.label}</td>
+                <td>{row.rows}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : null}
+
       <table data-testid="manual-browser-storage-local">
         <thead>
           <tr>
@@ -219,6 +288,24 @@ export const BrowserStorageView = (): ReactElement => {
           ))}
         </tbody>
       </table>
+
+      <table data-testid="manual-browser-storage-session">
+        <thead>
+          <tr>
+            <th>Kept for one tab, until you close it (sessionStorage)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {Object.entries(SESSION_STORAGE_LABELS).map(([key, label]) => (
+            <tr key={key}>
+              <td>{label}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <Typography variant="body2" color="text.secondary" gutterBottom>
+        Each tab has its own, so this page cannot tell what another tab holds.
+      </Typography>
 
       <Typography variant="body2">
         Cookies for this site:{' '}

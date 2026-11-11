@@ -13,11 +13,14 @@ import { MessageSeverity } from '../../../models/MessageModel'
 import { analyzeSubsystemGeneSet } from '../api/chatgpt'
 import { isLLMConfigured, selectApiKey } from '../model/LLMProvider'
 import { useLLMQueryStore } from '../store'
+import { useHydrateLLMQueryOptions } from '../store/useHydrateLLMQueryOptions'
 import { LLM_QUERY_TAB_INDEX } from '@/models/UiModel/impl/panelTabs'
 
 export const LLMQueryResultPanel = (props: {
   height?: number
 }): ReactElement => {
+  // The provider, endpoint and model saved in this browser
+  useHydrateLLMQueryOptions()
   const geneQuery = useLLMQueryStore((state) => state.geneQuery)
   const [localQueryValue, setLocalQueryValue] = useState(geneQuery)
   const loading = useLLMQueryStore((state) => state.loading)

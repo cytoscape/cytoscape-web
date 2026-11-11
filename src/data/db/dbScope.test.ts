@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   currentDbScope,
   dbNameFor,
+  profileDbNameFor,
   resolveDbScope,
   uiEventsChannelFor,
 } from './dbScope'
@@ -35,6 +36,15 @@ describe('scoped names', () => {
   it('gives the manual its own database and channel', () => {
     expect(dbNameFor('manual')).toBe('cyweb-manual-db')
     expect(uiEventsChannelFor('manual')).toBe('cyweb-manual-ui-events')
+  })
+
+  it('names the profile database apart from the workspace database', () => {
+    expect(profileDbNameFor('app')).toBe('cyweb-profile-db')
+    expect(profileDbNameFor('app')).not.toBe(dbNameFor('app'))
+  })
+
+  it('keeps the manual sandbox out of the real profile', () => {
+    expect(profileDbNameFor('manual')).toBe('cyweb-manual-profile-db')
   })
 })
 

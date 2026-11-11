@@ -4,6 +4,21 @@ All notable changes to Cytoscape Web are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- LLM Query remembers the provider, Endpoint URL and model in this browser. They stay
+  after a reload and after you clear or load a workspace (#849)
+- LLM Query keeps your API key for the current tab: it is still there after a reload and
+  is removed when you close the tab. Forget key in LLM Query Options removes it sooner (#849)
+- LLM Query forgets an API key when you confirm a different provider, or a Custom endpoint
+  on a different server, so a key is never kept for, or sent to, anything other than what
+  you entered it for. LLM Query Options says so before you confirm (#849)
+
+### Changed
+
+- The API key field in LLM Query Options is masked, and a password manager can offer to
+  save the key (#849)
+
 ## [1.1.1] — 2026-10-28
 
 An in-app user manual, keyboard shortcuts for undo, redo and delete, a Select menu, a new

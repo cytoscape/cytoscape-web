@@ -150,12 +150,19 @@ ManualApp            route element: app bar, page list, page
 ### BrowserStorageView
 
 - On the Privacy Policy page. Counts rows per object store of the editor's
-  `cyweb-db`, lists the app's localStorage keys and the site's cookie names.
-  It never shows values and never writes.
-- Checks `indexedDB.databases()` before opening `cyweb-db`, because opening a
+  `cyweb-db` and of the profile database `cyweb-profile-db`, lists the app's
+  localStorage keys, what it keeps per tab in sessionStorage, and the site's
+  cookie names. It never shows values and never writes.
+- Checks `indexedDB.databases()` before opening a database, because opening a
   missing database would create it.
-- `STORE_LABELS` is typed over `ObjectStoreNames`: a new object store fails
-  the type check until it has a label.
+- `STORE_LABELS` is typed over `ObjectStoreNames`, and `PROFILE_STORE_LABELS`
+  over `ProfileStoreNames`: a new object store fails the type check until it
+  has a label.
+- The sessionStorage list has no "stored" column. sessionStorage belongs to
+  one tab and the manual usually runs in another, so a Yes/No read here would
+  describe the manual's tab, not the editor's.
+- Its sources for the drift check are listed in `drift.ts` (`DEMO_COPIES`). A
+  module that adds browser storage has to be added there by hand.
 
 ### VisualPropertyTable
 
