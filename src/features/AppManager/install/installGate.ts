@@ -19,6 +19,9 @@ import { parseManifest } from '../manifest/parseManifest'
 const HOST_VERSION: string | undefined =
   typeof REACT_APP_VERSION !== 'undefined' ? REACT_APP_VERSION : undefined
 
+/** This Cytoscape Web's version, for messages about `compatibleHostVersions`. */
+export const hostVersion = (): string | undefined => HOST_VERSION
+
 /**
  * Validate a fetched single-entry manifest and return its one entry.
  *

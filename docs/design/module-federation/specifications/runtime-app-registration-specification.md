@@ -1,5 +1,6 @@
 # Runtime App Registration Specification
 
+- **Rev. 8 (11/10/2026): Jing Chen and Claude** — `compatibleHostVersions` is enforced before any load, at startup and on activation (`incompatible-host`, §8.1, §9.1); a failed app keeps its switch so it can be turned off (§10.1, §11.2, §9.7 rows 5 and 15)
 - **Rev. 7 (11/10/2026): Jing Chen and Claude** — Core apps: the default manifest's entries auto-load unless the workspace persists them as inactive (§8.1, §8.5, §10.1); the default manifest is fetched under the deployment's base path (§7.2); activations of one app run one at a time, after its startup load (§9.6)
 - **Rev. 6 (3/23/2026): Keiichiro ONO and Claude** — `author` field relaxed from required to optional with `"unknown"` default for backward compatibility with legacy `{ name, url }` manifests (§6.4, §7.1)
 - **Rev. 5 (3/20/2026): Keiichiro ONO and Claude** — Manifest schema extension for App Store readiness: added `author` (required), `tags`, `icon`, `license`, `repository`, `compatibleHostVersions` fields to `AppCatalogEntry` (§6.4) and `AppManifestEntrySchema` (§7.1)
@@ -881,6 +882,13 @@ The rule is `startupAppStatus` in
 An app listed only by a user-set Manifest Source (§6.5) is not a core app and
 follows the first rule.
 
+Neither kind is loaded on a host its `compatibleHostVersions` excludes. Such an
+app is recorded as failed with `incompatible-host` and seeded `Inactive` for
+the session, with no toast: the user cannot fix it, and it would recur at every
+start. Its persisted record is left alone, so a later host the range admits
+loads it. `activateApp` applies the same check, so the switch cannot load it
+either (§9.1).
+
 ### 8.2 Rationale
 
 This policy provides the best balance between continuity and performance:
@@ -959,7 +967,9 @@ and activate the app immediately in the current page.
 
 The host performs:
 
-1. Resolve the app's catalog entry
+1. Resolve the app's catalog entry, and refuse (with a message, and
+   `incompatible-host` on the row) when its `compatibleHostVersions` excludes
+   this host
 2. Set `loadStates[id] = 'loading'`
 3. Call `loadRemoteApp(id, url)` to fetch and initialize the remote container
 4. Register the loaded app in `AppStore.apps`
@@ -1122,7 +1132,7 @@ in session-local `loadStates`).
 | 2 | First-time activate — load fails | _(none)_ | `unloaded` | `Inactive` | `failed` | Rollback per Section 9.2; keep `Inactive` so user can retry via Enable |
 | 3 | First-time activate — mount fails | _(none)_ | `unloaded` | `Inactive` | `failed` | `cleanupAllForApp(appId)`; keep `Inactive` per Section 9.2 |
 | 4 | Startup auto-load (persisted active) | `Active` | `unloaded` | `Active` | `loading` → `loaded` | `loadRemoteApp` → register → declarative resources → `mount()` |
-| 5 | Startup auto-load — fails | `Active` | `unloaded` | `Error` | `failed` | Set `Error` to signal previously working app needs attention; show Retry |
+| 5 | Startup auto-load — fails | `Active` | `unloaded` | `Error` | `failed` | Set `Error` to signal previously working app needs attention; show the switch (on) and, for `mount-failed`, Retry |
 | 6 | Deactivate (user click) | `Active` | `loaded` | `Inactive` | `loaded` | `unmountApp(cyApp, mountedApps)` (internally runs cleanup then `unmount()`; see §9.4) |
 | 7 | Re-enable (user click, module cached) | `Inactive` | `loaded` | `Active` | `loaded` | Reuse `appRegistry` entry → declarative resources → `mount()` |
 | 8 | Re-enable (user click, module evicted) | `Inactive` | `unloaded` | `Active` | `loading` → `loaded` | Full `loadRemoteApp` → register → declarative resources → `mount()` |
@@ -1132,6 +1142,8 @@ in session-local `loadStates`).
 | 12 | Disable session-only orphan | `Active` | `loaded` | `Inactive` | `loaded` | `unmountApp(cyApp, mountedApps)`; re-enable not possible (no catalog entry) |
 | 13 | Remove orphan app | `Inactive` | `loaded` | n/a (entry removed) | n/a (entry removed) | `AppStore.remove(id)` (apps, loadStates, IndexedDB) + `appRegistry.delete(id)`; app disappears from UI |
 | 14 | Install a new version (catalog URL differs from the loaded one) | any | `loaded` | `Active` | `loading` → `loaded` | `unmountApp(old, mountedApps)` + `appRegistry.delete(id)` → full `loadRemoteApp` → register → declarative resources → `mount()` |
+| 15 | Turn off a failed app | `Error` or `Inactive` | `failed` | `Inactive` | `unloaded` | Persist `inactive` (a core app with no record gets one); clear the failure |
+| 16 | Startup or activation on a host the entry excludes | any | `unloaded` | `Inactive` | `failed` (`incompatible-host`) | Nothing is loaded; no startup toast; the record is unchanged |
 
 **Invariants:**
 
@@ -1150,13 +1162,21 @@ If startup loading of an active app (including a core app, §8.1) fails:
 
 1. set loadStates[id] to failed
 2. keep the rest of the host usable
-3. expose retry in the app manager UI
+3. expose retry in the app manager UI where it can help (`mount-failed`), and
+   keep the app's switch, on, so the user can turn it off: a core app is
+   tried at every start and cannot be uninstalled
 4. tell the user in one toast for the whole startup pass: a single failure
    names the app and the cause, several are counted
    (`N apps failed to load — open App Manager for details.`)
 
 The persisted record is not changed. A core app that failed is therefore tried
-again at the next startup, until it loads or the user turns it off.
+again at the next startup, until it loads or the user turns it off. Turning it
+off writes the `inactive` record and clears the failure from the row
+(`deactivateApp` resets `loadStates[id]` to `unloaded`). A fixed version the
+deployment ships in `apps.json` loads at the next start without a click,
+unless the user turned the app off. The default manifest is fetched with
+`cache: 'no-cache'`, so a reload sees the new `apps.json` even though it is
+served without Cache-Control.
 
 ### 10.2 Retry
 
@@ -1238,7 +1258,9 @@ activation state.
 | Yes     | loading    | any                 | Show loading indicator                       |
 | Yes     | loaded     | active              | Show Disable (app is running)                |
 | Yes     | loaded     | inactive            | Show Enable (fast, no network fetch)         |
-| Yes     | failed     | any                 | Show Retry                                   |
+| Yes     | failed     | active or error     | Show the switch on; also Retry for `mount-failed` |
+| Yes     | failed     | inactive or missing | Show the switch off; also Retry for `mount-failed` |
+| Yes     | failed (`incompatible-host`) | any | No switch; the row states the required host version |
 | No      | loaded     | active              | Show Disable only (session-only, see below)  |
 | No      | loaded     | inactive            | Show Remove only (re-enable not possible)    |
 | No      | failed     | any                 | Do not display (no catalog entry, no retry)  |

@@ -100,6 +100,41 @@ describe('composeCatalog', () => {
       expect(sources.hello).toBe('manifest')
     })
 
+    // Review of the version change: a newer version this host cannot run
+    // must not replace a working one. Compatibility is decided first.
+    describe('compatibility comes before version', () => {
+      const needsFutureHost = (e: AppCatalogEntry): AppCatalogEntry => ({
+        ...e,
+        compatibleHostVersions: '>=999.0.0',
+      })
+      const runsHere = (e: AppCatalogEntry): boolean =>
+        e.compatibleHostVersions !== '>=999.0.0'
+
+      it('keeps a working install over a newer manifest entry this host cannot run', () => {
+        const { entries, sources } = composeCatalog(
+          [needsFutureHost(entry('hello', '2.0.0'))],
+          [installed('hello', 'appstore', '1.0.0')],
+          runsHere,
+        )
+        expect(entries.find((e) => e.id === 'hello')?.version).toBe('1.0.0')
+        expect(sources.hello).toBe('appstore')
+      })
+
+      it('takes the manifest entry over a newer install this host cannot run', () => {
+        const unrunnable: InstalledApp = {
+          ...installed('hello', 'appstore', '3.0.0'),
+          entry: needsFutureHost(entry('hello', '3.0.0')),
+        }
+        const { entries, sources } = composeCatalog(
+          [entry('hello', '1.0.0')],
+          [unrunnable],
+          runsHere,
+        )
+        expect(entries.find((e) => e.id === 'hello')?.version).toBe('1.0.0')
+        expect(sources.hello).toBe('manifest')
+      })
+    })
+
     it('keeps the install pinned when the versions cannot be compared', () => {
       const unversioned: AppCatalogEntry = {
         id: 'hello',

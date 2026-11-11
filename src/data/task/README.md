@@ -65,8 +65,10 @@ loads apps at startup, and returns the commands App Manager calls
    deployment's own `apps.json`, unless the workspace records that the user
    turned them off.
 4. Loads every app seeded on, in parallel, through `loadRemoteApp`, then
-   registers and mounts each. Failures are reported in one toast and kept on
-   the app's row in App Manager.
+   registers and mounts each. An app whose `compatibleHostVersions` excludes
+   this host is skipped and marked `incompatible-host` on its row. Failures
+   are reported in one toast and kept on the app's row in App Manager, which
+   keeps the app's switch so it can be turned off.
 
 Turning a core app off writes an `inactive` record to the workspace, which is
 what keeps it off at the next startup.

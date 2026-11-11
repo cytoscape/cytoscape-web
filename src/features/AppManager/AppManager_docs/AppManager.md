@@ -30,8 +30,9 @@ The AppManager feature consists of:
 ### AppListPanel.tsx
 - Displays list of registered apps
 - Shows app name, description, and version (if provided)
-- Switch to activate/deactivate apps; a failed app shows its reason and, when
-  retrying can help, a Retry button
+- Switch to activate/deactivate apps; a failed app shows its reason, keeps its
+  switch so it can be turned off, and, when retrying can help, also a Retry
+  button. An app this host cannot run (`incompatible-host`) has no switch
 - Handles app status changes
 - Shows message when no apps are registered
 
@@ -87,7 +88,9 @@ The AppManager feature consists of:
 5. App status is tracked (Active, Inactive, Error). A load that fails is
    reported in a toast (one per startup pass) and on the app's row
 6. Versions: when the catalog and an install carry the same app, the newer
-   semantic version wins (`compareAppVersions`). `installApp` updates an older
+   *compatible* semantic version wins (`compareAppVersions`, with
+   `compatibleHostVersions` checked first). An app this host cannot run is
+   never loaded, at startup or by its switch. `installApp` updates an older
    installed version in place, keeps a newer or equal one (only turning it on
    for an install link), and returns what it did (`AppInstallOutcome`).
    `AppInstallConfirmationDialog` says what confirming will do to an installed
@@ -173,6 +176,13 @@ the model layer, not here, because `src/data` may not import from `src/features`
 | `no-app-config` | The bundle exports no default from `./AppConfig`. | No — mis-packaged |
 | `id-mismatch` | The bundle's `CyApp.id` differs from the catalog id. | No — mis-packaged |
 | `mount-failed` | The bundle loaded but the app's `mount()` threw. | Yes |
+| `incompatible-host` | The entry's `compatibleHostVersions` excludes this Cytoscape Web; nothing was loaded. Set at startup (no toast) and on activation. | No — the row has no switch either |
+
+Every failed row except `incompatible-host` keeps its switch: on when the app
+was meant to run (`Active` or `Error`), off otherwise. A core app is tried at
+every start and cannot be uninstalled, so the switch is how a user stops a
+broken one. Turning a failed app off writes the `inactive` record and clears
+its failure (`deactivateApp` resets the load state to `unloaded`).
 
 `retryApp` is `activateApp` and nothing else, so only `mount-failed` gets a
 Retry button. `fetch-failed` cannot be retried in-tab: the federation runtime

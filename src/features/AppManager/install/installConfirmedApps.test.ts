@@ -83,6 +83,25 @@ describe('installConfirmedApps', () => {
     ])
   })
 
+  it('warns when the offered version cannot run here and another was kept', async () => {
+    const deps = makeDeps()
+    deps.installApp.mockResolvedValueOnce({
+      kind: 'incompatible',
+      offered: '2.0.0',
+      range: '>=999.0.0',
+      kept: '1.0.0',
+    })
+
+    await installConfirmedApps([reactApp('alpha')], deps)
+
+    expect(deps.addMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'App alpha 2.0.0 needs Cytoscape Web >=999.0.0; kept 1.0.0',
+        severity: 'warning',
+      }),
+    )
+  })
+
   it('adds no message of its own to a rejected install', async () => {
     const deps = makeDeps()
     deps.installApp.mockResolvedValueOnce({ kind: 'rejected' })

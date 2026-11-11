@@ -13,6 +13,7 @@ import type {
 import { AppConfigContext } from '../../../AppConfigContext'
 import { logApp } from '../../../debug'
 import {
+  hostVersion,
   isAllowedOrigin,
   isCatalogEntryAllowed,
   isHostCompatible,
@@ -79,6 +80,20 @@ const createDeferred = (): Deferred => {
     resolve = done
   })
   return { promise, resolve }
+}
+
+/** Whether this Cytoscape Web can run the entry (`compatibleHostVersions`). */
+const runsOnThisHost = (entry: AppCatalogEntry): boolean =>
+  isHostCompatible(entry.compatibleHostVersions)
+
+/** The failure recorded for an entry this Cytoscape Web cannot run. */
+const incompatibleHost = (entry: AppCatalogEntry): AppLoadFailure => {
+  const version = hostVersion()
+  return {
+    code: 'incompatible-host',
+    range: entry.compatibleHostVersions ?? '',
+    ...(version !== undefined && { hostVersion: version }),
+  }
 }
 
 /**
@@ -194,6 +209,7 @@ export const useAppManager = (): AppManagerCommands => {
     const { entries, sources, manifestIds } = composeCatalog(
       manifestEntriesRef.current,
       installed,
+      runsOnThisHost,
     )
     setCatalog(entries, sources, manifestIds)
   }
@@ -385,6 +401,21 @@ export const useAppManager = (): AppManagerCommands => {
       return
     }
 
+    // The entry's compatibleHostVersions excludes this Cytoscape Web: loading
+    // it would run code written for another host.
+    if (!runsOnThisHost(catalogEntry)) {
+      addMessage({
+        message: `Cannot turn on "${catalogEntry.name ?? id}": it needs Cytoscape Web ${catalogEntry.compatibleHostVersions}.`,
+        duration: 5000,
+        severity: MessageSeverity.ERROR,
+      })
+      logApp.warn(
+        `[useAppManager]: activateApp: "${id}" needs host ${catalogEntry.compatibleHostVersions}`,
+      )
+      failApp(id, incompatibleHost(catalogEntry), { toast: false })
+      return
+    }
+
     let currentLoadState = loadStates[id]
     const existedBefore = currentApps[id] !== undefined
 
@@ -472,6 +503,11 @@ export const useAppManager = (): AppManagerCommands => {
   const deactivateApp = async (id: string): Promise<void> => {
     setStatus(id, AppStatus.Inactive)
     reconcileInstalledStatus(id, AppStatus.Inactive)
+    // A failed app that is turned off is no longer being tried; the failure
+    // would only keep its row marked failed (setLoadState clears the reason).
+    if (useAppStore.getState().loadStates[id] === 'failed') {
+      setLoadState(id, 'unloaded')
+    }
     const cyApp = appRegistry.get(id)
     if (cyApp !== undefined && mountedApps.current.has(id)) {
       await unmountApp(cyApp, mountedApps.current)
@@ -492,6 +528,7 @@ export const useAppManager = (): AppManagerCommands => {
     const { entries, sources, manifestIds } = composeCatalog(
       manifestEntries,
       installedApps,
+      runsOnThisHost,
     )
     setCatalog(entries, sources, manifestIds)
     logApp.info(
@@ -543,10 +580,12 @@ export const useAppManager = (): AppManagerCommands => {
     await catalogReady.promise
     const { catalog, apps: currentApps } = useAppStore.getState()
     const current = catalog[entry.id]
-    const change = appVersionChange(entry, current)
+    const change = appVersionChange(entry, current, runsOnThisHost)
     const keepInstalled =
       current !== undefined &&
-      (change.kind === 'same' || change.kind === 'older')
+      (change.kind === 'same' ||
+        change.kind === 'older' ||
+        change.kind === 'incompatible')
     const wasActive = currentApps[entry.id]?.status === AppStatus.Active
     const target = keepInstalled ? current : entry
 
@@ -569,6 +608,12 @@ export const useAppManager = (): AppManagerCommands => {
         await activateApp(entry.id)
       }
       return change
+    }
+
+    // Never leave the old version running under the new entry: an update
+    // that will not be activated stops what is running first.
+    if (wasActive && !activate) {
+      await deactivateApp(entry.id)
     }
 
     // 3. Persist into the workspace (upsert → idempotent)
@@ -667,6 +712,7 @@ export const useAppManager = (): AppManagerCommands => {
         const { entries, sources, manifestIds } = composeCatalog(
           manifestEntries,
           installedApps,
+          runsOnThisHost,
         )
         setCatalog(entries, sources, manifestIds)
         logApp.info(
@@ -767,6 +813,18 @@ export const useAppManager = (): AppManagerCommands => {
               )
             }
             return allowed
+          })
+          .filter((id) => {
+            // Not loaded on a host the entry excludes. Stated on the row only:
+            // the user cannot fix it, and a toast would recur at every start.
+            // The record is left alone, so a later host that fits loads it.
+            if (runsOnThisHost(catalog[id])) return true
+            failApp(id, incompatibleHost(catalog[id]), { toast: false })
+            setStatus(id, AppStatus.Inactive)
+            logApp.info(
+              `[useAppManager]: startup auto-load: "${id}" skipped — needs host ${catalog[id].compatibleHostVersions}`,
+            )
+            return false
           })
 
         if (activeAppIds.length === 0) {

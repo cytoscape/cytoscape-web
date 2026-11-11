@@ -3,7 +3,7 @@ import { AppType } from '@/models/AppModel/AppType'
 import type { AppInstallOutcome } from '@/models/AppModel/AppVersionChange'
 import {
   appInstallMessage,
-  isInstallChange,
+  appInstallSeverity,
 } from '@/models/AppModel/impl/appInstallMessage'
 import type { PendingAppInstall } from '@/models/AppModel/PendingAppInstall'
 import { pendingInstallName } from '@/models/AppModel/PendingAppInstall'
@@ -54,9 +54,7 @@ export const installConfirmedApps = async (
         deps.addMessage({
           message,
           duration: 4000,
-          severity: isInstallChange(outcome)
-            ? MessageSeverity.SUCCESS
-            : MessageSeverity.INFO,
+          severity: appInstallSeverity(outcome),
         })
       }
     } catch (error) {

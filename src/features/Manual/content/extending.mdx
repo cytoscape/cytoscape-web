@@ -28,8 +28,13 @@ you reload the page. A new workspace starts with all of them on again.
 
 If an app from the catalog cannot be loaded when Cytoscape Web starts, a
 message at the bottom of the window names the app and the reason, and its row
-is marked **failed**. Cytoscape Web tries again the next time it starts. Turn
-the app off if you do not want it tried again.
+is marked **failed**. Cytoscape Web tries again the next time it starts, so
+once the app is fixed and your site ships the new version, it runs after a
+reload without anything from you. If you do not want it tried again, turn it
+off with its switch, which a failed row keeps.
+
+An app made for a newer Cytoscape Web than yours is not started. Its row says
+which version of Cytoscape Web it needs, and has no switch.
 
 Once an app is on, its menu items appear in the Apps menu, above
 **Manage Apps...**. An app can also add a panel or a dialog of its own.
@@ -38,7 +43,7 @@ A row can carry other marks:
 
 | Mark | Meaning |
 | --- | --- |
-| failed | The app could not be loaded. The reason is shown under the description. If trying again can help, the row has a **Retry** button. |
+| failed | The app could not be loaded. The reason is shown under the description. Its switch still turns it off. If trying again can help, the row also has a **Retry** button. |
 | App Store | You installed the app yourself, from a URL or a link. |
 | Snapshot | The app came with a workspace you opened from NDEx. |
 | orphan | The app is no longer in the catalog. Turn it off, then click the trash icon (**Remove orphan app**) to remove it. |
@@ -88,6 +93,8 @@ part by part, so 3.2.0 is newer than 3.1.23:
   the old one at once, without a reload.
 - A link to an **older** version, or the same one, keeps the version you have.
   The dialog says so, and the app is turned on if it was off.
+- A link to a version made for a newer Cytoscape Web than yours also keeps the
+  version you have, and the dialog says which Cytoscape Web it needs.
 
 This also applies to apps from the catalog. If the catalog later ships a
 version newer than one you installed from a link, the catalog's version

@@ -283,3 +283,147 @@ test.describe('install links for a core app', () => {
     ).toContainText('v2.0.0')
   })
 })
+
+// A core app is tried at every start and cannot be uninstalled, so a broken
+// one must be possible to turn off; one this host cannot run is not started;
+// and a fixed version shipped in apps.json replaces a broken one on reload.
+test.describe('when a core app cannot run', () => {
+  const BROKEN_ID = 'brokenCoreApp'
+
+  /** Serve apps.json listing one app whose code is missing. */
+  const serveBrokenCoreApp = async (page: Page): Promise<void> => {
+    await page.route('**/apps.json', async (route) => {
+      await route.fulfill({
+        json: [
+          {
+            id: BROKEN_ID,
+            name: 'Broken Core App',
+            version: '1.0.0',
+            url: 'http://localhost:4191/missing/remoteEntry.js',
+            author: 'Test',
+          },
+        ],
+      })
+    })
+  }
+
+  test('a failed core app can be turned off, and stays off', async ({
+    page,
+  }) => {
+    // 1. The core app fails at startup
+    await serveBrokenCoreApp(page)
+    await gotoAndWaitReady(page)
+    await expect(
+      page.getByText('Could not load "Broken Core App"', { exact: false }),
+    ).toBeVisible({ timeout: 15_000 })
+
+    // 2. App Manager shows why, with the switch still on
+    await openAppManager(page)
+    const toggle = page.locator(`[data-testid="app-toggle-${BROKEN_ID}"]`)
+    await expect(
+      page.locator(`[data-testid="app-failure-${BROKEN_ID}"]`),
+    ).toBeVisible()
+    await expect(toggle.locator('input')).toBeChecked()
+
+    // 3. Turn it off
+    await toggle.click()
+    await expect(toggle.locator('input')).not.toBeChecked()
+    await expect(
+      page.locator(`[data-testid="app-failure-${BROKEN_ID}"]`),
+    ).toHaveCount(0)
+    await expect
+      .poll(async () => await storedAppStatus(page, BROKEN_ID), {
+        timeout: 15_000,
+      })
+      .toBe('inactive')
+
+    // 4. Reload: it is not tried again
+    await gotoAndWaitReady(page)
+    await openAppManager(page)
+    await expect(toggle.locator('input')).not.toBeChecked()
+    await expect(
+      page.locator(`[data-testid="app-failure-${BROKEN_ID}"]`),
+    ).toHaveCount(0)
+    await expect(
+      page.getByText('Could not load "Broken Core App"', { exact: false }),
+    ).toHaveCount(0)
+  })
+
+  test('a core app this Cytoscape Web cannot run is not started', async ({
+    page,
+  }) => {
+    // 1. apps.json lists the app, requiring a host that does not exist yet
+    await page.route('**/apps.json', async (route) => {
+      const response = await route.fetch({ url: FIXTURE_REMOTE_MANIFEST_URL })
+      const [fixture] = (await response.json()) as Array<
+        Record<string, unknown>
+      >
+      await route.fulfill({
+        json: [{ ...fixture, compatibleHostVersions: '>=999.0.0' }],
+      })
+    })
+
+    // 2. Open Cytoscape Web
+    await gotoAndWaitReady(page)
+
+    // 3. App Manager says why it is off, and offers no switch
+    await openAppManager(page)
+    await expect(
+      page.locator(`[data-testid="app-failure-${APP_ID}"]`),
+    ).toContainText('Needs Cytoscape Web >=999.0.0')
+    await expect(
+      page.locator(`[data-testid="app-toggle-${APP_ID}"]`),
+    ).toHaveCount(0)
+
+    // 4. Its code never ran
+    await expect(page.locator('[data-testid="remote-app-marker"]')).toHaveCount(
+      0,
+    )
+  })
+
+  test('a fixed version in apps.json runs after a reload', async ({ page }) => {
+    // 1. apps.json lists version 1.0.0 of the app, whose code is broken (here:
+    //    missing). It fails at startup, and the user does nothing.
+    await page.route('**/apps.json', async (route) => {
+      const response = await route.fetch({ url: FIXTURE_REMOTE_MANIFEST_URL })
+      const [fixture] = (await response.json()) as Array<
+        Record<string, unknown>
+      >
+      await route.fulfill({
+        json: [
+          {
+            ...fixture,
+            version: '1.0.0',
+            url: 'http://localhost:4191/missing/remoteEntry.js',
+          },
+        ],
+      })
+    })
+    await gotoAndWaitReady(page)
+    await expect(
+      page.getByText('Could not load "Test Remote App"', { exact: false }),
+    ).toBeVisible({ timeout: 15_000 })
+
+    // 2. The deployment ships the fixed version, 1.0.1, in apps.json
+    await page.unroute('**/apps.json')
+    await serveFixtureManifest(page, '**/apps.json', '1.0.1')
+
+    // 3. Reload: the fixed version runs, with no click
+    await gotoAndWaitReady(page)
+    await expect(page.locator('[data-testid="remote-app-marker"]')).toBeVisible(
+      { timeout: 15_000 },
+    )
+
+    // 4. App Manager shows it on, at 1.0.1, with no failure
+    await openAppManager(page)
+    await expect(
+      page.locator(`[data-testid="app-toggle-${APP_ID}"] input`),
+    ).toBeChecked()
+    await expect(
+      page.locator('[data-testid="app-settings-dialog"]'),
+    ).toContainText('v1.0.1')
+    await expect(
+      page.locator(`[data-testid="app-failure-${APP_ID}"]`),
+    ).toHaveCount(0)
+  })
+})

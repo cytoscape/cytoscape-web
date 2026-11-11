@@ -255,6 +255,82 @@ describe('AppListPanel — load failure reasons', () => {
     expect(cmds.retryApp).toHaveBeenCalledWith('breaks')
   })
 
+  // Review of the core-apps change: a core app that fails is retried at every
+  // start and cannot be uninstalled, so its row must keep a way to turn it
+  // off, whatever the cause.
+  describe('turning off a failed app', () => {
+    const renderFailedAs = (
+      status: AppStatus | undefined,
+      failure: AppLoadFailure,
+    ): AppManagerCommands => {
+      useAppStore
+        .getState()
+        .setCatalog([entry('broken')], { broken: 'manifest' }, ['broken'])
+      useAppStore.setState({
+        apps:
+          status === undefined
+            ? {}
+            : {
+                broken: { id: 'broken', name: 'broken app', status } as any,
+              },
+        loadStates: { broken: 'failed' },
+        loadErrors: { broken: failure },
+      })
+      const cmds = commands()
+      render(
+        <AppManagerCommandsProvider value={cmds}>
+          <AppListPanel />
+        </AppManagerCommandsProvider>,
+      )
+      return cmds
+    }
+    const fetchFailed: AppLoadFailure = {
+      code: 'fetch-failed',
+      url: 'https://apps.cytoscape.org/web/broken/1.0.0/remoteEntry.js',
+      message: 'HTTP 404',
+    }
+
+    it('shows the switch on for an app that failed while on, and turns it off', () => {
+      const cmds = renderFailedAs(AppStatus.Error, fetchFailed)
+
+      const toggle = screen.getByTestId('app-toggle-broken')
+      expect(toggle.querySelector('input')?.checked).toBe(true)
+      fireEvent.click(toggle.querySelector('input') as HTMLInputElement)
+      expect(cmds.deactivateApp).toHaveBeenCalledWith('broken')
+    })
+
+    it('keeps the switch beside Retry for a failed mount', () => {
+      renderFailedAs(AppStatus.Error, { code: 'mount-failed', message: 'x' })
+
+      expect(screen.getByTestId('app-toggle-broken')).toBeTruthy()
+      expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy()
+    })
+
+    it('shows the switch off for an app whose first activation failed', () => {
+      const cmds = renderFailedAs(undefined, fetchFailed)
+
+      const input = screen
+        .getByTestId('app-toggle-broken')
+        .querySelector('input') as HTMLInputElement
+      expect(input.checked).toBe(false)
+      fireEvent.click(input)
+      expect(cmds.activateApp).toHaveBeenCalledWith('broken')
+    })
+
+    it('offers no switch for an app this host cannot run', () => {
+      renderFailedAs(AppStatus.Inactive, {
+        code: 'incompatible-host',
+        range: '>=999.0.0',
+        hostVersion: '1.1.1',
+      })
+
+      expect(screen.queryByTestId('app-toggle-broken')).toBeNull()
+      expect(screen.getByTestId('app-failure-broken').textContent).toContain(
+        'Needs Cytoscape Web >=999.0.0',
+      )
+    })
+  })
+
   it('shows no reason for a row that has not failed', () => {
     renderPanel('hello', 'manifest', true)
 

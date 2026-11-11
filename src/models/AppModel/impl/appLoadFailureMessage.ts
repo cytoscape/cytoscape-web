@@ -24,6 +24,12 @@ export const appLoadFailureMessage = (failure: AppLoadFailure): string => {
       return `The bundle declares the id "${failure.received}" but the catalog lists "${failure.expected}". The app is mis-packaged — report it to its publisher.`
     case 'mount-failed':
       return `The app loaded but failed to start: ${failure.message}`
+    case 'incompatible-host':
+      return `Needs Cytoscape Web ${failure.range}${
+        failure.hostVersion === undefined
+          ? ''
+          : `; this is ${failure.hostVersion}`
+      }. It stays off until a version that supports this Cytoscape Web is available.`
   }
 }
 

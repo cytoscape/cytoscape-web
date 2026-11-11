@@ -68,15 +68,21 @@ function sourceChipLabel(source: AppSource | undefined): string | undefined {
  */
 function getAction(
   entry: AppDisplayEntry,
-): 'enable' | 'disable' | 'retry' | 'loading' | 'remove' | 'none' {
+): 'enable' | 'disable' | 'loading' | 'remove' | 'none' {
   if (entry.inCatalog) {
     if (entry.loadState === 'loading') return 'loading'
-    // Retry re-runs activation and nothing else, so it can only help the one
-    // cause that is not deterministic in-tab: a failed mount. For the other
-    // four it fails identically, forever — the row states the reason instead
-    // (#719).
-    if (entry.loadState === 'failed')
-      return isRetryableAppLoadFailure(entry.failure) ? 'retry' : 'none'
+    if (entry.loadState === 'failed') {
+      // An app this Cytoscape Web cannot run is never loaded: there is
+      // nothing to turn on, or off. The row states why.
+      if (entry.failure?.code === 'incompatible-host') return 'none'
+      // Any other failed app keeps its switch, so it can be turned off: a
+      // core app is tried again at every start and cannot be uninstalled.
+      // The switch is on while the app is meant to run, failed or not.
+      return entry.status === AppStatus.Active ||
+        entry.status === AppStatus.Error
+        ? 'disable'
+        : 'enable'
+    }
     if (entry.loadState === 'loaded' && entry.status === AppStatus.Active)
       return 'disable'
     // unloaded or loaded+inactive → enable
@@ -89,6 +95,16 @@ function getAction(
   if (entry.status === AppStatus.Inactive) return 'remove'
   return 'none'
 }
+
+/**
+ * Retry re-runs activation and nothing else, so it can only help the one
+ * cause that is not deterministic in-tab: a failed mount. For the others it
+ * fails identically, forever — the row states the reason instead (#719).
+ */
+const canRetry = (entry: AppDisplayEntry): boolean =>
+  entry.inCatalog &&
+  entry.loadState === 'failed' &&
+  isRetryableAppLoadFailure(entry.failure)
 
 export const AppListPanel = () => {
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
@@ -309,7 +325,7 @@ export const AppListPanel = () => {
                       }}
                     />
                   )}
-                  {action === 'retry' && (
+                  {canRetry(entry) && (
                     <Button
                       size="small"
                       variant="outlined"

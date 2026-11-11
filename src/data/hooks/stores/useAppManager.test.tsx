@@ -59,6 +59,7 @@ vi.mock('../../../features/AppManager/install/installGate', () => ({
   isAllowedOrigin: vi.fn(() => true),
   isCatalogEntryAllowed: vi.fn(() => true),
   isHostCompatible: vi.fn(() => true),
+  hostVersion: vi.fn(() => '1.1.1'),
 }))
 
 vi.mock('./appLifecycle', () => ({
@@ -830,6 +831,166 @@ describe('useAppManager — core apps', () => {
     expect(installed()).toEqual([])
   })
 
+  // Review of the core-apps change: startup checked the origin but never
+  // compatibleHostVersions, so a fresh workspace ran a core app declaring
+  // >=999.0.0.
+  it('does not start a core app this host cannot run, and says why on its row', async () => {
+    mockObtainCatalogEntries.mockResolvedValue([
+      { ...core, compatibleHostVersions: '>=999.0.0' },
+    ])
+    mockIsHostCompatible.mockImplementation(
+      (range?: string) => range !== '>=999.0.0',
+    )
+
+    await renderManager()
+
+    await waitFor(() =>
+      expect(useAppStore.getState().loadErrors['coreApp']).toEqual({
+        code: 'incompatible-host',
+        range: '>=999.0.0',
+        hostVersion: '1.1.1',
+      }),
+    )
+    expect(mockLoadRemoteApp).not.toHaveBeenCalled()
+    expect(coreStatus()).toBe(AppStatus.Inactive)
+    // Not the user's error to fix, and it would recur at every start.
+    expect(useMessageStore.getState().messages).toHaveLength(0)
+    expect(installed()).toEqual([])
+  })
+
+  it('refuses to turn on an app this host cannot run', async () => {
+    mockObtainCatalogEntries.mockResolvedValue([])
+    const { result } = await renderManager()
+    act(() => {
+      useAppStore
+        .getState()
+        .setCatalog([{ ...core, compatibleHostVersions: '>=999.0.0' }])
+    })
+    mockIsHostCompatible.mockImplementation(
+      (range?: string) => range !== '>=999.0.0',
+    )
+
+    await act(async () => {
+      await result.current.activateApp('coreApp')
+    })
+
+    expect(mockLoadRemoteApp).not.toHaveBeenCalled()
+    expect(useAppStore.getState().loadErrors['coreApp']?.code).toBe(
+      'incompatible-host',
+    )
+    expect(lastMessage()).toContain('needs Cytoscape Web >=999.0.0')
+  })
+
+  it('clears the failure of a failed core app the user turns off, and keeps it off', async () => {
+    mockLoadRemoteApp.mockResolvedValue({
+      ok: false,
+      failure: { code: 'fetch-failed', url: core.url, message: 'HTTP 404' },
+    })
+    const { result } = await renderManager()
+    await waitFor(() =>
+      expect(useAppStore.getState().loadStates['coreApp']).toBe('failed'),
+    )
+
+    await act(async () => {
+      await result.current.deactivateApp('coreApp')
+    })
+
+    expect(useAppStore.getState().loadStates['coreApp']).not.toBe('failed')
+    expect(useAppStore.getState().loadErrors['coreApp']).toBeUndefined()
+    expect(installed()).toEqual([
+      expect.objectContaining({ status: AppStatus.Inactive }),
+    ])
+  })
+
+  // A core app broke, the user did nothing, and the fix shipped as a new
+  // version in apps.json. The next start must load the fixed version.
+  describe('a fixed version after a broken one', () => {
+    const fixed = entry('coreApp', '1.0.1')
+
+    const restartWith = async (
+      first: Awaited<ReturnType<typeof renderManager>>,
+      catalog: AppCatalogEntry[],
+    ) => {
+      first.unmount()
+      resetSession()
+      mockLoadRemoteApp.mockReset()
+      mockLoadRemoteApp.mockImplementation(loadsFine)
+      mockMigrate.mockClear()
+      mockObtainCatalogEntries.mockResolvedValue(catalog)
+      await renderManager()
+      await waitFor(() =>
+        expect(useAppStore.getState().loadStates['coreApp']).toBe('loaded'),
+      )
+    }
+
+    it('loads it when the broken one failed at startup', async () => {
+      mockLoadRemoteApp.mockResolvedValue({
+        ok: false,
+        failure: { code: 'fetch-failed', url: core.url, message: 'HTTP 404' },
+      })
+      const first = await renderManager()
+      await waitFor(() => expect(lastMessage()).toContain('Could not load'))
+
+      await restartWith(first, [fixed])
+
+      expect(mockLoadRemoteApp).toHaveBeenCalledWith(
+        'coreApp',
+        fixed.url,
+        expect.any(Map),
+      )
+      expect(coreStatus()).toBe(AppStatus.Active)
+      expect(installed()).toEqual([])
+    })
+
+    it('loads it after a Retry of the broken one failed too', async () => {
+      mockLoadRemoteApp.mockImplementation(loadsFine)
+      ;(mountApp as Mock)
+        .mockRejectedValueOnce(new Error('boom'))
+        .mockRejectedValueOnce(new Error('boom again'))
+      const first = await renderManager()
+      await waitFor(() =>
+        expect(useAppStore.getState().loadStates['coreApp']).toBe('failed'),
+      )
+      await act(async () => {
+        await first.result.current.retryApp('coreApp')
+      })
+      expect(useAppStore.getState().loadStates['coreApp']).toBe('failed')
+
+      await restartWith(first, [fixed])
+
+      expect(coreStatus()).toBe(AppStatus.Active)
+      expect(installed()).toEqual([])
+    })
+
+    it('loads it over an App Store install of the broken version', async () => {
+      seedWorkspace([
+        {
+          entry: core,
+          status: AppStatus.Active,
+          source: 'appstore',
+          installedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ])
+      mockLoadRemoteApp.mockResolvedValue({
+        ok: false,
+        failure: { code: 'fetch-failed', url: core.url, message: 'HTTP 404' },
+      })
+      const first = await renderManager()
+      await waitFor(() =>
+        expect(useAppStore.getState().loadStates['coreApp']).toBe('failed'),
+      )
+
+      await restartWith(first, [fixed])
+
+      expect(mockLoadRemoteApp).toHaveBeenCalledWith(
+        'coreApp',
+        fixed.url,
+        expect.any(Map),
+      )
+      expect(coreStatus()).toBe(AppStatus.Active)
+    })
+  })
+
   it('leaves an app from a user-set catalog off until the user turns it on', async () => {
     // A custom Manifest Source is the user's list, not the deployment's: its
     // apps are not core apps and never run without a click.
@@ -1011,6 +1172,34 @@ describe('useAppManager — install link versions', () => {
     expect(outcome).toEqual({ kind: 'update', from: '1.0.0', to: '1.1.0' })
     expect(loadedFrom()).toBe(at('1.1.0').url)
     expect(installed()[0]?.status).toBe(AppStatus.Active)
+  })
+
+  // Review of the version change: an incompatible upgrade set activate=false
+  // but still replaced the catalog entry and the record, leaving v1 running
+  // under v2's entry. The working version is kept instead.
+  it('keeps the running version when the offered one cannot run here', async () => {
+    mockObtainCatalogEntries.mockResolvedValue([at('1.0.0')])
+    const rendered = await renderManager()
+    await waitFor(() => expect(loadedFrom()).toBe(at('1.0.0').url))
+    mockIsHostCompatible.mockImplementation(
+      (range?: string) => range !== '>=999.0.0',
+    )
+
+    const outcome = await install(rendered, {
+      ...at('2.0.0'),
+      compatibleHostVersions: '>=999.0.0',
+    })
+
+    expect(outcome).toEqual({
+      kind: 'incompatible',
+      offered: '2.0.0',
+      range: '>=999.0.0',
+      kept: '1.0.0',
+    })
+    expect(catalogVersion()).toBe('1.0.0')
+    expect(loadedFrom()).toBe(at('1.0.0').url)
+    expect(useAppStore.getState().apps[ID]?.status).toBe(AppStatus.Active)
+    expect(installed()).toEqual([])
   })
 
   it('changes nothing when offered the version already running', async () => {

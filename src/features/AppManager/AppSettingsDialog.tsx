@@ -203,7 +203,11 @@ const AppSettingsDialogContent = ({
       }
       const outcome = await installApp(entry, { activate: false })
       setInstallUrl('')
-      if (outcome.kind === 'same' || outcome.kind === 'older') {
+      if (
+        outcome.kind === 'same' ||
+        outcome.kind === 'older' ||
+        outcome.kind === 'incompatible'
+      ) {
         setInstallNotice(appInstallMessage(entry.name ?? entry.id, outcome))
       }
     } catch (err) {

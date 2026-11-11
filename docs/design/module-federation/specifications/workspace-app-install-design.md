@@ -13,6 +13,11 @@
 > `mountApp`) are reused; this design adds a persisted, workspace-scoped install
 > layer on top.
 
+- Rev. 6 (11/10/2026): Jing Chen and Claude (Opus 5.5) — The newer
+  *compatible* version wins: `compatibleHostVersions` is checked before
+  versions in the merge and on install, and an app the host cannot run is never
+  loaded (§7.5, §8.1, §8.5); a failed core app can be turned off, and a fixed
+  version in `apps.json` loads at the next start (§8.5, §15)
 - Rev. 5 (11/10/2026): Jing Chen and Claude (Opus 5.5) — Version upgrades:
   when the manifest and an `appstore`/`snapshot` install carry the same app,
   the newer semver wins (§8.1); an install never replaces a newer version, it
@@ -438,12 +443,24 @@ Versions are compared as semantic versions (`compareAppVersions`, the `semver`
 package): 3.1.2 is newer than 3.1.1, 3.2.0 is newer than 3.1.23, and a
 pre-release sorts before its release.
 
+Compatibility is decided first: the newer *compatible* version wins. An entry
+whose `compatibleHostVersions` excludes this Cytoscape Web never replaces one
+that this host can run, and one it can run replaces one it cannot, whatever
+their versions. Versions decide between two entries that both run here, or
+both do not.
+
 | Offered vs. catalog | `installApp` does | Returns |
 | --- | --- | --- |
 | No entry for the id | Installs it, as before | `new` |
 | Newer, or either version missing or not semver | Writes the `appstore` record and recomposes, so the offered entry wins (§8.1). An app that was running stays on and is swapped to the new version in place (`activateApp`'s version-update path) | `update` |
 | Same version, or the same remote entry URL | Leaves the record and catalog alone; turns the app on when `activate` is set | `same` |
 | Older | Leaves the newer version and its record alone; turns the app on when `activate` is set | `older` |
+| Cannot run on this host, while the installed one can | Leaves the installed version, running or not, and its record alone; turns it on when `activate` is set. "NetworkAnalyzer 2.0.0 needs Cytoscape Web >=2.0.0; kept 1.0.0" | `incompatible` |
+
+An update that is not activated never leaves the old version running under the
+new entry: the running module is stopped first. (Before the compatibility
+check, an incompatible upgrade replaced the catalog entry and wrote an
+inactive record while v1 kept running.)
 
 An install link always passes `activate: true`, so keeping a newer version
 still turns it on: the user asked for the app. Install from URL passes
@@ -490,7 +507,9 @@ flowchart TD
 ```
 
 Merge rule: union by `id`. On a collision with a `source === 'appstore' |
-'snapshot'` record the **newer semantic version wins**: an install newer than
+'snapshot'` record the **newer compatible version wins**. An entry this host can
+run (`compatibleHostVersions`) beats one it cannot, whatever the versions.
+Otherwise the newer semantic version wins: an install newer than
 the manifest's entry replaces it, and a manifest entry newer than the install
 replaces the install (§7.5). Equal versions keep the manifest entry. When either
 version is missing or not semver the installed entry wins, pinning its
@@ -585,7 +604,24 @@ session from it before the auto-load pass.
   named in the startup toast and marked failed on its row
   (runtime-app-registration-specification.md §10.1). No record is written, so
   it is tried again at the next startup until it loads or the user turns it
-  off.
+  off. The failed row keeps its switch, on, for that: a core app cannot be
+  uninstalled. Turning it off writes the `inactive` record and clears the
+  failure.
+- **A fixed version reaches users by itself.** When a broken core app is fixed
+  and the deployment ships the new version in `apps.json`, the next start loads
+  it: nothing recorded the failure. This holds when the user installed the
+  broken version from the App Store (the newer manifest entry wins, §8.1), and
+  after a failed Retry. Only a user who turned the app off keeps it off; that
+  record is their choice and is not told apart from "off because it broke".
+  The default manifest is fetched with `cache: 'no-cache'`, because it is served
+  without Cache-Control and a reload does not refetch `fetch()` requests, so a
+  heuristically cached copy would keep loading the broken version. The fix must
+  be a new version at a new URL, as the App Store publishes it.
+- **Not loaded where it cannot run.** A core app whose `compatibleHostVersions`
+  excludes this Cytoscape Web is not loaded at startup or by its switch. Its
+  row states the required version (`incompatible-host`) and has no switch;
+  there is no startup toast, since the user cannot fix it and it would recur
+  at every start.
 - **Deployment consequence.** Adding an app to a deployment's `apps.json` turns
   it on for every user who has not turned it off. The repository's `apps.json`
   is empty; each deployment's build swaps in its own list.
@@ -1061,3 +1097,10 @@ restore-after-reload defect (P1–P3).
   replaces it at the next start.
 - An update confirmed while the old version is still loading at startup ends
   with only the new version running.
+- A core app that failed at startup can be turned off from its row; after a
+  reload it is not tried again.
+- A core app that failed at startup, with nothing else done, loads the fixed
+  version `apps.json` ships after the next reload, and App Manager shows it on.
+- A core app, or an install, whose `compatibleHostVersions` excludes this host
+  is not loaded; its row says which version it needs. An install link
+  offering such a version keeps the installed compatible version running.

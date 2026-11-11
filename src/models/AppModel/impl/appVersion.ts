@@ -25,12 +25,38 @@ export const compareAppVersions = (
 /**
  * What installing `offered` would do to `installed`, the catalog's current
  * entry for the same id. See `AppVersionChange`.
+ *
+ * Compatibility comes first: an offer this host cannot run never replaces an
+ * installed entry it can run, and one it can run replaces one it cannot,
+ * whatever their versions. Versions decide only between two entries that
+ * both run here, or both do not.
+ *
+ * @param isCompatible Whether this Cytoscape Web can run an entry
+ *   (`compatibleHostVersions`); every entry counts as compatible by default
  */
 export const appVersionChange = (
   offered: AppCatalogEntry,
   installed: AppCatalogEntry | undefined,
+  isCompatible: (entry: AppCatalogEntry) => boolean = () => true,
 ): AppVersionChange => {
   if (installed === undefined) return { kind: 'new' }
+  const offeredRuns = isCompatible(offered)
+  const installedRuns = isCompatible(installed)
+  if (!offeredRuns && installedRuns && offered.url !== installed.url) {
+    return {
+      kind: 'incompatible',
+      ...(offered.version !== undefined && { offered: offered.version }),
+      range: offered.compatibleHostVersions ?? '',
+      ...(installed.version !== undefined && { kept: installed.version }),
+    }
+  }
+  if (offeredRuns && !installedRuns && offered.url !== installed.url) {
+    return {
+      kind: 'update',
+      ...(installed.version !== undefined && { from: installed.version }),
+      ...(offered.version !== undefined && { to: offered.version }),
+    }
+  }
   if (offered.url === installed.url) {
     return {
       kind: 'same',

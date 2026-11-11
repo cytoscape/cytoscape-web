@@ -93,4 +93,48 @@ describe('appVersionChange', () => {
       to: '2.0.0',
     })
   })
+
+  // The newer *compatible* version wins: an offer this host cannot run never
+  // replaces one it can, and one it can run replaces one it cannot.
+  describe('with a host compatibility check', () => {
+    const needs = (version: string, range: string): AppCatalogEntry => ({
+      ...entry(version),
+      compatibleHostVersions: range,
+    })
+    const runsHere = (e: AppCatalogEntry): boolean =>
+      e.compatibleHostVersions !== '>=999.0.0'
+
+    it('keeps a compatible installed version over a newer incompatible one', () => {
+      expect(
+        appVersionChange(needs('2.0.0', '>=999.0.0'), entry('1.0.0'), runsHere),
+      ).toEqual({
+        kind: 'incompatible',
+        offered: '2.0.0',
+        range: '>=999.0.0',
+        kept: '1.0.0',
+      })
+    })
+
+    it('replaces an installed version this host cannot run, even with an older one', () => {
+      expect(
+        appVersionChange(entry('1.0.0'), needs('2.0.0', '>=999.0.0'), runsHere),
+      ).toEqual({ kind: 'update', from: '2.0.0', to: '1.0.0' })
+    })
+
+    it('compares versions as usual when both run here', () => {
+      expect(
+        appVersionChange(entry('1.1.0'), entry('1.0.0'), runsHere),
+      ).toEqual({ kind: 'update', from: '1.0.0', to: '1.1.0' })
+    })
+
+    it('compares versions as usual when neither runs here', () => {
+      expect(
+        appVersionChange(
+          needs('1.1.0', '>=999.0.0'),
+          needs('1.0.0', '>=999.0.0'),
+          runsHere,
+        ),
+      ).toEqual({ kind: 'update', from: '1.0.0', to: '1.1.0' })
+    })
+  })
 })

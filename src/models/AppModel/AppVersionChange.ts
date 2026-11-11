@@ -9,6 +9,11 @@
  *   replaced before versions were compared)
  * - `same`: the same version, or the same remote entry URL, is installed
  * - `older`: a newer version is installed and is kept
+ * - `incompatible`: the offered entry cannot run on this Cytoscape Web
+ *   (`compatibleHostVersions`) and the installed one can, so it is kept
+ *
+ * Compatibility is decided before version: the newer *compatible* version
+ * wins.
  */
 export type AppVersionChange =
   | { readonly kind: 'new' }
@@ -18,6 +23,13 @@ export type AppVersionChange =
       readonly kind: 'older'
       readonly installed: string
       readonly offered: string
+    }
+  | {
+      readonly kind: 'incompatible'
+      readonly offered?: string
+      /** The offered entry's `compatibleHostVersions` */
+      readonly range: string
+      readonly kept?: string
     }
 
 /**

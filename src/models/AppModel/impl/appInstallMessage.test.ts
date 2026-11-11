@@ -20,6 +20,19 @@ describe('appInstallPreview', () => {
   it('has nothing to say about an app that is not installed', () => {
     expect(appInstallPreview({ kind: 'new' })).toBeUndefined()
   })
+
+  it('says an offered version this host cannot run keeps the installed one', () => {
+    expect(
+      appInstallPreview({
+        kind: 'incompatible',
+        offered: '2.0.0',
+        range: '>=999.0.0',
+        kept: '1.0.0',
+      }),
+    ).toBe(
+      'Version 2.0.0 needs Cytoscape Web >=999.0.0; the installed 1.0.0 is kept',
+    )
+  })
 })
 
 describe('appInstallMessage', () => {
@@ -61,6 +74,17 @@ describe('appInstallMessage', () => {
     expect(appInstallMessage('NetworkAnalyzer', { kind: 'same' })).toBe(
       'NetworkAnalyzer is already installed',
     )
+  })
+
+  it('says which version was kept when the offered one cannot run here', () => {
+    expect(
+      appInstallMessage('NetworkAnalyzer', {
+        kind: 'incompatible',
+        offered: '2.0.0',
+        range: '>=999.0.0',
+        kept: '1.0.0',
+      }),
+    ).toBe('NetworkAnalyzer 2.0.0 needs Cytoscape Web >=999.0.0; kept 1.0.0')
   })
 
   it('has nothing to add for a rejected install, which reported itself', () => {
