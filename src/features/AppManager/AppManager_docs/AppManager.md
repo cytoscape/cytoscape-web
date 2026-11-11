@@ -178,7 +178,7 @@ the model layer, not here, because `src/data` may not import from `src/features`
 | `no-app-config` | The bundle exports no default from `./AppConfig`. | No — mis-packaged |
 | `id-mismatch` | The bundle's `CyApp.id` differs from the catalog id. | No — mis-packaged |
 | `mount-failed` | The bundle loaded but the app's `mount()` threw. | Yes |
-| `incompatible-host` | The entry's `compatibleHostVersions` excludes this Cytoscape Web; nothing was loaded. Derived for every row from the entry (`incompatibleHostFailure`), whatever the app's status; also recorded at startup (no toast) and on activation. | No — the row has no switch either |
+| `incompatible-host` | The entry's `compatibleHostVersions` excludes this Cytoscape Web; nothing was loaded. Derived for every row from the entry (`incompatibleHostFailure`), whatever the app's status, except while an older compatible version of the app is running (after a Refresh), which keeps its switch. Also recorded at startup (no toast) and on activation; `setCatalog` retires the recorded one on every catalog replacement. | No — the row has no switch either |
 
 Every failed row except `incompatible-host` keeps its switch: on when the app
 was meant to run (`Active` or `Error`), off otherwise. A core app is tried at

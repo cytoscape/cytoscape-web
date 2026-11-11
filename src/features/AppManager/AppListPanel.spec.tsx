@@ -352,6 +352,73 @@ describe('AppListPanel — load failure reasons', () => {
       )
     })
 
+    // Review: Refresh can bring a version this host cannot run while an older,
+    // compatible one keeps running. The row went by the new entry and hid the
+    // switch, and a core app cannot be uninstalled.
+    it('keeps the switch for the version still running after a refresh', () => {
+      useAppStore
+        .getState()
+        .setCatalog(
+          [{ ...entry('future'), compatibleHostVersions: '>=999.0.0' }],
+          { future: 'manifest' },
+          ['future'],
+        )
+      useAppStore.setState({
+        apps: {
+          future: {
+            id: 'future',
+            name: 'future app',
+            status: AppStatus.Active,
+          } as any,
+        },
+        loadStates: { future: 'loaded' },
+        loadErrors: {},
+      })
+      const cmds = commands()
+      render(
+        <AppManagerCommandsProvider value={cmds}>
+          <AppListPanel />
+        </AppManagerCommandsProvider>,
+      )
+
+      const input = screen
+        .getByTestId('app-toggle-future')
+        .querySelector('input') as HTMLInputElement
+      expect(input.checked).toBe(true)
+      expect(screen.queryByTestId('app-failure-future')).toBeNull()
+      fireEvent.click(input)
+      expect(cmds.deactivateApp).toHaveBeenCalledWith('future')
+    })
+
+    it('offers the switch again once a refresh brings a compatible version', () => {
+      useAppStore
+        .getState()
+        .setCatalog(
+          [{ ...entry('fixed'), compatibleHostVersions: '>=999.0.0' }],
+          { fixed: 'manifest' },
+          ['fixed'],
+        )
+      useAppStore.getState().setLoadFailed('fixed', {
+        code: 'incompatible-host',
+        range: '>=999.0.0',
+        hostVersion: '1.1.1',
+      })
+      useAppStore.setState({ apps: {} })
+
+      // The refreshed catalog's entry runs here.
+      useAppStore
+        .getState()
+        .setCatalog([entry('fixed')], { fixed: 'manifest' }, ['fixed'])
+      render(
+        <AppManagerCommandsProvider value={commands()}>
+          <AppListPanel />
+        </AppManagerCommandsProvider>,
+      )
+
+      expect(screen.getByTestId('app-toggle-fixed')).toBeTruthy()
+      expect(screen.queryByTestId('app-failure-fixed')).toBeNull()
+    })
+
     it('offers no switch for an app this host cannot run', () => {
       renderFailedAs(AppStatus.Inactive, {
         code: 'incompatible-host',

@@ -358,6 +358,87 @@ test.describe('an app this Cytoscape Web cannot run', () => {
   })
 })
 
+// Review: Refresh replaces the catalog without reloading, so the row must go
+// by the version actually running, and a stale incompatibility must not
+// outlive a catalog that fixed it.
+test.describe('catalog Refresh', () => {
+  /** Serve apps.json listing the fixture app with `extra` fields. */
+  const serveCatalog = async (
+    page: Page,
+    extra: Record<string, unknown>,
+  ): Promise<void> => {
+    await page.unroute('**/apps.json')
+    await page.route('**/apps.json', async (route) => {
+      const response = await route.fetch({ url: FIXTURE_REMOTE_MANIFEST_URL })
+      const [fixture] = (await response.json()) as Array<
+        Record<string, unknown>
+      >
+      await route.fulfill({ json: [{ ...fixture, ...extra }] })
+    })
+  }
+
+  test('a running app keeps its switch when Refresh brings a version it cannot run', async ({
+    page,
+  }) => {
+    // 1. Version 1 starts as a core app
+    await serveCatalog(page, { version: '1.0.0' })
+    await gotoAndWaitReady(page)
+    const marker = page.locator('[data-testid="remote-app-marker"]')
+    await expect(marker).toBeVisible({ timeout: 15_000 })
+
+    // 2. The catalog now offers version 2, which this host cannot run; Refresh
+    await serveCatalog(page, {
+      version: '2.0.0',
+      url: V2_ENTRY_URL,
+      compatibleHostVersions: '>=999.0.0',
+    })
+    await openAppManager(page)
+    await page.getByTestId('app-settings-refresh-button').click()
+    await expect(
+      page.locator('[data-testid="app-settings-dialog"]'),
+    ).toContainText('v2.0.0')
+
+    // 3. Version 1 still runs, and its switch can turn it off
+    const toggle = page.locator(`[data-testid="app-toggle-${APP_ID}"]`)
+    await expect(toggle.locator('input')).toBeChecked()
+    await toggle.click()
+    await expect(marker).toHaveCount(0)
+
+    // 4. Off, it is explained like any app this host cannot run
+    await expect(
+      page.locator(`[data-testid="app-failure-${APP_ID}"]`),
+    ).toContainText('Needs Cytoscape Web >=999.0.0')
+    await expect(toggle).toHaveCount(0)
+  })
+
+  test('Refresh to a compatible version makes an incompatible app available', async ({
+    page,
+  }) => {
+    // 1. The core app needs a host that does not exist yet: not started
+    await serveCatalog(page, { compatibleHostVersions: '>=999.0.0' })
+    await gotoAndWaitReady(page)
+    await openAppManager(page)
+    await expect(
+      page.locator(`[data-testid="app-failure-${APP_ID}"]`),
+    ).toContainText('Needs Cytoscape Web >=999.0.0')
+
+    // 2. The catalog is fixed; Refresh, without a reload
+    await serveCatalog(page, { version: '1.0.1' })
+    await page.getByTestId('app-settings-refresh-button').click()
+
+    // 3. The row offers its switch, and turning it on runs the app
+    const toggle = page.locator(`[data-testid="app-toggle-${APP_ID}"]`)
+    await expect(toggle).toBeVisible({ timeout: 15_000 })
+    await expect(
+      page.locator(`[data-testid="app-failure-${APP_ID}"]`),
+    ).toHaveCount(0)
+    await toggle.click()
+    await expect(page.locator('[data-testid="remote-app-marker"]')).toBeVisible(
+      { timeout: 15_000 },
+    )
+  })
+})
+
 // A core app is tried at every start and cannot be uninstalled, so a broken
 // one must be possible to turn off; one this host cannot run is not started;
 // and a fixed version shipped in apps.json replaces a broken one on reload.

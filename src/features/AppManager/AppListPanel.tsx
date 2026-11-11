@@ -141,6 +141,11 @@ export const AppListPanel = () => {
   for (const entry of Object.values(catalog)) {
     seenIds.add(entry.id)
     const app = apps[entry.id]
+    // The version in memory, not the catalog's entry, decides whether a
+    // running app can be turned off: Refresh can bring a version this host
+    // cannot run while an older, compatible one keeps running.
+    const running =
+      loadStates[entry.id] === 'loaded' && app?.status === AppStatus.Active
     const source = catalogSources[entry.id]
     const inManifest = manifestIdSet.has(entry.id)
     displayEntries.push({
@@ -152,10 +157,12 @@ export const AppListPanel = () => {
       inCatalog: true,
       loadState: loadStates[entry.id],
       // Derived from the entry, not only from what startup or activation
-      // recorded: an app installed off is never checked by either.
-      failure: runsOnThisHost(entry)
-        ? loadErrors[entry.id]
-        : incompatibleHostFailure(entry),
+      // recorded: an app installed off is never checked by either. A running
+      // app keeps its switch whatever the current entry needs.
+      failure:
+        running || runsOnThisHost(entry)
+          ? loadErrors[entry.id]
+          : incompatibleHostFailure(entry),
       status: app?.status,
       source,
       // Only workspace-installed apps are uninstallable; anything the manifest

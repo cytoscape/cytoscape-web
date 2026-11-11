@@ -15,7 +15,8 @@
 
 - Rev. 8 (11/11/2026): Jing Chen and Claude (Opus 5.5) — App Manager derives
   `incompatible-host` for every row from the entry, so an app installed off
-  is explained too (§8.5); the summary, the command signature (§7.1) and the
+  is explained too, while a running app keeps its switch and a refresh
+  retires stale incompatibilities (§8.5); the summary, the command signature (§7.1) and the
   merge helper (§8.2) state compatibility first, then version
 - Rev. 7 (11/11/2026): Jing Chen and Claude (Opus 5.5) — The install
   confirmation dialog decides with the same compatibility check as the
@@ -654,7 +655,12 @@ session from it before the auto-load pass.
   at every start. App Manager derives this from the entry for every row
   (`incompatibleHostFailure` in `installGate.ts`), whatever the app's status:
   startup checks only the apps it would load, so an app installed off, or
-  with an inactive record, would otherwise keep a switch and no reason.
+  with an inactive record, would otherwise keep a switch and no reason. Two
+  Refresh cases: an app still running an older compatible version keeps its
+  switch until turned off (the row goes by the version in memory), and a
+  refresh to a compatible version makes the app available at once, because
+  `setCatalog` retires recorded incompatibilities
+  (runtime-app-registration-specification.md §7.5).
 - **Deployment consequence.** Adding an app to a deployment's `apps.json` turns
   it on for every user who has not turned it off. The repository's `apps.json`
   is empty; each deployment's build swaps in its own list.

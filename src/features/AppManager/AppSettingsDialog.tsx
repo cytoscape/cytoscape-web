@@ -558,6 +558,7 @@ const AppSettingsDialogContent = ({
           </Button>
         )}
         <Button
+          data-testid="app-settings-refresh-button"
           variant="outlined"
           disabled={!EXTERNAL_APPS_ENABLED || refreshing}
           startIcon={

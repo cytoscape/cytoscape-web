@@ -1,5 +1,6 @@
 # Runtime App Registration Specification
 
+- **Rev. 11 (11/11/2026): Jing Chen and Claude** — Refresh and compatibility: a running app keeps its switch when a refresh brings a version the host cannot run, and a refresh retires recorded `incompatible-host` failures (§7.5 Refresh Behavior, §11.2)
 - **Rev. 10 (11/11/2026): Jing Chen and Claude** — Overview, goals, startup responsibilities, the Step 4 verification and the startup-footprint rule now state the core-app and compatibility policy of §8.1; App Manager derives `incompatible-host` for every row (§11.2)
 - **Rev. 9 (11/11/2026): Jing Chen and Claude** — The in-place version update (§9.6) is verified end to end with two builds of the fixture app whose code differs
 - **Rev. 8 (11/10/2026): Jing Chen and Claude** — `compatibleHostVersions` is enforced before any load, at startup and on activation (`incompatible-host`, §8.1, §9.1); a failed app keeps its switch so it can be turned off (§10.1, §11.2, §9.7 rows 5 and 15)
@@ -801,6 +802,19 @@ Effect on already-loaded apps:
   app manager UI, these apps are shown as session-only entries with Disable as
   the only available action (they cannot be re-enabled since they are no
   longer in the catalog). See the `No` / `loaded` row in Section 11.2.
+- **A running app whose new entry cannot run on this host** (a refresh
+  offering a version with a `compatibleHostVersions` the host does not meet,
+  while an older compatible version is loaded and active) keeps running and
+  keeps its switch: App Manager decides by the version in memory, not by the
+  catalog's entry. Once turned off, the row goes by the new entry: it shows
+  `incompatible-host` and offers no switch, since activating would load the
+  version that cannot run.
+- **Recorded incompatibilities are retired.** `setCatalog` drops every
+  `incompatible-host` failure (and its `failed` load state) on each catalog
+  replacement. It describes the entry it was recorded against and carries no
+  URL for the URL rule; App Manager derives it from the current entry, so an
+  app whose refreshed entry runs here can be enabled at once, without a
+  reload.
 - **Currently loading apps** — if a load attempt is in progress when a catalog
   refresh removes the app, the load attempt continues to completion. After it
   finishes successfully, the app is treated as a session-only orphan (same as
@@ -1274,7 +1288,7 @@ activation state.
 | Yes     | loaded     | inactive            | Show Enable (fast, no network fetch)         |
 | Yes     | failed     | active or error     | Show the switch on; also Retry for `mount-failed` |
 | Yes     | failed     | inactive or missing | Show the switch off; also Retry for `mount-failed` |
-| Yes     | any (`incompatible-host`) | any | No switch; the row states the required host version. Derived from the entry for every row, not only when startup or activation recorded it |
+| Yes     | any (`incompatible-host`) | any | No switch; the row states the required host version. Derived from the entry for every row, not only when startup or activation recorded it. Exception: an app still running an older compatible version after a refresh keeps its switch (§7.5) |
 | No      | loaded     | active              | Show Disable only (session-only, see below)  |
 | No      | loaded     | inactive            | Show Remove only (re-enable not possible)    |
 | No      | failed     | any                 | Do not display (no catalog entry, no retry)  |

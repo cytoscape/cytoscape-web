@@ -326,6 +326,11 @@ export const updateInputColumn = (
  * even though `ensureRemoteRegistered` re-registers a scope whose URL changed,
  * and a failure kept past a removal would resurrect on the id's return.
  * `mount-failed` carries no URL and is retryable, so it is left alone.
+ *
+ * `incompatible-host` is retired on every replacement: it describes the entry
+ * it was recorded against, carries no URL, and App Manager derives it from the
+ * current entry anyway. Kept, it blocked a row whose refreshed entry runs
+ * here until the next reload.
  */
 export const setCatalog = (
   state: AppState,
@@ -343,6 +348,11 @@ export const setCatalog = (
   const loadStates = { ...state.loadStates }
   const loadErrors = { ...state.loadErrors }
   for (const [id, failure] of Object.entries(state.loadErrors)) {
+    if (failure.code === 'incompatible-host') {
+      delete loadErrors[id]
+      delete loadStates[id]
+      continue
+    }
     const failedUrl = 'url' in failure ? failure.url : undefined
     if (failedUrl === undefined) continue
     if (catalog[id]?.url === failedUrl) continue

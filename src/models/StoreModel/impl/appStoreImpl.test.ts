@@ -597,5 +597,22 @@ describe('AppStoreImpl', () => {
       })
       expect(refreshed.loadStates.a).toBe('failed')
     })
+
+    // Review: an incompatibility carries no URL, so the URL rule above kept it
+    // after a refresh to a compatible version, and the row stayed blocked
+    // until a reload. It describes the entry it was recorded against, and App
+    // Manager derives it from the current entry anyway.
+    it('drops an incompatibility on every catalog replacement', () => {
+      const failed = setLoadFailed(
+        setCatalog(createDefaultState(), [catalogEntry('a')]),
+        'a',
+        { code: 'incompatible-host', range: '>=999.0.0', hostVersion: '1.1.1' },
+      )
+
+      const refreshed = setCatalog(failed, [catalogEntry('a')])
+
+      expect(refreshed.loadErrors.a).toBeUndefined()
+      expect(refreshed.loadStates.a).toBeUndefined()
+    })
   })
 })
