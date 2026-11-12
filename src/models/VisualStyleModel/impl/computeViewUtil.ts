@@ -224,7 +224,7 @@ const computeNameAndPropertyPairs = (
     const computedPosition = computeNodeLabelPosition(
       value as NodeLabelPositionType,
     )
-    const { MARGIN_X, MARGIN_Y } = value as NodeLabelPositionType
+    const { MARGIN_X, MARGIN_Y, JUSTIFICATION } = value as NodeLabelPositionType
 
     return [
       [
@@ -237,6 +237,7 @@ const computeNameAndPropertyPairs = (
       ],
       [SpecialPropertyName.NodeLabelMarginX, MARGIN_X],
       [SpecialPropertyName.NodeLabelMarginY, MARGIN_Y],
+      [SpecialPropertyName.NodeLabelJustification, JUSTIFICATION],
     ]
   }
   if (

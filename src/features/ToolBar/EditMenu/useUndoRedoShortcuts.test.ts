@@ -70,6 +70,35 @@ describe('isRedoShortcut', () => {
   })
 })
 
+/**
+ * Not every `keydown` is a key press. When Chrome fills a field from its
+ * password manager it dispatches a `keydown` that is a plain `Event`: it has
+ * no `key`, whatever the listener's `KeyboardEvent` type says. The window
+ * listener sees every one of them.
+ */
+describe('a keydown that is not a key press (browser autofill)', () => {
+  const autofillKeydown = (): KeyboardEvent =>
+    new Event('keydown', { bubbles: true, cancelable: true }) as KeyboardEvent
+
+  it('is neither Undo nor Redo, and does not throw', () => {
+    expect(isUndoShortcut(autofillKeydown())).toBe(false)
+    expect(isRedoShortcut(autofillKeydown())).toBe(false)
+  })
+
+  it.each([
+    ['null', null],
+    ['a number', 90],
+    ['an object', { toLowerCase: () => 'z' }],
+  ])('ignores a key that is %s', (_label, key) => {
+    const event = autofillKeydown()
+    Object.defineProperty(event, 'key', { value: key })
+    Object.defineProperty(event, 'ctrlKey', { value: true })
+
+    expect(isUndoShortcut(event)).toBe(false)
+    expect(isRedoShortcut(event)).toBe(false)
+  })
+})
+
 describe('shortcut labels', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
@@ -199,6 +228,26 @@ describe('useUndoRedoShortcuts', () => {
 
   afterEach(() => {
     document.body.innerHTML = ''
+  })
+
+  it('ignores a keydown without a key, as browser autofill sends', () => {
+    renderHook(() => useUndoRedoShortcuts())
+    const errors: ErrorEvent[] = []
+    const onError = (event: ErrorEvent): void => {
+      errors.push(event)
+      // Keep jsdom from printing the error it is about to be asserted on
+      event.preventDefault()
+    }
+    window.addEventListener('error', onError)
+
+    const event = new Event('keydown', { bubbles: true, cancelable: true })
+    window.dispatchEvent(event)
+    window.removeEventListener('error', onError)
+
+    expect(errors).toEqual([])
+    expect(event.defaultPrevented).toBe(false)
+    expect(undoLastEdit).not.toHaveBeenCalled()
+    expect(redoLastEdit).not.toHaveBeenCalled()
   })
 
   it('undoes and redoes, and keeps the key from the browser', () => {

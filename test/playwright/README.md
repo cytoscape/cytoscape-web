@@ -56,7 +56,7 @@ or removing a spec.
 - **`cywebapi-ready.spec.ts`** — window.CyWebApi public surface (1 test)
 - **`hierarchy-cell-view.spec.ts`** — Cell View availability for hierarchies (#630) (2 tests)
 - **`host-descriptor.spec.ts`** — host descriptor contract (1 test)
-- **`llm-query-options.spec.ts`** — LLM Query Options Dialog (4 tests)
+- **`llm-query-options.spec.ts`** — LLM Query Options Dialog, including options and API key across a reload, a provider switch and the manual tab (#849) (10 tests)
 - **`local-file-import.spec.ts`** — Local Network File Import (1 test)
 - **`network-download.spec.ts`** — Network Download (1 test)
 - **`network-property-menu.spec.ts`** — Network summary overflow menu (10 tests)

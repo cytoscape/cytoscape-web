@@ -46,7 +46,6 @@ import {
   getPieBackgroundColorCyJsProp,
   getPieBackgroundSizeCyJsProp,
 } from '../../../models/VisualStyleModel/impl/cyJsVisualPropertyConverter'
-import { computeNodeLabelPosition } from '../../../models/VisualStyleModel/impl/nodeLabelPositionMap'
 import { VisualEditorProperties } from '../../../models/VisualStyleModel/VisualStyleOptions'
 
 /**
@@ -120,16 +119,6 @@ const vpHandlers = new Map<
     view: View,
   ) => void
 >()
-
-// Handler for node label position: computes and sets alignment, margin, and justification.
-vpHandlers.set(VisualPropertyName.NodeLabelPosition, (obj, key, value) => {
-  const { horizontalAlign, verticalAlign } = computeNodeLabelPosition(value)
-  obj.data(SpecialPropertyName.NodeLabelHorizontalAlign, horizontalAlign)
-  obj.data(SpecialPropertyName.NodeLabelVerticalAlign, verticalAlign)
-  obj.data(SpecialPropertyName.NodeLabelMarginX, value.MARGIN_X)
-  obj.data(SpecialPropertyName.NodeLabelMarginY, value.MARGIN_Y)
-  obj.data(SpecialPropertyName.NodeLabelJustification, value.JUSTIFICATION)
-})
 
 // Handler for edge target arrow shape and fill.
 vpHandlers.set(

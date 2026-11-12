@@ -1,12 +1,19 @@
 // @vitest-environment node
+import cytoscape from 'cytoscape'
 import { describe, expect, it } from 'vitest'
 
+import NetworkFn from '../../../models/NetworkModel'
+import { createTable } from '../../../models/TableModel/impl/inMemoryTable'
+import { createNewNetworkView } from '../../../models/VisualStyleModel/impl/computeViewUtil'
+import { DEFAULT_NODE_LABEL_POSITION } from '../../../models/VisualStyleModel/impl/defaultVisualStyle'
 import VisualStyleFn, {
   NodeShapeType,
   VisualStyle,
 } from '../../../models/VisualStyleModel'
 import { CustomGraphicsNameType } from '../../../models/VisualStyleModel/VisualPropertyValue/CustomGraphicsType'
+import { addCyElements } from './cyjsFactoryUtil'
 import {
+  applyViewModel,
   createCyjsDataMapper,
   NodeShapeMapping,
   transformNodeShape,
@@ -144,5 +151,48 @@ describe('createCyjsDataMapper', () => {
 
     expect(pieStyleKeys).toContain('pie-size')
     expect(pieStyleKeys).toContain('pie-16-background-size')
+  })
+})
+
+describe('node label justification', () => {
+  it('renders the default and a bypass as text-justification', () => {
+    const base = VisualStyleFn.createVisualStyle()
+    const vs: VisualStyle = {
+      ...base,
+      nodeLabelPosition: {
+        ...base.nodeLabelPosition,
+        defaultValue: { ...DEFAULT_NODE_LABEL_POSITION, JUSTIFICATION: 'left' },
+        bypassMap: new Map([
+          ['2', { ...DEFAULT_NODE_LABEL_POSITION, JUSTIFICATION: 'right' }],
+        ]),
+      },
+    }
+    const network = NetworkFn.createNetworkFromLists(
+      'net',
+      [{ id: '1' }, { id: '2' }],
+      [],
+    )
+    const view = createNewNetworkView(
+      network,
+      vs,
+      createTable('nodes', []),
+      createTable('edges', []),
+    )
+    const cy = cytoscape({
+      headless: true,
+      styleEnabled: true,
+      style: createCyjsDataMapper(vs) as any,
+    })
+
+    addCyElements(cy, Object.values(view.nodeViews), [], view.edgeViews)
+    applyViewModel(cy, view, {
+      nodeSizeLocked: false,
+      arrowColorMatchesEdge: false,
+      tableDisplayConfiguration: { nodeTable: {}, edgeTable: {} } as any,
+    })
+
+    expect(cy.getElementById('1').style('text-justification')).toBe('left')
+    expect(cy.getElementById('2').style('text-justification')).toBe('right')
+    cy.destroy()
   })
 })

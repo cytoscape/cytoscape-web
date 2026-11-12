@@ -19,6 +19,7 @@ import { currentDbScope, MANUAL_ROUTE_SEGMENT } from './data/db/dbScope'
 import { useCredentialStore } from './data/hooks/stores/CredentialStore'
 import { CookieConsentWidget } from './features/CookieConsent'
 import { Error } from './features/Error'
+import { discardLLMSessionKeysInManualTab } from './features/LLMQuery/store/llmKeySession'
 import ErrorBoundary from './features/ErrorBoundary'
 import { OnboardingHost } from './features/Onboarding'
 import { RedirectPanel } from './features/RedirectPanel'
@@ -40,6 +41,10 @@ import { theme } from './theme'
 //
 // A manual tab (/manual/*) never mounts AppShell, so it skips both downloads.
 const isManualTab = currentDbScope() === 'manual'
+// A manual tab opened from the editor starts with a copy of the editor tab's
+// sessionStorage, LLM API keys included. Dropped here, when this module is
+// first evaluated, so the copy is gone before anything in the tab can read it.
+discardLLMSessionKeysInManualTab()
 const loadAppShell = () => import('./features/AppShell')
 const loadWorkspaceEditor = () => import('./features/Workspace/WorkspaceEditor')
 const appShellPromise = isManualTab ? undefined : loadAppShell()

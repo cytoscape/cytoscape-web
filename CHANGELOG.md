@@ -4,39 +4,6 @@ All notable changes to Cytoscape Web are documented here.
 
 ## [Unreleased]
 
-### Changed
-
-- The apps in a site's own catalog (`apps.json`) are core apps: they are on when
-  Cytoscape Web starts, without a trip to Manage Apps. Turning one off keeps it off in
-  that workspace across reloads; a new workspace starts with it on again. A core app
-  that fails to load is reported in a message and tried again at the next start
-- The repository's `apps.json` is empty. The example apps are no longer listed by
-  default; each deployment ships its own catalog
-- An app made for a different Cytoscape Web (`compatibleHostVersions`) is not started,
-  at startup or by its switch; its row says which version it needs, also when it was
-  installed turned off. A newer version
-  that cannot run here never replaces one that can, from `apps.json` or an install link
-- A failed app keeps its switch in Manage Apps, so a core app that fails at every start
-  can be turned off. A fixed version a site ships in `apps.json` loads at the next start
-- Installing an app you already have keeps the newest version that runs on this
-  Cytoscape Web: versions it cannot run are set aside first, then versions compare as
-  semver (3.2.0 is newer than 3.1.23). A newer version from an App Store link or Install
-  from URL replaces the installed one at once and keeps it on; an older or equal one keeps
-  what you have and says so. The install dialog shows which will happen, and a site's
-  `apps.json` that ships a newer version that runs here replaces an earlier App Store
-  install at the next start
-
-### Fixed
-
-- The default app catalog loads on a site served from a subpath, such as
-  `/cytoscape/`. It was fetched from the site root, so App Manager listed no apps there
-- An app update confirmed while the old version was still loading at startup no longer
-  leaves the old version running, or the app manager tracking the wrong one
-- The app catalog is fetched fresh on every load. Served without Cache-Control, it could
-  be reused from the browser cache after a site shipped a new `apps.json`
-- After Refresh brings a new version of an app that is on, Manage Apps shows the version
-  still running, not the new one
-
 ## [1.1.1] — 2026-10-28
 
 An in-app user manual, keyboard shortcuts for undo, redo and delete, a Select menu, a new
@@ -63,6 +30,13 @@ rendering, CX2 import, Layout Tools and the style editor.
 - With cookies accepted, Google Analytics counts networks opened (by source and format),
   images exported, saves to NDEx and app runs. Events carry categories only: no network
   ids or names, file names, user details or private app and service URLs (#910)
+- LLM Query remembers the provider, Endpoint URL and model in this browser. They stay
+  after a reload and after you clear or load a workspace (#849)
+- LLM Query keeps your API key for the current tab: it is still there after a reload and
+  is removed when you close the tab. Forget key in LLM Query Options removes it sooner (#849)
+- LLM Query forgets an API key when you confirm a different provider, or a Custom endpoint
+  on a different server, so a key is never kept for, or sent to, anything other than what
+  you entered it for. LLM Query Options says so before you confirm (#849)
 
 ### Changed
 
@@ -85,6 +59,27 @@ rendering, CX2 import, Layout Tools and the style editor.
   NDEx, using the node and edge counts the file lists, instead of refusing any file over
   5 MB. A file over the limits is not read, and a message says why. Tables and SIF files
   keep the 5 MB limit (#911)
+- The API key field in LLM Query Options is masked, and a password manager can offer to
+  save the key (#849)
+- The apps in a site's own catalog (`apps.json`) are core apps: they are on when
+  Cytoscape Web starts, without a trip to Manage Apps. Turning one off keeps it off in
+  that workspace across reloads; a new workspace starts with it on again. A core app
+  that fails to load is reported in a message and tried again at the next start (#960)
+- The repository's `apps.json` is empty. The example apps are no longer listed by
+  default; each deployment ships its own catalog (#960)
+- An app made for a different Cytoscape Web (`compatibleHostVersions`) is not started,
+  at startup or by its switch; its row says which version it needs, also when it was
+  installed turned off. A newer version
+  that cannot run here never replaces one that can, from `apps.json` or an install link (#960)
+- A failed app keeps its switch in Manage Apps, so a core app that fails at every start
+  can be turned off. A fixed version a site ships in `apps.json` loads at the next start (#960)
+- Installing an app you already have keeps the newest version that runs on this
+  Cytoscape Web: versions it cannot run are set aside first, then versions compare as
+  semver (3.2.0 is newer than 3.1.23). A newer version from an App Store link or Install
+  from URL replaces the installed one at once and keeps it on; an older or equal one keeps
+  what you have and says so. The install dialog shows which will happen, and a site's
+  `apps.json` that ships a newer version that runs here replaces an earlier App Store
+  install at the next start (#960)
 
 ### Fixed
 
@@ -126,6 +121,14 @@ rendering, CX2 import, Layout Tools and the style editor.
   error page; `/error` now stands alone (#908)
 - Fix issue where Network from File did nothing, with no message, when the browser could
   not read the file (#911)
+- The default app catalog loads on a site served from a subpath, such as
+  `/cytoscape/`. It was fetched from the site root, so App Manager listed no apps there (#960)
+- An app update confirmed while the old version was still loading at startup no longer
+  leaves the old version running, or the app manager tracking the wrong one (#960)
+- The app catalog is fetched fresh on every load. Served without Cache-Control, it could
+  be reused from the browser cache after a site shipped a new `apps.json` (#960)
+- After Refresh brings a new version of an app that is on, Manage Apps shows the version
+  still running, not the new one (#960)
 
 ### Performance
 

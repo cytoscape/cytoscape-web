@@ -4,7 +4,7 @@
 
 <BrowserStorageView />
 
-**Last Updated: October 28th, 2026**
+**Last Updated: November 11th, 2026**
 
 At Cytoscape Web, accessible from [https://web.cytoscape.org](https://web.cytoscape.org), your privacy is a priority. This Privacy Policy outlines how we collect, use, and protect your personal data when you use our website and services. By using our platform, you agree to the practices outlined in this policy.
 
@@ -18,7 +18,7 @@ Cytoscape Web does not ask for your name, email address or other contact details
 - **Your NDEx account.** When you sign in, you sign in to your NDEx account. Networks and workspaces you save are stored in NDEx. Please refer to the [NDEx privacy policy](https://home.ndexbio.org/disclaimer-license/) for details.
 - **Crash reports.** When Cytoscape Web stops with an error and shows its error page, it sends a crash report to a server operated by the Cytoscape team at NDEx (`www.ndexbio.org`). A crash report contains the error message and its technical details, the page address, the Cytoscape Web version, your browser type, platform, language, window size and memory use, and a copy of the data Cytoscape Web stores in your browser: your whole workspace if it is 10 MB or smaller, otherwise only the network you were viewing. Crash reports are sent unless you opt out (see section 5).
 - **Usage statistics.** If you accept cookies, Cytoscape Web uses Google Analytics and sends usage events, as described in section 3.
-- **Preferences.** Cytoscape Web stores a few preferences in your browser, such as your cookie and crash report choices and whether you have seen the welcome tour.
+- **Preferences.** Cytoscape Web stores a few preferences in your browser, such as your cookie and crash report choices, whether you have seen the welcome tour, and the provider, endpoint and model you chose for LLM Query.
 
 ### 2. How We Use Your Information
 
@@ -41,13 +41,13 @@ We do not sell, rent, or trade your personal information to third parties. Howev
 
 **Apps and Services You Choose**: When you install a third-party "app" or add a "service app" to extend Cytoscape Web, that app or service can receive the network data it works on. A service app runs on its own server, operated by its provider.
 
-**Large Language Models**: When you use **Analysis → Run LLM Query**, Cytoscape Web sends the gene symbols you query and the prompt to the language model provider you choose (for example OpenAI). The API key you enter is kept in memory only and is not stored in your browser.
+**Large Language Models**: When you use **Analysis → Run LLM Query**, Cytoscape Web sends the gene symbols you query and the prompt to the language model provider you choose (for example OpenAI). The provider, endpoint address and model name you choose are stored in your browser. The API key you enter is kept in your browser's session storage for the tab you entered it in: it is still there after you reload that tab, and it is removed when you close the tab, choose **Forget key**, or confirm a different provider or a Custom endpoint on a different server (changing only the path of the endpoint address keeps it). Closing the tab is not a guarantee: duplicating the tab copies the key to the new tab, and a browser that restores your tabs may restore it. **Forget key** is the way to be sure it is removed. The key is not written to Cytoscape Web's databases, is not included in crash reports, and is sent only to the provider you entered it for.
 
 **Legal Compliance**: We may disclose your information when required by law or in response to legal processes (e.g., subpoenas, court orders).
 
 ### 4. Data Security
 
-Data you save to NDEx is stored in NDEx. Please refer to the NDEx privacy policy for details about the measures taken to protect it. Data stored in your browser is protected by your browser and your computer. Anyone who uses the same browser profile can open it. **Data → Clear Local Database** deletes it.
+Data you save to NDEx is stored in NDEx. Please refer to the NDEx privacy policy for details about the measures taken to protect it. Data stored in your browser is protected by your browser and your computer. Anyone who uses the same browser profile can open it. **Data → Clear Local Database** deletes your workspace; your preferences stay until you clear this site's data in your browser.
 
 ## Rights and Choices
 

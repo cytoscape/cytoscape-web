@@ -7,7 +7,11 @@ import { Column, Table } from '../../TableModel'
 import { createTable } from '../../TableModel/impl/inMemoryTable'
 import { NetworkView } from '../../ViewModel'
 import { VisualStyle } from '../VisualStyle'
+import { NodeLabelPositionType } from '../VisualPropertyValue'
 import { createNewNetworkView, updateNetworkView } from './computeViewUtil'
+import { VisualPropertyName } from '../VisualPropertyName'
+import { SpecialPropertyName } from './CyjsProperties/CyjsStyleModels/directMappingSelector'
+import { DEFAULT_NODE_LABEL_POSITION } from './defaultVisualStyle'
 import { createVisualStyle } from './visualStyleFnImpl'
 
 // to run these: npx jest src/models/VisualStyleModel/impl/computeViewUtil.test.ts
@@ -382,6 +386,79 @@ describe('compute-view-util', () => {
       expect(updatedView.id).toBe('empty-network')
       expect(Object.keys(updatedView.nodeViews)).toHaveLength(0)
       expect(Object.keys(updatedView.edgeViews)).toHaveLength(0)
+    })
+  })
+
+  describe('node label position', () => {
+    const withLabelPosition = (
+      defaultValue: NodeLabelPositionType,
+      bypasses: [string, NodeLabelPositionType][],
+    ): VisualStyle => ({
+      ...visualStyle,
+      nodeLabelPosition: {
+        ...visualStyle.nodeLabelPosition,
+        defaultValue,
+        bypassMap: new Map(bypasses),
+      },
+    })
+
+    it('expands into alignment, margin and justification keys', () => {
+      const style = withLabelPosition(
+        {
+          ...DEFAULT_NODE_LABEL_POSITION,
+          HORIZONTAL_ALIGN: 'left',
+          VERTICAL_ALIGN: 'top',
+          JUSTIFICATION: 'left',
+          MARGIN_X: 3,
+          MARGIN_Y: -4,
+        },
+        [],
+      )
+
+      const view = createNewNetworkView(network, style, nodeTable, edgeTable)
+      const values = view.nodeViews['n1'].values
+
+      expect(
+        values.get(
+          SpecialPropertyName.NodeLabelHorizontalAlign as VisualPropertyName,
+        ),
+      ).toBeDefined()
+      expect(
+        values.get(
+          SpecialPropertyName.NodeLabelVerticalAlign as VisualPropertyName,
+        ),
+      ).toBeDefined()
+      expect(
+        values.get(SpecialPropertyName.NodeLabelMarginX as VisualPropertyName),
+      ).toBe(3)
+      expect(
+        values.get(SpecialPropertyName.NodeLabelMarginY as VisualPropertyName),
+      ).toBe(-4)
+      expect(
+        values.get(
+          SpecialPropertyName.NodeLabelJustification as VisualPropertyName,
+        ),
+      ).toBe('left')
+    })
+
+    it('takes justification from the default and from a bypass', () => {
+      const style = withLabelPosition(
+        { ...DEFAULT_NODE_LABEL_POSITION, JUSTIFICATION: 'left' },
+        [['n2', { ...DEFAULT_NODE_LABEL_POSITION, JUSTIFICATION: 'right' }]],
+      )
+
+      const view = createNewNetworkView(network, style, nodeTable, edgeTable)
+
+      expect(
+        view.nodeViews['n1'].values.get(
+          SpecialPropertyName.NodeLabelJustification as VisualPropertyName,
+        ),
+      ).toBe('left')
+      expect(
+        view.nodeViews['n2'].values.get(
+          SpecialPropertyName.NodeLabelJustification as VisualPropertyName,
+        ),
+      ).toBe('right')
     })
   })
 })
