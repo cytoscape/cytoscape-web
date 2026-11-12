@@ -70,6 +70,10 @@ rendering, CX2 import, Layout Tools and the style editor.
 
 ### Fixed
 
+- Fix issue where node label justification always rendered as auto, ignoring the
+  default, mappings, bypasses, CX2 values and Label Position's Text justification (#956)
+- Fix issue where switching an existing chart between Pie and Donut emptied Selected
+  Attributes. Attributes, colors, palette, range and start angle now carry over (#957)
 - Fix issue where undoing Delete Selected Nodes or Edges restored the elements without
   their views, so they came back invisible and lost their positions (#858)
 - Fix issue where undoing a drag of several nodes moved back one node per undo (#872)
