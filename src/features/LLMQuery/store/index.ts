@@ -2,7 +2,9 @@ import { create } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 
 import config from '../../../assets/config.json'
+import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { logStore } from '../../../debug'
+import { MessageSeverity } from '../../../models/MessageModel'
 import { LLMModel, models } from '../model/LLMModel'
 import {
   endpointOrigin,
@@ -287,15 +289,33 @@ export const useLLMQueryStore = create(
         logStore.error(
           `[${STORE_LABEL}]: Failed to save the LLM Query options: ${e}`,
         )
+        useMessageStore.getState().addMessage({
+          message:
+            'LLM Query options could not be saved in this browser. They apply until you reload. Confirm them again in LLM Query Options to retry.',
+          duration: 8000,
+          severity: MessageSeverity.WARNING,
+        })
       })
     },
     hydrateOptions: async () => {
       if (get().optionsHydrated) {
         return
       }
-      // Never rejects: an unreadable database or an invalid row is
-      // "nothing saved", and the defaults stay.
-      const saved = await loadLLMQueryOptions()
+      // An invalid row is "nothing saved", and the defaults stay.
+      let saved: LLMQueryOptions | undefined
+      try {
+        saved = await loadLLMQueryOptions()
+      } catch (e) {
+        logStore.warn(
+          `[${STORE_LABEL}]: Could not read the LLM Query options: ${e}`,
+        )
+        // The defaults stay, but the keys are not checked against them: the
+        // saved options may well be the ones the keys were entered for.
+        set((state) => {
+          state.optionsHydrated = true
+        })
+        return
+      }
       set((state) => {
         if (state.optionsHydrated) {
           // The user chose something, or another caller finished first.

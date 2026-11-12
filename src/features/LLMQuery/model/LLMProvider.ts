@@ -163,6 +163,11 @@ export const getEndpointError = (
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     return 'The endpoint URL must start with http:// or https://'
   }
+  // A password in the URL would be saved with the options, which never hold
+  // a credential.
+  if (url.username !== '' || url.password !== '') {
+    return 'The endpoint URL must not contain a user name or password. Enter the key in the API key field.'
+  }
   if (
     url.protocol === 'http:' &&
     !isLoopbackHost(url.hostname) &&

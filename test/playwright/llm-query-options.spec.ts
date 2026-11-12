@@ -50,7 +50,8 @@ const savedOptions = (page: Page): Promise<unknown> =>
 
 /**
  * Everything this origin keeps outside sessionStorage, as one string: every
- * row of every IndexedDB database, and all of localStorage.
+ * row of every IndexedDB database, and all of localStorage. Rejects when a
+ * database cannot be read, so a partial dump never passes for a clean one.
  */
 const durableStorageDump = (page: Page): Promise<string> =>
   page.evaluate(async () => {
@@ -58,9 +59,9 @@ const durableStorageDump = (page: Page): Promise<string> =>
     for (const info of await indexedDB.databases()) {
       if (info.name === undefined) continue
       const name = info.name
-      const rows = await new Promise<unknown[]>((resolve) => {
+      const rows = await new Promise<unknown[]>((resolve, reject) => {
         const open = indexedDB.open(name)
-        open.onerror = () => resolve([])
+        open.onerror = () => reject(new Error(`Could not open ${name}`))
         open.onsuccess = () => {
           const db = open.result
           const stores = Array.from(db.objectStoreNames)
@@ -79,7 +80,7 @@ const durableStorageDump = (page: Page): Promise<string> =>
           }
           transaction.onabort = () => {
             db.close()
-            resolve([])
+            reject(new Error(`Could not read ${name}`))
           }
         }
       })

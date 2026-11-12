@@ -117,6 +117,15 @@ describe('getEndpointError', () => {
     expect(getEndpointError('not a url', '')).toBeDefined()
     expect(getEndpointError('ftp://host/v1', '')).toBeDefined()
   })
+
+  it('rejects a user name or password in the URL', () => {
+    expect(
+      getEndpointError('https://user:secret@llm.example.org/v1', ''),
+    ).toMatch(/user name or password/)
+    expect(
+      getEndpointError('https://user@llm.example.org/v1', ''),
+    ).toBeDefined()
+  })
 })
 
 describe('endpointOrigin', () => {
