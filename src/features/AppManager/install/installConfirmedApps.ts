@@ -1,5 +1,10 @@
 import type { AppCatalogEntry } from '@/models/AppModel/AppCatalogEntry'
 import { AppType } from '@/models/AppModel/AppType'
+import type { AppInstallOutcome } from '@/models/AppModel/AppVersionChange'
+import {
+  appInstallMessage,
+  appInstallSeverity,
+} from '@/models/AppModel/impl/appInstallMessage'
 import type { PendingAppInstall } from '@/models/AppModel/PendingAppInstall'
 import { pendingInstallName } from '@/models/AppModel/PendingAppInstall'
 import type { Message } from '@/models/MessageModel'
@@ -9,7 +14,7 @@ export interface InstallConfirmedAppsDeps {
   installApp: (
     entry: AppCatalogEntry,
     options?: { activate?: boolean },
-  ) => Promise<void>
+  ) => Promise<AppInstallOutcome>
   addService: (url: string) => Promise<void>
   addMessage: (message: Message) => void
   warn: (message: string, error: unknown) => void
@@ -31,21 +36,27 @@ export const installConfirmedApps = async (
   for (const pending of confirmed) {
     const name = pendingInstallName(pending)
     try {
+      // A service app is always added; a React app may be updated or kept
+      // instead (§7.5), and installApp says which.
+      let outcome: AppInstallOutcome = { kind: 'new' }
       if (pending.type === AppType.Client) {
         // An install intent implies activation (§7.3). The §9 gate inside
         // installApp still applies and surfaces its own messages.
-        await deps.installApp(pending.entry, { activate: true })
+        outcome = await deps.installApp(pending.entry, { activate: true })
       } else {
         // Refetches the endpoint the boot already read. Deliberate: addService
         // owns the ServiceApp shape and its persistence, and the boot's copy
         // exists only to name the app in the dialog.
         await deps.addService(pending.url)
       }
-      deps.addMessage({
-        message: `Added ${name}`,
-        duration: 4000,
-        severity: MessageSeverity.SUCCESS,
-      })
+      const message = appInstallMessage(name, outcome)
+      if (message !== undefined) {
+        deps.addMessage({
+          message,
+          duration: 4000,
+          severity: appInstallSeverity(outcome),
+        })
+      }
     } catch (error) {
       deps.addMessage({
         message: `Failed to add ${name} from ${pending.url}: ${

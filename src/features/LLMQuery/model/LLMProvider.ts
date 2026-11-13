@@ -60,6 +60,22 @@ export const isLLMConfigured = (
   return provider.requiresApiKey ? apiKey.trim() !== '' : baseUrl.trim() !== ''
 }
 
+// The longest API key this tab keeps (store/llmKeySession.ts). Provider keys
+// are well under 300 characters; a custom endpoint behind a gateway may take
+// a bearer token instead, and those run to a few thousand.
+export const MAX_API_KEY_LENGTH = 4096
+
+/**
+ * Why an API key cannot be used, or undefined when it is fine (no key is
+ * fine: not every provider needs one). The dialog, the store and the saved
+ * session value share this rule, so a key that was accepted is a key that is
+ * kept. The message never includes the key.
+ */
+export const getApiKeyError = (apiKey: string): string | undefined =>
+  apiKey.trim().length > MAX_API_KEY_LENGTH
+    ? `The API key is too long (${MAX_API_KEY_LENGTH} characters at most)`
+    : undefined
+
 export const resolveApiKey = (apiKey: string): string =>
   apiKey.trim() === '' ? PLACEHOLDER_API_KEY : apiKey.trim()
 
@@ -88,6 +104,25 @@ export const selectApiKey = (
   }
 }
 
+/**
+ * The origin (scheme, host and port) of an endpoint, or '' when it has none:
+ * an empty endpoint, text that is not a URL, or a URL that is not http(s).
+ *
+ * This is what a custom endpoint's API key is bound to. The key was entered
+ * for one server, and the origin is what identifies a server: a different
+ * path on the same origin is the same server, while a look-alike host, another
+ * port or plain HTTP is not.
+ */
+export const endpointOrigin = (baseUrl: string): string => {
+  let url: URL
+  try {
+    url = new URL(baseUrl.trim())
+  } catch {
+    return ''
+  }
+  return url.protocol === 'http:' || url.protocol === 'https:' ? url.origin : ''
+}
+
 const isLoopbackHost = (hostname: string): boolean => {
   const host = hostname.toLowerCase()
   return (
@@ -97,6 +132,10 @@ const isLoopbackHost = (hostname: string): boolean => {
     /^127(\.\d{1,3}){3}$/.test(host)
   )
 }
+
+// The longest endpoint URL the saved options row accepts
+// (store/llmOptionsPersistence.ts)
+export const MAX_ENDPOINT_URL_LENGTH = 2048
 
 /**
  * Why an endpoint must not be used, or undefined when it is fine. Plain HTTP
@@ -112,6 +151,9 @@ export const getEndpointError = (
   if (trimmed === '') {
     return undefined
   }
+  if (trimmed.length > MAX_ENDPOINT_URL_LENGTH) {
+    return `The endpoint URL is too long (${MAX_ENDPOINT_URL_LENGTH} characters at most)`
+  }
   let url: URL
   try {
     url = new URL(trimmed)
@@ -120,6 +162,11 @@ export const getEndpointError = (
   }
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     return 'The endpoint URL must start with http:// or https://'
+  }
+  // A password in the URL would be saved with the options, which never hold
+  // a credential.
+  if (url.username !== '' || url.password !== '') {
+    return 'The endpoint URL must not contain a user name or password. Enter the key in the API key field.'
   }
   if (
     url.protocol === 'http:' &&

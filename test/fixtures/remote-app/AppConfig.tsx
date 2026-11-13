@@ -25,6 +25,12 @@ import { useWorkspaceApi } from 'cyweb/WorkspaceApi'
 import { useAppContext, type AppDataApi } from 'cyweb/AppIdContext'
 import { useCyWebEvent } from 'cyweb/EventBus'
 
+// Which build this is: '1' for `vite build`, '2' for `vite build --mode v2`
+// (vite.config.ts). Two builds whose code differs let an E2E prove that an
+// in-place update runs the new version's code, which the same bundle served at
+// a second URL cannot (it shares its chunks, so "v2" was v1's module).
+declare const __FIXTURE_VERSION__: string
+
 // Rendered by the remote into its OWN React root (mount). Proves the federated
 // bundle loaded and its React works — independent of host↔remote sharing.
 function Marker(): JSX.Element {
@@ -45,6 +51,9 @@ function Marker(): JSX.Element {
     <div data-testid="remote-app-marker">
       remote app mounted: {reactWorks} (react {reactVersion})
       <span data-testid="remote-host-workspace-id">{workspaceId}</span>
+      <span data-testid="remote-app-version">
+        fixture v{__FIXTURE_VERSION__}
+      </span>
     </div>
   )
 }

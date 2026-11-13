@@ -255,6 +255,222 @@ describe('AppListPanel — load failure reasons', () => {
     expect(cmds.retryApp).toHaveBeenCalledWith('breaks')
   })
 
+  // Review of the core-apps change: a core app that fails is retried at every
+  // start and cannot be uninstalled, so its row must keep a way to turn it
+  // off, whatever the cause.
+  describe('turning off a failed app', () => {
+    const renderFailedAs = (
+      status: AppStatus | undefined,
+      failure: AppLoadFailure,
+    ): AppManagerCommands => {
+      useAppStore
+        .getState()
+        .setCatalog([entry('broken')], { broken: 'manifest' }, ['broken'])
+      useAppStore.setState({
+        apps:
+          status === undefined
+            ? {}
+            : {
+                broken: { id: 'broken', name: 'broken app', status } as any,
+              },
+        loadStates: { broken: 'failed' },
+        loadErrors: { broken: failure },
+      })
+      const cmds = commands()
+      render(
+        <AppManagerCommandsProvider value={cmds}>
+          <AppListPanel />
+        </AppManagerCommandsProvider>,
+      )
+      return cmds
+    }
+    const fetchFailed: AppLoadFailure = {
+      code: 'fetch-failed',
+      url: 'https://apps.cytoscape.org/web/broken/1.0.0/remoteEntry.js',
+      message: 'HTTP 404',
+    }
+
+    it('shows the switch on for an app that failed while on, and turns it off', () => {
+      const cmds = renderFailedAs(AppStatus.Error, fetchFailed)
+
+      const toggle = screen.getByTestId('app-toggle-broken')
+      expect(toggle.querySelector('input')?.checked).toBe(true)
+      fireEvent.click(toggle.querySelector('input') as HTMLInputElement)
+      expect(cmds.deactivateApp).toHaveBeenCalledWith('broken')
+    })
+
+    it('keeps the switch beside Retry for a failed mount', () => {
+      renderFailedAs(AppStatus.Error, { code: 'mount-failed', message: 'x' })
+
+      expect(screen.getByTestId('app-toggle-broken')).toBeTruthy()
+      expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy()
+    })
+
+    it('shows the switch off for an app whose first activation failed', () => {
+      const cmds = renderFailedAs(undefined, fetchFailed)
+
+      const input = screen
+        .getByTestId('app-toggle-broken')
+        .querySelector('input') as HTMLInputElement
+      expect(input.checked).toBe(false)
+      fireEvent.click(input)
+      expect(cmds.activateApp).toHaveBeenCalledWith('broken')
+    })
+
+    // Review: only startup and activation recorded `incompatible-host`, so an
+    // incompatible app installed off (or with an inactive record) kept an
+    // enable switch and no reason, also after a reload. The row now derives it
+    // from the entry. Unit tests run as host 1.1.1 (vite.config.ts).
+    it('explains and offers no switch for an incompatible app that never loaded', () => {
+      useAppStore
+        .getState()
+        .setCatalog(
+          [{ ...entry('future'), compatibleHostVersions: '>=999.0.0' }],
+          { future: 'appstore' },
+          [],
+        )
+      useAppStore.setState({
+        apps: {
+          future: {
+            id: 'future',
+            name: 'future app',
+            status: AppStatus.Inactive,
+          } as any,
+        },
+        loadStates: {},
+        loadErrors: {},
+      })
+      render(
+        <AppManagerCommandsProvider value={commands()}>
+          <AppListPanel />
+        </AppManagerCommandsProvider>,
+      )
+
+      expect(screen.queryByTestId('app-toggle-future')).toBeNull()
+      expect(screen.getByTestId('app-failure-future').textContent).toBe(
+        'Needs Cytoscape Web >=999.0.0; this is 1.1.1. It stays off until a version that supports this Cytoscape Web is available.',
+      )
+    })
+
+    // Review: Refresh can bring a version this host cannot run while an older,
+    // compatible one keeps running. The row went by the new entry and hid the
+    // switch, and a core app cannot be uninstalled.
+    it('keeps the switch for the version still running after a refresh', () => {
+      useAppStore
+        .getState()
+        .setCatalog(
+          [{ ...entry('future'), compatibleHostVersions: '>=999.0.0' }],
+          { future: 'manifest' },
+          ['future'],
+        )
+      useAppStore.setState({
+        apps: {
+          future: {
+            id: 'future',
+            name: 'future app',
+            status: AppStatus.Active,
+          } as any,
+        },
+        loadStates: { future: 'loaded' },
+        loadErrors: {},
+      })
+      const cmds = commands()
+      render(
+        <AppManagerCommandsProvider value={cmds}>
+          <AppListPanel />
+        </AppManagerCommandsProvider>,
+      )
+
+      const input = screen
+        .getByTestId('app-toggle-future')
+        .querySelector('input') as HTMLInputElement
+      expect(input.checked).toBe(true)
+      expect(screen.queryByTestId('app-failure-future')).toBeNull()
+      fireEvent.click(input)
+      expect(cmds.deactivateApp).toHaveBeenCalledWith('future')
+    })
+
+    // Review: the row named the refreshed entry's version while the older one
+    // kept running.
+    it('shows the version that is running, not the one a refresh brought', () => {
+      const running = entry('refreshed')
+      useAppStore.getState().setCatalog(
+        [
+          {
+            ...running,
+            version: '2.0.0',
+            url: 'https://apps.cytoscape.org/web/refreshed/2.0.0/remoteEntry.js',
+          },
+        ],
+        { refreshed: 'manifest' },
+        ['refreshed'],
+      )
+      useAppStore.setState({
+        apps: {
+          refreshed: {
+            id: 'refreshed',
+            name: 'refreshed app',
+            status: AppStatus.Active,
+          } as any,
+        },
+        loadStates: { refreshed: 'loaded' },
+        loadErrors: {},
+        loadedEntries: { refreshed: running },
+      })
+      render(
+        <AppManagerCommandsProvider value={commands()}>
+          <AppListPanel />
+        </AppManagerCommandsProvider>,
+      )
+
+      expect(screen.getByTestId('app-version-refreshed').textContent).toBe(
+        'v1.0.0',
+      )
+    })
+
+    it('offers the switch again once a refresh brings a compatible version', () => {
+      useAppStore
+        .getState()
+        .setCatalog(
+          [{ ...entry('fixed'), compatibleHostVersions: '>=999.0.0' }],
+          { fixed: 'manifest' },
+          ['fixed'],
+        )
+      useAppStore.getState().setLoadFailed('fixed', {
+        code: 'incompatible-host',
+        range: '>=999.0.0',
+        hostVersion: '1.1.1',
+      })
+      useAppStore.setState({ apps: {} })
+
+      // The refreshed catalog's entry runs here.
+      useAppStore
+        .getState()
+        .setCatalog([entry('fixed')], { fixed: 'manifest' }, ['fixed'])
+      render(
+        <AppManagerCommandsProvider value={commands()}>
+          <AppListPanel />
+        </AppManagerCommandsProvider>,
+      )
+
+      expect(screen.getByTestId('app-toggle-fixed')).toBeTruthy()
+      expect(screen.queryByTestId('app-failure-fixed')).toBeNull()
+    })
+
+    it('offers no switch for an app this host cannot run', () => {
+      renderFailedAs(AppStatus.Inactive, {
+        code: 'incompatible-host',
+        range: '>=999.0.0',
+        hostVersion: '1.1.1',
+      })
+
+      expect(screen.queryByTestId('app-toggle-broken')).toBeNull()
+      expect(screen.getByTestId('app-failure-broken').textContent).toContain(
+        'Needs Cytoscape Web >=999.0.0',
+      )
+    })
+  })
+
   it('shows no reason for a row that has not failed', () => {
     renderPanel('hello', 'manifest', true)
 

@@ -67,6 +67,10 @@ export const DEMO_COPIES: readonly DemoCopy[] = [
       'src/data/hooks/useCytoscapeDesktopPermissionNotice.ts',
       'src/features/NetworkSearch/store/networkSearchProviderSelectionStore.ts',
       'src/debug.ts',
+      'src/data/db/profileDb.ts',
+      'src/data/tabState/storageKeys.ts',
+      'src/features/LLMQuery/store/storageKeys.ts',
+      'src/features/LLMQuery/store/llmKeySession.ts',
     ],
   },
 ]

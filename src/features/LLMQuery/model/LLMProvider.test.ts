@@ -2,6 +2,10 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  endpointOrigin,
+  getApiKeyError,
+  MAX_API_KEY_LENGTH,
+  MAX_ENDPOINT_URL_LENGTH,
   getEndpointError,
   getLLMProvider,
   isLLMConfigured,
@@ -112,5 +116,86 @@ describe('getEndpointError', () => {
   it('rejects malformed URLs and non-HTTP schemes', () => {
     expect(getEndpointError('not a url', '')).toBeDefined()
     expect(getEndpointError('ftp://host/v1', '')).toBeDefined()
+  })
+
+  it('rejects a user name or password in the URL', () => {
+    expect(
+      getEndpointError('https://user:secret@llm.example.org/v1', ''),
+    ).toMatch(/user name or password/)
+    expect(
+      getEndpointError('https://user@llm.example.org/v1', ''),
+    ).toBeDefined()
+  })
+})
+
+describe('endpointOrigin', () => {
+  it.each([
+    ['https://llm.example.org/v1', 'https://llm.example.org'],
+    ['https://llm.example.org/other/path?x=1', 'https://llm.example.org'],
+    ['https://LLM.Example.org:443/v1', 'https://llm.example.org'],
+    ['https://llm.example.org:8443/v1', 'https://llm.example.org:8443'],
+    ['http://localhost:11434/v1', 'http://localhost:11434'],
+    ['  https://llm.example.org/v1  ', 'https://llm.example.org'],
+  ])('%s is %s', (baseUrl, origin) => {
+    expect(endpointOrigin(baseUrl)).toBe(origin)
+  })
+
+  it.each([
+    ['an empty endpoint', ''],
+    ['text that is not a URL', 'not a url'],
+    ['a javascript: URL', 'javascript:alert(1)'],
+    ['a file: URL', 'file:///etc/passwd'],
+  ])('has no origin for %s', (_label, baseUrl) => {
+    expect(endpointOrigin(baseUrl)).toBe('')
+  })
+
+  it('tells a look-alike host apart', () => {
+    expect(endpointOrigin('https://llm.example.org.evil.test/v1')).not.toBe(
+      endpointOrigin('https://llm.example.org/v1'),
+    )
+    expect(endpointOrigin('http://llm.example.org/v1')).not.toBe(
+      endpointOrigin('https://llm.example.org/v1'),
+    )
+  })
+})
+
+describe('endpoint URL length', () => {
+  const urlOfLength = (length: number): string =>
+    'https://h/'.padEnd(length, 'a')
+
+  it('accepts a URL at the limit', () => {
+    expect(
+      getEndpointError(urlOfLength(MAX_ENDPOINT_URL_LENGTH), ''),
+    ).toBeUndefined()
+  })
+
+  it('rejects a longer one, which could not be saved', () => {
+    expect(
+      getEndpointError(urlOfLength(MAX_ENDPOINT_URL_LENGTH + 1), ''),
+    ).toMatch(/too long/)
+  })
+})
+
+describe('getApiKeyError', () => {
+  it.each([
+    ['no key', ''],
+    ['an ordinary key', 'sk-proj-abc123'],
+    ['a key at the limit', 'k'.repeat(MAX_API_KEY_LENGTH)],
+    [
+      'a key at the limit with spaces around it',
+      ` ${'k'.repeat(MAX_API_KEY_LENGTH)} `,
+    ],
+  ])('accepts %s', (_label, key) => {
+    expect(getApiKeyError(key)).toBeUndefined()
+  })
+
+  it('rejects a longer one, which this tab could not keep', () => {
+    expect(getApiKeyError('k'.repeat(MAX_API_KEY_LENGTH + 1))).toMatch(
+      /too long/,
+    )
+  })
+
+  it('has room for a bearer token, which is longer than a provider key', () => {
+    expect(MAX_API_KEY_LENGTH).toBeGreaterThanOrEqual(4096)
   })
 })

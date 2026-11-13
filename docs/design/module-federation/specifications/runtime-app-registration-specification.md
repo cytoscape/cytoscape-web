@@ -1,5 +1,11 @@
 # Runtime App Registration Specification
 
+- **Rev. 12 (11/11/2026): Jing Chen and Claude** — The entry each loaded module came from is store state (`AppStore.loadedEntries`, replacing the module-level `loadedAppUrls`), so App Manager names the running version while a refresh lists another; an install link to the version a refresh brought swaps it in (§7.5 Refresh Behavior, §9.6)
+- **Rev. 11 (11/11/2026): Jing Chen and Claude** — Refresh and compatibility: a running app keeps its switch when a refresh brings a version the host cannot run, and a refresh retires recorded `incompatible-host` failures (§7.5 Refresh Behavior, §11.2)
+- **Rev. 10 (11/11/2026): Jing Chen and Claude** — Overview, goals, startup responsibilities, the Step 4 verification and the startup-footprint rule now state the core-app and compatibility policy of §8.1; App Manager derives `incompatible-host` for every row (§11.2)
+- **Rev. 9 (11/11/2026): Jing Chen and Claude** — The in-place version update (§9.6) is verified end to end with two builds of the fixture app whose code differs
+- **Rev. 8 (11/10/2026): Jing Chen and Claude** — `compatibleHostVersions` is enforced before any load, at startup and on activation (`incompatible-host`, §8.1, §9.1); a failed app keeps its switch so it can be turned off (§10.1, §11.2, §9.7 rows 5 and 15)
+- **Rev. 7 (11/10/2026): Jing Chen and Claude** — Core apps: the default manifest's entries auto-load unless the workspace persists them as inactive (§8.1, §8.5, §10.1); the default manifest is fetched under the deployment's base path (§7.2); activations of one app run one at a time, after its startup load (§9.6)
 - **Rev. 6 (3/23/2026): Keiichiro ONO and Claude** — `author` field relaxed from required to optional with `"unknown"` default for backward compatibility with legacy `{ name, url }` manifests (§6.4, §7.1)
 - **Rev. 5 (3/20/2026): Keiichiro ONO and Claude** — Manifest schema extension for App Store readiness: added `author` (required), `tags`, `icon`, `license`, `repository`, `compatibleHostVersions` fields to `AppCatalogEntry` (§6.4) and `AppManifestEntrySchema` (§7.1)
 - **Rev. 4 (3/19/2026): Keiichiro ONO, GitHub Copilot, and Claude** — Second code review round: `manifestSource` hydration responsibility unified to `useAppManager` (§7.2); state transition table cleanup calls updated to use `unmountApp` (§9.7 rows 6/12); `obtainCatalogEntries` introduced as source-agnostic manifest resolution entry point (§7.2); remaining `manifestUrl` naming remnants fixed throughout
@@ -48,7 +54,9 @@ Additional goals:
 - Allow users to override the manifest source with their own custom catalog URL
 - Avoid rebuilding the host when the app list or remote URLs change
 - Avoid loading every app listed in the manifest at startup
-- Auto-load only apps persisted as active
+- Auto-load only apps persisted as active and the deployment's core apps the
+  user has not turned off, never an app whose `compatibleHostVersions`
+  excludes the host (§8.1)
 - Keep inactive or never-used apps visible in the UI without increasing startup
   footprint
 - Keep app state consistent across restore, enable, disable, failure, and retry
@@ -139,7 +147,8 @@ catalog, while actual app loading happens only when needed.
 
 - Make external app registration fully runtime-configurable
 - Keep the external app catalog in host state
-- Load only persisted active apps at startup
+- Load at startup only persisted active apps and the deployment's core apps
+  not turned off, and never an app the host cannot run (§8.1)
 - Allow unloaded apps to remain visible in the app manager UI
 - Track runtime load progress explicitly
 - Support a default App Store manifest source plus a user-configured override
@@ -189,8 +198,8 @@ This means:
 - The host build has zero knowledge of which external apps exist
 - `apps.json` is no longer read at build time by webpack
 - The `useAppManager.ts` top-level `await loadModules()` is removed; module
-  loading is triggered on demand (at startup for persisted active apps, or on
-  user-initiated enable)
+  loading is triggered on demand (at startup for persisted active apps and
+  core apps, §8.1, or on user-initiated enable)
 - The module-level variables (`loadedApps`, `activatedAppIdSet`) are removed;
   `appRegistry` becomes a dynamically growing Map managed by the orchestrator
 - `ExternalComponent.tsx`'s `loadRemoteEntry()` and `initAndGetModule()`
@@ -355,9 +364,11 @@ type ManifestSource =
 The host resolves the manifest as follows:
 
 - If `manifestSource` is `undefined`, the host fetches from
-  `DEFAULT_MANIFEST_URL` (initially `/apps.json` — a same-origin path
-  served from the bundle root via `CopyPlugin`; will be updated to the
-  App Store catalog URL when the App Store is deployed). Defined in
+  `DEFAULT_MANIFEST_URL` (`<base>apps.json` — a same-origin path under the
+  deployment's base path, `import.meta.env.BASE_URL`: `/apps.json` at the
+  origin root, `/cytoscape/apps.json` on dev1; emitted into the bundle root by
+  `appsConfigPlugin` in `vite.config.ts`; will be updated to the App Store
+  catalog URL when the App Store is deployed). Defined in
   `src/app-api/constants.ts`
 - If `manifestSource.type === 'url'`, the host fetches from the custom URL
 - If `manifestSource.type === 'inline'`, the host parses the stored JSON
@@ -792,6 +803,24 @@ Effect on already-loaded apps:
   app manager UI, these apps are shown as session-only entries with Disable as
   the only available action (they cannot be re-enabled since they are no
   longer in the catalog). See the `No` / `loaded` row in Section 11.2.
+- **The row names the running version.** App Manager shows the version of
+  the entry a running module was loaded from (`AppStore.loadedEntries`), not
+  the refreshed entry's, until the app is turned off. Turning it off and on,
+  or confirming an install link to the refreshed version, swaps the new
+  version in (§9.6; workspace-app-install-design.md §7.5).
+- **A running app whose new entry cannot run on this host** (a refresh
+  offering a version with a `compatibleHostVersions` the host does not meet,
+  while an older compatible version is loaded and active) keeps running and
+  keeps its switch: App Manager decides by the version in memory, not by the
+  catalog's entry. Once turned off, the row goes by the new entry: it shows
+  `incompatible-host` and offers no switch, since activating would load the
+  version that cannot run.
+- **Recorded incompatibilities are retired.** `setCatalog` drops every
+  `incompatible-host` failure (and its `failed` load state) on each catalog
+  replacement. It describes the entry it was recorded against and carries no
+  URL for the URL rule; App Manager derives it from the current entry, so an
+  app whose refreshed entry runs here can be enabled at once, without a
+  reload.
 - **Currently loading apps** — if a load attempt is in progress when a catalog
   refresh removes the app, the load attempt continues to completion. After it
   finishes successfully, the app is treated as a session-only orphan (same as
@@ -862,9 +891,28 @@ These are potential future enhancements as the App Store ecosystem matures.
 
 ### 8.1 Rule
 
-Only apps persisted as active are auto-loaded at startup.
+Two kinds of app are auto-loaded at startup:
 
-This is the startup policy for the first rollout.
+- apps persisted as active, and
+- **core apps** — the entries of the deployment's own default manifest
+  (`apps.json`) — unless the workspace persists them as inactive.
+
+A core app with no persisted record, or with a record of `AppStatus.Error`,
+loads. Only `AppStatus.Inactive`, which is written when the user turns a core
+app off, keeps it from loading. Startup writes nothing for a core app; see
+[workspace-app-install-design.md §8.5](./workspace-app-install-design.md#85-core-apps-on-by-default).
+The rule is `startupAppStatus` in
+`src/models/AppModel/impl/startupAppStatus.ts`.
+
+An app listed only by a user-set Manifest Source (§6.5) is not a core app and
+follows the first rule.
+
+Neither kind is loaded on a host its `compatibleHostVersions` excludes. Such an
+app is recorded as failed with `incompatible-host` and seeded `Inactive` for
+the session, with no toast: the user cannot fix it, and it would recur at every
+start. Its persisted record is left alone, so a later host the range admits
+loads it. `activateApp` applies the same check, so the switch cannot load it
+either (§9.1).
 
 ### 8.2 Rationale
 
@@ -872,14 +920,17 @@ This policy provides the best balance between continuity and performance:
 
 - apps the user actively uses remain available after restart
 - inactive apps do not increase startup network cost
-- startup traffic scales with real usage, not manifest size
+- the apps a deployment ships work from the first start, with no trip to
+  Manage Apps, while the user can still turn each one off
+- startup traffic scales with real usage and the deployment's core list, not
+  with the size of a user-set manifest
 
 ### 8.3 Startup Flow
 
 After restore completes:
 
-1. Inspect restored app records
-2. Select only apps with status equal to active
+1. Inspect restored app records and the core apps of the default manifest
+2. Select the apps `startupAppStatus` makes active (§8.1)
 3. Load all selected apps in parallel using `Promise.allSettled`
 4. For each successfully loaded app:
    1. register the loaded app
@@ -927,9 +978,10 @@ per-app loader contract or lifecycle hooks.
 If an app exists in the manifest but is:
 
 - persisted as inactive, or
-- not present in IndexedDB
+- not present in IndexedDB, and not a core app (§8.1)
 
-then it remains visible in the catalog but is not loaded.
+then it remains visible in the catalog but is not loaded. A core app with no
+record is loaded.
 
 ## 9. Activation and Deactivation Policy
 
@@ -940,7 +992,9 @@ and activate the app immediately in the current page.
 
 The host performs:
 
-1. Resolve the app's catalog entry
+1. Resolve the app's catalog entry, and refuse (with a message, and
+   `incompatible-host` on the row) when its `compatibleHostVersions` excludes
+   this host
 2. Set `loadStates[id] = 'loading'`
 3. Call `loadRemoteApp(id, url)` to fetch and initialize the remote container
 4. Register the loaded app in `AppStore.apps`
@@ -994,7 +1048,8 @@ AppStatus policy:
 ### 9.3 Subsequent Startups
 
 Once an app has been enabled successfully, it participates in the normal
-auto-load path like any other persisted active app.
+auto-load path like any other persisted active app. A core app needs no first
+enable: it auto-loads unless the user turned it off (§8.1).
 
 ### 9.4 Deactivation
 
@@ -1072,13 +1127,31 @@ The orchestrator uses `loadStates` to decide the re-enable path:
 - `loaded` → skip `loadRemoteApp`, reuse `appRegistry` entry
 - `unloaded` or `failed` → call `loadRemoteApp` (full fetch)
 
-A version update is the exception (#810). `useAppManager` records the remote
-entry URL each module was loaded from (`loadedAppUrls`). When the catalog entry
-names a different URL — an App Store install of a newer version — `activateApp`
+A version update is the exception (#810). `useAppManager` records the catalog
+entry each module was loaded from (`AppStore.loadedEntries`, session-local).
+When the catalog entry names a different URL — an App Store install of a newer version — `activateApp`
 unmounts the running module, drops it from `appRegistry`, and takes the full
 fetch path. The App Store publishes each version at its own URL, so a changed
 URL is a changed version. A version update at an unchanged URL is not detected:
 the browser's module cache would return the old code anyway.
+
+The swap runs the new version's code in the same tab, without a reload, even
+though both versions register under the same federation name.
+`test/playwright/core-apps.spec.ts` proves it with two builds of the fixture
+app (`vite build` and `vite build --mode v2`, served at `/` and `/v2/`) whose
+markers say "fixture v1" and "fixture v2". The same bundle served at a second
+URL could not prove it: its chunks keep their URLs, so the browser hands back
+v1's modules.
+
+Activations of one app run one at a time. `useAppManager` queues load and
+activate work per app id; the startup auto-load (§8.3) queues each app's load,
+and `activateApp` runs after whatever is queued for the same id. An update
+confirmed while the startup load of the old version is still in flight
+therefore starts from the module that load left, and the version-update path
+above swaps it. Without the queue both versions were fetched, whichever
+finished first was mounted, and `appRegistry`/`loadedEntries` could name the
+other one. Which version an install keeps or replaces is decided before this,
+by semver (workspace-app-install-design.md §7.5).
 
 ### 9.7 Lifecycle State Machine
 
@@ -1093,7 +1166,7 @@ in session-local `loadStates`).
 | 2 | First-time activate — load fails | _(none)_ | `unloaded` | `Inactive` | `failed` | Rollback per Section 9.2; keep `Inactive` so user can retry via Enable |
 | 3 | First-time activate — mount fails | _(none)_ | `unloaded` | `Inactive` | `failed` | `cleanupAllForApp(appId)`; keep `Inactive` per Section 9.2 |
 | 4 | Startup auto-load (persisted active) | `Active` | `unloaded` | `Active` | `loading` → `loaded` | `loadRemoteApp` → register → declarative resources → `mount()` |
-| 5 | Startup auto-load — fails | `Active` | `unloaded` | `Error` | `failed` | Set `Error` to signal previously working app needs attention; show Retry |
+| 5 | Startup auto-load — fails | `Active` | `unloaded` | `Error` | `failed` | Set `Error` to signal previously working app needs attention; show the switch (on) and, for `mount-failed`, Retry |
 | 6 | Deactivate (user click) | `Active` | `loaded` | `Inactive` | `loaded` | `unmountApp(cyApp, mountedApps)` (internally runs cleanup then `unmount()`; see §9.4) |
 | 7 | Re-enable (user click, module cached) | `Inactive` | `loaded` | `Active` | `loaded` | Reuse `appRegistry` entry → declarative resources → `mount()` |
 | 8 | Re-enable (user click, module evicted) | `Inactive` | `unloaded` | `Active` | `loading` → `loaded` | Full `loadRemoteApp` → register → declarative resources → `mount()` |
@@ -1103,6 +1176,8 @@ in session-local `loadStates`).
 | 12 | Disable session-only orphan | `Active` | `loaded` | `Inactive` | `loaded` | `unmountApp(cyApp, mountedApps)`; re-enable not possible (no catalog entry) |
 | 13 | Remove orphan app | `Inactive` | `loaded` | n/a (entry removed) | n/a (entry removed) | `AppStore.remove(id)` (apps, loadStates, IndexedDB) + `appRegistry.delete(id)`; app disappears from UI |
 | 14 | Install a new version (catalog URL differs from the loaded one) | any | `loaded` | `Active` | `loading` → `loaded` | `unmountApp(old, mountedApps)` + `appRegistry.delete(id)` → full `loadRemoteApp` → register → declarative resources → `mount()` |
+| 15 | Turn off a failed app | `Error` or `Inactive` | `failed` | `Inactive` | `unloaded` | Persist `inactive` (a core app with no record gets one); clear the failure |
+| 16 | Startup or activation on a host the entry excludes | any | `unloaded` | `Inactive` | `failed` (`incompatible-host`) | Nothing is loaded; no startup toast; the record is unchanged |
 
 **Invariants:**
 
@@ -1117,11 +1192,25 @@ in session-local `loadStates`).
 
 ### 10.1 Startup Load Failure
 
-If startup loading of an active app fails:
+If startup loading of an active app (including a core app, §8.1) fails:
 
 1. set loadStates[id] to failed
 2. keep the rest of the host usable
-3. expose retry in the app manager UI
+3. expose retry in the app manager UI where it can help (`mount-failed`), and
+   keep the app's switch, on, so the user can turn it off: a core app is
+   tried at every start and cannot be uninstalled
+4. tell the user in one toast for the whole startup pass: a single failure
+   names the app and the cause, several are counted
+   (`N apps failed to load — open App Manager for details.`)
+
+The persisted record is not changed. A core app that failed is therefore tried
+again at the next startup, until it loads or the user turns it off. Turning it
+off writes the `inactive` record and clears the failure from the row
+(`deactivateApp` resets `loadStates[id]` to `unloaded`). A fixed version the
+deployment ships in `apps.json` loads at the next start without a click,
+unless the user turned the app off. The default manifest is fetched with
+`cache: 'no-cache'`, so a reload sees the new `apps.json` even though it is
+served without Cache-Control.
 
 ### 10.2 Retry
 
@@ -1203,7 +1292,9 @@ activation state.
 | Yes     | loading    | any                 | Show loading indicator                       |
 | Yes     | loaded     | active              | Show Disable (app is running)                |
 | Yes     | loaded     | inactive            | Show Enable (fast, no network fetch)         |
-| Yes     | failed     | any                 | Show Retry                                   |
+| Yes     | failed     | active or error     | Show the switch on; also Retry for `mount-failed` |
+| Yes     | failed     | inactive or missing | Show the switch off; also Retry for `mount-failed` |
+| Yes     | any (`incompatible-host`) | any | No switch; the row states the required host version. Derived from the entry for every row, not only when startup or activation recorded it. Exception: an app still running an older compatible version after a refresh keeps its switch (§7.5) |
 | No      | loaded     | active              | Show Disable only (session-only, see below)  |
 | No      | loaded     | inactive            | Show Remove only (re-enable not possible)    |
 | No      | failed     | any                 | Do not display (no catalog entry, no retry)  |
@@ -1303,7 +1394,8 @@ useAppManager owns orchestration:
 - resolve manifest source via `obtainCatalogEntries`
 - populate catalog
 - restore persisted app state
-- auto-load persisted active apps
+- auto-load persisted active apps and core apps not turned off, skipping any
+  the host cannot run (§8.1)
 - handle in-page dynamic activation
 - coordinate mount and unmount
 
@@ -1439,12 +1531,14 @@ independently, and the host must build and start after each one.
 
 ### Step 4 — Selective startup loading
 
-- After `restore(catalogAppIds)`, select apps with `AppStatus.Active`
+- After `restore(...)`, select the apps `startupAppStatus` seeds active:
+  persisted active apps and core apps not turned off (§8.1)
 - Load them via `Promise.allSettled` calling `loadRemoteApp` for each
 - Update `loadStates` (loading → loaded / failed) around each load
 - Run register → processDeclarativeResources → mountApp for each success
-- Verify: only previously active apps are loaded at startup; inactive apps
-  remain unloaded
+- Verify: only previously active apps and core apps not turned off are loaded
+  at startup; inactive apps remain unloaded, and an app the host cannot run is
+  not loaded and its row shows `incompatible-host`
 
 ### Step 5 — User-initiated in-page activation
 
@@ -1489,7 +1583,10 @@ independently, and the host must build and start after each one.
 ### 14.1 Startup Footprint
 
 With many apps in the manifest, startup must not fetch every remote entry.
-Only persisted active apps may issue remote loading requests.
+Only persisted active apps and the deployment's core apps (the default
+manifest's entries the user has not turned off) may issue remote loading
+requests, and never one the host cannot run. A deployment keeps startup small
+by keeping its `apps.json` short; a user-set manifest adds no core apps.
 
 ### 14.2 Restore Behavior
 
@@ -1565,6 +1662,7 @@ The key architectural decisions are:
 - use in-page dynamic first activation with rollback and immediate cleanup-based deactivation
 
 This preserves existing rendering assumptions, supports App Store generated
-catalogs with user override, supports persisted active app restore, and allows
+catalogs with user override, supports persisted active app restore and
+core apps that are on by default, and allows
 the host to scale to large app catalogs without loading every remote at
 startup.

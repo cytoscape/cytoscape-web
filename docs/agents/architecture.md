@@ -50,6 +50,7 @@ Key feature modules:
 - `TableBrowser` — Node/edge data table browsing
 - `HierarchyViewer` — Hierarchical network viewer (uses web workers)
 - `MergeNetworks` — Multi-network merge operations
+- `AppManager` — Manage Apps dialog and the runtime app catalog: core apps from the deployment's `apps.json` (on by default), install links and Install from URL, version and host-compatibility precedence. Lifecycle orchestration is `useAppManager` (`src/data/hooks/stores/`). See `docs/design/module-federation/specifications/workspace-app-install-design.md` §7.5 and §8.5
 - `ServiceApps` — External Module Federation app integration
 - `Workspace` — Workspace editor and management
 

@@ -23,8 +23,16 @@ export const UNDO_KEY_SHORTCUTS = 'Control+Z Meta+Z'
 /** The Redo row's shortcuts in `aria-keyshortcuts` form */
 export const REDO_KEY_SHORTCUTS = 'Control+Shift+Z Meta+Shift+Z Control+Y'
 
-const isKey = (event: KeyboardEvent, key: string): boolean =>
-  event.key.toLowerCase() === key
+/**
+ * `event.key` is checked to be a string first. The listener is typed for
+ * `KeyboardEvent`, but that is a compile-time claim: a `keydown` can be a
+ * plain `Event` with no `key`. Chrome dispatches one when it fills a field
+ * from its password manager, as the LLM Query API key field allows (#849).
+ */
+const isKey = (event: KeyboardEvent, key: string): boolean => {
+  const pressed: unknown = event.key
+  return typeof pressed === 'string' && pressed.toLowerCase() === key
+}
 
 /** Exactly one of Ctrl and ⌘, and no Alt */
 const hasCommandModifier = (event: KeyboardEvent): boolean =>

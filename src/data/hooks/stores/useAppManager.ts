@@ -13,9 +13,10 @@ import type {
 import { AppConfigContext } from '../../../AppConfigContext'
 import { logApp } from '../../../debug'
 import {
+  incompatibleHostFailure,
   isAllowedOrigin,
   isCatalogEntryAllowed,
-  isHostCompatible,
+  runsOnThisHost,
 } from '../../../features/AppManager/install/installGate'
 import { migrateLegacyApps } from '../../../features/AppManager/install/migrateLegacyApps'
 import { loadRemoteApp } from '../../../features/AppManager/loader/loadRemoteApp'
@@ -24,8 +25,11 @@ import { obtainCatalogEntries } from '../../../features/AppManager/manifest/obta
 import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
 import { AppLoadFailure } from '../../../models/AppModel/AppLoadFailure'
 import { AppStatus } from '../../../models/AppModel/AppStatus'
+import { AppInstallOutcome } from '../../../models/AppModel/AppVersionChange'
 import { CyApp } from '../../../models/AppModel/CyApp'
 import { appLoadFailureToast } from '../../../models/AppModel/impl/appLoadFailureMessage'
+import { appVersionChange } from '../../../models/AppModel/impl/appVersion'
+import { startupAppStatus } from '../../../models/AppModel/impl/startupAppStatus'
 import { ManifestSource } from '../../../models/AppModel/ManifestSource'
 import { MessageSeverity } from '../../../models/MessageModel'
 import { getAppSettingFromDb } from '../../db'
@@ -41,13 +45,6 @@ import { useWorkspaceStore } from './WorkspaceStore'
 export const appRegistry = new Map<string, CyApp>()
 
 /**
- * The remote entry URL each module in `appRegistry` was loaded from. The App
- * Store publishes every version at its own URL, so a catalog URL that differs
- * from this one means the installed version changed under a running module.
- */
-export const loadedAppUrls = new Map<string, string>()
-
-/**
  * Command surface exposed by useAppManager.
  * UI components call these instead of manipulating AppStore directly.
  */
@@ -61,8 +58,26 @@ export interface AppManagerCommands {
   installApp: (
     entry: AppCatalogEntry,
     opts?: { activate?: boolean },
-  ) => Promise<void>
+  ) => Promise<AppInstallOutcome>
+  /**
+   * What `installApp` would do with this entry now, for the install dialog to
+   * promise: the same origin check and version decision, without installing.
+   */
+  installPreview: (entry: AppCatalogEntry) => AppInstallOutcome
   uninstallApp: (id: string) => Promise<void>
+}
+
+interface Deferred {
+  readonly promise: Promise<void>
+  readonly resolve: () => void
+}
+
+const createDeferred = (): Deferred => {
+  let resolve: () => void = () => {}
+  const promise = new Promise<void>((done) => {
+    resolve = done
+  })
+  return { promise, resolve }
 }
 
 /**
@@ -115,6 +130,15 @@ export const useAppManager = (): AppManagerCommands => {
   // Manifest entries from the last catalog load, used to recompose the catalog
   // (manifest ∪ installedApps) after install/uninstall.
   const manifestEntriesRef = useRef<AppCatalogEntry[]>([])
+  // Settles once the init pass has composed the catalog and seeded the app
+  // statuses. installApp compares the offered version with the catalog's, and
+  // an install link can be confirmed before init gets there.
+  const [catalogReady] = useState(createDeferred)
+  // The tail of the load/activate work queued for each app id. Activation runs
+  // after it, so an activation never races a load of the same app already in
+  // flight (the startup auto-load included): it starts from the module that
+  // load left in memory, and a version swap replaces it cleanly.
+  const appWork = useRef(new Map<string, Promise<void>>())
 
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
   const restore = useAppStore((state) => state.restore)
@@ -122,6 +146,7 @@ export const useAppManager = (): AppManagerCommands => {
   const setCatalog = useAppStore((state) => state.setCatalog)
   const setLoadState = useAppStore((state) => state.setLoadState)
   const setLoadFailed = useAppStore((state) => state.setLoadFailed)
+  const setLoadedEntry = useAppStore((state) => state.setLoadedEntry)
   const storeSetManifestSource = useAppStore((state) => state.setManifestSource)
   const setStatus = useAppStore((state) => state.setStatus)
   const removeApp = useAppStore((state) => state.remove)
@@ -147,6 +172,40 @@ export const useAppManager = (): AppManagerCommands => {
     manifestEntriesRef.current.some((e) => e.id === id && e.url === url)
 
   /**
+   * True if `id` is a core app: its catalog entry is one the deployment's own
+   * `apps.json` lists. Core apps are on unless the workspace records that the
+   * user turned them off (see `startupAppStatus`).
+   */
+  const isCoreApp = (id: string): boolean => {
+    const { catalog, manifestSource } = useAppStore.getState()
+    const entry = catalog[id]
+    return (
+      entry !== undefined &&
+      isFromDefaultManifest(id, entry.url, manifestSource)
+    )
+  }
+
+  /**
+   * True if this Cytoscape Web would load `entry`: it runs on this host version
+   * and passes the origin check activation applies (`isCatalogEntryAllowed`,
+   * which exempts the deployment's own default catalog). The catalog merge and
+   * the install decide with it, so neither picks a version that activation
+   * then refuses over one it would load (§7.5, §8.1).
+   */
+  const canLoadHere = (entry: AppCatalogEntry): boolean =>
+    runsOnThisHost(entry) &&
+    isCatalogEntryAllowed(
+      entry.url,
+      isFromDefaultManifest(
+        entry.id,
+        entry.url,
+        useAppStore.getState().manifestSource,
+      ),
+      appInstallAllowedOrigins,
+      allowsLocalhostAppsOn,
+    )
+
+  /**
    * Recompose the catalog (manifest ∪ workspace.installedApps) and write it
    * back. Used after install/uninstall so the change is immediately visible.
    */
@@ -155,6 +214,7 @@ export const useAppManager = (): AppManagerCommands => {
     const { entries, sources, manifestIds } = composeCatalog(
       manifestEntriesRef.current,
       installed,
+      canLoadHere,
     )
     setCatalog(entries, sources, manifestIds)
   }
@@ -217,9 +277,12 @@ export const useAppManager = (): AppManagerCommands => {
 
   /**
    * Mirror an app's runtime status into the durable workspace record (§8.4).
-   * Updates an existing InstalledApp; if none exists, a successful activation
-   * creates a `source: 'manifest'` record (first activation of a manifest app).
-   * Failures/deactivations with no record are no-ops.
+   * Updates an existing InstalledApp. If none exists, a `source: 'manifest'`
+   * record is created for a successful activation (first activation of a
+   * manifest app) and for turning off a core app: a core app with no record
+   * starts on, so without one it would come back at the next startup.
+   * Other changes with no record (failures, turning off any other app) are
+   * no-ops.
    */
   const reconcileInstalledStatus = (id: string, status: AppStatus): void => {
     const ws = useWorkspaceStore.getState()
@@ -230,12 +293,13 @@ export const useAppManager = (): AppManagerCommands => {
       ws.setInstalledAppStatus(id, status)
       return
     }
-    if (status === AppStatus.Active) {
+    const turnedOffCoreApp = status === AppStatus.Inactive && isCoreApp(id)
+    if (status === AppStatus.Active || turnedOffCoreApp) {
       const entry = useAppStore.getState().catalog[id]
       if (entry !== undefined) {
         ws.addInstalledApp({
           entry,
-          status: AppStatus.Active,
+          status,
           source: 'manifest',
           installedAt: new Date().toISOString(),
         })
@@ -273,9 +337,33 @@ export const useAppManager = (): AppManagerCommands => {
     }
   }
 
+  /**
+   * Run `task` after the work already queued for app `id` settles, whatever
+   * its outcome, and make it the new tail of that queue.
+   */
+  const queueAppWork = (
+    id: string,
+    task: () => Promise<void>,
+  ): Promise<void> => {
+    const previous = appWork.current.get(id) ?? Promise.resolve()
+    const next = previous.then(
+      () => task(),
+      () => task(),
+    )
+    appWork.current.set(id, next)
+    const forget = (): void => {
+      if (appWork.current.get(id) === next) appWork.current.delete(id)
+    }
+    next.then(forget, forget)
+    return next
+  }
+
   // ── Command implementations ──────────────────────────────────────
 
-  const activateApp = async (id: string): Promise<void> => {
+  const activateApp = (id: string): Promise<void> =>
+    queueAppWork(id, () => activateAppNow(id))
+
+  const activateAppNow = async (id: string): Promise<void> => {
     const {
       catalog,
       manifestSource,
@@ -318,13 +406,28 @@ export const useAppManager = (): AppManagerCommands => {
       return
     }
 
+    // The entry's compatibleHostVersions excludes this Cytoscape Web: loading
+    // it would run code written for another host.
+    if (!runsOnThisHost(catalogEntry)) {
+      addMessage({
+        message: `Cannot turn on "${catalogEntry.name ?? id}": it needs Cytoscape Web ${catalogEntry.compatibleHostVersions}.`,
+        duration: 5000,
+        severity: MessageSeverity.ERROR,
+      })
+      logApp.warn(
+        `[useAppManager]: activateApp: "${id}" needs host ${catalogEntry.compatibleHostVersions}`,
+      )
+      failApp(id, incompatibleHostFailure(catalogEntry), { toast: false })
+      return
+    }
+
     let currentLoadState = loadStates[id]
     const existedBefore = currentApps[id] !== undefined
 
     // A version update (#810): the catalog now names a different remote entry
     // than the module in memory came from. Re-enabling that module would keep
     // the old version running until a reload, so retire it and load anew.
-    const loadedUrl = loadedAppUrls.get(id)
+    const loadedUrl = useAppStore.getState().loadedEntries[id]?.url
     if (
       currentLoadState === 'loaded' &&
       loadedUrl !== undefined &&
@@ -335,7 +438,7 @@ export const useAppManager = (): AppManagerCommands => {
         await unmountApp(previous, mountedApps.current)
       }
       appRegistry.delete(id)
-      loadedAppUrls.delete(id)
+      setLoadedEntry(id, undefined)
       currentLoadState = 'unloaded'
       logApp.info(
         `[useAppManager]: App "${id}" changed from ${loadedUrl} to ${catalogEntry.url}; reloading`,
@@ -378,7 +481,7 @@ export const useAppManager = (): AppManagerCommands => {
       )
       return
     }
-    loadedAppUrls.set(id, catalogEntry.url)
+    setLoadedEntry(id, catalogEntry)
 
     try {
       await activateAndMount(id)
@@ -405,6 +508,11 @@ export const useAppManager = (): AppManagerCommands => {
   const deactivateApp = async (id: string): Promise<void> => {
     setStatus(id, AppStatus.Inactive)
     reconcileInstalledStatus(id, AppStatus.Inactive)
+    // A failed app that is turned off is no longer being tried; the failure
+    // would only keep its row marked failed (setLoadState clears the reason).
+    if (useAppStore.getState().loadStates[id] === 'failed') {
+      setLoadState(id, 'unloaded')
+    }
     const cyApp = appRegistry.get(id)
     if (cyApp !== undefined && mountedApps.current.has(id)) {
       await unmountApp(cyApp, mountedApps.current)
@@ -425,6 +533,7 @@ export const useAppManager = (): AppManagerCommands => {
     const { entries, sources, manifestIds } = composeCatalog(
       manifestEntries,
       installedApps,
+      canLoadHere,
     )
     setCatalog(entries, sources, manifestIds)
     logApp.info(
@@ -438,19 +547,36 @@ export const useAppManager = (): AppManagerCommands => {
    * to workspace.installedApps (upsert → idempotent), merges it into the
    * catalog, and optionally activates it. Transport-agnostic: the URL install
    * intent and the App Manager "Install from URL" both call this.
+   *
+   * The offered version is compared with the catalog's entry for the same id
+   * (§7.5, `appVersionChange`), ranking by what this Cytoscape Web can load
+   * (`canLoadHere`). A newer version replaces it, swapping the running module
+   * in place, and an app that was on stays on. The same or an older version
+   * leaves the installed one and its record alone; with `activate` it is
+   * turned on, or swapped in when an older module still runs after a Refresh.
+   * `installPreview` makes the same decision for the install dialog.
+   *
+   * @returns what the install did, for the caller to tell the user
    */
+  /** Whether an install may take `entry` at all (§9): its origin is allowed. */
+  const isInstallableOrigin = (entry: AppCatalogEntry): boolean =>
+    isAllowedOrigin(entry.url, appInstallAllowedOrigins, allowsLocalhostAppsOn)
+
+  const installPreview = (entry: AppCatalogEntry): AppInstallOutcome =>
+    isInstallableOrigin(entry)
+      ? appVersionChange(
+          entry,
+          useAppStore.getState().catalog[entry.id],
+          canLoadHere,
+        )
+      : { kind: 'rejected' }
+
   const installApp = async (
     entry: AppCatalogEntry,
     opts?: { activate?: boolean },
-  ): Promise<void> => {
+  ): Promise<AppInstallOutcome> => {
     // 1. Trust boundary (§9)
-    if (
-      !isAllowedOrigin(
-        entry.url,
-        appInstallAllowedOrigins,
-        allowsLocalhostAppsOn,
-      )
-    ) {
+    if (!isInstallableOrigin(entry)) {
       addMessage({
         message: `Cannot install "${entry.name ?? entry.id}": its URL is not from an allowed origin.`,
         duration: 5000,
@@ -459,20 +585,64 @@ export const useAppManager = (): AppManagerCommands => {
       logApp.warn(
         `[useAppManager]: installApp rejected "${entry.id}" — origin not allowed: ${entry.url}`,
       )
-      return
+      return { kind: 'rejected' }
     }
 
-    let activate = opts?.activate ?? false
-    if (activate && !isHostCompatible(entry.compatibleHostVersions)) {
+    // 2. Compare with what the catalog carries under this id (§7.5). The
+    //    catalog is composed by the init pass, which an install link can
+    //    outrun.
+    await catalogReady.promise
+    const {
+      catalog,
+      apps: currentApps,
+      loadStates,
+      loadedEntries,
+    } = useAppStore.getState()
+    const current = catalog[entry.id]
+    const change = appVersionChange(entry, current, canLoadHere)
+    const keepInstalled =
+      current !== undefined &&
+      (change.kind === 'same' ||
+        change.kind === 'older' ||
+        change.kind === 'incompatible')
+    const wasActive = currentApps[entry.id]?.status === AppStatus.Active
+    const target = keepInstalled ? current : entry
+
+    // An update keeps a running app running, on the new version.
+    let activate = (opts?.activate ?? false) || wasActive
+    if (activate && !runsOnThisHost(target)) {
       activate = false
       addMessage({
-        message: `"${entry.name ?? entry.id}" is not compatible with this host version; installed but not enabled.`,
+        message: `"${target.name ?? target.id}" is not compatible with this host version; installed but not enabled.`,
         duration: 5000,
         severity: MessageSeverity.WARNING,
       })
     }
 
-    // 2. Persist into the workspace (upsert → idempotent)
+    if (keepInstalled) {
+      logApp.info(
+        `[useAppManager]: Kept installed "${entry.id}" ${current.version ?? ''} over offered ${entry.version ?? entry.url} (${change.kind})`,
+      )
+      // A Refresh leaves a running app on the version it loaded (runtime spec
+      // §7.5), so the kept catalog entry may not be what runs: activating
+      // swaps it in.
+      const runsAnotherVersion =
+        loadStates[entry.id] === 'loaded' &&
+        loadedEntries[entry.id] !== undefined &&
+        loadedEntries[entry.id].url !== current.url
+      if (activate && (!wasActive || runsAnotherVersion)) {
+        await activateApp(entry.id)
+      }
+      return change
+    }
+
+    // Never leave the old version running under the new entry: an update
+    // that will not be activated stops what is running first.
+    if (wasActive && !activate) {
+      await deactivateApp(entry.id)
+    }
+
+    // 3. Persist into the workspace (upsert → idempotent)
     useWorkspaceStore.getState().addInstalledApp({
       entry,
       status: activate ? AppStatus.Active : AppStatus.Inactive,
@@ -480,16 +650,18 @@ export const useAppManager = (): AppManagerCommands => {
       installedAt: new Date().toISOString(),
     })
 
-    // 3. Merge into the catalog so it appears immediately
+    // 4. Merge into the catalog so it appears immediately
     recomposeCatalog()
     logApp.info(
-      `[useAppManager]: Installed app "${entry.id}" (activate=${activate})`,
+      `[useAppManager]: Installed app "${entry.id}" ${entry.version ?? ''} (${change.kind}, activate=${activate})`,
     )
 
-    // 4. Optionally load + mount
+    // 5. Optionally load + mount. A newer version of a running app is swapped
+    //    in by activateApp's version-update path.
     if (activate) {
       await activateApp(entry.id)
     }
+    return change
   }
 
   /**
@@ -513,7 +685,6 @@ export const useAppManager = (): AppManagerCommands => {
     useWorkspaceStore.getState().removeInstalledApp(id)
     removeApp(id)
     appRegistry.delete(id)
-    loadedAppUrls.delete(id)
     recomposeCatalog()
     logApp.info(`[useAppManager]: Uninstalled app "${id}"`)
   }
@@ -525,7 +696,6 @@ export const useAppManager = (): AppManagerCommands => {
   const removeOrphan = (id: string): void => {
     removeApp(id)
     appRegistry.delete(id)
-    loadedAppUrls.delete(id)
     logApp.info(`[useAppManager]: Orphan app "${id}" removed`)
   }
 
@@ -566,6 +736,7 @@ export const useAppManager = (): AppManagerCommands => {
         const { entries, sources, manifestIds } = composeCatalog(
           manifestEntries,
           installedApps,
+          canLoadHere,
         )
         setCatalog(entries, sources, manifestIds)
         logApp.info(
@@ -584,21 +755,35 @@ export const useAppManager = (): AppManagerCommands => {
 
         // 6. Restore the session apps map by seeding it from the workspace's
         //    installedApps (the durable status source, §8.4), not the legacy
-        //    global apps store. Non-fatal on failure.
-        const catalogIdSet = new Set(entries.map((e) => e.id))
-        const seedApps: CyApp[] = (
-          useWorkspaceStore.getState().workspace.installedApps ?? []
+        //    global apps store. Core apps (the default apps.json's entries)
+        //    are seeded too: on unless their record says the user turned them
+        //    off, so one with no record starts on. Nothing is written here;
+        //    only the user turning a core app off creates its record
+        //    (reconcileInstalledStatus). Non-fatal on failure.
+        const records = new Map(
+          (useWorkspaceStore.getState().workspace.installedApps ?? []).map(
+            (a) => [a.entry.id, a],
+          ),
         )
-          .filter((a) => catalogIdSet.has(a.entry.id))
-          .map((a) => ({
-            id: a.entry.id,
-            name: a.entry.name ?? a.entry.id,
-            ...(a.entry.description !== undefined && {
-              description: a.entry.description,
+        const seedApps: CyApp[] = []
+        for (const catalogEntry of entries) {
+          const { id } = catalogEntry
+          const recorded = records.get(id)
+          const status = startupAppStatus(recorded?.status, isCoreApp(id))
+          if (status === undefined) continue
+          const seedEntry = recorded?.entry ?? catalogEntry
+          seedApps.push({
+            id,
+            name: seedEntry.name ?? id,
+            ...(seedEntry.description !== undefined && {
+              description: seedEntry.description,
             }),
-            ...(a.entry.version !== undefined && { version: a.entry.version }),
-            status: a.status,
-          }))
+            ...(seedEntry.version !== undefined && {
+              version: seedEntry.version,
+            }),
+            status,
+          })
+        }
         try {
           await restore(seedApps)
           logApp.info(
@@ -614,11 +799,9 @@ export const useAppManager = (): AppManagerCommands => {
         // 7. Unblock the lifecycle useEffect
         setRestored(true)
 
-        // 8. Startup auto-load: the active set comes from the workspace's
-        //    installed apps (the durable source of truth, §8.4), not the
-        //    legacy global apps store.
-        const installedAppList =
-          useWorkspaceStore.getState().workspace.installedApps ?? []
+        // 8. Startup auto-load: the apps seeded active above — those the
+        //    workspace's installed apps record as active (the durable source
+        //    of truth, §8.4) and the core apps not turned off.
         const { catalog, manifestSource } = useAppStore.getState()
         // Ids that failed anywhere in this startup pass, collapsed into one
         // toast at the end. Before #719 this path raised none at all, so a
@@ -628,13 +811,10 @@ export const useAppManager = (): AppManagerCommands => {
         // `catalog[id].url`, not the installed record's URL, so a user-set
         // manifest declaring an existing app's id would otherwise decide where
         // an already-trusted app is fetched from.
-        const activeAppIds = installedAppList
-          .filter(
-            (a) =>
-              a.status === AppStatus.Active &&
-              catalog[a.entry.id] !== undefined,
-          )
-          .map((a) => a.entry.id)
+        // seedApps holds catalog ids only, so catalog[id] is defined below.
+        const activeAppIds = seedApps
+          .filter((app) => app.status === AppStatus.Active)
+          .map((app) => app.id)
           .filter((id) => {
             const allowed = isCatalogEntryAllowed(
               catalog[id].url,
@@ -658,70 +838,105 @@ export const useAppManager = (): AppManagerCommands => {
             }
             return allowed
           })
+          .filter((id) => {
+            // Not loaded on a host the entry excludes. Stated on the row only:
+            // the user cannot fix it, and a toast would recur at every start.
+            // The record is left alone, so a later host that fits loads it.
+            if (runsOnThisHost(catalog[id])) return true
+            failApp(id, incompatibleHostFailure(catalog[id]), { toast: false })
+            setStatus(id, AppStatus.Inactive)
+            logApp.info(
+              `[useAppManager]: startup auto-load: "${id}" skipped — needs host ${catalog[id].compatibleHostVersions}`,
+            )
+            return false
+          })
 
         if (activeAppIds.length === 0) {
           logApp.info(
             `[${useAppManager.name}]: No active apps to auto-load at startup`,
           )
+          catalogReady.resolve()
           reportStartupFailures(startupFailures)
           return
         }
 
-        // Set loadStates to 'loading' for all active apps
+        // Set loadStates to 'loading' for all active apps, and queue each
+        // load as that app's work, so an activation of the same app (an
+        // install link confirmed meanwhile) waits for it rather than loading
+        // alongside it.
+        const startupLoads = new Map<string, Deferred>()
         for (const id of activeAppIds) {
           setLoadState(id, 'loading')
+          const done = createDeferred()
+          startupLoads.set(id, done)
+          void queueAppWork(id, () => done.promise)
         }
 
-        // Load all active apps in parallel. loadRemoteApp resolves with the
-        // failure rather than throwing, so the reason survives to the store
-        // instead of being flattened into a synthetic Error.
-        const results = await Promise.all(
-          activeAppIds.map(async (id) => ({
-            id,
-            loaded: await loadRemoteApp(id, catalog[id].url, appRegistry),
-          })),
-        )
+        // The catalog is composed and the startup loads are queued, with no
+        // await since: an install can now compare versions and queue behind
+        // the load of the app it replaces.
+        catalogReady.resolve()
 
-        // Process results
-        for (const { id, loaded } of results) {
-          if (!loaded.ok) {
-            failApp(id, loaded.failure, { toast: false })
-            startupFailures.push(id)
-            setStatus(id, AppStatus.Error)
-            logApp.warn(
-              `[${useAppManager.name}]: Failed to load app "${id}" — ${loaded.failure.code}`,
-            )
-            continue
-          }
-          loadedAppUrls.set(id, catalog[id].url)
-          try {
-            await activateAndMount(id)
-            setLoadState(id, 'loaded')
-            logApp.info(
-              `[${useAppManager.name}]: App "${id}" auto-loaded and mounted`,
-            )
-          } catch (error) {
-            failApp(
+        try {
+          // Load all active apps in parallel. loadRemoteApp resolves with the
+          // failure rather than throwing, so the reason survives to the store
+          // instead of being flattened into a synthetic Error.
+          const results = await Promise.all(
+            activeAppIds.map(async (id) => ({
               id,
-              {
-                code: 'mount-failed',
-                message: error instanceof Error ? error.message : String(error),
-              },
-              { toast: false },
-            )
-            startupFailures.push(id)
-            setStatus(id, AppStatus.Error)
-            logApp.warn(
-              `[${useAppManager.name}]: App "${id}" loaded but mount failed:`,
-              error,
-            )
+              loaded: await loadRemoteApp(id, catalog[id].url, appRegistry),
+            })),
+          )
+
+          // Process results
+          for (const { id, loaded } of results) {
+            try {
+              if (!loaded.ok) {
+                failApp(id, loaded.failure, { toast: false })
+                startupFailures.push(id)
+                setStatus(id, AppStatus.Error)
+                logApp.warn(
+                  `[${useAppManager.name}]: Failed to load app "${id}" — ${loaded.failure.code}`,
+                )
+                continue
+              }
+              setLoadedEntry(id, catalog[id])
+              try {
+                await activateAndMount(id)
+                setLoadState(id, 'loaded')
+                logApp.info(
+                  `[${useAppManager.name}]: App "${id}" auto-loaded and mounted`,
+                )
+              } catch (error) {
+                failApp(
+                  id,
+                  {
+                    code: 'mount-failed',
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  },
+                  { toast: false },
+                )
+                startupFailures.push(id)
+                setStatus(id, AppStatus.Error)
+                logApp.warn(
+                  `[${useAppManager.name}]: App "${id}" loaded but mount failed:`,
+                  error,
+                )
+              }
+            } finally {
+              startupLoads.get(id)?.resolve()
+            }
           }
+        } finally {
+          for (const done of startupLoads.values()) done.resolve()
         }
 
         reportStartupFailures(startupFailures)
       }
 
-      void init()
+      // An init that throws must not leave installApp waiting for ever.
+      void init().finally(catalogReady.resolve)
     }
 
     return () => {
@@ -775,6 +990,7 @@ export const useAppManager = (): AppManagerCommands => {
     setManifestSource: cmdSetManifestSource,
     removeOrphan,
     installApp,
+    installPreview,
     uninstallApp,
   }
 }
