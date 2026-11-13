@@ -1,5 +1,5 @@
 import { CompactSelection, GridSelection } from '@glideapps/glide-data-grid'
-import { act, render } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { Table, ValueTypeName } from '../../../models/TableModel'
@@ -39,7 +39,10 @@ const selectionOf = (index: number): GridSelection => ({
   rows: CompactSelection.empty(),
 })
 
-const renderToolbar = (selectedIndex = 1) => {
+const renderToolbar = (
+  selectedIndex = 1,
+  overrides: Partial<TableToolbarProps> = {},
+) => {
   const props = {
     currentNetworkId: 'net',
     currentTable: nodeTable,
@@ -66,6 +69,8 @@ const renderToolbar = (selectedIndex = 1) => {
     setMapping: vi.fn(),
     setSort: vi.fn(),
     duplicateColumn: vi.fn(),
+    selectedElementIds: [],
+    ...overrides,
   } as unknown as TableToolbarProps
   render(<TableToolbar {...props} />)
   return props
@@ -182,5 +187,58 @@ describe('TableToolbar column names (#951)', () => {
         'foo already exists. Please enter a new unique column name',
       )
     })
+  })
+})
+
+// #848: with no network selection the table shows every row, so "Apply Value
+// to Selected" must not write to the displayed rows.
+describe('TableToolbar apply value to selected (#848)', () => {
+  const tableRows = [
+    { id: 'n1', name: 'a' },
+    { id: 'n2', name: 'b' },
+    { id: 'n3', name: 'c' },
+  ]
+  // The 'name' cell of the first row is the current cell
+  const cellSelection: GridSelection = {
+    columns: CompactSelection.empty(),
+    rows: CompactSelection.empty(),
+    current: {
+      cell: [0, 0],
+      range: { x: 0, y: 0, width: 1, height: 1 },
+      rangeStack: [],
+    },
+  }
+  const applyButton = (): HTMLButtonElement =>
+    screen.getByTestId('table-toolbar-apply-value-to-selected-button')
+
+  it('is disabled when nothing is selected in the network', () => {
+    const props = renderToolbar(1, {
+      selection: cellSelection,
+      rows: tableRows,
+      selectedElementIds: [],
+    })
+
+    expect(applyButton().disabled).toBe(true)
+    fireEvent.click(applyButton())
+    expect(props.postEdit).not.toHaveBeenCalled()
+    expect(props.applyValueToElements).not.toHaveBeenCalled()
+  })
+
+  it('writes only to the elements selected in the network', () => {
+    const props = renderToolbar(1, {
+      selection: cellSelection,
+      rows: tableRows,
+      selectedElementIds: ['n2'],
+    })
+
+    expect(applyButton().disabled).toBe(false)
+    fireEvent.click(applyButton())
+    expect(props.applyValueToElements).toHaveBeenCalledWith(
+      'net',
+      'node',
+      'name',
+      'a',
+      ['n2'],
+    )
   })
 })

@@ -84,6 +84,26 @@ export const handleApplyToEntireColumn = ({
   handleContextMenuClose()
 }
 
+export interface ApplyToSelectedArgs extends ContextMenuActionArgs {
+  // Elements selected in the network view, for the current table
+  selectedElementIds: IdType[]
+}
+
+/**
+ * The displayed rows that belong to elements selected in the network.
+ *
+ * With no network selection the table shows every row, so an action on the
+ * "selected" elements must not take the displayed rows as they are (#848).
+ */
+export const rowsOfSelectedElements = (
+  rows: any[] | undefined,
+  selectedElementIds: IdType[],
+): any[] => {
+  if (rows == null || selectedElementIds.length === 0) return []
+  const selected = new Set(selectedElementIds)
+  return rows.filter((r) => selected.has(r.id))
+}
+
 export const handleApplyToSelected = ({
   contextMenuCell,
   rows,
@@ -94,8 +114,15 @@ export const handleApplyToSelected = ({
   postEdit,
   applyValueToElements,
   handleContextMenuClose,
-}: ContextMenuActionArgs): void => {
+  selectedElementIds,
+}: ApplyToSelectedArgs): void => {
   if (rows == null) return
+
+  const targetRows = rowsOfSelectedElements(rows, selectedElementIds)
+  if (targetRows.length === 0) {
+    handleContextMenuClose()
+    return
+  }
 
   const [columnIndex, rowIndex] = contextMenuCell
   const rowData = rows?.[rowIndex]
@@ -108,7 +135,7 @@ export const handleApplyToSelected = ({
   const cellEdits: CellEdit[] = []
   const prevColumnValues: CellEdit[] = []
 
-  rows.forEach((r) => {
+  targetRows.forEach((r) => {
     const rowId = r.id
     cellEdits.push({
       row: rowId,
@@ -136,7 +163,7 @@ export const handleApplyToSelected = ({
     elementType,
     columnKey,
     cellValue,
-    rows.map((r) => r.id),
+    targetRows.map((r) => r.id),
   )
 
   handleContextMenuClose()
