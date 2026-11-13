@@ -17,6 +17,7 @@ import {
   IconButton,
   InputLabel,
   MenuItem,
+  Paper,
   Select,
   TextField,
   Tooltip,
@@ -43,16 +44,21 @@ import { useHydrateLLMQueryOptions } from '../store/useHydrateLLMQueryOptions'
 
 // Present for password managers only: they file a saved secret under a
 // username, and offer nothing for a password field that has none beside it.
+//
+// The sizes are strings on purpose. In `sx`, a bare `width: 1` is 100% and a
+// bare `margin: -1` is one theme spacing unit, so numbers made this input as
+// large as the dialog: invisible (it is clipped), but it overflowed the
+// dialog and gave it scrollbars.
 const visuallyHidden = {
   position: 'absolute',
-  width: 1,
-  height: 1,
+  width: '1px',
+  height: '1px',
   overflow: 'hidden',
   clip: 'rect(0 0 0 0)',
   whiteSpace: 'nowrap',
   border: 0,
   padding: 0,
-  margin: -1,
+  margin: '-1px',
 } as const
 
 interface LLMQueryOptionsDialogProps {
@@ -333,10 +339,9 @@ const LLMQueryOptionsDialogContent = (
 
   const apiKeyLabel = provider.requiresApiKey ? 'OpenAI API Key' : 'API Key'
   const apiKeyHelp =
-    (keyEntered && storedApiKey !== ''
+    keyEntered && storedApiKey !== ''
       ? 'A key is set for this tab. Leave this blank to keep it. '
-      : "Kept for this tab only: it survives a reload, and this app's copy is removed when you close the tab. A copy your password manager saved stays there. ") +
-    'Use a dedicated key with only the permissions it needs and a spending limit.'
+      : "Kept for this tab only: it survives a reload, and this app's copy is removed when you close the tab."
   const apiKeyTooltip = provider.requiresApiKey
     ? 'You need to add an API key generated in your PAID account'
     : 'Optional. Sent only to this endpoint, never your OpenAI key.'
@@ -455,57 +460,67 @@ const LLMQueryOptionsDialogContent = (
           )}
         </Box>
         {localProvider !== 'ollama' && (
-          // A real form with a username beside the password, which is what a
-          // password manager needs before it offers to save or fill the key.
-          // Whether it does is up to the browser; the masking does not depend
-          // on it. Submitting does nothing: Confirm saves.
-          <Box
-            component="form"
-            autoComplete="on"
-            onSubmit={(e) => e.preventDefault()}
-            sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}
-          >
+          <Paper variant="outlined" sx={{ p: 1 }}>
+            <Alert severity="info" sx={{ mb: 0.75 }}>
+              Use a dedicated key with only the permissions it needs and a
+              spending limit.
+            </Alert>
+            {/* A real form with a username beside the password, which is
+                what a password manager needs before it offers to save or fill
+                the key. Whether it does is up to the browser; the masking does
+                not depend on it. Submitting does nothing: Confirm saves. */}
             <Box
-              component="input"
-              type="text"
-              name="username"
-              autoComplete="username"
-              value={`${provider.label} API key`}
-              readOnly
-              tabIndex={-1}
-              aria-hidden="true"
-              sx={visuallyHidden}
-            />
-            <Tooltip title={apiKeyTooltip}>
-              <TextField
-                data-testid="llm-query-options-api-key-input"
-                size="small"
-                type="password"
-                name="password"
-                autoComplete="current-password"
-                value={localLLMApiKey}
-                fullWidth
-                label={apiKeyLabel}
-                error={apiKeyError !== undefined}
-                helperText={apiKeyError ?? apiKeyHelp}
-                onChange={(e) => {
-                  setLocalLLMApiKey(e.target.value)
-                }}
-              ></TextField>
-            </Tooltip>
-            {keyEntered && (
-              <Button
-                data-testid="llm-query-options-forget-key-button"
-                variant="outlined"
-                color="warning"
-                startIcon={<KeyOffIcon />}
-                sx={{ flexShrink: 0, mt: 0.25 }}
-                onClick={handleForgetKeyClick}
-              >
-                Forget key
-              </Button>
-            )}
-          </Box>
+              component="form"
+              autoComplete="on"
+              onSubmit={(e) => e.preventDefault()}
+              sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}
+            >
+              <Box
+                component="input"
+                type="text"
+                name="username"
+                autoComplete="username"
+                value={`${provider.label} API key`}
+                readOnly
+                tabIndex={-1}
+                aria-hidden="true"
+                sx={visuallyHidden}
+              />
+              <Tooltip title={apiKeyTooltip}>
+                <TextField
+                  data-testid="llm-query-options-api-key-input"
+                  size="small"
+                  type="password"
+                  name="password"
+                  autoComplete="current-password"
+                  value={localLLMApiKey}
+                  fullWidth
+                  label={apiKeyLabel}
+                  error={apiKeyError !== undefined}
+                  helperText={apiKeyError ?? apiKeyHelp}
+                  onChange={(e) => {
+                    setLocalLLMApiKey(e.target.value)
+                  }}
+                ></TextField>
+              </Tooltip>
+              {keyEntered && (
+                <Button
+                  data-testid="llm-query-options-forget-key-button"
+                  variant="outlined"
+                  color="warning"
+                  startIcon={<KeyOffIcon />}
+                  sx={{
+                    flexShrink: 0,
+                    mt: 0.25,
+                    backgroundColor: 'background.paper',
+                  }}
+                  onClick={handleForgetKeyClick}
+                >
+                  Forget key
+                </Button>
+              )}
+            </Box>
+          </Paper>
         )}
 
         {keysToForget.length > 0 && (

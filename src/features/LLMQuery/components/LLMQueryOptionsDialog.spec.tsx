@@ -312,6 +312,24 @@ describe('LLMQueryOptionsDialog', () => {
       expect(input.closest('form')).not.toBeNull()
     })
 
+    /**
+     * The username beside the key is for password managers and must take no
+     * room. In `sx`, `width: 1` means 100%, which once made it as large as
+     * the dialog and gave the dialog scrollbars.
+     */
+    it('keeps the hidden username input at one pixel', () => {
+      render(<LLMQueryOptionsDialog open={true} handleClose={() => {}} />)
+
+      const username = apiKeyInput()
+        .closest('form')
+        ?.querySelector('input[name="username"]')
+      expect(username).not.toBeNull()
+      const style = getComputedStyle(username as Element)
+      expect(style.width).toBe('1px')
+      expect(style.height).toBe('1px')
+      expect(style.margin).toBe('-1px')
+    })
+
     it('never renders a stored key', () => {
       act(() => useLLMQueryStore.getState().setLLMApiKey('sk-secret-value'))
 
