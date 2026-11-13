@@ -408,4 +408,31 @@ test.describe('LLM Query Options Dialog', () => {
     // The editor tab keeps its own
     expect(await sessionKeys(page)).toContain('sk-e2e-not-a-real-key')
   })
+
+  // The hidden username input beside the key field (for password managers)
+  // was once sized 100% x 100% by mistake: clipped, so invisible, but it
+  // overflowed the dialog, which could then be scrolled both ways.
+  test('the dialog has nothing to scroll', async ({ page }) => {
+    await openDialog(page)
+
+    const overflowing = await page
+      .locator('[data-testid="llm-query-options-dialog"]')
+      .evaluate((dialog) =>
+        [dialog, ...Array.from(dialog.querySelectorAll('*'))]
+          .filter((element) => {
+            const style = getComputedStyle(element)
+            const scrolls = /(auto|scroll)/.test(
+              style.overflowX + style.overflowY,
+            )
+            return (
+              scrolls &&
+              (element.scrollWidth > element.clientWidth ||
+                element.scrollHeight > element.clientHeight)
+            )
+          })
+          .map((element) => element.className.toString()),
+      )
+
+    expect(overflowing).toEqual([])
+  })
 })
