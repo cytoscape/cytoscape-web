@@ -112,7 +112,11 @@ export const resetAnalyticsForTests = (): void => {
   pending = []
 }
 
-const BUNDLED_APP_IDS: readonly string[] = bundledApps.map((app) => app.id)
+// The repository's apps.json is `[]`, which TypeScript types as `never[]`;
+// a deployment build swaps in its own catalog, so the shape is stated here.
+const BUNDLED_APP_IDS: readonly string[] = (
+  bundledApps as ReadonlyArray<{ id: string }>
+).map((app) => app.id)
 
 /**
  * The `app_id` for a plugin app: its id when the bundled catalog

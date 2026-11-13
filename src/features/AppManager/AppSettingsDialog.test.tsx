@@ -33,7 +33,7 @@ const { useAppStore } = await import('../../data/hooks/stores/AppStore')
 
 const DEV1 = 'https://dev1.ndexbio.org'
 
-const installApp = vi.fn(async () => undefined)
+const installApp = vi.fn(async (): Promise<unknown> => ({ kind: 'new' }))
 
 const commands = {
   installApp,
@@ -276,6 +276,26 @@ describe('AppSettingsDialog — one URL field for both app kinds', () => {
 
     await waitFor(() => expect(installApp).toHaveBeenCalled())
     expect(addService).not.toHaveBeenCalled()
+  })
+
+  // installApp keeps a newer installed version (§7.5). Without a word the
+  // field would just clear, as if the older version had been installed.
+  it('says when the installed version was kept', async () => {
+    installApp.mockResolvedValueOnce({
+      kind: 'older',
+      installed: '1.1.0',
+      offered: '1.0.0',
+    })
+    stubFetchJson([{}])
+    renderDialog()
+
+    submit('https://apps.cytoscape.org/devapp/manifest.json')
+
+    expect(
+      await screen.findByText(
+        'Dev App 1.1.0 is already installed; kept it instead of 1.0.0',
+      ),
+    ).toBeTruthy()
   })
 
   it('shows the field on the Service Apps tab too', () => {

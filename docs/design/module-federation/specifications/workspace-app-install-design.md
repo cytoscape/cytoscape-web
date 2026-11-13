@@ -13,6 +13,36 @@
 > `mountApp`) are reused; this design adds a persisted, workspace-scoped install
 > layer on top.
 
+- Rev. 9 (11/11/2026): Jing Chen and Claude (Opus 5.5) — Versions are ranked
+  by what this Cytoscape Web can *load*: host version plus the origin check
+  (`canLoadHere`), so a user-set catalog's entry at a disallowed origin no
+  longer displaces a loadable install (§7.5, §8.1, §8.2); the dialog asks
+  `installPreview`, which makes `installApp`'s own decision (§7.5); a link to
+  the version a Refresh brought swaps it in while an older one still runs, and
+  the row names the running version (§7.5, §8.5, §15)
+- Rev. 8 (11/11/2026): Jing Chen and Claude (Opus 5.5) — App Manager derives
+  `incompatible-host` for every row from the entry, so an app installed off
+  is explained too, while a running app keeps its switch and a refresh
+  retires stale incompatibilities (§8.5); the summary, the command signature (§7.1) and the
+  merge helper (§8.2) state compatibility first, then version
+- Rev. 7 (11/11/2026): Jing Chen and Claude (Opus 5.5) — The install
+  confirmation dialog decides with the same compatibility check as the
+  install (`runsOnThisHost`), which `appVersionChange` and `composeCatalog`
+  now require; an older compatible version replacing one that cannot run is
+  worded as a replacement (§7.5, §15)
+- Rev. 6 (11/10/2026): Jing Chen and Claude (Opus 5.5) — The newer
+  *compatible* version wins: `compatibleHostVersions` is checked before
+  versions in the merge and on install, and an app the host cannot run is never
+  loaded (§7.5, §8.1, §8.5); a failed core app can be turned off, and a fixed
+  version in `apps.json` loads at the next start (§8.5, §15)
+- Rev. 5 (11/10/2026): Jing Chen and Claude (Opus 5.5) — Version upgrades:
+  when the manifest and an `appstore`/`snapshot` install carry the same app,
+  the newer semver wins (§8.1); an install never replaces a newer version, it
+  updates an older one in place and keeps a running app running (§7.5)
+- Rev. 4 (11/10/2026): Jing Chen and Claude (Opus 5.5) — Core apps: every
+  entry of the deployment's own `apps.json` is on unless the workspace records
+  the user turning it off; turning one off now writes an `inactive` record
+  (§8.4, §8.5, §12.2, §15)
 - Rev. 3 (6/10/2026): Keiichiro ONO and Claude (Fable 5) — Resolve all
   pre-implementation decisions: unify app state in `workspace.installedApps`
   (manifest apps included, §6.3/§8.4), replace the Dexie-upgrade migration
@@ -66,6 +96,16 @@
   `compatibleHostVersions` check. On restore, allow-listed entries keep their
   saved Active status (apps auto-load as today); anything else arrives
   inactive with a warning.
+- **Core apps:** the entries of the deployment's own `apps.json` are on by
+  default. They load at startup unless the workspace records that the user
+  turned them off, and only that choice is written down (§8.5).
+- **Versions:** when `apps.json` and an install carry the same app,
+  loadability comes first and version second. An entry this Cytoscape Web can
+  load (it runs on this host, `compatibleHostVersions`, and passes the origin
+  check) beats one it cannot; between two that both load, or both do not, the
+  newer semantic version wins, whichever side it is on. An
+  install updates an older version in place and keeps a newer one, and an
+  older version that runs replaces a newer one that cannot (§7.5).
 - **One source of truth:** manifest apps also get an `InstalledApp` record
   when activated, so `workspace.installedApps` holds *all* durable app state.
   The legacy global `apps` IndexedDB store is absorbed by an idempotent
@@ -302,9 +342,16 @@ roles are clarified:
 Add two commands to `useAppManager` (`AppManagerCommands`):
 
 ```typescript
-installApp(entry: AppCatalogEntry, opts?: { activate?: boolean }): Promise<void>
+installApp(
+  entry: AppCatalogEntry,
+  opts?: { activate?: boolean },
+): Promise<AppInstallOutcome> // what it did: new | update | same | older | incompatible | rejected
 uninstallApp(id: string): Promise<void>
 ```
+
+`AppInstallOutcome` (`src/models/AppModel/AppVersionChange.ts`) lets the
+caller tell the user what happened (`appInstallMessage`); §7.5 defines each
+case. Steps 2–4 below run for `new` and `update` only.
 
 `installApp`:
 
@@ -414,6 +461,80 @@ origins (§11.3).
 server-side manifest only needs to obtain a validated `AppCatalogEntry` and call
 the same command; no further host changes are required.
 
+### 7.5 Version upgrades
+
+An install often offers an app the catalog already carries: an App Store link
+for a core app from `apps.json` (§8.5), or a newer release of an app installed
+earlier. `installApp` compares the offered entry with the catalog's entry for
+the same id (`appVersionChange`, `src/models/AppModel/impl/appVersion.ts`).
+Versions are compared as semantic versions (`compareAppVersions`, the `semver`
+package): 3.1.2 is newer than 3.1.1, 3.2.0 is newer than 3.1.23, and a
+pre-release sorts before its release.
+
+Loadability is decided first: the newer *loadable* version wins. An entry
+whose `compatibleHostVersions` excludes this Cytoscape Web never replaces one
+that this host can run, and one it can run replaces one it cannot, whatever
+their versions. The origin check activation applies counts the same way: an
+entry from a user-set catalog at an origin this deployment does not allow
+(§9; the deployment's own `apps.json` is exempt) never displaces an install
+that loads. Versions decide between two entries that both load here, or both
+do not.
+
+| Offered vs. catalog | `installApp` does | Returns |
+| --- | --- | --- |
+| No entry for the id | Installs it, as before | `new` |
+| Newer, or either version missing or not semver | Writes the `appstore` record and recomposes, so the offered entry wins (§8.1). An app that was running stays on and is swapped to the new version in place (`activateApp`'s version-update path) | `update` |
+| Same version, or the same remote entry URL | Leaves the record and catalog alone; turns the app on when `activate` is set. If an older module still runs because a Refresh brought this version (runtime spec §7.5), activating swaps this one in | `same` |
+| Older | Leaves the newer version and its record alone; turns the app on when `activate` is set | `older` |
+| Cannot run on this host, while the installed one can | Leaves the installed version, running or not, and its record alone; turns it on when `activate` is set. "NetworkAnalyzer 2.0.0 needs Cytoscape Web >=2.0.0; kept 1.0.0" | `incompatible` |
+
+An update that is not activated never leaves the old version running under the
+new entry: the running module is stopped first. (Before the compatibility
+check, an incompatible upgrade replaced the catalog entry and wrote an
+inactive record while v1 kept running.)
+
+An install link always passes `activate: true`, so keeping a newer version
+still turns it on: the user asked for the app. Install from URL passes
+`activate: false`, but an update keeps an app that was running running, since
+writing the new record as inactive would turn it off at the next start.
+
+The user is told which of these happened. The confirmation dialog says what
+confirming will do to an installed app ("Updates the installed version 1.0.0 to
+1.1.0", "Version 1.1.0 is installed, which is newer; it is kept",
+`appInstallPreview`). An update to an older version, which happens only when
+the installed one cannot run here, is worded as a replacement: "Replaces the
+installed version 2.0.0, which cannot run on this Cytoscape Web, with 1.0.0".
+
+The dialog, `installApp` and the catalog merge decide with one check,
+`canLoadHere` in `useAppManager`: `runsOnThisHost`
+(`src/features/AppManager/install/installGate.ts`) and the origin check
+activation applies (`isCatalogEntryAllowed`). `appVersionChange` and
+`composeCatalog` take it as a required parameter. It used to default to "every
+entry is compatible", and the dialog, which did not pass it, promised the
+opposite of what the install did whenever compatibility decided: an update to
+an incompatible v2 that the install refused, or keeping an incompatible v2
+that the install replaced. The dialog now makes no decision of its own: it
+asks `installPreview` (an `AppManagerCommands` member), which runs
+`installApp`'s origin check and version decision without installing. An offer
+from a disallowed origin previews as `rejected` and gets no note; the install
+states the refusal. The toast after confirming says "Updated NetworkAnalyzer
+to 1.1.0", or "NetworkAnalyzer 1.1.0 is already installed; kept it instead of
+1.0.0" (`appInstallMessage`). Install from URL shows the second kind of message
+under its field.
+
+Two ordering rules make this hold when the user confirms quickly:
+
+- **Compare against the composed catalog.** `installApp` waits until the init
+  pass has composed the catalog and seeded app statuses. An install link can
+  be confirmed before the manifest has been fetched, and comparing against an
+  empty catalog would treat every app as new.
+- **One activation at a time per app.** `useAppManager` keeps a queue of load
+  and activate work per app id. The startup auto-load queues each load, and
+  `activateApp` runs after whatever is queued for the same id. An update
+  confirmed while the startup load of the old version is in flight therefore
+  waits for it, then swaps the version, instead of loading both and keeping
+  whichever finished first.
+
 ---
 
 ## 8. Catalog Composition & Restore
@@ -428,13 +549,22 @@ flowchart TD
     A["Read manifestSource"] --> B["obtainCatalogEntries() → manifest entries"]
     H["Hydrate WorkspaceStore → workspace.installedApps"] --> C
     B --> C["setCatalog(merge(manifest, installedApps))"]
-    C --> D["restore(catalogAppIds)"]
-    D --> E["Auto-load apps where status === Active && catalog[id] exists"]
+    C --> D["restore(seed: records + core apps, §8.5)"]
+    D --> E["Auto-load apps seeded Active (catalog[id] exists)"]
 ```
 
-Merge rule: union by `id`; on collision, the **workspace installed entry wins**
-for `source === 'appstore' | 'snapshot'` (it pins an immutable version URL),
-otherwise the manifest entry wins. Because installed apps now appear in the
+Merge rule: union by `id`. On a collision with a `source === 'appstore' |
+'snapshot'` record the **newer loadable version wins**. An entry this
+Cytoscape Web can load beats one it cannot, whatever the versions: it runs on
+this host (`compatibleHostVersions`) and passes the origin check (§9), so a
+user-set catalog entry at a disallowed origin, which startup would refuse to
+load, never displaces a loadable install.
+Otherwise the newer semantic version wins: an install newer than
+the manifest's entry replaces it, and a manifest entry newer than the install
+replaces the install (§7.5). Equal versions keep the manifest entry. When either
+version is missing or not semver the installed entry wins, pinning its
+immutable URL as before. A `source === 'manifest'` record always yields to the
+manifest. Because installed apps now appear in the
 merged catalog, the existing `restore(catalogAppIds)` and auto-load passes work
 unchanged for them.
 
@@ -450,9 +580,10 @@ that rebuilds the catalog, not only at startup:
 | Manual **Refresh** button | `refreshCatalog()` |
 | Manifest source change | `AppSettingsDialog` → `setManifestSource()` → `refreshCatalog()` |
 
-Centralize the merge in one helper (e.g.
-`composeCatalog(manifestEntries, workspace.installedApps)`) shared by all three
-paths; otherwise a manual Refresh silently drops installed apps from the
+Centralize the merge in one helper,
+`composeCatalog(manifestEntries, workspace.installedApps, canLoadHere)`,
+shared by all three paths. The loadability check is a required argument, so
+every path ranks entries the same way as the install and its dialog (§7.5); otherwise a manual Refresh silently drops installed apps from the
 available list until the next reload.
 
 ### 8.3 Ordering dependency (highest implementation risk)
@@ -479,9 +610,81 @@ deactivation updates both the runtime `CyApp.status` and the persisted
 
 Activating an app that has no `InstalledApp` record yet (a manifest app)
 creates one with `source: 'manifest'`, so `workspace.installedApps` is the
-single durable source for app status. The legacy global `apps` store is no
-longer written; app activation state therefore becomes workspace-scoped,
-which is the behavior the NDEx workspace round-trip (§11) requires.
+single durable source for app status. Turning off a core app that has no
+record creates one too, with `status: inactive` (§8.5); turning off any other
+app with no record, or a failed activation with none, writes nothing. The
+legacy global `apps` store is no longer written; app activation state
+therefore becomes workspace-scoped, which is the behavior the NDEx workspace
+round-trip (§11) requires.
+
+### 8.5 Core apps (on by default)
+
+Every entry of the deployment's own default manifest (`apps.json`, fetched
+from `<base>apps.json`) is a **core app**: part of what the deployment ships,
+on unless the user turned it off. How a core app starts depends only on the
+current workspace's record for it:
+
+| `installedApps` record | At startup |
+| --- | --- |
+| none | Loads. Seeded `active` for the session; no record is written |
+| `active` | Loads |
+| `error` | Loads: a failed activation is not the user's choice |
+| `inactive` | Listed, turned off, not loaded |
+
+Any other app starts with the status its record holds and is not seeded when
+it has none. The rule is `startupAppStatus`
+(`src/models/AppModel/impl/startupAppStatus.ts`); `useAppManager` seeds the
+session from it before the auto-load pass.
+
+- **Only the user's choice is written.** Startup writes nothing for a core app.
+  Turning a core app off creates its `inactive` record (`source: 'manifest'`)
+  when it has none (`reconcileInstalledStatus`, §8.4). Before core apps, turning
+  off an app with no record wrote nothing, which would now bring it back at the
+  next startup. Because "no record" is what on-by-default means, dropping an app
+  from `apps.json` removes it from every workspace that never turned it on or off.
+- **Scoped to the workspace.** A new workspace, or one opened from NDEx with no
+  record of the app, starts with every core app on. A workspace saved to NDEx
+  carries its `inactive` records (§11.1), so turning an app off travels with
+  the workspace.
+- **Only the default manifest.** Core status is decided against the manifest as
+  loaded, by id and URL (`isFromDefaultManifest`), the same test as the §9
+  exemption. Entries of a user-set Manifest Source keep the opt-in behavior,
+  and so does an `appstore`/`snapshot` record pinned to another URL for a core
+  app's id.
+- **Failures are reported, not recorded.** A core app that fails at startup is
+  named in the startup toast and marked failed on its row
+  (runtime-app-registration-specification.md §10.1). No record is written, so
+  it is tried again at the next startup until it loads or the user turns it
+  off. The failed row keeps its switch, on, for that: a core app cannot be
+  uninstalled. Turning it off writes the `inactive` record and clears the
+  failure.
+- **A fixed version reaches users by itself.** When a broken core app is fixed
+  and the deployment ships the new version in `apps.json`, the next start loads
+  it: nothing recorded the failure. This holds when the user installed the
+  broken version from the App Store (the newer manifest entry wins, §8.1), and
+  after a failed Retry. Only a user who turned the app off keeps it off; that
+  record is their choice and is not told apart from "off because it broke".
+  The default manifest is fetched with `cache: 'no-cache'`, because it is served
+  without Cache-Control and a reload does not refetch `fetch()` requests, so a
+  heuristically cached copy would keep loading the broken version. The fix must
+  be a new version at a new URL, as the App Store publishes it.
+- **Not loaded where it cannot run.** A core app whose `compatibleHostVersions`
+  excludes this Cytoscape Web is not loaded at startup or by its switch. Its
+  row states the required version (`incompatible-host`) and has no switch;
+  there is no startup toast, since the user cannot fix it and it would recur
+  at every start. App Manager derives this from the entry for every row
+  (`incompatibleHostFailure` in `installGate.ts`), whatever the app's status:
+  startup checks only the apps it would load, so an app installed off, or
+  with an inactive record, would otherwise keep a switch and no reason. Two
+  Refresh cases: an app still running an older compatible version keeps its
+  switch until turned off (the row goes by the version in memory, and names
+  it: `AppStore.loadedEntries` holds the entry each module came from), and a
+  refresh to a compatible version makes the app available at once, because
+  `setCatalog` retires recorded incompatibilities
+  (runtime-app-registration-specification.md §7.5).
+- **Deployment consequence.** Adding an app to a deployment's `apps.json` turns
+  it on for every user who has not turned it off. The repository's `apps.json`
+  is empty; each deployment's build swaps in its own list.
 
 ---
 
@@ -709,7 +912,7 @@ Two distinct operations must be visually separated:
 
 | Operation | Effect | Persisted state |
 | --- | --- | --- |
-| **Disable** (toggle off) | Unmounts the app; keeps it installed | `InstalledApp.status = inactive` |
+| **Disable** (toggle off) | Unmounts the app; keeps it installed | `InstalledApp.status = inactive` (a core app with no record gets one, §8.5) |
 | **Uninstall** | Unmounts (if active) and removes it from the workspace | Entry deleted from `workspace.installedApps` |
 
 Uninstall removes the app from the workspace and therefore from any future
@@ -739,7 +942,9 @@ manifest entry returned (issue #699).
 refuses any id it contains.
 
 **Cost:** a pinned App Store version installed over a manifest id can no longer
-be reverted to the manifest version from the UI. Reverting was never labelled
+be reverted to the manifest version from the UI. Since Rev. 5 this applies only
+while the install is the newer version (§8.1): a manifest that ships a newer
+version replaces the install by itself. Reverting was never labelled
 as such — it was an **Uninstall** that appeared to fail — so nothing
 discoverable is lost. A dedicated `Revert to manifest version` action is the
 place to add it back.
@@ -886,7 +1091,8 @@ restore-after-reload defect (P1–P3).
 > - *Catalog precedence* — the installed entry wins for
 >   `source: 'appstore' | 'snapshot'` (version pin preserved);
 >   `source: 'manifest'` always follows the manifest (§8.1). Update
->   detection/notification UX is future work.
+>   detection/notification UX is future work. **Superseded in Rev. 5:** the
+>   newer semver wins a collision, and installs compare versions (§7.5).
 > - *Migration of legacy global apps* — migrated at runtime into the
 >   **current** workspace at startup (§10.1).
 > - *Restore activation* — allow-listed origins honor saved Active status;
@@ -932,4 +1138,40 @@ restore-after-reload defect (P1–P3).
   the installed list through the §9 gate with §11.3 activation (allow-listed
   Active apps auto-load), while a legacy workspace carrying only `activeApps`
   behaves exactly as today.
-- Apps loaded from `apps.json` continue to behave exactly as before.
+- An app the deployment's `apps.json` lists loads at the first start, and in
+  any workspace with no record of it, without the user turning it on; no
+  record is written for it (§8.5).
+- Turning such a core app off writes an `inactive` record; after a reload it is
+  listed turned off and not loaded. A new workspace starts with it on again.
+- A core app whose record says `error` is loaded again at startup.
+- A core app that fails at startup is named in a toast and marked failed on its
+  row; no record is written, and the next startup tries it again.
+- An app listed only by a user-set Manifest Source is not loaded until the user
+  turns it on.
+- An install link offering a newer version of an installed app (3.2.0 over
+  3.1.23) says so in the dialog, replaces the running version in place, and
+  the newer version runs after a reload.
+- An install link offering an older version leaves the newer one installed,
+  turns it on if it was off, and says the newer version was kept.
+- A manifest that ships a newer version than an earlier App Store install
+  replaces it at the next start.
+- An update confirmed while the old version is still loading at startup ends
+  with only the new version running.
+- A core app that failed at startup can be turned off from its row; after a
+  reload it is not tried again.
+- A core app that failed at startup, with nothing else done, loads the fixed
+  version `apps.json` ships after the next reload, and App Manager shows it on.
+- A core app, or an install, whose `compatibleHostVersions` excludes this host
+  is not loaded; its row says which version it needs. An install link
+  offering such a version keeps the installed compatible version running.
+- The install dialog promises what the install does in both compatibility
+  cases: keeping a working v1 over an incompatible v2, and replacing an
+  incompatible v2 with a working v1. It shows `installPreview`, `installApp`'s
+  own decision.
+- A user-set catalog listing an installed app's id at a disallowed origin does
+  not displace the install, even with a newer version; a link replaces such an
+  entry with a loadable one, even an older one.
+- After a Refresh brings a version while an older one keeps running, the row
+  names the running version, and a link to the new version swaps it in.
+- After an in-place update the new version's code runs, not only its URL
+  (`core-apps.spec.ts`, two builds of the fixture app).

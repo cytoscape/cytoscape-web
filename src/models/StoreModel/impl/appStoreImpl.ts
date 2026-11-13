@@ -40,6 +40,7 @@ export interface AppState {
   manifestIds: string[]
   loadStates: Record<string, AppLoadState>
   loadErrors: Record<string, AppLoadFailure>
+  loadedEntries: Record<string, AppCatalogEntry>
   manifestSource?: ManifestSource
 }
 
@@ -326,6 +327,11 @@ export const updateInputColumn = (
  * even though `ensureRemoteRegistered` re-registers a scope whose URL changed,
  * and a failure kept past a removal would resurrect on the id's return.
  * `mount-failed` carries no URL and is retryable, so it is left alone.
+ *
+ * `incompatible-host` is retired on every replacement: it describes the entry
+ * it was recorded against, carries no URL, and App Manager derives it from the
+ * current entry anyway. Kept, it blocked a row whose refreshed entry runs
+ * here until the next reload.
  */
 export const setCatalog = (
   state: AppState,
@@ -343,6 +349,11 @@ export const setCatalog = (
   const loadStates = { ...state.loadStates }
   const loadErrors = { ...state.loadErrors }
   for (const [id, failure] of Object.entries(state.loadErrors)) {
+    if (failure.code === 'incompatible-host') {
+      delete loadErrors[id]
+      delete loadStates[id]
+      continue
+    }
     const failedUrl = 'url' in failure ? failure.url : undefined
     if (failedUrl === undefined) continue
     if (catalog[id]?.url === failedUrl) continue
@@ -410,6 +421,24 @@ export const setLoadFailed = (
 }
 
 /**
+ * Record the catalog entry a loaded module came from, or clear it with
+ * `undefined` when the module is dropped from memory.
+ */
+export const setLoadedEntry = (
+  state: AppState,
+  id: string,
+  entry: AppCatalogEntry | undefined,
+): AppState => {
+  const loadedEntries = { ...state.loadedEntries }
+  if (entry === undefined) {
+    delete loadedEntries[id]
+  } else {
+    loadedEntries[id] = entry
+  }
+  return { ...state, loadedEntries }
+}
+
+/**
  * Set or clear the manifest source
  */
 export const setManifestSource = (
@@ -432,10 +461,13 @@ export const removeApp = (state: AppState, id: string): AppState => {
   delete restLoadStates[id]
   const restLoadErrors = { ...state.loadErrors }
   delete restLoadErrors[id]
+  const restLoadedEntries = { ...state.loadedEntries }
+  delete restLoadedEntries[id]
   return {
     ...state,
     apps: restApps,
     loadStates: restLoadStates,
     loadErrors: restLoadErrors,
+    loadedEntries: restLoadedEntries,
   }
 }

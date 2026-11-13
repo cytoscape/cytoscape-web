@@ -46,6 +46,26 @@ describe('appLoadFailureMessage', () => {
     ).toContain('https://evil.example.com/remoteEntry.js')
   })
 
+  // A core app now loads without a click, so an app this host cannot run has
+  // to say why on its row rather than run anyway (review of the core-apps
+  // change).
+  it('names the required and the running host version', () => {
+    expect(
+      appLoadFailureMessage({
+        code: 'incompatible-host',
+        range: '>=999.0.0',
+        hostVersion: '1.1.1',
+      }),
+    ).toBe(
+      'Needs Cytoscape Web >=999.0.0; this is 1.1.1. It stays off until a version that supports this Cytoscape Web is available.',
+    )
+    expect(
+      appLoadFailureMessage({ code: 'incompatible-host', range: '>=2.0.0' }),
+    ).toBe(
+      'Needs Cytoscape Web >=2.0.0. It stays off until a version that supports this Cytoscape Web is available.',
+    )
+  })
+
   it('returns non-empty text for every code', () => {
     const failures: AppLoadFailure[] = [
       { code: 'origin-blocked', url: 'https://a/b.js' },
@@ -58,6 +78,7 @@ describe('appLoadFailureMessage', () => {
         received: 'b',
       },
       { code: 'mount-failed', message: 'x' },
+      { code: 'incompatible-host', range: '>=2.0.0', hostVersion: '1.1.1' },
     ]
 
     for (const failure of failures) {

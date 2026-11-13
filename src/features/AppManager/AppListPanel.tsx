@@ -32,6 +32,7 @@ import { CyApp } from '../../models/AppModel/CyApp'
 import { appLoadFailureMessage } from '../../models/AppModel/impl/appLoadFailureMessage'
 import { AppSource } from '../../models/AppModel/InstalledApp'
 import { useAppManagerCommands } from './AppManagerCommandsContext'
+import { incompatibleHostFailure, runsOnThisHost } from './install/installGate'
 
 /**
  * Merged view of a catalog entry with its runtime state.
@@ -68,15 +69,21 @@ function sourceChipLabel(source: AppSource | undefined): string | undefined {
  */
 function getAction(
   entry: AppDisplayEntry,
-): 'enable' | 'disable' | 'retry' | 'loading' | 'remove' | 'none' {
+): 'enable' | 'disable' | 'loading' | 'remove' | 'none' {
   if (entry.inCatalog) {
+    // An app this Cytoscape Web cannot run is never loaded: there is nothing
+    // to turn on, or off, whatever its status. The row states why.
+    if (entry.failure?.code === 'incompatible-host') return 'none'
     if (entry.loadState === 'loading') return 'loading'
-    // Retry re-runs activation and nothing else, so it can only help the one
-    // cause that is not deterministic in-tab: a failed mount. For the other
-    // four it fails identically, forever — the row states the reason instead
-    // (#719).
-    if (entry.loadState === 'failed')
-      return isRetryableAppLoadFailure(entry.failure) ? 'retry' : 'none'
+    if (entry.loadState === 'failed') {
+      // Any other failed app keeps its switch, so it can be turned off: a
+      // core app is tried again at every start and cannot be uninstalled.
+      // The switch is on while the app is meant to run, failed or not.
+      return entry.status === AppStatus.Active ||
+        entry.status === AppStatus.Error
+        ? 'disable'
+        : 'enable'
+    }
     if (entry.loadState === 'loaded' && entry.status === AppStatus.Active)
       return 'disable'
     // unloaded or loaded+inactive → enable
@@ -89,6 +96,16 @@ function getAction(
   if (entry.status === AppStatus.Inactive) return 'remove'
   return 'none'
 }
+
+/**
+ * Retry re-runs activation and nothing else, so it can only help the one
+ * cause that is not deterministic in-tab: a failed mount. For the others it
+ * fails identically, forever — the row states the reason instead (#719).
+ */
+const canRetry = (entry: AppDisplayEntry): boolean =>
+  entry.inCatalog &&
+  entry.loadState === 'failed' &&
+  isRetryableAppLoadFailure(entry.failure)
 
 export const AppListPanel = () => {
   const apps: Record<string, CyApp> = useAppStore((state) => state.apps)
@@ -104,6 +121,9 @@ export const AppListPanel = () => {
   )
   const loadErrors: Record<string, AppLoadFailure> = useAppStore(
     (state) => state.loadErrors,
+  )
+  const loadedEntries: Record<string, AppCatalogEntry> = useAppStore(
+    (state) => state.loadedEntries,
   )
   const { activateApp, deactivateApp, retryApp, removeOrphan, uninstallApp } =
     useAppManagerCommands()
@@ -124,17 +144,33 @@ export const AppListPanel = () => {
   for (const entry of Object.values(catalog)) {
     seenIds.add(entry.id)
     const app = apps[entry.id]
+    // The version in memory, not the catalog's entry, decides whether a
+    // running app can be turned off: Refresh can bring a version this host
+    // cannot run while an older, compatible one keeps running.
+    const running =
+      loadStates[entry.id] === 'loaded' && app?.status === AppStatus.Active
     const source = catalogSources[entry.id]
     const inManifest = manifestIdSet.has(entry.id)
     displayEntries.push({
       id: entry.id,
       name: entry.name ?? entry.id,
       description: entry.description ?? app?.description,
-      version: entry.version ?? app?.version,
+      // A running app names the version it was loaded from: Refresh can list
+      // another while that one keeps running (runtime spec §7.5).
+      version:
+        (running ? loadedEntries[entry.id]?.version : undefined) ??
+        entry.version ??
+        app?.version,
       author: entry.author,
       inCatalog: true,
       loadState: loadStates[entry.id],
-      failure: loadErrors[entry.id],
+      // Derived from the entry, not only from what startup or activation
+      // recorded: an app installed off is never checked by either. A running
+      // app keeps its switch whatever the current entry needs.
+      failure:
+        running || runsOnThisHost(entry)
+          ? loadErrors[entry.id]
+          : incompatibleHostFailure(entry),
       status: app?.status,
       source,
       // Only workspace-installed apps are uninstallable; anything the manifest
@@ -215,7 +251,11 @@ export const AppListPanel = () => {
                       {entry.name}
                     </Typography>
                     {entry.version && (
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        data-testid={`app-version-${entry.id}`}
+                      >
                         v{entry.version}
                       </Typography>
                     )}
@@ -309,7 +349,7 @@ export const AppListPanel = () => {
                       }}
                     />
                   )}
-                  {action === 'retry' && (
+                  {canRetry(entry) && (
                     <Button
                       size="small"
                       variant="outlined"

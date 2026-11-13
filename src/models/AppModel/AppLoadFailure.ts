@@ -33,6 +33,16 @@ export type AppLoadFailure =
     }
   /** The bundle loaded, but the app's `mount()` threw. The one retryable cause. */
   | { readonly code: 'mount-failed'; readonly message: string }
+  /**
+   * The entry's `compatibleHostVersions` excludes this Cytoscape Web, so it is
+   * not loaded at all. Set at startup and on activation; no toast at startup,
+   * since the user cannot fix it and it would recur at every start.
+   */
+  | {
+      readonly code: 'incompatible-host'
+      readonly range: string
+      readonly hostVersion?: string
+    }
 
 /** Codes retrying can succeed for. Everything else fails identically forever. */
 const RETRYABLE_APP_LOAD_FAILURES: ReadonlySet<AppLoadFailure['code']> =

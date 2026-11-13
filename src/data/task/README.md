@@ -45,53 +45,50 @@ The following hooks are used internally by the host application to manage extern
 
 ### `useAppManager`
 
-**Location:** `src/externalapps/useAppManager.ts`
+**Location:** `src/data/hooks/stores/useAppManager.ts`
 
-A React hook that manages the lifecycle of external apps. It handles loading, registering, and monitoring the status of external apps defined in `apps.json` and `app-definition.ts`.
+A React hook that owns the lifecycle of external apps: it builds the catalog,
+loads apps at startup, and returns the commands App Manager calls
+(`activateApp`, `deactivateApp`, `retryApp`, `refreshCatalog`,
+`setManifestSource`, `installApp`, `uninstallApp`, `removeOrphan`).
+`AppShell` calls it once.
 
-**Signature:**
+**What it does at startup:**
 
-```typescript
-export const useAppManager = (): void
-```
+1. Fetches the catalog: the deployment's `apps.json` (see
+   [Asset Files](#asset-files)), or the Manifest Source the user set.
+2. Waits for the workspace to hydrate, then composes the catalog as the
+   manifest plus the workspace's `installedApps`.
+3. Seeds the session's app statuses with `startupAppStatus`
+   (`src/models/AppModel/impl/startupAppStatus.ts`). Apps the workspace
+   records as active start on. So do **core apps**, the entries of the
+   deployment's own `apps.json`, unless the workspace records that the user
+   turned them off.
+4. Loads every app seeded on, in parallel, through `loadRemoteApp`, then
+   registers and mounts each. An app whose `compatibleHostVersions` excludes
+   this host is skipped and marked `incompatible-host` on its row. Failures
+   are reported in one toast and kept on the app's row in App Manager, which
+   keeps the app's switch so it can be turned off.
 
-**What it does:**
+Turning a core app off writes an `inactive` record to the workspace, which is
+what keeps it off at the next startup.
 
-1. **Initialization:** On mount, restores app states from IndexedDB cache
-2. **Dynamic Loading:** Loads external app modules using the `appImportMap` from `app-definition.ts`
-3. **Registration:** Registers successfully loaded apps to the `AppStore`
-4. **Status Management:** Monitors app status and handles errors:
-   - Registers apps that are loaded but not yet in the store
-   - Sets status to `Error` for apps that fail to load
-   - Reactivates apps that recover from error state
+**Installing:** `installApp` compares the offered entry with the catalog's
+entry for the same id: whether this Cytoscape Web can load each first
+(`canLoadHere`: host version and the origin check), then version, as semver. A
+newer version that loads here replaces the installed one in place (a running
+app stays on); the same or an older version is kept, and only turned on for an
+install link (or swapped in, when an older module still runs after a
+Refresh); an older version that loads replaces a newer one that cannot. It
+returns what it did (`AppInstallOutcome`); `installPreview` returns the same
+decision without installing, for the install dialog. It waits for the catalog to be
+composed first, and activations of one app run one at a time, after its
+startup load.
 
-**Usage:**
-
-```typescript
-import { useAppManager } from './externalapps/useAppManager'
-
-function WorkspaceEditor() {
-  useAppManager() // Register dynamically loaded apps to the store
-  // ... rest of component
-}
-```
-
-**How it works:**
-
-1. Reads `apps.json` to build a map of app names to entry points
-2. Uses `appImportMap` from `app-definition.ts` to dynamically import remote modules
-3. Extracts the `CyApp` object from each loaded module using the entry point name
-4. Registers loaded apps with the `AppStore` via Zustand
-5. Watches the app store for changes and manages app lifecycle accordingly
-
-**Dependencies:**
-
-- `apps.json` - Configuration for available apps
-- `app-definition.ts` - Import map for apps to load
-- `AppStore` - Zustand store for app state management
-- `CyApp` interface - App metadata structure
-
-**Note:** This hook should typically be called once at the top level of the workspace component to ensure external apps are loaded and registered when the workspace initializes.
+**Design:**
+`docs/design/module-federation/specifications/workspace-app-install-design.md`
+(§8) and `runtime-app-registration-specification.md` (§8–§10) in the same
+folder.
 
 ## Configuration
 
@@ -132,118 +129,47 @@ The following stores are also exposed to external apps (see `webpack.config.js`)
 
 ## Asset Files
 
-External apps depend on configuration files located in `src/assets/`:
-
 ### `apps.json`
 
-**Location:** `src/assets/apps.json`
+**Location:** `src/assets/apps.json` (`[]` in the repository)
 
-Defines the list of external apps available to the host application. Used by both Webpack (at build time) and the runtime app manager to configure Module Federation remotes.
+The deployment's app catalog. The build emits it at the root of `dist`
+(`appsConfigPlugin` in `vite.config.ts`), and the app fetches it at runtime
+from `<base>apps.json`, under the `urlBaseName` in `config.json`
+(`DEFAULT_MANIFEST_URL` in `src/app-api/constants.ts`). A deployment's build
+script copies its own list over this file; the dev server serves
+`src/assets/apps.local.json` instead, at the same `<base>apps.json` path. Both
+sides build that path with `buildDefaultManifestUrl` (`src/utils/baseUrl.ts`),
+so a dev server with a base such as `/cytoscape/` serves the local list.
 
-**Structure:**
+Every entry is a **core app**: it is on when Cytoscape Web starts, unless the
+current workspace records that the user turned it off. See
+`docs/design/module-federation/specifications/workspace-app-install-design.md`
+§8.5.
+
+**Structure:** an array of `AppCatalogEntry`
+(`src/models/AppModel/AppCatalogEntry.ts`), validated by `parseManifest`
+(`src/features/AppManager/manifest/parseManifest.ts`):
 
 ```json
 [
   {
-    "name": "appName",
-    "url": "https://example.com",
-    "entryPoint": "AppEntry"
+    "id": "networkAnalyzer",
+    "name": "NetworkAnalyzer",
+    "version": "1.0.0",
+    "url": "https://apps-stage.cytoscape.org/web/networkanalyzer/1.0.0/remoteEntry.js",
+    "author": "Christian Lopes"
   }
 ]
 ```
 
-**Fields:**
+- `id` — the app's Module Federation name. It must be a JavaScript identifier
+  and match the name the remote's build declares. When absent, `name` is used
+  if it is a valid identifier.
+- `url` — the full URL of the remote's `remoteEntry.js`.
+- `name`, `author`, `description`, `version`, `tags`, `icon`, `license`,
+  `repository`, `compatibleHostVersions` — optional metadata shown in App
+  Manager.
 
-- `name` (string, required) - Unique identifier for the app. Used as the Module Federation remote name.
-- `url` (string, required) - Base URL where the remote app is hosted. The Module Federation remote entry should be accessible at `${url}/remoteEntry.js`.
-- `entryPoint` (string, required) - Name of the exported entry point in the remote module. This should correspond to the exported `CyApp` object.
-
-**Usage:**
-
-- **Build time:** Webpack uses this file to configure Module Federation remotes (`webpack.config.js`)
-- **Runtime:** The app manager (`useAppManager.ts`) uses this to determine which apps to load and where to find them
-
-### `apps-dev.json`
-
-**Location:** `src/assets/apps-dev.json`
-
-Development version of `apps.json` with development/staging URLs for external apps. This allows different app configurations for development and production environments.
-
-**Structure:** Same as `apps.json`
-
-**Note:** Currently this file exists but may not be actively used. The system uses `apps.json` in both environments.
-
-### `app-definition.ts`
-
-**Location:** `src/assets/app-definition.ts`
-
-Contains the dynamic import map that defines which external apps should actually be loaded. Only apps registered in this file will be dynamically imported and initialized.
-
-**Structure:**
-
-```typescript
-export const appImportMap = {
-  appName: () => import('appName/AppEntry' as any),
-  // other apps...
-}
-```
-
-**How it works:**
-
-1. The `appImportMap` object maps app names (matching `name` from `apps.json`) to dynamic import functions
-2. These imports use Module Federation to load remote modules
-3. Only apps with entries in `appImportMap` will be loaded and registered
-4. The `useAppManager` hook uses this map to dynamically load apps at runtime
-
-**Adding a new external app:**
-
-1. **Add to `apps.json`:**
-
-   ```json
-   {
-     "name": "myApp",
-     "url": "https://myapp.example.com",
-     "entryPoint": "MyAppEntry"
-   }
-   ```
-
-2. **Add to `app-definition.ts`:**
-
-   ```typescript
-   export const appImportMap = {
-     myApp: () => import('myApp/MyAppEntry' as any),
-     // ... other apps
-   }
-   ```
-
-3. **Ensure the remote app exposes the entry point:**
-   - The remote app must export a `CyApp` object matching the `entryPoint` name
-   - The remote app's `remoteEntry.js` must be accessible at `${url}/remoteEntry.js`
-
-**Example:**
-
-For an app configured as:
-
-```json
-{
-  "name": "exampleApp",
-  "url": "https://apps.example.com",
-  "entryPoint": "ExampleApp"
-}
-```
-
-The import map entry would be:
-
-```typescript
-exampleApp: () => import('exampleApp/ExampleApp' as any)
-```
-
-And the remote app should export:
-
-```typescript
-export const ExampleApp: CyApp = {
-  id: 'exampleApp',
-  name: 'Example App',
-  // ...
-}
-```
+The remote must expose `./AppConfig`, whose default export is the app's
+`CyApp`. An entry that fails validation is skipped with a warning.

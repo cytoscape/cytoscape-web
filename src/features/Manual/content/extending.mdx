@@ -18,10 +18,26 @@ The **Apps** tab lists the apps you can turn on. Each row shows the app's
 name, version and description. Use the switch at the right of a row to turn
 an app on or off. An app that is on is marked **active**.
 
-The list comes from a catalog that ships with Cytoscape Web. It holds example
-apps from the Cytoscape team, such as **Hello Cytoscape World App**,
-**Network Workflow Examples** and **Network Statistics**. **Refresh**, at the
-bottom of the dialog, loads the catalog again.
+The list starts with the apps that come with the Cytoscape Web you are using,
+from a catalog it ships with. Each site chooses its own catalog, and it can be
+empty. **Refresh**, at the bottom of the dialog, loads the catalog again.
+If it brings a new version of an app that is on, the app keeps running the
+version it started with, and its row shows that version. Turn the app off and
+on again, or reload, to run the new one.
+
+Apps from the catalog are on when you start Cytoscape Web; you do not have to
+turn them on. If you turn one off, it stays off in this workspace, also after
+you reload the page. A new workspace starts with all of them on again.
+
+If an app from the catalog cannot be loaded when Cytoscape Web starts, a
+message at the bottom of the window names the app and the reason, and its row
+is marked **failed**. Cytoscape Web tries again the next time it starts, so
+once the app is fixed and your site ships the new version, it runs after a
+reload without anything from you. If you do not want it tried again, turn it
+off with its switch, which a failed row keeps.
+
+An app made for a newer Cytoscape Web than yours is not started. Its row says
+which version of Cytoscape Web it needs, and has no switch.
 
 Once an app is on, its menu items appear in the Apps menu, above
 **Manage Apps...**. An app can also add a panel or a dialog of its own.
@@ -30,20 +46,26 @@ A row can carry other marks:
 
 | Mark | Meaning |
 | --- | --- |
-| failed | The app could not be loaded. The reason is shown under the description. If trying again can help, the row has a **Retry** button. |
+| failed | The app could not be loaded. The reason is shown under the description. Its switch still turns it off. If trying again can help, the row also has a **Retry** button. |
 | App Store | You installed the app yourself, from a URL or a link. |
 | Snapshot | The app came with a workspace you opened from NDEx. |
 | orphan | The app is no longer in the catalog. Turn it off, then click the trash icon (**Remove orphan app**) to remove it. |
 
 ### Installing an App from a URL
 
-1. Open **Apps → Manage Apps...** and stay on the Apps tab.
-2. Under **Install from URL**, paste the app's manifest URL into
-   **Single-entry manifest URL**. This is a `.json` address, not the address
-   of a `remoteEntry.js` file.
+1. Open **Apps → Manage Apps...**.
+2. Under **Install from URL**, above the tabs, paste the app's manifest URL
+   into **App manifest or service URL**. This is a `.json` address, not the
+   address of a `remoteEntry.js` file.
 3. Click **Install**.
 
-The app is added to the list turned off. Turn it on with its switch.
+The app is added to the list turned off. Turn it on with its switch. If you
+already have the app, the version you end up with follows the same rule as
+for a link (see [Installing from a Link](#installing-from-a-link)): when the
+URL's version replaces yours, an app that was on stays on; when yours is
+kept, a message under the field says so. An app made for a newer Cytoscape
+Web than yours is not installed: the field says "The app is not compatible
+with this host version".
 
 Cytoscape Web installs apps only from the Cytoscape App Store's servers
 (`https://apps.cytoscape.org`). An app from any other address is refused
@@ -68,6 +90,29 @@ Nothing is installed until you agree. Cytoscape Web shows the dialog
 or **Service**), version, author, description and URL. Click Install to
 add all of them, or **Cancel** to add none. Apps installed this way are
 turned on.
+
+If you already have the app, Cytoscape Web keeps the newest version that runs
+on your Cytoscape Web. It first sets aside a version made for a newer
+Cytoscape Web than yours, then compares versions part by part, so 3.2.0 is
+newer than 3.1.23:
+
+- A link to a **newer** version that runs here updates the app. The dialog
+  says, for example, "Updates the installed version 1.0.0 to 1.1.0", and the
+  new version replaces the old one at once, without a reload.
+- A link to an **older** version, or the same one, keeps the version you have.
+  The dialog says so, and the app is turned on if it was off.
+- A link to a version made for a newer Cytoscape Web than yours keeps the
+  version you have, and the dialog says which Cytoscape Web it needs.
+- If the version you have cannot run on your Cytoscape Web, a link to one that
+  can replaces it, even an older one. The dialog says so.
+
+If you do not have the app yet and the link's version is made for a newer
+Cytoscape Web, it is added turned off, without a switch; its row says which
+version it needs.
+
+The same rule decides between an app you installed from a link and the same
+app in the catalog: if the catalog later ships a newer version that runs on
+your Cytoscape Web, it replaces yours the next time Cytoscape Web starts.
 
 Only install apps from sources you trust. If a Service App in the link is
 already installed, Cytoscape Web skips it and says "Already installed".
@@ -94,9 +139,11 @@ columns. Use only services you trust with your data.
 
 To add a Service App:
 
-1. Open **Apps → Manage Apps...** and click the **Service Apps** tab.
-2. Paste the service's URL into **Enter new external service URL**.
-3. Click **Add**.
+1. Open **Apps → Manage Apps...**.
+2. Under **Install from URL**, above the tabs, paste the service's URL into
+   **App manifest or service URL**.
+3. Click **Install**. Cytoscape Web recognizes a Service App and switches to
+   the **Service Apps** tab, which lists it.
 
 For example, this URL adds the **Update tables example** Service App:
 
