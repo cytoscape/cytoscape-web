@@ -27,6 +27,12 @@ if (!existsSync(path.join(DIST, 'remoteEntry.js'))) {
   console.log('[remote-fixture] dist missing — building remote (fallback)...')
   execSync('npx vite build', { cwd: __dirname, stdio: 'inherit' })
 }
+// The second version, served at /v2/ (see vite.config.ts). Checked after v1,
+// whose build empties dist/.
+if (!existsSync(path.join(DIST, 'v2', 'remoteEntry.js'))) {
+  console.log('[remote-fixture] dist/v2 missing — building v2 (fallback)...')
+  execSync('npx vite build --mode v2', { cwd: __dirname, stdio: 'inherit' })
+}
 
 const MANIFEST = JSON.stringify([
   {

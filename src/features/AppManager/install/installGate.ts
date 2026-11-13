@@ -2,6 +2,7 @@ import { satisfies, valid, validRange } from 'semver'
 
 import { logApp } from '../../../debug'
 import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
+import { AppLoadFailure } from '../../../models/AppModel/AppLoadFailure'
 import { parseManifest } from '../manifest/parseManifest'
 
 /**
@@ -18,6 +19,34 @@ import { parseManifest } from '../manifest/parseManifest'
  */
 const HOST_VERSION: string | undefined =
   typeof REACT_APP_VERSION !== 'undefined' ? REACT_APP_VERSION : undefined
+
+/** This Cytoscape Web's version, for messages about `compatibleHostVersions`. */
+export const hostVersion = (): string | undefined => HOST_VERSION
+
+/**
+ * Whether this Cytoscape Web can run `entry`, by its `compatibleHostVersions`.
+ *
+ * The one compatibility check every version decision passes to
+ * `appVersionChange` and `composeCatalog`: the install, the catalog merge and
+ * the install confirmation dialog. A dialog that decided without it promised
+ * the opposite of what the install then did.
+ */
+export const runsOnThisHost = (entry: AppCatalogEntry): boolean =>
+  isHostCompatible(entry.compatibleHostVersions)
+
+/**
+ * The failure an entry this Cytoscape Web cannot run carries. App Manager
+ * derives it for every row from the entry itself, whatever the app's status,
+ * and startup and activation record it when they skip the entry. Recording it
+ * only there left an app installed off with a switch and no reason.
+ */
+export const incompatibleHostFailure = (
+  entry: AppCatalogEntry,
+): AppLoadFailure => ({
+  code: 'incompatible-host',
+  range: entry.compatibleHostVersions ?? '',
+  ...(HOST_VERSION !== undefined && { hostVersion: HOST_VERSION }),
+})
 
 /**
  * Validate a fetched single-entry manifest and return its one entry.
@@ -155,14 +184,16 @@ export function isAllowedOrigin(
  * The catalog is the one install path that never had an origin check, which is
  * how a user-set Manifest Source could load whatever it named. It cannot simply
  * be handed to `isAllowedOrigin`, though: the deployment's own default catalog
- * deliberately serves apps from origins that are not on the install allow-list.
- * `src/assets/apps.json` ships every bundled app from `cytoscape.org` while
- * `appInstallAllowedOrigins` names `apps.cytoscape.org`, so the naive fix would
- * disable every app the product comes with.
+ * may serve apps from origins that are not on the install allow-list. The
+ * bundled example apps were served from `cytoscape.org` while
+ * `appInstallAllowedOrigins` named `apps.cytoscape.org`, so the naive fix would
+ * have disabled every app the product came with.
  *
  * So one entry class is exempt: the ones the **deployment's own default
  * manifest** currently lists, which are the operator's own list and as trusted
- * as the deployment serving them. Everything else — a manifest the *user*
+ * as the deployment serving them. They are also its core apps, which load at
+ * startup unless the workspace records the user turning them off
+ * (`startupAppStatus`). Everything else — a manifest the *user*
  * pointed at, an App Store install, a restored snapshot — goes through the same
  * gate as the install paths, so an organization's catalog works by being
  * allow-listed rather than by being unchecked.

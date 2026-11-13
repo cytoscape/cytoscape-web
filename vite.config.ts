@@ -20,7 +20,10 @@ import remarkGfm from 'remark-gfm'
 
 import config from './src/assets/config.json'
 import packageJson from './package.json'
-import { ensureTrailingSlash } from './src/utils/baseUrl'
+import {
+  buildDefaultManifestUrl,
+  ensureTrailingSlash,
+} from './src/utils/baseUrl'
 import {
   FEDERATION_EXPOSES,
   FEDERATION_FILENAME,
@@ -42,22 +45,28 @@ const lastCommitTime = readGitMetadata('git show -s --format=%cI HEAD')
 const deps = packageJson.dependencies
 
 /**
- * Owns the runtime apps manifest at `/apps.json` for both modes: the dev
+ * Owns the runtime apps manifest at `<base>apps.json` for both modes: the dev
  * server serves it as middleware (from apps.local.json), and production
  * builds emit it into `dist` (from apps.json) via generateBundle — so a
  * bare `vite build` produces a complete, deployable dist.
+ *
+ * The middleware runs before Vite strips the base from the URL, so it matches
+ * the full path the app fetches (`buildDefaultManifestUrl`). Matching a bare
+ * `/apps.json` left the catalog empty on a dev server with a base such as
+ * `/cytoscape/`: the request fell through to the HTML page.
  */
 function appsConfigPlugin(appsConfigPath: string): Plugin {
   return {
     name: 'apps-config',
     configureServer(server: ViteDevServer) {
+      const manifestPath = buildDefaultManifestUrl(server.config.base)
       server.middlewares.use(
         (
           req: Connect.IncomingMessage,
           res: ServerResponse,
           next: Connect.NextFunction,
         ) => {
-          if (req.url === '/apps.json') {
+          if (req.url?.split('?')[0] === manifestPath) {
             res.setHeader('Content-Type', 'application/json')
             res.end(fs.readFileSync(appsConfigPath, 'utf8'))
             return

@@ -21,7 +21,10 @@ export interface AppCatalogEntry {
   author: string
   /** Short description */
   description?: string
-  /** Semantic version string */
+  /**
+   * Semantic version string. Compared as semver (`compareAppVersions`) when
+   * two entries name the same app, so the newer one is installed and kept
+   */
   version?: string
   /** Category tags for filtering */
   tags?: string[]

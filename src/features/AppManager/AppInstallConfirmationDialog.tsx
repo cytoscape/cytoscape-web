@@ -13,9 +13,14 @@ import {
 } from '@mui/material'
 
 import { CyDialog } from '@/components/CyDialog'
+import { useAppStore } from '@/data/hooks/stores/AppStore'
+import type { AppCatalogEntry } from '@/models/AppModel/AppCatalogEntry'
 import { AppType } from '@/models/AppModel/AppType'
+import type { AppInstallOutcome } from '@/models/AppModel/AppVersionChange'
+import { appInstallPreview } from '@/models/AppModel/impl/appInstallMessage'
 import type { PendingAppInstall } from '@/models/AppModel/PendingAppInstall'
 import { pendingInstallName } from '@/models/AppModel/PendingAppInstall'
+import { useAppManagerCommands } from './AppManagerCommandsContext'
 
 interface AppInstallConfirmationDialogProps {
   /** Apps the URL asked to install. The dialog is hidden when empty. */
@@ -53,18 +58,43 @@ const descriptionOf = (pending: PendingAppInstall): string => {
 }
 
 /**
+ * What confirming does to a React app the catalog already has: updates it,
+ * keeps a newer or loadable installed version, or finds the same version
+ * (§7.5). Asked of the App Manager's `installPreview`, which decides with
+ * `installApp`'s own checks, so the dialog promises what the install does. An
+ * app the install will refuse gets no note; the install says why.
+ */
+const versionNoteOf = (
+  pending: PendingAppInstall,
+  installPreview: (entry: AppCatalogEntry) => AppInstallOutcome,
+): string | undefined => {
+  if (pending.type !== AppType.Client) return undefined
+  const outcome = installPreview(pending.entry)
+  return outcome.kind === 'rejected' ? undefined : appInstallPreview(outcome)
+}
+
+/**
  * Asks the user to confirm apps an `?installApp=` link wants to add.
  *
  * A URL can install either a React app or a service app, from an arbitrary
  * origin, so the user is told what each item actually is before anything is
- * added — name, kind, version, author, description and source URL. Confirm is
- * all-or-nothing; Cancel installs nothing.
+ * added — name, kind, version, author, description and source URL. A React
+ * app the catalog already has also says whether confirming updates it or
+ * keeps the installed version. Confirm is all-or-nothing; Cancel installs
+ * nothing.
  */
 export const AppInstallConfirmationDialog = ({
   pending,
   onConfirm,
   onCancel,
 }: AppInstallConfirmationDialogProps): JSX.Element => {
+  const { installPreview } = useAppManagerCommands()
+  // installPreview reads the catalog when called. Subscribing re-renders the
+  // notes when it changes, as when startup finishes composing it.
+  useAppStore((state) => state.catalog)
+  const versionNotes = new Map(
+    pending.map((item) => [item.url, versionNoteOf(item, installPreview)]),
+  )
   return (
     <CyDialog
       data-testid="app-install-confirmation-dialog"
@@ -119,6 +149,16 @@ export const AppInstallConfirmationDialog = ({
                 }
                 secondary={
                   <Box>
+                    {item.type === AppType.Client &&
+                      versionNotes.get(item.url) !== undefined && (
+                        <Typography
+                          variant="body2"
+                          color="info.main"
+                          data-testid={`app-install-version-${item.entry.id}`}
+                        >
+                          {versionNotes.get(item.url)}
+                        </Typography>
+                      )}
                     {descriptionOf(item) !== '' && (
                       <Typography variant="body2" color="text.secondary">
                         {descriptionOf(item)}

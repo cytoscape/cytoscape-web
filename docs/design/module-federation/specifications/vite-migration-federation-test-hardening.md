@@ -194,9 +194,15 @@ bootstrap publication. Highest value, highest setup.
 - **Playwright setup:** build the fixture remote, serve it on a fixed port (a
   second `webServer` entry or a `test.beforeAll` static server), and point the
   host's runtime apps config at its `remoteEntry.js` (via
-  `apps.local.json` / the `/apps.json` dev middleware in `vite.config.ts`, or a
+  `apps.local.json` / the `<base>apps.json` dev middleware in `vite.config.ts`, or a
   URL search-param add-app flow if one exists).
 - **New file:** `test/playwright/remote-app-load.spec.ts`
+- **Two versions (added with core apps, 11/2026):** `npm run build:test-remote`
+  builds the fixture twice, `vite build` into `dist/` and `vite build --mode v2`
+  into `dist/v2/`, served at `/` and `/v2/`. Same federation name and id; the
+  marker says "fixture v1" or "fixture v2" (`__FIXTURE_VERSION__`).
+  `core-apps.spec.ts` uses it to prove an in-place version update runs the new
+  code. `serve.mjs` builds either one when it is missing.
 - Assert: host injects `remoteEntry.js`, the app appears in the App Manager
   registry, and the remote component renders (marker `data-testid` visible).
   Optionally assert `window.React` identity / single-React invariant to prove
@@ -259,7 +265,7 @@ the best value-per-effort and cover the most probable migration regressions.
   approval (CLAUDE.md §1, Dependency Changes). Confirm `ts-node` runs the
   script under the repo's ESM/`module` settings, or compile-on-the-fly if not.
 - **Runtime apps-config injection for Tier 3.2** — confirm the supported way to
-  register a remote at runtime (`apps.local.json`, the `/apps.json` middleware,
+  register a remote at runtime (`apps.local.json`, the `<base>apps.json` middleware,
   or an in-app "add app by URL" flow) so the fixture remote can be wired without
   hacking internals.
 - **The 26-entry frozen list** — confirm whether the raw `*Store` exposes are

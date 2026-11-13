@@ -698,6 +698,32 @@ describe('LLMQueryOptionsDialog', () => {
       ).toHaveProperty('value', 'gpt-5')
     })
 
+    // Typing a key must not leave the default provider in the form, or
+    // Confirm would save the defaults over the options that just arrived.
+    it('shows them when only a key was typed before they arrived', () => {
+      render(<LLMQueryOptionsDialog open={true} handleClose={() => {}} />)
+      fireEvent.change(apiKeyInput(), { target: { value: 'sk-typed' } })
+
+      act(() => {
+        useLLMQueryStore.setState({
+          LLMProvider: 'custom',
+          LLMBaseUrl: 'https://llm.example.org/v1',
+          LLMModel: 'my-model',
+          optionsHydrated: true,
+        })
+      })
+
+      expect(
+        within(
+          screen.getByTestId('llm-query-options-base-url-input'),
+        ).getByRole('textbox'),
+      ).toHaveProperty('value', 'https://llm.example.org/v1')
+      expect(
+        screen.getByTestId('llm-query-options-model-input'),
+      ).toHaveProperty('value', 'my-model')
+      expect(apiKeyInput().value).toBe('sk-typed')
+    })
+
     // Restored here, not in afterEach, so the describe needs no extra import
     it('restores the real read', () => {
       act(() => useLLMQueryStore.setState({ hydrateOptions: realHydrate }))

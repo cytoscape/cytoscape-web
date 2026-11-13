@@ -32,6 +32,7 @@ import { AppConfigContext } from '../../AppConfigContext'
 import { useAppStore } from '../../data/hooks/stores/AppStore'
 import { logApp } from '../../debug'
 import { AppType } from '../../models/AppModel/AppType'
+import { appInstallMessage } from '../../models/AppModel/impl/appInstallMessage'
 import {
   invalidRootMessage,
   normalizeServiceAppUrl,
@@ -103,6 +104,9 @@ const AppSettingsDialogContent = ({
   const [installUrl, setInstallUrl] = useState('')
   const [installError, setInstallError] = useState<string | undefined>()
   const [installWarning, setInstallWarning] = useState<string | undefined>()
+  // Set when Install from URL kept the installed version (§7.5), so a cleared
+  // field does not read as the offered version being installed.
+  const [installNotice, setInstallNotice] = useState<string | undefined>()
   const [installing, setInstalling] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -149,6 +153,7 @@ const AppSettingsDialogContent = ({
     if (url === '') return
     setInstallError(undefined)
     setInstallWarning(undefined)
+    setInstallNotice(undefined)
     setInstalling(true)
     try {
       const response = await fetch(url)
@@ -196,8 +201,15 @@ const AppSettingsDialogContent = ({
         setInstallError('The app is not compatible with this host version')
         return
       }
-      await installApp(entry, { activate: false })
+      const outcome = await installApp(entry, { activate: false })
       setInstallUrl('')
+      if (
+        outcome.kind === 'same' ||
+        outcome.kind === 'older' ||
+        outcome.kind === 'incompatible'
+      ) {
+        setInstallNotice(appInstallMessage(entry.name ?? entry.id, outcome))
+      }
     } catch (err) {
       // Anything left is a transport failure — a bad hostname, DNS, CORS, or
       // an offline network. `fetch` reports all of them as "Failed to fetch",
@@ -356,6 +368,7 @@ const AppSettingsDialogContent = ({
                 setInstallUrl(e.target.value)
                 setInstallError(undefined)
                 setInstallWarning(undefined)
+                setInstallNotice(undefined)
               }}
               error={installError !== undefined}
               helperText={installError}
@@ -379,6 +392,15 @@ const AppSettingsDialogContent = ({
           {installWarning !== undefined && (
             <Alert severity="warning" sx={{ mt: 1 }}>
               {installWarning}
+            </Alert>
+          )}
+          {installNotice !== undefined && (
+            <Alert
+              severity="info"
+              sx={{ mt: 1 }}
+              data-testid="install-from-url-notice"
+            >
+              {installNotice}
             </Alert>
           )}
         </Box>
@@ -536,6 +558,7 @@ const AppSettingsDialogContent = ({
           </Button>
         )}
         <Button
+          data-testid="app-settings-refresh-button"
           variant="outlined"
           disabled={!EXTERNAL_APPS_ENABLED || refreshing}
           startIcon={

@@ -69,17 +69,25 @@ const getProfileDb = (): CyProfileDB => {
 }
 
 /**
- * Read one setting, or undefined when it was never saved or the database
- * cannot be read.
+ * Read one setting, or undefined when it was never saved. Rejects when the
+ * database cannot be read, for a caller that must tell the two apart.
  *
  * The result is `unknown` on purpose. A stored row is input like any other:
  * the user can edit it, and it outlives the build that wrote it. Every caller
  * validates before use.
  */
+export const readProfileSetting = async (key: string): Promise<unknown> => {
+  const row = await getProfileDb()[ProfileStoreNames.Settings].get(key)
+  return row?.value
+}
+
+/**
+ * Read one setting, or undefined when it was never saved or the database
+ * cannot be read.
+ */
 export const getProfileSetting = async (key: string): Promise<unknown> => {
   try {
-    const row = await getProfileDb()[ProfileStoreNames.Settings].get(key)
-    return row?.value
+    return await readProfileSetting(key)
   } catch (e) {
     logDb.warn(`[getProfileSetting] Could not read setting "${key}"`, e)
     return undefined

@@ -73,9 +73,18 @@ The host-side manifest contract already exists:
 - `parseManifest()` validates and normalizes the manifest before storing it in
   `AppStore.catalog`
 
-The current default manifest URL is `/apps.json`; once the App Store web
+The current default manifest URL is `apps.json` under the deployment's base
+path (`/apps.json` at the origin root, `/cytoscape/apps.json` on a deployment
+served from `/cytoscape/`); once the App Store web
 catalog is deployed, `DEFAULT_MANIFEST_URL` can point at the official App Store
 manifest endpoint.
+
+Every entry of the default manifest is a **core app** that starts on unless the
+user turned it off ([workspace-app-install-design.md §8.5](./workspace-app-install-design.md#85-core-apps-on-by-default)).
+Pointing `DEFAULT_MANIFEST_URL` at the full App Store catalog would therefore
+turn on every published app for every user. Before that switch, the App Store
+must serve a curated core list at that endpoint, or the browsable catalog must
+reach Cytoscape Web by another path than the default manifest.
 
 The existing Cytoscape Desktop App Store at <https://apps.cytoscape.org/>
 already provides a public catalog for Desktop apps. This design extends that
@@ -419,7 +428,10 @@ https://web.cytoscape.org/?installApp=<url-encoded /web/{appId}/manifest.json>
 
 — so the user installs whatever version is latest at click time. What the
 host pins is the immutable, versioned `entry.url` (the `remoteEntry.js` URL)
-carried *inside* the manifest, not the manifest URL itself. Returning an
+carried *inside* the manifest, not the manifest URL itself. The entry's
+`version` must be a semantic version: the host compares it with the version it
+already has to decide whether the install is an update
+(workspace-app-install-design.md §7.5). Returning an
 array rather than a bare object lets the host reuse `parseManifest()`
 unchanged.
 
@@ -543,7 +555,7 @@ but what existing users receive depends on how they obtained the app
 
 | How the user got the app | Installed source | On new version publication |
 | --- | --- | --- |
-| **Install** button / Install from URL | `appstore` | Stays **pinned** to the installed immutable version; does not auto-update |
+| **Install** button / Install from URL | `appstore` | Stays **pinned** to the installed immutable version; does not auto-update. Clicking **Install** again on a newer version updates it in place; a deployment `apps.json` that ships a newer version replaces it (newer semver wins, §8.1) |
 | Enabled from the host catalog (`/web/manifest` as manifest source) | `manifest` | Follows the manifest; the next session or catalog refresh uses the new version |
 
 Store operators should not assume publication reaches all existing users.

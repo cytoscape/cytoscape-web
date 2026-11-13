@@ -76,6 +76,7 @@ export const useAppStore = create(
     manifestIds: [],
     loadStates: {},
     loadErrors: {},
+    loadedEntries: {},
     manifestSource: undefined,
 
     restore: async (apps: CyApp[]) => {
@@ -320,6 +321,14 @@ export const useAppStore = create(
       })
     },
 
+    setLoadedEntry: (id: string, entry: AppCatalogEntry | undefined) => {
+      set((state) => {
+        const newState = AppStoreImpl.setLoadedEntry(state, id, entry)
+        state.loadedEntries = newState.loadedEntries
+        return state
+      })
+    },
+
     setManifestSource: (source: ManifestSource | undefined) => {
       set((state) => {
         const newState = AppStoreImpl.setManifestSource(state, source)
@@ -350,6 +359,7 @@ export const useAppStore = create(
         state.apps = newState.apps
         state.loadStates = newState.loadStates
         state.loadErrors = newState.loadErrors
+        state.loadedEntries = newState.loadedEntries
         return state
       })
       deleteAppFromDb(id).catch((error) => {

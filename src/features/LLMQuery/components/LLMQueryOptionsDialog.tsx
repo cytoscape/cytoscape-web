@@ -71,30 +71,15 @@ export const LLMQueryOptionsDialog = (
   // while closing, so the exit transition still plays. Adjusting state during render
   // (rather than in an effect) means the first opened frame is already fresh.
   //
-  // The saved options are read from the profile database after mount. If
-  // that read lands while the dialog is already open, the form was seeded
-  // with the defaults, so it is re-created once more. Confirm also sets
-  // `optionsHydrated`, but in the same render that closes the dialog, so it
-  // never re-creates a form the user is leaving.
-  //
-  // Not once the user has typed in it, though: re-creating the form then
-  // would silently discard what they entered, a key included. Their edits
-  // stand, as a choice made in the store before a late read does.
+  // The saved options are read from the profile database after mount. A
+  // read that lands while the dialog is open updates the form in place (see
+  // the content), so what the user typed is never discarded.
   useHydrateLLMQueryOptions()
-  const optionsHydrated = useLLMQueryStore((state) => state.optionsHydrated)
   const [wasOpen, setWasOpen] = useState(open)
-  const [wasHydrated, setWasHydrated] = useState(optionsHydrated)
-  const [edited, setEdited] = useState(false)
   const [formKey, setFormKey] = useState(0)
-  if (open !== wasOpen || optionsHydrated !== wasHydrated) {
-    const opened = open && !wasOpen
-    const hydratedWhileOpen = open && optionsHydrated && !wasHydrated
+  if (open !== wasOpen) {
     setWasOpen(open)
-    setWasHydrated(optionsHydrated)
-    if (opened) {
-      setEdited(false)
-    }
-    if (opened || (hydratedWhileOpen && !edited)) {
+    if (open) {
       setFormKey(formKey + 1)
     }
   }
@@ -104,11 +89,6 @@ export const LLMQueryOptionsDialog = (
       key={formKey}
       open={open}
       handleClose={handleClose}
-      onEdit={() => {
-        if (!edited) {
-          setEdited(true)
-        }
-      }}
     />
   )
 }
@@ -119,12 +99,9 @@ export const LLMQueryOptionsDialog = (
  * CyDialog block, where the dismissal policy test looks for it.
  */
 const LLMQueryOptionsDialogContent = (
-  props: LLMQueryOptionsDialogProps & {
-    // Called when the user changes any field (see the wrapper)
-    onEdit: () => void
-  },
+  props: LLMQueryOptionsDialogProps,
 ): JSX.Element => {
-  const { open, handleClose, onEdit } = props
+  const { open, handleClose } = props
 
   const [showTemplatePreview, setShowTemplatePreview] = useState(false)
   const addMessage = useMessageStore((state) => state.addMessage)
@@ -153,6 +130,41 @@ const LLMQueryOptionsDialogContent = (
     useState<LLMTemplate>(LLMTemplate)
   const [fetchedModels, setFetchedModels] = useState<LLMModel[]>([])
   const [fetchingModels, setFetchingModels] = useState(false)
+
+  // The saved options can arrive after the form was seeded with the
+  // defaults. Provider, endpoint and model follow them until the user
+  // changes one of the three; those three go together, since a model or
+  // endpoint is chosen for a provider. Other fields, a typed key included,
+  // are untouched. Without this, a key typed before the read landed would
+  // leave the defaults in the form, and Confirm would save them over the
+  // options just read.
+  const [optionsEdited, setOptionsEdited] = useState(false)
+  const [seededOptions, setSeededOptions] = useState({
+    provider: LLMProvider,
+    baseUrl: LLMBaseUrl,
+    model: LLMModel,
+  })
+  if (
+    !optionsEdited &&
+    (seededOptions.provider !== LLMProvider ||
+      seededOptions.baseUrl !== LLMBaseUrl ||
+      seededOptions.model !== LLMModel)
+  ) {
+    setSeededOptions({
+      provider: LLMProvider,
+      baseUrl: LLMBaseUrl,
+      model: LLMModel,
+    })
+    setLocalProvider(LLMProvider)
+    setLocalBaseUrl(LLMBaseUrl)
+    setLocalLLMModel(LLMModel)
+    setFetchedModels([])
+  }
+  const onOptionsEdit = (): void => {
+    if (!optionsEdited) {
+      setOptionsEdited(true)
+    }
+  }
 
   // Bumped whenever the provider or endpoint changes, or the dialog closes, so
   // a model listing requested earlier is dropped when it comes back.
@@ -230,7 +242,7 @@ const LLMQueryOptionsDialogContent = (
   )
 
   const handleProviderChange = (id: LLMProviderId): void => {
-    onEdit()
+    onOptionsEdit()
     const next = getLLMProvider(id)
     setLocalProvider(next.id)
     setLocalBaseUrl(next.defaultBaseUrl)
@@ -242,13 +254,13 @@ const LLMQueryOptionsDialogContent = (
   }
 
   const handleBaseUrlChange = (value: string): void => {
-    onEdit()
+    onOptionsEdit()
     setLocalBaseUrl(value)
     invalidateRefresh()
   }
 
   const handleRefreshModels = async (): Promise<void> => {
-    onEdit()
+    onOptionsEdit()
     refreshRequestRef.current += 1
     const requestId = refreshRequestRef.current
     const isCurrent = (): boolean => requestId === refreshRequestRef.current
@@ -310,7 +322,6 @@ const LLMQueryOptionsDialogContent = (
   // and then cancels must not be left with the key still in place.
   const keyEntered = hasEnteredLLMApiKey(localProvider, storedKeys)
   const handleForgetKeyClick = (): void => {
-    onEdit()
     clearLLMApiKey(localProvider)
     setLocalLLMApiKey('')
     addMessage({
@@ -324,7 +335,7 @@ const LLMQueryOptionsDialogContent = (
   const apiKeyHelp =
     (keyEntered && storedApiKey !== ''
       ? 'A key is set for this tab. Leave this blank to keep it. '
-      : 'Kept for this tab only: it survives a reload and is removed when you close the tab. ') +
+      : "Kept for this tab only: it survives a reload, and this app's copy is removed when you close the tab. A copy your password manager saved stays there. ") +
     'Use a dedicated key with only the permissions it needs and a spending limit.'
   const apiKeyTooltip = provider.requiresApiKey
     ? 'You need to add an API key generated in your PAID account'
@@ -395,7 +406,7 @@ const LLMQueryOptionsDialogContent = (
               // Autocomplete also reports the value it already shows; only a
               // change is an edit.
               if (value !== localLLMModel) {
-                onEdit()
+                onOptionsEdit()
               }
               setLocalLLMModel(value)
             }}
@@ -478,7 +489,6 @@ const LLMQueryOptionsDialogContent = (
                 error={apiKeyError !== undefined}
                 helperText={apiKeyError ?? apiKeyHelp}
                 onChange={(e) => {
-                  onEdit()
                   setLocalLLMApiKey(e.target.value)
                 }}
               ></TextField>
@@ -522,7 +532,6 @@ const LLMQueryOptionsDialogContent = (
                   (t) => t.name === e.target.value,
                 )
                 if (nextTemplate !== undefined) {
-                  onEdit()
                   setLocalLLMTemplate(nextTemplate)
                 }
               }}

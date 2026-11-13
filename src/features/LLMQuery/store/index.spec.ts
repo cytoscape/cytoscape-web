@@ -1,8 +1,14 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { deleteProfileDb, getProfileSetting } from '../../../data/db/profileDb'
-import { logStore } from '../../../debug'
+import {
+  closeProfileDb,
+  deleteProfileDb,
+  getProfileSetting,
+} from '../../../data/db/profileDb'
+import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
+import { logDb, logStore } from '../../../debug'
+import { MessageSeverity } from '../../../models/MessageModel'
 import { models } from '../model/LLMModel'
 import { OLLAMA_DEFAULT_BASE_URL } from '../model/LLMProvider'
 import { useLLMQueryStore } from './index'
@@ -163,6 +169,32 @@ describe('LLMQueryStore', () => {
       expect(state.LLMProvider).toBe('custom')
       expect(state.LLMBaseUrl).toBe('https://llm.example.org/v1')
       expect(state.LLMModel).toBe('my-model')
+    })
+
+    it('says so when the options cannot be saved', async () => {
+      act(() => useMessageStore.getState().resetMessages())
+      closeProfileDb()
+      vi.spyOn(logDb, 'error').mockImplementation(() => {})
+      vi.spyOn(logStore, 'error').mockImplementation(() => {})
+      vi.spyOn(indexedDB, 'open').mockImplementation(() => {
+        throw new Error('IndexedDB is not available')
+      })
+
+      act(() => {
+        useLLMQueryStore.getState().setLLMOptions({
+          provider: 'ollama',
+          baseUrl: OLLAMA_DEFAULT_BASE_URL,
+          model: 'llama3.1',
+        })
+      })
+
+      await vi.waitFor(() => {
+        const [message] = useMessageStore.getState().messages
+        expect(message?.severity).toBe(MessageSeverity.WARNING)
+        expect(message?.message).toMatch(/could not be saved/)
+      })
+      // The choice still applies in this tab
+      expect(useLLMQueryStore.getState().LLMProvider).toBe('ollama')
     })
 
     it('reads the saved options only once', async () => {
@@ -500,6 +532,40 @@ describe('LLMQueryStore', () => {
         })
 
         expect(useLLMQueryStore.getState().LLMCustomApiKey).toBe('')
+      })
+    })
+
+    describe('when the saved options cannot be read', () => {
+      it('keeps the custom key, in memory and in sessionStorage', async () => {
+        const keys = {
+          customKey: 'custom-key',
+          customKeyOrigin: 'https://llm.example.org',
+        }
+        window.sessionStorage.setItem(
+          LLM_API_KEYS_SESSION_KEY,
+          JSON.stringify(keys),
+        )
+        act(() => {
+          useLLMQueryStore.setState({
+            LLMCustomApiKey: keys.customKey,
+            LLMCustomApiKeyOrigin: keys.customKeyOrigin,
+            optionsHydrated: false,
+          })
+        })
+        closeProfileDb()
+        vi.spyOn(logDb, 'warn').mockImplementation(() => {})
+        vi.spyOn(indexedDB, 'open').mockImplementation(() => {
+          throw new Error('IndexedDB is not available')
+        })
+
+        await act(async () => {
+          await useLLMQueryStore.getState().hydrateOptions()
+        })
+
+        const state = useLLMQueryStore.getState()
+        expect(state.optionsHydrated).toBe(true)
+        expect(state.LLMCustomApiKey).toBe('custom-key')
+        expect(loadLLMSessionKeys().customKey).toBe('custom-key')
       })
     })
 

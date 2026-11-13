@@ -51,6 +51,7 @@ or removing a spec.
 - **`annotation-canvas-lifecycle.spec.ts`** — Annotation canvas lifecycle (2 tests)
 - **`app-api-active-network-view.spec.ts`** — App API network changes move the active view (#927) (1 test)
 - **`cookie-consent.spec.ts`** — Cookie Consent (3 tests)
+- **`core-apps.spec.ts`** — core apps from the deployment catalog: on at start, kept off once turned off, failures reported; install links update an older version in place and keep a newer one; an install link adds an app this Cytoscape Web cannot run turned off, with the reason and no switch; catalog Refresh keeps a running app's switch and makes an app available once a compatible version arrives; a failed core app can be turned off, an incompatible one is not started, and a fixed version loads after a reload (11 tests)
 - **`cross-tab-sync.spec.ts`** — cross-tab synchronization (4 tests)
 - **`cywebapi-ready.spec.ts`** — window.CyWebApi public surface (1 test)
 - **`hierarchy-cell-view.spec.ts`** — Cell View availability for hierarchies (#630) (2 tests)
@@ -78,7 +79,11 @@ or removing a spec.
 
 None. Playwright starts what it needs: it builds the app and serves it with
 `vite preview` on `http://localhost:5500`, and serves the Module Federation
-fixture remote on `http://localhost:4191`.
+fixture remote on `http://localhost:4191`. The fixture is built twice (by
+`npm run build:test-remote`, which the e2e scripts run first): version 1 at
+`/remoteEntry.js` and version 2 at `/v2/remoteEntry.js`, whose marker says
+`fixture v2`. `core-apps.spec.ts` uses version 2 to check that an update runs
+the new code.
 
 Because of that, **port 5500 must be free**: if you have a dev server running
 there, the run fails with "already used" rather than silently testing whatever
