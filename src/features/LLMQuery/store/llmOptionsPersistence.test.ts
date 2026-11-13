@@ -105,6 +105,14 @@ describe('parseLLMQueryOptions', () => {
       'a non-OpenAI provider with no model',
       { provider: 'ollama', baseUrl: OLLAMA_DEFAULT_BASE_URL },
     ],
+    [
+      'an endpoint with a password in it',
+      {
+        provider: 'custom',
+        baseUrl: 'https://user:secret@h/v1',
+        model: 'gpt-5',
+      },
+    ],
   ])('rejects %s', (_label, raw) => {
     expect(parseLLMQueryOptions(raw)).toBeUndefined()
   })

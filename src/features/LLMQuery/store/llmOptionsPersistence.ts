@@ -1,8 +1,8 @@
 import { z } from 'zod'
 
 import {
-  getProfileSetting,
   putProfileSetting,
+  readProfileSetting,
 } from '../../../data/db/profileDb'
 import { logStore } from '../../../debug'
 import { LLMModel, MAX_MODEL_NAME_LENGTH, models } from '../model/LLMModel'
@@ -97,11 +97,15 @@ const toStoredOptions = (options: LLMQueryOptions): StoredLLMQueryOptions => {
     : { provider, baseUrl, model }
 }
 
-/** The remembered options, or undefined when there are none to use. */
+/**
+ * The remembered options, or undefined when there are none to use. Rejects
+ * when the database cannot be read: options that may exist are not the same
+ * as no options, and the store must not forget a key because of a failed read.
+ */
 export const loadLLMQueryOptions = async (): Promise<
   LLMQueryOptions | undefined
 > => {
-  const raw = await getProfileSetting(LLM_QUERY_OPTIONS_SETTING)
+  const raw = await readProfileSetting(LLM_QUERY_OPTIONS_SETTING)
   if (raw === undefined) {
     return undefined
   }
