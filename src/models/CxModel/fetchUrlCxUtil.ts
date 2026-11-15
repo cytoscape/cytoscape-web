@@ -14,6 +14,7 @@ import { getCyNetworkFromCx2 } from './impl'
 import {
   getAttributeDeclarations,
   getNetworkAttributes,
+  getNodes,
 } from './impl/extractor'
 export const fetchUrlCx = async (
   url: string,
@@ -73,18 +74,14 @@ export const fetchUrlCx = async (
       },
     )
 
-    const hasLayout = network.networkViews
-      .map(
-        (v) =>
-          Object.values(v.nodeViews).filter(
-            (nv) =>
-              nv.x !== undefined &&
-              nv.y !== undefined &&
-              nv.x !== 0 &&
-              nv.y !== 0,
-          ).length > 0,
-      )
-      .reduce((acc, cur) => acc || cur, false)
+    const nodes = getNodes(data)
+    const hasLayout = nodes.some(
+      (n) =>
+        n.x !== undefined &&
+        n.y !== undefined &&
+        !Number.isNaN(n.x) &&
+        !Number.isNaN(n.y),
+    )
 
     const summary = createNetworkSummary({
       networkId: uuid,
