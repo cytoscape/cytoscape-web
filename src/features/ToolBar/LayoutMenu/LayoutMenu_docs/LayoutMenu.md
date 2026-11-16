@@ -21,7 +21,7 @@ The `LayoutMenu` feature implements the **Layout** toolbar menu. It provides acc
   - `NetworkStore`, `WorkspaceStore`: Supply current and active networks.
   - `ViewModelStore`: Provides node positions and update APIs.
   - `NetworkSummaryStore`: Used to detect HCX/hierarchy networks.
-  - `RendererFunctionStore`: Provides a `fit` function for the active renderer.
+  - `RendererFunctionStore`: Provides the laid-out network's own `fit` function (`getFunction` with the network id).
   - `UndoStore`: Records layout applications as undoable commands.
   - `app-api/core/appLayoutEngine.ts`: The adapter behind app-registered algorithms (`'layout-algorithm'` resources); the menu only reads `isAppLayoutEnabled` and `getAppLayoutMeta` from it.
 
@@ -57,8 +57,8 @@ Core rows carry the test id `layout-menu-item-<engine>-<algorithm>`.
    - Calls `updateNodePositions` in `ViewModelStore` with new positions.
    - Pushes an `UndoCommandType.APPLY_LAYOUT` entry to `UndoStore` with `[prevPositions, newPositions]`.
    - Sets `isRunning` to `false`.
-   - Increments `layoutCounter` to trigger a post-layout `fit()`.
-5. A `useEffect` on `layoutCounter` calls the renderer's `fit` function via `RendererFunctionStore`, aligning the viewport with the new layout.
+   - Sets `fitTarget` to the laid-out network to trigger a post-layout `fit()`.
+5. A `useEffect` on `fitTarget` calls that network's `fit` in the default renderer via `RendererFunctionStore.getFunction(DEFAULT_RENDERER_ID, 'fit', networkId)`, aligning its viewport with the new layout. The renderer-wide `fit` slot holds whichever canvas registered last, so it never stands in for the laid-out network's own (#964); a network with no canvas yet is not fitted.
 6. If `apply` throws or its promise rejects (an app engine rejects on any failure), `runEngineLayout` logs it and resets `isRunning`; `afterLayout` is never reached, so nothing moves and no undo entry is recorded.
 
 `layout:started` / `layout:completed` events are dispatched only by the Layout API's `applyLayout`, not by the menu paths.

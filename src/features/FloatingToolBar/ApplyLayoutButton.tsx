@@ -28,17 +28,11 @@ export const ApplyLayoutButton = ({
   disabled = false,
   rendererId,
 }: ApplyLayoutButtonProps): JSX.Element => {
-  const getRendererFunction = useRendererFunctionStore(
-    (state) => state.getFunction,
-  )
-
   const [layoutInfo, setLayoutInfo] = useState<string | undefined>(undefined)
 
-  // Counter to trigger fit after layout is applied
-  // This is necessary to ensure the fit happens after the layout is applied
-  // and the DOM has been updated with the new positions.
-  // The number itself is not important, just keeping track of changes.
-  const [layoutCounter, setLayoutCounter] = useState<number>(0)
+  // The network whose layout just completed, to fit once the new positions
+  // have been rendered. A fresh object per layout re-runs the effect.
+  const [fitTarget, setFitTarget] = useState<{ networkId: IdType }>()
 
   const networks: Map<string, Network> = useNetworkStore(
     (state) => state.networks,
@@ -80,25 +74,25 @@ export const ApplyLayoutButton = ({
   ) => void = useViewModelStore((state) => state.updateNodePositions)
 
   /**
-   * useFitAfterLayout
-   * React effect that triggers the renderer's fit function after a layout is applied.
-   * This ensures the viewport is centered on the new node positions after layout completion.
+   * After a layout, fit the network that was laid out, in this toolbar's
+   * renderer. The renderer-wide 'fit' slot holds whichever canvas registered
+   * last, so it must not stand in for that network's own canvas (#964).
    */
   useEffect(
     function fitAfterLayout() {
-      // If layoutCounter is 0, no layout has been applied yet, so no need to call fit
-      if (layoutCounter > 0) {
-        const fitFunction = getRendererFunction(rendererId, 'fit')
-        if (fitFunction !== undefined) {
-          fitFunction()
-        } else {
-          logUi.warn(
-            `[${ApplyLayoutButton.name}]:[${fitAfterLayout.name}]: Fit function not available for renderer: ${rendererId}`,
-          )
-        }
+      if (fitTarget === undefined) return
+      const fitFunction = useRendererFunctionStore
+        .getState()
+        .getFunction(rendererId, 'fit', fitTarget.networkId)
+      if (fitFunction !== undefined) {
+        fitFunction()
+      } else {
+        logUi.warn(
+          `[${ApplyLayoutButton.name}]:[${fitAfterLayout.name}]: Fit function not available for renderer ${rendererId}, network ${fitTarget.networkId}`,
+        )
       }
     },
-    [layoutCounter, rendererId, getRendererFunction],
+    [fitTarget, rendererId],
   )
 
   const afterLayout = (positionMap: Map<IdType, [number, number]>): void => {
@@ -112,8 +106,8 @@ export const ApplyLayoutButton = ({
     // Update node positions in the view model
     updateNodePositions(networkId, positionMap)
 
-    // Trigger fit  AFTER layout is applied by incrementing counter
-    setLayoutCounter((prev) => prev + 1)
+    // Fit AFTER the new positions are rendered
+    setFitTarget({ networkId })
 
     postEdit(
       UndoCommandType.APPLY_LAYOUT,

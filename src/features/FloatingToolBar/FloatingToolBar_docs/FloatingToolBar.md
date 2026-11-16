@@ -49,7 +49,7 @@ Button that applies the default layout algorithm to the network.
 **Behavior:**
 
 - Applies the default layout algorithm to network nodes and edges
-- Automatically fits the network to viewport after layout is applied
+- Automatically fits the network it laid out (`targetNetworkId`, else the current network) after layout is applied — that network's own `fit`, never the renderer-wide slot, which holds whichever canvas registered last (#964)
 - Creates undo command for the layout operation
 - Shows tooltip with layout name when enabled
 - Shows disabled tooltip when disabled
