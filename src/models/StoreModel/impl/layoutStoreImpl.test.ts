@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { LayoutAlgorithm } from '../../LayoutModel/LayoutAlgorithm'
 import { LayoutEngine } from '../../LayoutModel/LayoutEngine'
 import {
+  isLayoutRunningOn,
   LayoutState,
   removeAppAlgorithm,
   removeAppEngine,
@@ -80,6 +81,7 @@ const createDefaultState = (): LayoutState => {
     preferredLayout: defAlgorithm,
     preferredHierarchicalLayout: defHierarchicalAlgorithm,
     isRunning: false,
+    runningNetworkId: undefined,
   }
 }
 
@@ -113,6 +115,45 @@ describe('LayoutStoreImpl', () => {
 
       result = setIsRunning(result, false)
       expect(result.isRunning).toBe(false)
+    })
+
+    // #979: the overlay belongs on the network being laid out.
+    it('records the network being laid out, and clears it when done', () => {
+      let result = setIsRunning(createDefaultState(), true, 'net1')
+      expect(result.runningNetworkId).toBe('net1')
+
+      result = setIsRunning(result, false)
+      expect(result.runningNetworkId).toBeUndefined()
+    })
+
+    it('records no network when none is given', () => {
+      const running = setIsRunning(createDefaultState(), true, 'net1')
+
+      expect(setIsRunning(running, true).runningNetworkId).toBeUndefined()
+    })
+  })
+
+  // #979: with two canvases open, a layout can run on a network that is not
+  // the active view (the tree view's floating toolbar does not activate it).
+  describe('isLayoutRunningOn', () => {
+    it('is false on every view while no layout runs', () => {
+      const state = createDefaultState()
+
+      expect(isLayoutRunningOn(state, 'tree', 'tree')).toBe(false)
+    })
+
+    it('is true only on the network being laid out, whichever view is active', () => {
+      const state = setIsRunning(createDefaultState(), true, 'tree')
+
+      expect(isLayoutRunningOn(state, 'tree', 'sub')).toBe(true)
+      expect(isLayoutRunningOn(state, 'sub', 'sub')).toBe(false)
+    })
+
+    it('falls back to the active view when the run names no network', () => {
+      const state = setIsRunning(createDefaultState(), true)
+
+      expect(isLayoutRunningOn(state, 'sub', 'sub')).toBe(true)
+      expect(isLayoutRunningOn(state, 'tree', 'sub')).toBe(false)
     })
   })
 

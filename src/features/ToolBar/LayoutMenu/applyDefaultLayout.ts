@@ -11,7 +11,7 @@ export interface ApplyDefaultLayoutParams {
   /** The network being laid out; app engines need it for the run context. */
   networkId: IdType
   afterLayout: (positionMap: Map<IdType, [number, number]>) => void
-  setIsRunning: (isRunning: boolean) => void
+  setIsRunning: (isRunning: boolean, networkId?: IdType) => void
 }
 
 /**

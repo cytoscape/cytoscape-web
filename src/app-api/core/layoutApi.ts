@@ -115,8 +115,9 @@ export const layoutApi: LayoutApi = {
         algorithm: resolvedAlgorithmName,
       })
 
-      // 6. setIsRunning(true)
-      useLayoutStore.getState().setIsRunning(true)
+      // 6. setIsRunning(true) for this network, so the indicator shows on
+      // its view rather than the active one (#979)
+      useLayoutStore.getState().setIsRunning(true, networkId)
 
       // 7. Apply layout — callback-based; wrap in Promise
       return new Promise<ApiResult>((resolve) => {

@@ -79,9 +79,8 @@ export const LayoutOptionDialog = ({
     setSelected([engineName, algorithmName])
   }
 
-  const setIsRunning: (isRunning: boolean) => void = useLayoutStore(
-    (state) => state.setIsRunning,
-  )
+  const setIsRunning: (isRunning: boolean, networkId?: IdType) => void =
+    useLayoutStore((state) => state.setIsRunning)
 
   const layoutEngines: LayoutEngine[] = useLayoutStore(
     (state) => state.layoutEngines,

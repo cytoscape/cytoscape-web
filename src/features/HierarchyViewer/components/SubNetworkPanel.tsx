@@ -253,9 +253,8 @@ export const SubNetworkPanel = ({
     (state) => state.preferredLayout,
   )
 
-  const setIsRunning: (isRunning: boolean) => void = useLayoutStore(
-    (state) => state.setIsRunning,
-  )
+  const setIsRunning: (isRunning: boolean, networkId?: IdType) => void =
+    useLayoutStore((state) => state.setIsRunning)
 
   const layoutEngines: LayoutEngine[] = useLayoutStore(
     (state) => state.layoutEngines,
@@ -636,7 +635,7 @@ export const SubNetworkPanel = ({
           }
 
           if (network !== undefined && engine !== undefined) {
-            setIsRunning(true)
+            setIsRunning(true, network.id)
             try {
               const result = engine.apply(
                 network.nodes,

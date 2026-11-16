@@ -175,9 +175,8 @@ const WorkSpaceEditor = (): JSX.Element => {
     (state) => state.layoutEngines,
   )
 
-  const setIsRunning: (isRunning: boolean) => void = useLayoutStore(
-    (state) => state.setIsRunning,
-  )
+  const setIsRunning: (isRunning: boolean, networkId?: IdType) => void =
+    useLayoutStore((state) => state.setIsRunning)
 
   const updateSummary = useNetworkSummaryStore((state) => state.update)
 
@@ -266,7 +265,7 @@ const WorkSpaceEditor = (): JSX.Element => {
           if (layoutEngine !== undefined) {
             const summaryWithLayout = { ...summary, hasLayout: true }
 
-            setIsRunning(true)
+            setIsRunning(true, networkId)
             const handleLayoutComplete = createLayoutCompletionHandler(
               networkId,
               {

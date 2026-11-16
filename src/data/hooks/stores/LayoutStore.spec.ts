@@ -100,6 +100,20 @@ describe('useLayoutStore', () => {
 
       expect(result.current.isRunning).toBe(false)
     })
+
+    it('records the network being laid out (#979)', () => {
+      const { result } = renderHook(() => useLayoutStore())
+
+      act(() => {
+        result.current.setIsRunning(true, 'net1')
+      })
+      expect(result.current.runningNetworkId).toBe('net1')
+
+      act(() => {
+        result.current.setIsRunning(false)
+      })
+      expect(result.current.runningNetworkId).toBeUndefined()
+    })
   })
 
   describe('app engines', () => {

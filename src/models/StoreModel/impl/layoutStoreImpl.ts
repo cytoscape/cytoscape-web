@@ -2,6 +2,7 @@ import {
   defAlgorithm,
   defHierarchicalAlgorithm,
 } from '../../LayoutModel/impl/layoutSelection'
+import { IdType } from '../../IdType'
 import { LayoutAlgorithm } from '../../LayoutModel/LayoutAlgorithm'
 import { LayoutEngine } from '../../LayoutModel/LayoutEngine'
 import { ValueType } from '../../TableModel'
@@ -11,6 +12,11 @@ export interface LayoutState {
   preferredLayout: LayoutAlgorithm
   preferredHierarchicalLayout: LayoutAlgorithm
   isRunning: boolean
+  /**
+   * The network the running layout is for, when its caller named one;
+   * undefined when no layout runs or the caller did not say (#979).
+   */
+  runningNetworkId: IdType | undefined
 }
 
 /**
@@ -48,17 +54,33 @@ export const setPreferredLayout = (
 }
 
 /**
- * Set isRunning flag
+ * Set the isRunning flag. Raising it with a network id records which network
+ * is being laid out; lowering it, or raising it without one, clears that.
  */
 export const setIsRunning = (
   state: LayoutState,
   isRunning: boolean,
+  networkId?: IdType,
 ): LayoutState => {
   return {
     ...state,
     isRunning,
+    runningNetworkId: isRunning ? networkId : undefined,
   }
 }
+
+/**
+ * Whether the "Applying layout..." indicator belongs on the view of
+ * `networkId`. A run that names its network shows only there, whichever view
+ * is active: with two canvases open, a layout can run on one while the other
+ * is active (#979). A run that names none falls back to the active view.
+ */
+export const isLayoutRunningOn = (
+  state: Pick<LayoutState, 'isRunning' | 'runningNetworkId'>,
+  networkId: IdType,
+  activeNetworkId: IdType,
+): boolean =>
+  state.isRunning && (state.runningNetworkId ?? activeNetworkId) === networkId
 
 /**
  * Set a layout option

@@ -12,6 +12,7 @@ import {
   defHierarchicalAlgorithm,
   LayoutEngines,
 } from '../../../models/LayoutModel/impl/layoutSelection'
+import { IdType } from '../../../models/IdType'
 import { LayoutAlgorithm } from '../../../models/LayoutModel/LayoutAlgorithm'
 import { LayoutEngine } from '../../../models/LayoutModel/LayoutEngine'
 import * as LayoutStoreImpl from '../../../models/StoreModel/impl/layoutStoreImpl'
@@ -27,6 +28,7 @@ export const useLayoutStore = create(
     preferredLayout: defAlgorithm,
     preferredHierarchicalLayout: defHierarchicalAlgorithm,
     isRunning: false,
+    runningNetworkId: undefined,
 
     setPreferredLayout(engineName: string, algorithmName: string) {
       set((state) => {
@@ -39,10 +41,15 @@ export const useLayoutStore = create(
         return state
       })
     },
-    setIsRunning(isRunning: boolean) {
+    setIsRunning(isRunning: boolean, networkId?: IdType) {
       set((state) => {
-        const newState = LayoutStoreImpl.setIsRunning(state, isRunning)
+        const newState = LayoutStoreImpl.setIsRunning(
+          state,
+          isRunning,
+          networkId,
+        )
         state.isRunning = newState.isRunning
+        state.runningNetworkId = newState.runningNetworkId
         return state
       })
     },

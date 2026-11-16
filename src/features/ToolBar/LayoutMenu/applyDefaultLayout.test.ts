@@ -56,7 +56,7 @@ describe('applyDefaultLayout (CW-539)', () => {
     })
 
     expect(result).toBe(true)
-    expect(setIsRunning).toHaveBeenCalledWith(true)
+    expect(setIsRunning).toHaveBeenCalledWith(true, 'net1')
     // The engine that owns the preferred algorithm runs it, not the first engine.
     expect(g6.apply).toHaveBeenCalledWith(
       network.nodes,

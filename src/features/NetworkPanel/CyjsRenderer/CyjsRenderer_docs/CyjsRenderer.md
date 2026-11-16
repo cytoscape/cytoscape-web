@@ -84,7 +84,7 @@ This separation keeps the React component focused on orchestration while delegat
   - `setViewport`, `getViewport`: syncs Cytoscape viewport with global renderer state
 
 - **LayoutStore**
-  - `isRunning`: indicates when a layout algorithm is active for this network
+  - `isRunning` and `runningNetworkId`: the "Applying layout..." indicator shows on this view when `isLayoutRunningOn(state, id, activeNetworkId)` holds: on the network the running layout names, whichever view is active, or on the active view when the run names none. With two canvases open (the Hierarchy Viewer's tree view and subnetwork viewer), the tree view's floating toolbar lays out the tree without activating it (#979)
 
 - **UndoStore**
   - `postEdit`: pushes undo/redo commands when node positions change

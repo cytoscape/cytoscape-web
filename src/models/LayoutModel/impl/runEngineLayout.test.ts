@@ -60,7 +60,7 @@ describe('runEngineLayout', () => {
       'net1',
     )
     expect(setIsRunning).toHaveBeenCalledTimes(1)
-    expect(setIsRunning).toHaveBeenCalledWith(true)
+    expect(setIsRunning).toHaveBeenCalledWith(true, 'net1')
   })
 
   it('resets isRunning and logs when apply throws synchronously', () => {
@@ -75,7 +75,7 @@ describe('runEngineLayout', () => {
       setIsRunning,
     })
 
-    expect(setIsRunning).toHaveBeenNthCalledWith(1, true)
+    expect(setIsRunning).toHaveBeenNthCalledWith(1, true, 'net1')
     expect(setIsRunning).toHaveBeenNthCalledWith(2, false)
     expect(logUi.error).toHaveBeenCalledTimes(1)
     expect(afterLayout).not.toHaveBeenCalled()
