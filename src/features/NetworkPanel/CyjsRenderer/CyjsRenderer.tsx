@@ -36,6 +36,7 @@ import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
 import { IdType } from '../../../models/IdType'
 import { Network } from '../../../models/NetworkModel'
 import type { ViewPort } from '../../../models/RendererModel/ViewPort'
+import { isLayoutRunningOn } from '../../../models/StoreModel/impl/layoutStoreImpl'
 import type { ResolvedNodeGraphics } from '../../../models/StoreModel/NodeGraphicsStoreModel'
 import { UndoCommandType } from '../../../models/StoreModel/UndoStoreModel'
 import { NetworkView, NodeView } from '../../../models/ViewModel'
@@ -346,11 +347,11 @@ const CyjsRenderer = ({
   // Undo/redo stack for post-edit actions
   const { postEdit } = useUndoStack()
 
-  // Layout running state from layout store
-  let isRunning: boolean = useLayoutStore((state) => state.isRunning)
-  if (activeNetworkId !== id) {
-    isRunning = false
-  }
+  // "Applying layout..." shows on the view of the network being laid out,
+  // which need not be the active one (#979)
+  const isRunning: boolean = useLayoutStore((state) =>
+    isLayoutRunningOn(state, id, activeNetworkId),
+  )
 
   const networkView: NetworkView | undefined = getViewModel(id)
   const vs: VisualStyle = visualStyles[id]

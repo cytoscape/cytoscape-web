@@ -82,9 +82,8 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
   > = useRef<Record<IdType, NodeView> | undefined>(undefined)
 
   // Notify other components that the manual layout is running
-  const setIsRunning: (isRunning: boolean) => void = useLayoutStore(
-    (state) => state.setIsRunning,
-  )
+  const setIsRunning: (isRunning: boolean, networkId?: IdType) => void =
+    useLayoutStore((state) => state.setIsRunning)
 
   // Update node positions in the network view model
   const updateNodePositions: (
@@ -192,8 +191,8 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
       return
     }
 
-    // Start the layout
-    setIsRunning(true)
+    // Start the layout, on this network's view (#979)
+    setIsRunning(true, networkId)
 
     // Scale relative to the original positions
     const positions = new Map<IdType, Position>()

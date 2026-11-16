@@ -313,7 +313,7 @@ describe('applyLayout — happy path', () => {
 
   it('sets isRunning true then false', async () => {
     await layoutApi.applyLayout('net1')
-    expect(mockSetIsRunning).toHaveBeenNthCalledWith(1, true)
+    expect(mockSetIsRunning).toHaveBeenNthCalledWith(1, true, 'net1')
     expect(mockSetIsRunning).toHaveBeenNthCalledWith(2, false)
   })
 
@@ -385,7 +385,7 @@ describe('applyLayout — engine failure', () => {
 
   it('resets isRunning to false when engine.apply throws synchronously', async () => {
     await layoutApi.applyLayout('net1')
-    expect(mockSetIsRunning).toHaveBeenNthCalledWith(1, true)
+    expect(mockSetIsRunning).toHaveBeenNthCalledWith(1, true, 'net1')
     expect(mockSetIsRunning).toHaveBeenNthCalledWith(2, false)
   })
 

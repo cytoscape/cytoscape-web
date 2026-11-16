@@ -11,7 +11,8 @@ export interface RunEngineLayoutParams {
   /** The network being laid out; app engines need it for the run context. */
   networkId: IdType
   afterLayout: (positionMap: Map<IdType, [number, number]>) => void
-  setIsRunning: (isRunning: boolean) => void
+  /** The layout store's setter: raised with `networkId`, lowered when done. */
+  setIsRunning: (isRunning: boolean, networkId?: IdType) => void
 }
 
 /**
@@ -41,7 +42,7 @@ export const runEngineLayout = ({
     setIsRunning(false)
   }
 
-  setIsRunning(true)
+  setIsRunning(true, networkId)
   try {
     const result = engine.apply(
       network.nodes,
