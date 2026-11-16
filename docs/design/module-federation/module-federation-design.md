@@ -144,7 +144,7 @@ inclusion/exclusion rationale.
 
 > **Priority: P0 — Phase 0 deliverable.** Unlike the `@cytoscape-web/types` fixes above (P1),
 > this package publication is required before Phase 1 begins. See
-> [implementation-checklist-phase0.md](../checklists/implementation-checklist-phase0.md).
+> [implementation-checklist-phase0.md](checklists/implementation-checklist-phase0.md).
 
 Vanilla JS consumers (browser extension developers, LLM agent bridge authors) who cannot use
 Module Federation need TypeScript declarations for `window.CyWebApi`. A lightweight
@@ -539,7 +539,7 @@ Add `validateCX2()` to `useCreateNetworkFromCx2` to prevent store corruption fro
 > - All domain APIs are assembled by Phase 1f, making lifecycle wiring straightforward at that point
 > - External apps cannot perform meaningful initialization without a lifecycle hook
 >
-> See [implementation-checklist-phase1.md § Phase 1g](../checklists/implementation-checklist-phase1.md)
+> See [implementation-checklist-phase1.md § Phase 1g](checklists/implementation-checklist-phase1.md)
 > and [app-api-specification.md § 1.5.9](specifications/app-api-specification.md) for details.
 
 #### 1.8 App Resource Runtime Registration
