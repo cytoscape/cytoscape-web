@@ -66,12 +66,9 @@ export const LayoutMenu = (): JSX.Element => {
   const { open, setOpen } = useMenuBarMenu('layout-menu')
   const [openDialog, setOpenDialog] = useState<boolean>(false)
 
-  // Counter to trigger fit function after layout is applied
-  const [layoutCounter, setLayoutCounter] = useState<number>(0)
-
-  const getRendererFunction = useRendererFunctionStore(
-    (state) => state.getFunction,
-  )
+  // The network whose layout just completed, to fit once the new positions
+  // have been rendered. A fresh object per layout re-runs the effect.
+  const [fitTarget, setFitTarget] = useState<{ networkId: IdType }>()
 
   const networks: Map<string, Network> = useNetworkStore(
     (state) => state.networks,
@@ -110,20 +107,23 @@ export const LayoutMenu = (): JSX.Element => {
     positions: Map<IdType, [number, number, number?]>,
   ) => void = useViewModelStore((state) => state.updateNodePositions)
 
-  // Effect to handle fit after layout completion
+  // After a layout, fit the network that was laid out. Layouts run only in
+  // the default renderer (they are disabled on the Cell View), and its
+  // renderer-wide 'fit' slot holds whichever canvas registered last, so the
+  // function must be the laid-out network's own (#964).
   useEffect(() => {
-    if (layoutCounter > 0) {
-      // TODO: add support for multiple renderers
-      const fitFunction = getRendererFunction(DEFAULT_RENDERER_ID, 'fit')
-      if (fitFunction !== undefined) {
-        fitFunction()
-      } else {
-        logUi.warn(
-          `[${LayoutMenu.name}]: Fit function not available for renderer: cyjs`,
-        )
-      }
+    if (fitTarget === undefined) return
+    const fitFunction = useRendererFunctionStore
+      .getState()
+      .getFunction(DEFAULT_RENDERER_ID, 'fit', fitTarget.networkId)
+    if (fitFunction !== undefined) {
+      fitFunction()
+    } else {
+      logUi.warn(
+        `[${LayoutMenu.name}]: Fit function not available for renderer ${DEFAULT_RENDERER_ID}, network ${fitTarget.networkId}`,
+      )
     }
-  }, [layoutCounter, getRendererFunction])
+  }, [fitTarget])
 
   const target: Network = networks.get(targetNetworkId) ?? ({} as Network)
 
@@ -186,10 +186,9 @@ export const LayoutMenu = (): JSX.Element => {
     )
     setIsRunning(false)
 
-    // Trigger fit() by incrementing counter
-    // This is because fit function should be called separately after layout is applied
-    // to support viewport recording.
-    setLayoutCounter((prev) => prev + 1)
+    // Fit in an effect, after the new positions are rendered, so that the
+    // viewport is recorded separately from the layout.
+    setFitTarget({ networkId: targetNetworkId })
   }
 
   const elementCount: number =

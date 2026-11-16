@@ -11,6 +11,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useLayoutStore } from '@/data/hooks/stores/LayoutStore'
+import { useRendererFunctionStore } from '@/data/hooks/stores/RendererFunctionStore'
 import { useRendererStore } from '@/data/hooks/stores/RendererStore'
 import { useUiStateStore } from '@/data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
@@ -54,13 +55,6 @@ vi.mock('@/data/hooks/stores/NetworkStore', async () => {
 vi.mock('@/data/hooks/stores/NetworkSummaryStore', async () => {
   const { create } = await vi.importActual<typeof import('zustand')>('zustand')
   return { useNetworkSummaryStore: create(() => ({ summaries: {} })) }
-})
-
-vi.mock('@/data/hooks/stores/RendererFunctionStore', async () => {
-  const { create } = await vi.importActual<typeof import('zustand')>('zustand')
-  return {
-    useRendererFunctionStore: create(() => ({ getFunction: () => undefined })),
-  }
 })
 
 vi.mock('@/data/hooks/stores/RendererStore', async () => {
@@ -446,5 +440,62 @@ describe('LayoutMenu on a hierarchy', () => {
         .getByTestId('layout-menu-item-appX-row')
         .getAttribute('aria-disabled'),
     ).toBeNull()
+  })
+})
+
+// #964: with several canvases open, the renderer-wide 'fit' slot holds
+// whichever registered last. Completing a layout must fit the network that was
+// laid out, not that one.
+describe('LayoutMenu fit after layout', () => {
+  const fitNet1 = vi.fn()
+  const fitNet2 = vi.fn()
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    useWorkspaceStore.setState({
+      workspace: { currentNetworkId: 'net1', networkIds: ['net1', 'net2'] },
+    } as any)
+    useRendererFunctionStore.setState({
+      rendererFunctions: new Map(),
+      rendererFunctionsByNetworkId: new Map(),
+    })
+    const { setFunction } = useRendererFunctionStore.getState()
+    setFunction('cyjs', 'fit', fitNet1, 'net1')
+    setFunction('cyjs', 'fit', fitNet2, 'net2')
+  })
+
+  const runCircle = async (): Promise<void> => {
+    const apply = vi.fn(
+      (_n: unknown, _e: unknown, afterLayout: (p: Map<string, any>) => void) =>
+        afterLayout(new Map([['n1', [1, 2]]])),
+    )
+    seedEngines([makeCoreEngine(apply as any)])
+    render(<LayoutMenu />)
+    openMenu()
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('layout-menu-item-core-circle'))
+    })
+    expect(apply).toHaveBeenCalledTimes(1)
+  }
+
+  it('fits the network that was laid out, not the canvas registered last', async () => {
+    await runCircle()
+
+    expect(fitNet1).toHaveBeenCalledTimes(1)
+    expect(fitNet2).not.toHaveBeenCalled()
+  })
+
+  it('fits nothing when the laid-out network has no canvas yet', async () => {
+    useRendererFunctionStore.setState({
+      rendererFunctions: new Map(),
+      rendererFunctionsByNetworkId: new Map(),
+    })
+    useRendererFunctionStore
+      .getState()
+      .setFunction('cyjs', 'fit', fitNet2, 'net2')
+
+    await runCircle()
+
+    expect(fitNet2).not.toHaveBeenCalled()
   })
 })
