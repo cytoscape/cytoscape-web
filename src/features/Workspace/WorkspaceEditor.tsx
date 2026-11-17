@@ -268,8 +268,6 @@ const WorkSpaceEditor = (): JSX.Element => {
           )
 
           if (layoutEngine !== undefined) {
-            const summaryWithLayout = { ...summary, hasLayout: true }
-
             const handleLayoutComplete = createLayoutCompletionHandler(
               networkId,
               {
@@ -285,7 +283,11 @@ const WorkSpaceEditor = (): JSX.Element => {
                     fitFunction()
                   }
                 },
-                markLayoutApplied: (id) => updateSummary(id, summaryWithLayout),
+                // Only the layout field: the layout can wait for another one
+                // (#982), and a whole summary copied now would overwrite a
+                // rename made meanwhile.
+                markLayoutApplied: (id) =>
+                  updateSummary(id, { hasLayout: true }),
                 setLayoutRunning: setIsRunning,
                 setNetworkModified,
               },

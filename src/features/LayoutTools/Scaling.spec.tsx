@@ -278,6 +278,56 @@ describe('Scaling with no node positions (#880)', () => {
     expect(postEdit).toHaveBeenCalledTimes(1)
   })
 
+  // #982: a layout that starts on another network mid-drag disables the
+  // slider, and MUI then drops the drag's release listeners, so the drag
+  // never commits. The slider must not keep showing a value nothing applied.
+  it('puts the slider back when a layout starts mid-drag', () => {
+    act(() => {
+      useViewModelStore.getState().delete(NETWORK_ID)
+    })
+    seed()
+    render(<Scaling networkId={NETWORK_ID} />)
+    const before = positions()
+
+    // Geometry for this slider only: 0..200 px across -9..9
+    const root = screen.getByTestId('scaling-slider')
+    root.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        width: 200,
+        top: 0,
+        height: 20,
+        bottom: 20,
+        right: 200,
+        x: 0,
+        y: 0,
+      }) as DOMRect
+    act(() => {
+      fireEvent.mouseDown(root, { button: 0, clientX: 150, clientY: 10 })
+      fireEvent.mouseMove(document, { buttons: 1, clientX: 190, clientY: 10 })
+    })
+    expect(sliderValue()).not.toBe('0')
+
+    act(() => {
+      useLayoutStore.getState().startLayout('another-net')
+    })
+    act(() => {
+      fireEvent.mouseUp(document, { clientX: 190, clientY: 10 })
+    })
+
+    expect(sliderValue()).toBe('0')
+    expect(positions()).toEqual(before)
+    expect(postEdit).not.toHaveBeenCalled()
+
+    // Once the layout ends, a drag commits as usual
+    act(() => {
+      useLayoutStore.getState().setIsRunning(false)
+    })
+    commit(9)
+    expect(sliderValue()).toBe('9')
+    expect(postEdit).toHaveBeenCalledTimes(1)
+  })
+
   // #982: only one layout runs at a time. Scaling while a layout runs would
   // be overwritten by the layout's result, and its own start and finish
   // would lower the running layout's flag.

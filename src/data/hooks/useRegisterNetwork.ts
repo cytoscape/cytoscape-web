@@ -98,11 +98,19 @@ export const useRegisterNetwork = () => {
         )
 
         if (layoutEngine !== undefined) {
-          const summaryWithLayout = { ...summary, hasLayout: true }
-
+          // The layout can wait for another one (#982), so the network may
+          // change before it completes. The completion reads the live state
+          // instead of a copy taken at registration.
           const handleLayoutComplete = (
             positionMap: Map<IdType, [number, number]>,
           ): void => {
+            // Snapshot first, as createLayoutCompletionHandler does: an edit
+            // made while this layout waited or ran keeps its modified flag,
+            // so Save Workspace still uploads the network.
+            const modifiedMeanwhile =
+              useWorkspaceStore.getState().workspace.networkModified[
+                networkId
+              ] === true
             updateNodePositions(networkId, positionMap)
             const fitFunction = getFunction('cyjs', 'fit', networkId)
 
@@ -111,9 +119,13 @@ export const useRegisterNetwork = () => {
               fitFunction()
             }
 
-            updateSummary(networkId, summaryWithLayout)
+            // Only the layout field: a whole registration-time summary would
+            // overwrite a rename made meanwhile
+            updateSummary(networkId, { hasLayout: true })
             setIsRunning(false)
-            setNetworkModified(networkId, false)
+            if (!modifiedMeanwhile) {
+              setNetworkModified(networkId, false)
+            }
           }
 
           // The shared runner: a synchronous throw or a rejected promise

@@ -111,6 +111,31 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
     networkView !== undefined && Object.keys(networkView.nodeViews).length > 0
 
   /**
+   * Put the slider back when a layout starts mid-drag (#982). The layout
+   * disables the slider, and MUI then drops the drag's release listeners, so
+   * the drag never commits and the slider would keep a value nothing
+   * applied. The positions have not moved, so the value that explains them
+   * is the one to show. Runs only on the start of a layout; a layout that
+   * then moves this network's nodes is handled by the sync effect below.
+   */
+  useEffect(() => {
+    if (!layoutRunning || networkView === undefined) {
+      return
+    }
+    const inferred: SliderState | undefined = inferSliderState(
+      networkView.nodeViews,
+      originalsRef.current,
+      anchorRef.current,
+      { scalingType, value: sliderValue },
+    )
+    if (inferred !== undefined) {
+      setSliderValue(inferred.value)
+      setScalingType(inferred.scalingType)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only the start of a layout cancels a drag; the slider's own state must not re-run this
+  }, [layoutRunning])
+
+  /**
    * Forget the previous network's positions when the network is switched.
    * The sync effect below, declared after this one, then reads the new
    * network's positions as its x1.0.
