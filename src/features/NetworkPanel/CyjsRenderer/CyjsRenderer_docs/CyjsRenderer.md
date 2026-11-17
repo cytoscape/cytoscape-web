@@ -34,7 +34,6 @@ This separation keeps the React component focused on orchestration while delegat
 - **`displayMode?: DisplayMode`**: How to visualize selection
   - `SELECT`: Standard selection highlighting (currently the only supported mode)
   - `SHOW_HIDE`: **Not currently implemented** - This mode was removed due to architectural issues. See "Show/Hide Mode Removal" section below.
-- **`hasTab?: boolean`**: Whether the renderer lives in a tabbed context (affects sizing/behavior in `NetworkPanel`)
 
 ### Local State & Refs
 
@@ -85,6 +84,11 @@ This separation keeps the React component focused on orchestration while delegat
 
 - **LayoutStore**
   - `isRunning` and `runningNetworkId`: the "Applying layout..." indicator shows on this view when `isLayoutRunningOn(state, id, activeNetworkId)` holds: on the network the running layout names, whichever view is active, or on the active view when the run names none. With two canvases open (the Hierarchy Viewer's tree view and subnetwork viewer), the tree view's floating toolbar lays out the tree without activating it (#979)
+  - The indicator is a translucent, blurred overlay that covers the whole canvas, including the floating toolbar, with the spinner and message centered, so it reads on any network background and catches clicks, drags and wheel events meant for the canvas while the layout runs (#981). Its `zIndex` is 2: above the canvas (0) and the floating toolbar, Layout Tools panel and edge-creation hint (1), but below MUI's portalled menus and dialogs (1300+). The 2000 it had before came with the first floating toolbar in 2023 and had no recorded reason.
+  - The canvas's container reserves a 3px focus border (2px outer, 1px inner gap), drawn only on a hierarchy (`ui.enablePopup`) for the focused view and transparent otherwise. The overlay covers that transparent border, or stays inside a drawn one (`inset` of -2px or 1px)
+
+- **UiStateStore**
+  - `ui.enablePopup`: set when the current network is a hierarchy; decides, with `activeNetworkView`, whether this view's focus border is drawn
 
 - **UndoStore**
   - `postEdit`: pushes undo/redo commands when node positions change

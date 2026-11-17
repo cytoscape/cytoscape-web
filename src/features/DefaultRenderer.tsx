@@ -23,14 +23,9 @@ export const DefaultRenderer: Renderer = {
   id: DEFAULT_RENDERER_ID,
   name: 'Network View',
   description: 'Node-link diagram renderer based on Cytoscape.js',
-  getComponent: (
-    networkData: Network,
-    initialSize?: { w: number; h: number },
-    visible?: boolean,
-    hasTab?: boolean,
-  ) => (
+  getComponent: (networkData: Network) => (
     <Suspense fallback={null}>
-      <CyjsRendererLazy network={networkData} hasTab={hasTab} />
+      <CyjsRendererLazy network={networkData} />
     </Suspense>
   ),
 }
