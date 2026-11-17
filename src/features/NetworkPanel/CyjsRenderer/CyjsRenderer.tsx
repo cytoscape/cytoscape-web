@@ -1559,6 +1559,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     <>
       {isRunning ? (
         <Box
+          data-testid="layout-running-overlay"
           sx={{
             display: 'flex',
             position: 'absolute',
@@ -1599,6 +1600,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
       />
       {edgeCreationMode.active && (
         <Box
+          data-testid="edge-creation-hint"
           sx={{
             position: 'absolute',
             top: 2,
