@@ -1,5 +1,6 @@
 import { CircularProgress, Typography } from '@mui/material'
 import Box from '@mui/material/Box'
+import { alpha, Theme } from '@mui/material/styles'
 import Cytoscape, {
   Core,
   EdgeSingular,
@@ -82,6 +83,16 @@ import { panForCanvasSize } from './viewportRestore'
 
 registerCyExtensions()
 
+/**
+ * Translucent paper behind the boxes drawn over the canvas ("Applying
+ * layout...", the edge creation hint), readable on any network background.
+ */
+const canvasOverlayBackground = (theme: Theme): string =>
+  alpha(
+    theme.palette.background.paper,
+    theme.palette.mode === 'dark' ? 0.8 : 0.6,
+  )
+
 interface NetworkRendererProps {
   network?: Network
 
@@ -93,18 +104,13 @@ interface NetworkRendererProps {
    * the others will be hidden.
    */
   displayMode?: DisplayMode
-
-  hasTab?: boolean
 }
 
 /**
  *
  * @returns
  */
-const CyjsRenderer = ({
-  network,
-  hasTab = false,
-}: NetworkRendererProps): ReactElement => {
+const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   const id = network?.id as IdType
 
   // ============================================================================
@@ -352,6 +358,16 @@ const CyjsRenderer = ({
   const isRunning: boolean = useLayoutStore((state) =>
     isLayoutRunningOn(state, id, activeNetworkId),
   )
+
+  // The canvas's container always reserves a 3px focus border (2px outer +
+  // 1px inner gap), transparent while the view is not focused, so the canvas
+  // and the floating toolbar never move. The border is only drawn on a
+  // hierarchy (`ui.enablePopup`), whose two canvases need it to show which one
+  // is focused — the same rule as NetworkPanel and SubNetworkPanel. The
+  // "Applying layout..." overlay is laid out against the container's padding
+  // box, so it has to know which case it is in.
+  const isHierarchy: boolean = useUiStateStore((state) => state.ui.enablePopup)
+  const isFocusBorderShown: boolean = isHierarchy && id === activeNetworkId
 
   const networkView: NetworkView | undefined = getViewModel(id)
   const vs: VisualStyle = visualStyles[id]
@@ -1543,19 +1559,26 @@ const CyjsRenderer = ({
     <>
       {isRunning ? (
         <Box
+          data-testid="layout-running-overlay"
           sx={{
             display: 'flex',
             position: 'absolute',
+            flexDirection: 'column',
             alignItems: 'center',
-            top: hasTab ? '4em' : '1em',
-            left: '1em',
-            zIndex: 2000,
+            justifyContent: 'center',
+            // Positioned against the container's padding box, inside its 2px
+            // outer border. A drawn focus border stays visible: skip the 1px
+            // inner gap. A transparent one would show the network background
+            // around the overlay: cover it (2px each side).
+            inset: isFocusBorderShown ? '1px' : '-2px',
+            p: 2,
+            backgroundColor: canvasOverlayBackground,
+            backdropFilter: 'blur(4px)',
+            zIndex: 2,
           }}
         >
           <CircularProgress size={40} />
-          <Typography variant="h6" sx={{ marginLeft: '1em' }}>
-            Applying layout...
-          </Typography>
+          <Typography variant="h6">Applying layout...</Typography>
         </Box>
       ) : null}
       <Box
@@ -1577,16 +1600,19 @@ const CyjsRenderer = ({
       />
       {edgeCreationMode.active && (
         <Box
+          data-testid="edge-creation-hint"
           sx={{
             position: 'absolute',
-            top: '1em',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-            color: 'white',
-            padding: '0.5em 1em',
+            top: 2,
+            left: 2,
+            textAlign: 'center',
+            backgroundColor: canvasOverlayBackground,
+            border: (theme) => `1px solid ${theme.palette.divider}`,
+            borderRadius: '8px',
+            px: 2,
+            py: 1,
             overflow: 'hidden',
-            zIndex: 1000,
+            zIndex: 1,
             pointerEvents: 'none',
           }}
         >
