@@ -116,6 +116,50 @@ describe('useLayoutStore', () => {
     })
   })
 
+  // #982: only one layout at a time. startLayout is the single check-and-set
+  // every layout start goes through, so two starts in the same tick cannot
+  // both see the flag down.
+  describe('startLayout', () => {
+    it('claims the run for the network when no layout runs', () => {
+      const { result } = renderHook(() => useLayoutStore())
+      act(() => {
+        result.current.setIsRunning(false)
+      })
+
+      let started = false
+      act(() => {
+        started = result.current.startLayout('net1')
+      })
+
+      expect(started).toBe(true)
+      expect(result.current.isRunning).toBe(true)
+      expect(result.current.runningNetworkId).toBe('net1')
+    })
+
+    it('refuses while a layout runs and leaves that run as it was', () => {
+      const { result } = renderHook(() => useLayoutStore())
+      act(() => {
+        result.current.setIsRunning(false)
+      })
+
+      let first = false
+      let second = true
+      act(() => {
+        first = result.current.startLayout('net1')
+        second = result.current.startLayout('net2')
+      })
+
+      expect(first).toBe(true)
+      expect(second).toBe(false)
+      expect(result.current.isRunning).toBe(true)
+      expect(result.current.runningNetworkId).toBe('net1')
+
+      act(() => {
+        result.current.setIsRunning(false)
+      })
+    })
+  })
+
   describe('app engines', () => {
     const appAlgorithm = {
       name: 'appX::row',

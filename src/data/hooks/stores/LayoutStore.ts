@@ -23,7 +23,7 @@ import { ValueType } from '../../../models/TableModel'
  * Store for layout parameters
  */
 export const useLayoutStore = create(
-  immer<LayoutStore>((set) => ({
+  immer<LayoutStore>((set, get) => ({
     layoutEngines: LayoutEngines,
     preferredLayout: defAlgorithm,
     preferredHierarchicalLayout: defHierarchicalAlgorithm,
@@ -40,6 +40,20 @@ export const useLayoutStore = create(
         state.preferredLayout = newState.preferredLayout
         return state
       })
+    },
+    startLayout(networkId: IdType): boolean {
+      // Check and set in one synchronous step, so two starts in the same
+      // tick cannot both see the flag down (#982).
+      const newState = LayoutStoreImpl.startLayout(get(), networkId)
+      if (newState === undefined) {
+        return false
+      }
+      set((state) => {
+        state.isRunning = newState.isRunning
+        state.runningNetworkId = newState.runningNetworkId
+        return state
+      })
+      return true
     },
     setIsRunning(isRunning: boolean, networkId?: IdType) {
       set((state) => {

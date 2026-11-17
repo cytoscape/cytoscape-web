@@ -36,22 +36,27 @@ const makeEngine = (apply: LayoutEngine['apply']): LayoutEngine => ({
 describe('runEngineLayout', () => {
   const afterLayout = vi.fn()
   const setIsRunning = vi.fn()
+  const startLayout = vi.fn()
 
   beforeEach(() => {
     vi.clearAllMocks()
+    startLayout.mockReturnValue(true)
   })
 
-  it('passes the network id as the fifth apply argument and leaves isRunning up', () => {
+  it('claims the run for the network, then passes the network id as the fifth apply argument', () => {
     const apply = vi.fn()
-    runEngineLayout({
+    const started = runEngineLayout({
       engine: makeEngine(apply),
       algorithm,
       network,
       networkId: 'net1',
       afterLayout,
+      startLayout,
       setIsRunning,
     })
 
+    expect(started).toBe(true)
+    expect(startLayout).toHaveBeenCalledWith('net1')
     expect(apply).toHaveBeenCalledWith(
       network.nodes,
       network.edges,
@@ -59,8 +64,31 @@ describe('runEngineLayout', () => {
       algorithm,
       'net1',
     )
-    expect(setIsRunning).toHaveBeenCalledTimes(1)
-    expect(setIsRunning).toHaveBeenCalledWith(true, 'net1')
+    // The running flag stays up until afterLayout lowers it.
+    expect(setIsRunning).not.toHaveBeenCalled()
+  })
+
+  // #982: a second layout while one runs is refused, so the two cannot
+  // overwrite each other's positions or lower each other's running flag.
+  it('refuses to start while another layout runs, without touching the flag', () => {
+    startLayout.mockReturnValue(false)
+    const apply = vi.fn()
+
+    const started = runEngineLayout({
+      engine: makeEngine(apply),
+      algorithm,
+      network,
+      networkId: 'net1',
+      afterLayout,
+      startLayout,
+      setIsRunning,
+    })
+
+    expect(started).toBe(false)
+    expect(apply).not.toHaveBeenCalled()
+    expect(setIsRunning).not.toHaveBeenCalled()
+    expect(afterLayout).not.toHaveBeenCalled()
+    expect(logUi.warn).toHaveBeenCalledTimes(1)
   })
 
   it('resets isRunning and logs when apply throws synchronously', () => {
@@ -72,11 +100,12 @@ describe('runEngineLayout', () => {
       network,
       networkId: 'net1',
       afterLayout,
+      startLayout,
       setIsRunning,
     })
 
-    expect(setIsRunning).toHaveBeenNthCalledWith(1, true, 'net1')
-    expect(setIsRunning).toHaveBeenNthCalledWith(2, false)
+    expect(setIsRunning).toHaveBeenCalledTimes(1)
+    expect(setIsRunning).toHaveBeenCalledWith(false)
     expect(logUi.error).toHaveBeenCalledTimes(1)
     expect(afterLayout).not.toHaveBeenCalled()
   })
@@ -88,12 +117,13 @@ describe('runEngineLayout', () => {
       network,
       networkId: 'net1',
       afterLayout,
+      startLayout,
       setIsRunning,
     })
     await Promise.resolve()
     await Promise.resolve()
 
-    expect(setIsRunning).toHaveBeenNthCalledWith(2, false)
+    expect(setIsRunning).toHaveBeenCalledWith(false)
     expect(logUi.error).toHaveBeenCalledTimes(1)
   })
 
@@ -104,11 +134,12 @@ describe('runEngineLayout', () => {
       network,
       networkId: 'net1',
       afterLayout,
+      startLayout,
       setIsRunning,
     })
     await Promise.resolve()
 
-    expect(setIsRunning).toHaveBeenCalledTimes(1)
+    expect(setIsRunning).not.toHaveBeenCalled()
     expect(logUi.error).not.toHaveBeenCalled()
   })
 })

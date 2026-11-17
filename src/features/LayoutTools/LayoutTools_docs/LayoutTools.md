@@ -104,6 +104,7 @@ The core component that provides scaling functionality for node positions.
 - **Anchor**: The anchor stays fixed while the slider is off x1.0, and follows the layout's center at x1.0. Deleted nodes are dropped from the original positions, so neither the anchor nor the next scale counts them. The original positions are a ref, not state: nothing renders them, and the sync effect must see a rebase at once
 - **Undo Support**: All scaling operations are undoable. The undo entry's previous positions include z, so undo restores z along with x and y
 - **Nothing to Scale**: When the network has no nodes, or its view is not loaded yet, the Width/Height/Both radios, the slider and the reset button are disabled. `applyScaling` also returns before raising the layout store's `isRunning` flag when it has no original positions (they can lag the view by a render), so it never records an empty undo entry or leaves "Applying layout..." on screen (#880)
+- **One Layout at a Time** (#982): the slider is disabled while a layout runs (`LayoutStore.isRunning`), on any network, and `applyScaling` claims the run with `startLayout(networkId)` before moving anything, returning without a move or an undo entry when it is refused. Scaling while a layout runs would be overwritten by the layout's result, and scaling's own raise and lower of the flag would hide the running layout's "Applying layout...".
 - **Reset Function**: Restores positions to current state and resets slider to center
 
 **Scaling Calculation:**

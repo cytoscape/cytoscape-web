@@ -6,6 +6,14 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
 
 ### Added
 
+- **`layout.applyLayout(networkId, { waitIfBusy: true })`** (#982) waits for a
+  running layout instead of failing with `APP16`, then runs. The promise
+  resolves once the call's own layout has run, so a loop of awaited calls over
+  several networks needs no `APP16` handling. Waiting calls start one after
+  another as soon as the layout before each ends. A call for an unknown network
+  or algorithm fails at once without waiting, and a network deleted while the
+  call waits resolves to `APP1`. There is no timeout. Off by default; a value
+  that is not a boolean fails with `APP9`. New field on `ApplyLayoutOptions`.
 - **`viewport.updateNodePositions(networkId, positions, { recordUndo: true })`**
   (#874) records the move as one undo entry, so the user can put every node
   back with a single Edit ▸ Undo, as after a drag or a layout. The entry holds
@@ -16,6 +24,18 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
 
 ### Changed
 
+- **`layout.applyLayout` fails while another layout runs** (#982). A call
+  made while a layout runs (started by the user, by an automatic default
+  layout, or by another `applyLayout` call) starts nothing and resolves to the
+  new code `AppCodes.LAYOUT_ALREADY_RUNNING` (`APP16`); it dispatches no
+  `layout:started`. Before, both layouts ran: the slower one overwrote the
+  faster one's positions, both were recorded as undo steps, and the first to
+  finish hid "Applying layout..." while the other still ran. Retry after the
+  running layout finishes, or pass `waitIfBusy: true` (above). Two layouts
+  never run on the same network.
+  Currently a layout on any network blocks the call; a later version may let
+  layouts on different networks run at the same time, so do not rely on
+  `APP16` to serialize layouts across networks.
 - **The right pane's `'sub-network-viewer'` tab exists only for a hierarchy**
   (#877), like the left pane's `'llm-query'`. On any other network,
   `panel.open('right', 'sub-network-viewer')` fails with `RESOURCE_NOT_FOUND`

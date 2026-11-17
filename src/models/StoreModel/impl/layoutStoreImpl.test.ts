@@ -11,6 +11,7 @@ import {
   setIsRunning,
   setLayoutOption,
   setPreferredLayout,
+  startLayout,
   upsertAppAlgorithm,
 } from './layoutStoreImpl'
 
@@ -130,6 +131,22 @@ describe('LayoutStoreImpl', () => {
       const running = setIsRunning(createDefaultState(), true, 'net1')
 
       expect(setIsRunning(running, true).runningNetworkId).toBeUndefined()
+    })
+  })
+
+  // #982: only one layout at a time.
+  describe('startLayout', () => {
+    it('raises the flag for the network when no layout runs', () => {
+      const result = startLayout(createDefaultState(), 'net1')
+
+      expect(result?.isRunning).toBe(true)
+      expect(result?.runningNetworkId).toBe('net1')
+    })
+
+    it('refuses while a layout runs', () => {
+      const running = setIsRunning(createDefaultState(), true, 'net1')
+
+      expect(startLayout(running, 'net2')).toBeUndefined()
     })
   })
 

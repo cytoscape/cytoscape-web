@@ -1336,6 +1336,7 @@ interface LayoutAlgorithmInfo {
 interface ApplyLayoutOptions {
   algorithmName?: string // default: LayoutStore.preferredLayout
   fitAfterLayout?: boolean // default: true
+  waitIfBusy?: boolean // default: false — wait for a running layout instead of failing with APP16
 }
 ```
 
@@ -1343,10 +1344,49 @@ interface ApplyLayoutOptions {
 
 #### `applyLayout(networkId, options?): Promise<ApiResult>`
 
-Applies a layout algorithm asynchronously. Lifecycle:
+Applies a layout algorithm asynchronously. While another layout runs —
+started by the user, by an automatic default layout, or by another
+`applyLayout` call — the call starts nothing and resolves to `fail(APP16)`,
+unless `waitIfBusy` is `true` (below). Two layouts never run on the same
+network. Currently only one layout runs at a time on any network; a later
+version may let layouts on different networks run at the same time, so do
+not rely on `APP16` to serialize layouts across networks.
 
-1. Dispatches `layout:started` event
-2. Sets `LayoutStore.isRunning = true`
+**`waitIfBusy: true`** makes the call wait for the running layout instead of
+failing, then run. The promise resolves once this call's own layout has run,
+so an app that lays out several networks needs no `APP16` handling:
+
+```typescript
+for (const networkId of networkIds) {
+  const result = await layout.applyLayout(networkId, {
+    algorithmName: 'cosmos',
+    waitIfBusy: true,
+  })
+  if (!result.success) {
+    // APP1 (deleted meanwhile), APP3 (engine failed), APP4 — not APP16
+  }
+}
+```
+
+- Waiting calls start one after another, in the same queue as the host's
+  automatic default layouts, and each starts as soon as the layout before it
+  ends — before a user click on a layout control can get in.
+- A call that would fail anyway fails at once without waiting: an unknown
+  `networkId` (`APP1`) or `algorithmName` (`APP4`).
+- The network and algorithm are checked again when the call's turn comes: a
+  network deleted while the call waits resolves to `APP1` and nothing runs.
+- Undo restores the positions from when the layout started, not from when the
+  call was made, since a layout before it may have moved the nodes meanwhile.
+- There is no timeout: the call waits as long as the running layout takes.
+- `layout:started` fires when the layout actually starts, not when the call
+  is made.
+- `waitIfBusy` must be a boolean; any other value fails with `APP9`.
+
+Lifecycle:
+
+1. Claims the layout run (`LayoutStore.isRunning = true`), or fails with
+   `APP16` when a layout already runs (or, with `waitIfBusy`, waits for it)
+2. Dispatches `layout:started` event
 3. Calls `engine.apply(...)` (callback-based, wrapped in a Promise)
 4. On completion: updates node positions, records undo, calls `fit()` if requested,
    sets `isRunning = false`, dispatches `layout:completed`
@@ -1362,6 +1402,8 @@ escape.
 | ---------- | ---------------------------------------- |
 | `APP1`     | `networkId` does not exist               |
 | `APP4`     | No engine registered for `algorithmName` |
+| `APP16`    | Another layout is running (without `waitIfBusy`) |
+| `APP9`     | `waitIfBusy` is not a boolean            |
 | `APP3`     | The layout engine or its callback threw  |
 
 #### `getAvailableLayouts(): ApiResult<{ layouts: LayoutAlgorithmInfo[] }>`

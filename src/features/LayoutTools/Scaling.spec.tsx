@@ -278,6 +278,34 @@ describe('Scaling with no node positions (#880)', () => {
     expect(postEdit).toHaveBeenCalledTimes(1)
   })
 
+  // #982: only one layout runs at a time. Scaling while a layout runs would
+  // be overwritten by the layout's result, and its own start and finish
+  // would lower the running layout's flag.
+  it('disables the slider and scales nothing while a layout runs', () => {
+    act(() => {
+      useViewModelStore.getState().delete(NETWORK_ID)
+    })
+    seed()
+    act(() => {
+      useLayoutStore.getState().startLayout('another-net')
+    })
+    render(<Scaling networkId={NETWORK_ID} />)
+
+    expect((screen.getByRole('slider') as HTMLInputElement).disabled).toBe(true)
+    commit(9)
+
+    expect(postEdit).not.toHaveBeenCalled()
+    expect(useLayoutStore.getState().isRunning).toBe(true)
+    expect(useLayoutStore.getState().runningNetworkId).toBe('another-net')
+
+    act(() => {
+      useLayoutStore.getState().setIsRunning(false)
+    })
+    expect((screen.getByRole('slider') as HTMLInputElement).disabled).toBe(
+      false,
+    )
+  })
+
   const expectControlsDisabled = (disabled: boolean): void => {
     expect((screen.getByRole('slider') as HTMLInputElement).disabled).toBe(
       disabled,

@@ -12,6 +12,7 @@ import {
 import { useLayoutStore } from '../../data/hooks/stores/LayoutStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useUndoStack } from '../../data/hooks/useUndoStack'
+import { logUi } from '../../debug'
 import { IdType } from '../../models/IdType'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { NetworkView, NodeView } from '../../models/ViewModel'
@@ -84,6 +85,14 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
   // Notify other components that the manual layout is running
   const setIsRunning: (isRunning: boolean, networkId?: IdType) => void =
     useLayoutStore((state) => state.setIsRunning)
+  const startLayout: (networkId: IdType) => boolean = useLayoutStore(
+    (state) => state.startLayout,
+  )
+  // Only one layout runs at a time (#982). Scaling moves every node, so the
+  // slider is disabled while a layout runs: the layout's result would
+  // overwrite the scaling, and scaling's own start and finish would lower
+  // the running layout's flag.
+  const layoutRunning: boolean = useLayoutStore((state) => state.isRunning)
 
   // Update node positions in the network view model
   const updateNodePositions: (
@@ -191,8 +200,14 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
       return
     }
 
-    // Start the layout, on this network's view (#979)
-    setIsRunning(true, networkId)
+    // Start the layout, on this network's view (#979), unless another
+    // layout is running (#982)
+    if (!startLayout(networkId)) {
+      logUi.warn(
+        `[Scaling]: Scaling not applied to network ${networkId}: a layout is running`,
+      )
+      return
+    }
 
     // Scale relative to the original positions
     const positions = new Map<IdType, Position>()
@@ -278,7 +293,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
           min={SLIDER_MIN}
           max={SLIDER_MAX}
           track={false}
-          disabled={!hasNodes}
+          disabled={!hasNodes || layoutRunning}
           onChangeCommitted={handleUpdate}
           onChange={handleChange}
         />

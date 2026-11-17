@@ -149,6 +149,45 @@ describe('useRegisterNetwork', () => {
     expect(useLayoutStore.getState().isRunning).toBe(false)
   })
 
+  // #982: only one layout runs at a time. The default layout of a network
+  // registered while another layout runs waits for it instead of being
+  // dropped, which would leave the new network without positions.
+  it('waits for a running layout, then applies the default layout', async () => {
+    const apply = vi.fn(
+      (
+        _nodes: unknown,
+        _edges: unknown,
+        afterLayout: (positions: Map<IdType, [number, number]>) => void,
+      ) => {
+        afterLayout(new Map([['n1', [42, 24]]]))
+      },
+    )
+    act(() => {
+      useLayoutStore.setState({
+        layoutEngines: [{ ...G6Layout, apply }] as any,
+      })
+      useLayoutStore.getState().startLayout('another-net')
+    })
+    const { result } = renderHook(() => useRegisterNetwork())
+
+    act(() => {
+      result.current(NET_ID, makeCyNetwork(), makeSummary({ hasLayout: false }))
+    })
+    expect(apply).not.toHaveBeenCalled()
+    expect(useLayoutStore.getState().runningNetworkId).toBe('another-net')
+
+    await act(async () => {
+      useLayoutStore.getState().setIsRunning(false)
+      await Promise.resolve()
+    })
+
+    expect(apply).toHaveBeenCalledTimes(1)
+    expect(useNetworkSummaryStore.getState().summaries[NET_ID].hasLayout).toBe(
+      true,
+    )
+    expect(useLayoutStore.getState().isRunning).toBe(false)
+  })
+
   it('resets isRunning when the default layout engine throws synchronously', () => {
     const apply = vi.fn(() => {
       throw new Error('engine boom')

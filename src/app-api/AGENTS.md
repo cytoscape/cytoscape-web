@@ -100,8 +100,14 @@ src/app-api/
    it becomes current (`WorkspaceEditor.loadCurrentNetworkById`). That is why
    `network:switched` can precede the data and why `network:loaded` exists.
 10. **Layout events come from `core/layoutApi.ts`** — Not from store subscriptions. `layout:started`
-    fires before `LayoutStore.setIsRunning(true)`, `layout:completed` fires inside the layout
-    promise resolution. Errors do NOT dispatch `layout:completed`.
+    fires right after `LayoutStore.startLayout(networkId)` claims the run, `layout:completed` fires
+    inside the layout promise resolution. Errors do NOT dispatch `layout:completed`. Only one
+    layout runs at a time (#982): while one runs, `applyLayout` returns
+    `fail(LAYOUT_ALREADY_RUNNING)` and dispatches nothing, unless the caller passed
+    `waitIfBusy: true` — then it queues through `runLayoutWhenIdle` and fires
+    `layout:started` when its turn comes. Every attempt (immediate or queued) goes
+    through one `attemptLayout`, which validates, claims, and only then snapshots
+    the positions for undo.
 11. **Per-app API objects are built in exactly one place** — `core/perAppApis.ts`
     `buildPerAppApis(appId)`. Adding a per-app domain means editing that one function. Do NOT
     spread `CyWebApi` and override factories inline at a call site; three sites used to do that
@@ -161,7 +167,8 @@ src/app-api/
     `networkId` argument every host call site now passes; it rejects on any failure and never
     calls `afterLayout` then, so callers own the `isRunning` reset (`runEngineLayout` in
     `models/LayoutModel/impl/` for every host path, the initial default layout of
-    `useRegisterNetwork` included, `applyLayout` for the API). Cleanup is
+    `useRegisterNetwork` included, `applyLayout` for the API). Every start claims the single
+    layout run through `LayoutStore.startLayout` first (#982). Cleanup is
     the adapter's `registerAppCleanup` call plus the resource store's slot-agnostic
     `removeAllByAppId`; a dangling `preferredLayout` falls back to `defAlgorithm`. Layout
     events stay API-only (principle 10) — host UI paths do not dispatch them.

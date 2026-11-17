@@ -101,6 +101,13 @@ The last two items are:
 
 Layouts cannot be applied while the **Cell View** of a hierarchy is shown.
 
+One layout runs at a time. While a layout runs, the view shows **Applying
+layout...** and the items that start a layout are inactive, as are **Apply
+Layout** in the Layout Option Editor and the apply default layout button in
+the network view. They become active again when the layout finishes. A network
+that opens without a layout while another layout runs gets its default layout
+once that layout has finished.
+
 <DemoOnly>
 
 <LiveDemo panels={['renderer', 'layout']} />

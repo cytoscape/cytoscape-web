@@ -7,6 +7,7 @@ import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
 import { useFilterStore } from '../../../data/hooks/stores/FilterStore'
 import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
+import { runLayoutWhenIdle } from '../../../data/hooks/stores/runLayoutWhenIdle'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useUndoStore } from '../../../data/hooks/stores/UndoStore'
@@ -255,6 +256,9 @@ export const SubNetworkPanel = ({
 
   const setIsRunning: (isRunning: boolean, networkId?: IdType) => void =
     useLayoutStore((state) => state.setIsRunning)
+  const startLayout: (networkId: IdType) => boolean = useLayoutStore(
+    (state) => state.startLayout,
+  )
 
   const layoutEngines: LayoutEngine[] = useLayoutStore(
     (state) => state.layoutEngines,
@@ -616,8 +620,15 @@ export const SubNetworkPanel = ({
       // Make layout application async. A throwing or rejecting engine
       // (an app engine rejects on any failure) must still settle the
       // promise, or this pipeline would hang with isRunning stuck.
+      // Only one layout runs at a time (#982): when one is running (the
+      // hierarchy's own default layout, typically), this one waits for it
+      // rather than being dropped, which would leave the nodes unplaced.
       const applyLayoutAsync = (): Promise<void> => {
         return new Promise((resolve) => {
+          if (network === undefined || engine === undefined) {
+            resolve()
+            return
+          }
           const afterLayout = (
             positionMap: Map<IdType, [number, number]>,
           ): void => {
@@ -634,8 +645,15 @@ export const SubNetworkPanel = ({
             resolve()
           }
 
-          if (network !== undefined && engine !== undefined) {
-            setIsRunning(true, network.id)
+          runLayoutWhenIdle(() => {
+            // Removed while waiting: nothing left to lay out.
+            if (!useNetworkStore.getState().networks.has(network.id)) {
+              resolve()
+              return true
+            }
+            if (!startLayout(network.id)) {
+              return false
+            }
             try {
               const result = engine.apply(
                 network.nodes,
@@ -650,9 +668,8 @@ export const SubNetworkPanel = ({
             } catch (error) {
               onFailure(error)
             }
-          } else {
-            resolve()
-          }
+            return true
+          })
         })
       }
 

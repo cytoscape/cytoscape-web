@@ -90,6 +90,10 @@ export const LayoutMenu = (): JSX.Element => {
     activeNetworkView === '' ? currentNetworkId : activeNetworkView
 
   const setIsRunning = useLayoutStore((state) => state.setIsRunning)
+  const startLayout = useLayoutStore((state) => state.startLayout)
+  // Only one layout runs at a time (#982): every row that starts one is
+  // disabled while a layout runs, on any network.
+  const layoutRunning: boolean = useLayoutStore((state) => state.isRunning)
   const layoutEngines: LayoutEngine[] = useLayoutStore(
     (state) => state.layoutEngines,
   )
@@ -146,6 +150,15 @@ export const LayoutMenu = (): JSX.Element => {
       currentNetworkId === targetNetworkId && // the hierarchy network is the active view
       cellViewIsSelected) || // the cell view tab is selected
     targetNetworkId === '' // no network is selected
+
+  // Rows that start a layout are also disabled while one runs.
+  const startDisabled: boolean = allDisabled || layoutRunning
+  const disabledTooltip: string =
+    targetNetworkId === ''
+      ? 'Layouts are disabled since the network view is empty'
+      : allDisabled
+        ? 'Layouts cannot be applied to the current network view'
+        : 'A layout is already running'
 
   const handleClose = (): void => {
     setOpen(false)
@@ -280,6 +293,7 @@ export const LayoutMenu = (): JSX.Element => {
               network: target,
               networkId: targetNetworkId,
               afterLayout,
+              startLayout,
               setIsRunning,
             })
           },
@@ -292,12 +306,8 @@ export const LayoutMenu = (): JSX.Element => {
     // The block of third-party entries: app algorithms first, then service
     // apps routed to the Layout root. Rendered between the core algorithms
     // and Layout Tools, with a divider on each side; absent when empty.
-    const disabledTooltip =
-      targetNetworkId === ''
-        ? 'Layouts are disabled since the network view is empty'
-        : 'Layouts cannot be applied to the current network view'
     const appMenuItems: ToolbarMenuItem[] = appAlgorithmRows.map((row) =>
-      allDisabled
+      startDisabled
         ? {
             template: (
               <DropdownMenuItem
@@ -325,6 +335,7 @@ export const LayoutMenu = (): JSX.Element => {
                     network: target,
                     networkId: targetNetworkId,
                     afterLayout,
+                    startLayout,
                     setIsRunning,
                   })
                 }}
@@ -378,16 +389,15 @@ export const LayoutMenu = (): JSX.Element => {
       {
         template: (
           <DropdownMenuItem
+            dataTestId="layout-menu-apply-default"
             label="Apply Default Layout"
             icon={<PlayArrowIcon />}
             tooltip={
-              allDisabled
-                ? targetNetworkId === ''
-                  ? 'Layouts are disabled since the network view is empty'
-                  : 'Layouts cannot be applied to the current network view'
+              startDisabled
+                ? disabledTooltip
                 : `Apply default layout - ${preferredLayout.displayName}`
             }
-            disabled={allDisabled}
+            disabled={startDisabled}
             onClick={() => {
               handleClose()
               applyDefaultLayout({
@@ -396,6 +406,7 @@ export const LayoutMenu = (): JSX.Element => {
                 network: target,
                 networkId: targetNetworkId,
                 afterLayout,
+                startLayout,
                 setIsRunning,
               })
             }}
@@ -405,7 +416,7 @@ export const LayoutMenu = (): JSX.Element => {
       {
         separator: true,
       },
-      ...(allDisabled
+      ...(startDisabled
         ? sortedMenuItemsWithDividers.map((menuItem) => {
             // Render divider
             if (menuItem.isDivider) {
@@ -419,11 +430,7 @@ export const LayoutMenu = (): JSX.Element => {
                   key={menuItem.key}
                   dataTestId={`layout-menu-item-${menuItem.key}`}
                   label={menuItem.label}
-                  tooltip={
-                    targetNetworkId === ''
-                      ? 'Layouts are disabled since the network view is empty'
-                      : 'Layouts cannot be applied to the current network view'
-                  }
+                  tooltip={disabledTooltip}
                   disabled={true}
                 />
               ),

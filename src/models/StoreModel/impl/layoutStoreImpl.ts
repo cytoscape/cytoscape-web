@@ -70,6 +70,18 @@ export const setIsRunning = (
 }
 
 /**
+ * Claim the single layout run for `networkId` (#982). Returns the state with
+ * the running flag raised for that network, or undefined when a layout
+ * already runs: only one runs at a time, so a second one can neither
+ * overwrite the first's positions nor lower its flag.
+ */
+export const startLayout = (
+  state: LayoutState,
+  networkId: IdType,
+): LayoutState | undefined =>
+  state.isRunning ? undefined : setIsRunning(state, true, networkId)
+
+/**
  * Whether the "Applying layout..." indicator belongs on the view of
  * `networkId`. A run that names its network shows only there, whichever view
  * is active: with two canvases open, a layout can run on one while the other

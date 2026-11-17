@@ -7,6 +7,7 @@ import { Outlet, useParams } from 'react-router-dom'
 
 import { useLayoutStore } from '../../data/hooks/stores/LayoutStore'
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
+import { runLayoutWhenIdle } from '../../data/hooks/stores/runLayoutWhenIdle'
 import { useNetworkSummaryStore } from '../../data/hooks/stores/NetworkSummaryStore'
 import { useTableStore } from '../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
@@ -54,6 +55,7 @@ import { useUndoStore } from '../../data/hooks/stores/UndoStore'
 import { logUi } from '../../debug'
 import { CyNetwork } from '../../models'
 import { getDefaultLayout } from '../../models/LayoutModel/impl/layoutSelection'
+import { runEngineLayout } from '../../models/LayoutModel/impl/runEngineLayout'
 import { useCreateNetworkFromTableStore } from '../TableDataLoader/store/createNetworkFromTableStore'
 import { useJoinTableToNetworkStore } from '../TableDataLoader/store/joinTableToNetworkStore'
 
@@ -177,6 +179,9 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   const setIsRunning: (isRunning: boolean, networkId?: IdType) => void =
     useLayoutStore((state) => state.setIsRunning)
+  const startLayout: (networkId: IdType) => boolean = useLayoutStore(
+    (state) => state.startLayout,
+  )
 
   const updateSummary = useNetworkSummaryStore((state) => state.update)
 
@@ -265,7 +270,6 @@ const WorkSpaceEditor = (): JSX.Element => {
           if (layoutEngine !== undefined) {
             const summaryWithLayout = { ...summary, hasLayout: true }
 
-            setIsRunning(true, networkId)
             const handleLayoutComplete = createLayoutCompletionHandler(
               networkId,
               {
@@ -287,12 +291,24 @@ const WorkSpaceEditor = (): JSX.Element => {
               },
             )
 
-            layoutEngine.apply(
-              network.nodes,
-              network.edges,
-              handleLayoutComplete,
-              layoutEngine.algorithms[defaultLayout.algorithmName],
-              networkId,
+            // Only one layout runs at a time (#982). This one must not be
+            // dropped, or the network keeps no positions, so it waits for a
+            // running layout to finish; a network removed meanwhile is not
+            // laid out. The shared runner also contains a failing engine
+            // (logged, running flag lowered).
+            runLayoutWhenIdle(
+              () =>
+                !useNetworkStore.getState().networks.has(networkId) ||
+                runEngineLayout({
+                  engine: layoutEngine,
+                  algorithm:
+                    layoutEngine.algorithms[defaultLayout.algorithmName],
+                  network,
+                  networkId,
+                  afterLayout: handleLayoutComplete,
+                  startLayout,
+                  setIsRunning,
+                }),
             )
           }
         }
