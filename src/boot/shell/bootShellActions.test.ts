@@ -4,7 +4,10 @@ import {
   registerBootShellAction,
   resetBootShellActionsForTesting,
 } from './bootShellActions'
-import { BOOT_SHELL_TESTID } from './bootShellMarkup'
+import {
+  BOOT_SHELL_ACTION_STATUS_TESTID,
+  BOOT_SHELL_TESTID,
+} from './bootShellMarkup'
 import { showBootShell } from './showBootShell'
 
 const ACTION_ID = 'reset-database'
@@ -109,7 +112,9 @@ describe('boot shell recovery actions', () => {
     })
     const button = paintWithAction()
     const status = (): HTMLElement | null =>
-      document.querySelector('.boot-shell-error-action-status')
+      document.querySelector(
+        `[data-testid="${BOOT_SHELL_ACTION_STATUS_TESTID}"]`,
+      )
 
     // Present from the first paint, hidden and empty.
     expect(status()?.hasAttribute('hidden')).toBe(true)
@@ -144,7 +149,9 @@ describe('boot shell recovery actions', () => {
       expect(button.hasAttribute('disabled')).toBe(false)
     })
     expect(
-      document.querySelector('.boot-shell-error-action-status')?.textContent,
+      document.querySelector(
+        `[data-testid="${BOOT_SHELL_ACTION_STATUS_TESTID}"]`,
+      )?.textContent,
     ).toBe('Could not delete cyweb-db. Please try again.')
   })
 

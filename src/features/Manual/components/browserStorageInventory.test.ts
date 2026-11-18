@@ -40,31 +40,64 @@ const sourceFiles = (dir: string): string[] =>
   })
 
 /**
- * Every file that writes Web Storage, and the key it writes. A new writer
- * fails the scan below until it is added here and to the inventory.
+ * Every file that writes Web Storage: which storage, and each key it writes,
+ * by the name of the constant the file passes. A new writer fails the scan
+ * below until it is added here, and a writer that starts writing a second key
+ * fails until that key is added here and to the inventory.
  */
-const WRITERS: Record<string, { local?: string; session?: string }> = {
-  'debug.ts': { local: DEBUG_OVERRIDE_KEY },
-  'data/hooks/useCrashDataConsent.ts': { local: CONSENT_STORAGE_KEY },
+const WRITERS: Record<
+  string,
+  { storage: 'local' | 'session'; keys: Record<string, string> }
+> = {
+  'debug.ts': { storage: 'local', keys: { DEBUG_OVERRIDE_KEY } },
+  'data/hooks/useCrashDataConsent.ts': {
+    storage: 'local',
+    keys: { CONSENT_STORAGE_KEY },
+  },
   'data/hooks/useCytoscapeDesktopPermissionNotice.ts': {
-    local: DESKTOP_PERMISSION_NOTICE_STORAGE_KEY,
+    storage: 'local',
+    keys: { DESKTOP_PERMISSION_NOTICE_STORAGE_KEY },
   },
   'features/Onboarding/store/onboardingPersistence.ts': {
-    local: ONBOARDING_STORAGE_KEY,
+    storage: 'local',
+    keys: { ONBOARDING_STORAGE_KEY },
   },
   // zustand's `persist` middleware defaults to localStorage.
   'features/NetworkSearch/store/networkSearchProviderSelectionStore.ts': {
-    local: NETWORK_SEARCH_STORAGE_KEY,
+    storage: 'local',
+    keys: { NETWORK_SEARCH_STORAGE_KEY },
   },
-  'data/tabState/tabNetwork.ts': { session: TAB_NETWORK_KEY },
-  'data/tabState/tabViewState.ts': { session: TAB_VIEW_STATE_KEY },
+  'data/tabState/tabNetwork.ts': {
+    storage: 'session',
+    keys: { TAB_NETWORK_KEY },
+  },
+  'data/tabState/tabViewState.ts': {
+    storage: 'session',
+    keys: { TAB_VIEW_STATE_KEY },
+  },
   'features/LLMQuery/store/llmKeySession.ts': {
-    session: LLM_API_KEYS_SESSION_KEY,
+    storage: 'session',
+    keys: { LLM_API_KEYS_SESSION_KEY },
   },
 }
 
 const WRITES_STORAGE =
   /\b(localStorage|sessionStorage)\.setItem\(|import\s*\{[^}]*\bpersist\b[^}]*\}\s*from\s*'zustand\/middleware'/
+
+/**
+ * The key argument of every write in a file, as written: the first argument
+ * of each `setItem(` call, and the `name` of a zustand `persist` store.
+ */
+const keyArguments = (source: string): string[] => [
+  ...[
+    ...source.matchAll(
+      /\b(?:localStorage|sessionStorage)\.setItem\(\s*([^,)]+)/g,
+    ),
+  ].map((match) => match[1].trim()),
+  ...(/\bpersist\(/.test(source)
+    ? [...source.matchAll(/\bname:\s*([^,}\s]+)/g)].map((match) => match[1])
+    : []),
+]
 
 describe('browser storage inventory', () => {
   it('lists every Web Storage writer in src/', () => {
@@ -76,18 +109,27 @@ describe('browser storage inventory', () => {
     expect(writers).toEqual(Object.keys(WRITERS).sort())
   })
 
-  it('names the key of every localStorage writer', () => {
-    for (const { local } of Object.values(WRITERS)) {
-      if (local !== undefined) {
-        expect(CYWEB_LOCAL_STORAGE_KEYS).toContain(local)
+  it('knows every key each writer writes', () => {
+    for (const [file, { keys }] of Object.entries(WRITERS)) {
+      const written = keyArguments(readFileSync(join(SRC, file), 'utf8'))
+
+      expect(written.length, file).toBeGreaterThan(0)
+      for (const argument of written) {
+        expect(Object.keys(keys), `${file} writes ${argument}`).toContain(
+          argument,
+        )
       }
     }
   })
 
-  it('names the key of every sessionStorage writer', () => {
-    for (const { session } of Object.values(WRITERS)) {
-      if (session !== undefined) {
-        expect(CYWEB_SESSION_STORAGE_KEYS).toContain(session)
+  it('lists every written key in the inventory for its storage', () => {
+    for (const { storage, keys } of Object.values(WRITERS)) {
+      const inventory: readonly string[] =
+        storage === 'local'
+          ? CYWEB_LOCAL_STORAGE_KEYS
+          : CYWEB_SESSION_STORAGE_KEYS
+      for (const key of Object.values(keys)) {
+        expect(inventory).toContain(key)
       }
     }
   })

@@ -63,10 +63,36 @@ class CyProfileDB extends Dexie {
 }
 
 let profileDb: CyProfileDB | undefined
+let suspendedUntilReload = false
 
 const getProfileDb = (): CyProfileDB => {
+  if (suspendedUntilReload) {
+    throw new Error(
+      'The profile database is being deleted by Clear Local Cache; ' +
+        'settings cannot be read or saved until the page reloads.',
+    )
+  }
   profileDb ??= new CyProfileDB(PROFILE_DB_NAME)
   return profileDb
+}
+
+/**
+ * Refuse every profile read and write until the page reloads. Clear Local
+ * Cache calls this before it deletes the database, in its own tab and in its
+ * peers: `closeProfileDb()` alone would let the next `putProfileSetting` open,
+ * and so re-create, the database the clear has just deleted.
+ *
+ * Separate from `suspendWritesUntilReload()` on purpose (see the header):
+ * Load Workspace flips that one, and does not delete this database. A refused
+ * write rejects like any failed write; a refused read is "not saved".
+ */
+export const suspendProfileWritesUntilReload = (): void => {
+  suspendedUntilReload = true
+  closeProfileDb()
+}
+
+export const resumeProfileWritesForTesting = (): void => {
+  suspendedUntilReload = false
 }
 
 /**

@@ -1,11 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { resumeWritesForTesting } from '@/data/hooks/stores/persistenceScheduler'
-import { CYWEB_DATABASE_NAMES } from './browserStorageInventory'
+import {
+  CYWEB_DATABASE_NAMES,
+  removeCywebLocalStorage,
+  removeCywebSessionStorage,
+} from './browserStorageInventory'
 import { clearLocalCache, waitingForOtherTabsMessage } from './clearLocalCache'
 import { initializeDb } from './index'
 import { announceDatabaseReset } from './lifecycle'
-import { putProfileSetting } from './profileDb'
+import {
+  getProfileSetting,
+  putProfileSetting,
+  resumeProfileWritesForTesting,
+} from './profileDb'
 
 // The real handshake waits PEER_CLOSE_GRACE_MS for peers that do not exist
 // here; lifecycle.test.ts covers it. Only the call is checked.
@@ -60,6 +68,7 @@ beforeEach(() => {
 
 afterEach(async () => {
   resumeWritesForTesting()
+  resumeProfileWritesForTesting()
   // clearLocalCache closes the editor database; later tests expect it open.
   await initializeDb()
 })
@@ -88,6 +97,9 @@ describe('clearLocalCache', () => {
     localStorage.setItem('cytoscapeWebCrashDataConsent', '{}')
     localStorage.setItem('cyweb-debug-enabled', 'true')
     localStorage.setItem('Dexie.Observable/latestRevision/cyweb-db', '3')
+    localStorage.setItem('Dexie.Observable/deadnode:7/cyweb-manual-db', 'dead')
+    // dexie-observable keys for another app's database on the same origin.
+    localStorage.setItem('Dexie.Observable/latestRevision/other-db', '9')
     localStorage.setItem('kc-callback-abc', '{}')
     localStorage.setItem('another-app-on-this-origin', 'keep me')
     sessionStorage.setItem('cyweb.tab.viewState', '{}')
@@ -96,7 +108,10 @@ describe('clearLocalCache', () => {
 
     expect(await clearLocalCache()).toEqual({ status: 'cleared' })
 
-    expect(Object.keys(localStorage)).toEqual(['another-app-on-this-origin'])
+    expect(Object.keys(localStorage).sort()).toEqual([
+      'Dexie.Observable/latestRevision/other-db',
+      'another-app-on-this-origin',
+    ])
     expect(Object.keys(sessionStorage)).toEqual(['another-app-session'])
   })
 
@@ -150,6 +165,57 @@ describe('clearLocalCache', () => {
     })
     await new Promise((resolve) => setTimeout(resolve, 40))
     expect(onWaiting).not.toHaveBeenCalled()
+  })
+
+  it('refuses a profile write while it waits, so the deleted database stays deleted', async () => {
+    await putProfileSetting('llmQueryOptions', { model: 'before' })
+    await seedDatabase('cyweb-manual-db')
+    const blocker = await openUncooperativeConnection('cyweb-manual-db')
+    const onWaiting = vi.fn()
+
+    const clearing = clearLocalCache({ noticeAfterMs: 20, onWaiting })
+    await vi.waitFor(() => {
+      expect(onWaiting).toHaveBeenCalled()
+    })
+    // The profile database is already gone; a save must not re-create it.
+    await expect(
+      putProfileSetting('llmQueryOptions', { model: 'after' }),
+    ).rejects.toThrow('Clear Local Cache')
+    expect(await getProfileSetting('llmQueryOptions')).toBeUndefined()
+
+    blocker.close()
+    expect(await clearing).toEqual({ status: 'cleared' })
+    expect(await existingDatabaseNames()).not.toContain('cyweb-profile-db')
+  })
+})
+
+describe('storage helpers', () => {
+  it('report a blocked storage getter instead of throwing', () => {
+    const throwing = Object.getOwnPropertyDescriptor(globalThis, 'localStorage')
+    const throwingSession = Object.getOwnPropertyDescriptor(
+      globalThis,
+      'sessionStorage',
+    )
+    const blocked = (): never => {
+      throw new DOMException('Access is denied', 'SecurityError')
+    }
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      get: blocked,
+    })
+    Object.defineProperty(globalThis, 'sessionStorage', {
+      configurable: true,
+      get: blocked,
+    })
+    try {
+      expect(removeCywebLocalStorage()).toBe(false)
+      expect(removeCywebSessionStorage()).toBe(false)
+    } finally {
+      if (throwing) Object.defineProperty(globalThis, 'localStorage', throwing)
+      if (throwingSession) {
+        Object.defineProperty(globalThis, 'sessionStorage', throwingSession)
+      }
+    }
   })
 })
 

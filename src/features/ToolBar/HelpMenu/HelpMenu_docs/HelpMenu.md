@@ -58,9 +58,10 @@ The menu, top to bottom (`---` marks a divider):
     `ClearLocalCacheProgress` covers the editor, since the tab can no longer
     save anything; if another tab is holding a database open, the overlay says
     which and asks the reader to close their other tabs, and the clear finishes
-    once they do. A real failure names what could not be deleted in an
-    `alert()` and reloads, since the tab's database connections are already
-    closed.
+    once they do. The overlay renders in a portal and makes the app root `inert`,
+    so the editor behind it is unreachable by keyboard and screen readers too.
+    A real failure keeps the overlay up with the reason, **Try Again** (a retry
+    is safe) and **Reload**.
 - License
 
 ---

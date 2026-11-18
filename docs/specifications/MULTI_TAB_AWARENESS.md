@@ -213,11 +213,13 @@ handshake in `src/data/db/lifecycle.ts`:
 1. deleter posts `DATABASE_DELETED`
 2. peers close their connection and post `DATABASE_DELETED_ACK`
 3. deleter waits a short grace period, then deletes — `deleteDb` gives up
-   after `DELETE_TIMEOUT_MS`; Clear Local Cache waits (see below)
+   after `DELETE_TIMEOUT_MS`; Clear Local Cache waits (see below). Meanwhile
+   it posts `DATABASE_RESET_IN_PROGRESS` every `RESET_HEARTBEAT_MS`
 4. deleter posts `DATABASE_RESET_COMPLETE`, whatever the outcome was
 5. peers reload, against a database that is already gone and recreated
 
-A deleter that dies must not leave peers stuck, so the peers' wait is bounded.
+A deleter that dies must not leave peers stuck, so the peers' wait is bounded:
+`RESET_COMPLETE_TIMEOUT_MS` after the last heartbeat.
 The previous version announced and deleted immediately while peers reloaded at
 once, so a reload could re-create the database mid-delete — the "ghost workspace"
 the announcement existed to prevent.
@@ -229,7 +231,11 @@ that never processes the announcement still lets go once its event loop turns.
 What the handshake adds is _ordering_ — peers reload after the delete instead of
 racing it. `RESET_COMPLETE_TIMEOUT_MS` is therefore set above the deleter's own
 worst case, so the fallback reload means "the deleter died", not "the deleter is
-still working" (`lifecycle.test.ts` guards that relationship).
+still working" (`lifecycle.test.ts` guards that relationship). Clear Local Cache
+has no worst case: while another tab blocks a delete it keeps waiting. Its
+heartbeat is what keeps peers from reloading in the meantime, since a peer that
+reloaded mid-clear could re-create a database the clear had already deleted.
+The timeout counts from the last heartbeat, so it still means the deleter died.
 
 `step 3` cannot wait forever. IndexedDB fires `blocked` and waits with no timeout
 of its own, so `deleteDb` races the delete against `DELETE_TIMEOUT_MS` and reports
@@ -258,6 +264,10 @@ Error page, the startup screen's status line) names the database and asks the
 reader to close their other tabs; the clear finishes and reloads by itself once
 they do. Only a connection that ignores `versionchange` can block it, since
 every Cytoscape Web tab closes on both the announcement and `versionchange`.
+While it waits, both the clearing tab and its peers refuse profile-database
+writes (`suspendProfileWritesUntilReload()`): that database does not go through
+the persistence scheduler, so without the switch a saved setting would
+re-create it after its delete.
 
 BroadcastChannel is correct here: this is a liveness signal, not data. There is
 nothing to replay, and it has to arrive _before_ the data it refers to is gone.

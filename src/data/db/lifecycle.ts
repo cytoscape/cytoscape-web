@@ -18,11 +18,12 @@
  *    after `DELETE_TIMEOUT_MS` (`src/data/db/index.ts`); Clear Local Cache
  *    waits for as long as a delete is blocked and says so on screen
  *    (`clearLocalCache.ts`)
+ *    Meanwhile it posts `DATABASE_RESET_IN_PROGRESS` every `RESET_HEARTBEAT_MS`.
  * 4. deleter posts `DATABASE_RESET_COMPLETE`, whatever the outcome was
  * 5. peers reload — against a database that is already gone and freshly created
  *
  * A dead deleter must never leave peers stuck on a blank page, so the peers'
- * wait is bounded (`RESET_COMPLETE_TIMEOUT_MS`). BroadcastChannel is the right transport here because
+ * wait is bounded: `RESET_COMPLETE_TIMEOUT_MS` after the last heartbeat. BroadcastChannel is the right transport here because
  * this is a liveness signal — there is nothing to replay, and it has to arrive
  * before the data it refers to is gone.
  *
@@ -39,7 +40,7 @@ import { logDb } from '@/debug'
 import { getTabId } from '@/data/tabState/tabId'
 import { removeCywebSessionStorage } from './browserStorageInventory'
 import { currentDbScope, uiEventsChannelFor } from './dbScope'
-import { closeProfileDb } from './profileDb'
+import { closeProfileDb, suspendProfileWritesUntilReload } from './profileDb'
 
 // Scoped like the database, so a reset in the manual's sandbox never reloads
 // an editor tab (#839).
@@ -57,6 +58,7 @@ export const ALL_UI_EVENTS_CHANNELS: readonly string[] = [
 export const DATABASE_DELETED = 'DATABASE_DELETED'
 export const DATABASE_DELETED_ACK = 'DATABASE_DELETED_ACK'
 export const DATABASE_RESET_COMPLETE = 'DATABASE_RESET_COMPLETE'
+export const DATABASE_RESET_IN_PROGRESS = 'DATABASE_RESET_IN_PROGRESS'
 
 /**
  * How long the deleter waits for peers to release their connections. A
@@ -79,8 +81,8 @@ export const PEER_CLOSE_GRACE_MS = 300
  * `lifecycle.test.ts` guards the relationship.
  *
  * Clear Local Cache has no worst case: it waits for as long as another tab
- * blocks a delete. Its peers then reload at this timeout, which is the early
- * reload described next.
+ * blocks a delete. Its heartbeat (`RESET_HEARTBEAT_MS`) is what keeps the
+ * peers from reloading in the meantime; this timeout counts from the last one.
  *
  * Reloading early is safe but pointless: IndexedDB processes a database's
  * connection queue in order, so an `open()` issued while a delete is still
@@ -88,6 +90,19 @@ export const PEER_CLOSE_GRACE_MS = 300
  * reloading tab sits on a blank boot until the delete resolves.
  */
 export const RESET_COMPLETE_TIMEOUT_MS = 6300
+
+/**
+ * While a reset is running, the deleter posts `DATABASE_RESET_IN_PROGRESS` this
+ * often, and each one restarts a peer's `RESET_COMPLETE_TIMEOUT_MS` wait.
+ *
+ * Clear Local Cache waits for as long as another tab blocks a delete. Without
+ * a heartbeat a peer would reload at the timeout, mid-clear, and its boot
+ * could re-create a database the clear had already deleted. With one, a peer
+ * reloads early only when the heartbeats stop, which means the deleter is
+ * gone. Well under the timeout, so a busy main thread that delays one beat
+ * does not trip it (`lifecycle.test.ts` guards that).
+ */
+export const RESET_HEARTBEAT_MS = 2000
 
 const delay = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms))
@@ -128,6 +143,18 @@ export const announceDatabaseReset = async (
       clearsLocalCache: options.clearsLocalCache === true,
     })
   }
+  // Keeps the peers waiting for as long as the deletion runs, however long a
+  // blocked delete takes; see RESET_HEARTBEAT_MS.
+  const heartbeat = setInterval(() => {
+    for (const channel of channels) {
+      try {
+        channel.postMessage({ type: DATABASE_RESET_IN_PROGRESS })
+      } catch (e) {
+        logDb.warn('[announceDatabaseReset] Failed to send a heartbeat', e)
+      }
+    }
+  }, RESET_HEARTBEAT_MS)
+
   await delay(PEER_CLOSE_GRACE_MS)
 
   logDb.info(
@@ -135,6 +162,7 @@ export const announceDatabaseReset = async (
   )
 
   return () => {
+    clearInterval(heartbeat)
     for (const channel of channels) {
       try {
         channel.postMessage({ type: DATABASE_RESET_COMPLETE })
@@ -200,7 +228,11 @@ export const handleDatabaseDeleted = async (
     // Release the connections first: until this resolves, the other tab's
     // Dexie.delete() is blocked on us. The profile database only matters to
     // Clear Local Cache, but closing it is harmless otherwise: it reopens on
-    // its next use.
+    // its next use. Unless the clear is deleting it: then a later profile
+    // write must not reopen, and so re-create, it before this tab reloads.
+    if (options.clearSessionStorage === true) {
+      suspendProfileWritesUntilReload()
+    }
     closeProfileDb()
     await closeDb()
   } catch (e) {
@@ -215,13 +247,19 @@ export const handleDatabaseDeleted = async (
   }
 
   // Reload as soon as the deleter says it is finished, or after the timeout if
-  // it never does.
-  const timer = setTimeout(reloadOnce, RESET_COMPLETE_TIMEOUT_MS)
+  // it goes quiet. Each heartbeat restarts the timeout: the deleter is still
+  // working, and a reload now could re-create what it already deleted.
+  let timer = setTimeout(reloadOnce, RESET_COMPLETE_TIMEOUT_MS)
   const previousHandler = channel.onmessage
   channel.onmessage = (event) => {
     if (event.data?.type === DATABASE_RESET_COMPLETE) {
       clearTimeout(timer)
       reloadOnce()
+      return
+    }
+    if (event.data?.type === DATABASE_RESET_IN_PROGRESS) {
+      clearTimeout(timer)
+      timer = setTimeout(reloadOnce, RESET_COMPLETE_TIMEOUT_MS)
       return
     }
     previousHandler?.call(channel, event)

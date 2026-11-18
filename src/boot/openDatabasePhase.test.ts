@@ -3,7 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { classifyBootError } from './bootError'
 import { BootPhase } from './bootPhases'
 import { resetBootShellActionsForTesting } from './shell/bootShellActions'
-import { BOOT_SHELL_TESTID } from './shell/bootShellMarkup'
+import {
+  BOOT_SHELL_ACTION_STATUS_TESTID,
+  BOOT_SHELL_TESTID,
+} from './shell/bootShellMarkup'
 import { showBootShell } from './shell/showBootShell'
 
 const openDatabaseForStartup = vi.fn()
@@ -58,7 +61,7 @@ const paintErrorShell = (cause: unknown): HTMLButtonElement | null => {
 }
 
 const statusLine = (): HTMLElement | null =>
-  document.querySelector('.boot-shell-error-action-status')
+  document.querySelector(`[data-testid="${BOOT_SHELL_ACTION_STATUS_TESTID}"]`)
 
 const failWith = async (result: Record<string, unknown>): Promise<unknown> => {
   openDatabaseForStartup.mockResolvedValue(result)

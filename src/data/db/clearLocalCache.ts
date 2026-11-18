@@ -26,7 +26,7 @@ import {
 } from './browserStorageInventory'
 import { closeDb } from './index'
 import { ALL_UI_EVENTS_CHANNELS, announceDatabaseReset } from './lifecycle'
-import { closeProfileDb } from './profileDb'
+import { suspendProfileWritesUntilReload } from './profileDb'
 
 export type ClearLocalCacheResult =
   /** Every database and key is gone. The caller must reload now. */
@@ -123,7 +123,9 @@ export const clearLocalCache = async (
     // The stores still hold the old workspace until the reload. A delayed
     // write would re-create the database the moment it is gone.
     suspendWritesUntilReload()
-    closeProfileDb()
+    // Separate switch: a profile write would otherwise re-create the profile
+    // database after its delete (it does not go through the scheduler).
+    suspendProfileWritesUntilReload()
     try {
       await closeDb()
     } catch (e) {

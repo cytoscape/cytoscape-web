@@ -88,13 +88,16 @@ test.describe('Clear Local Cache', () => {
     })
 
     await openClearLocalCacheDialog(page)
+    // Listen before the click: a fast clear can finish the reload before a
+    // listener registered afterwards would see it.
+    const reloaded = page.waitForEvent('load', { timeout: 30_000 })
     await page
       .getByTestId('confirmation-dialog')
       .getByRole('button', { name: 'Clear Cache' })
       .click()
 
     // A full page load: wait for the old document to go, then for the new boot.
-    await page.waitForEvent('load', { timeout: 30_000 })
+    await reloaded
     await expect(page.locator('[data-testid="app-shell"]')).toBeVisible({
       timeout: 30_000,
     })

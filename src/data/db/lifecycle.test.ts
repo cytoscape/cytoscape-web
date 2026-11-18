@@ -6,16 +6,19 @@ import {
   announceDatabaseReset,
   DATABASE_DELETED,
   DATABASE_RESET_COMPLETE,
+  DATABASE_RESET_IN_PROGRESS,
   handleDatabaseDeleted,
   isClearLocalCacheAnnouncement,
   PEER_CLOSE_GRACE_MS,
   RESET_COMPLETE_TIMEOUT_MS,
+  RESET_HEARTBEAT_MS,
 } from './lifecycle'
-import { closeProfileDb } from './profileDb'
+import { closeProfileDb, suspendProfileWritesUntilReload } from './profileDb'
 
 vi.mock('./profileDb', async (importOriginal) => ({
   ...((await importOriginal()) as typeof import('./profileDb')),
   closeProfileDb: vi.fn(),
+  suspendProfileWritesUntilReload: vi.fn(),
 }))
 
 describe('database reset timeouts', () => {
@@ -30,6 +33,14 @@ describe('database reset timeouts', () => {
     expect(RESET_COMPLETE_TIMEOUT_MS).toBeGreaterThan(
       PEER_CLOSE_GRACE_MS + DELETE_TIMEOUT_MS,
     )
+  })
+
+  /**
+   * A heartbeat delayed by a busy main thread must not let a peer reload
+   * mid-clear: at least two beats fit in one timeout.
+   */
+  it('beats at least twice per peer timeout', () => {
+    expect(RESET_HEARTBEAT_MS * 2).toBeLessThan(RESET_COMPLETE_TIMEOUT_MS)
   })
 })
 
@@ -91,6 +102,49 @@ describe('Clear Local Cache handshake (#989)', () => {
     }
   })
 
+  it('sends heartbeats on every channel until it releases the peers', async () => {
+    const announced = announceDatabaseReset({
+      channels: ALL_UI_EVENTS_CHANNELS,
+    })
+    await vi.advanceTimersByTimeAsync(PEER_CLOSE_GRACE_MS)
+    const release = await announced
+
+    await vi.advanceTimersByTimeAsync(RESET_HEARTBEAT_MS * 3)
+    for (const channel of FakeChannel.instances) {
+      expect(
+        channel.posted.filter(
+          (m) => (m as { type?: string }).type === DATABASE_RESET_IN_PROGRESS,
+        ),
+      ).toHaveLength(3)
+    }
+
+    release()
+    const before = FakeChannel.instances.map((c) => c.posted.length)
+    await vi.advanceTimersByTimeAsync(RESET_HEARTBEAT_MS * 3)
+    expect(FakeChannel.instances.map((c) => c.posted.length)).toEqual(before)
+  })
+
+  it('a peer keeps waiting while heartbeats arrive, and reloads once they stop', async () => {
+    const channel = new FakeChannel('cyweb-ui-events')
+    const reload = vi.fn()
+    await handleDatabaseDeleted(
+      channel as unknown as BroadcastChannel,
+      reload,
+      { clearSessionStorage: true },
+    )
+
+    // A blocked clear: well past the timeout, but the deleter is still beating.
+    for (let i = 0; i < 6; i++) {
+      await vi.advanceTimersByTimeAsync(RESET_HEARTBEAT_MS)
+      channel.onmessage?.({ data: { type: DATABASE_RESET_IN_PROGRESS } })
+    }
+    expect(reload).not.toHaveBeenCalled()
+
+    // The deleter is gone: the fallback reload still comes.
+    await vi.advanceTimersByTimeAsync(RESET_COMPLETE_TIMEOUT_MS)
+    expect(reload).toHaveBeenCalledTimes(1)
+  })
+
   it('tells a Clear Local Cache announcement apart from a workspace load', () => {
     expect(isClearLocalCacheAnnouncement({ clearsLocalCache: true })).toBe(true)
     expect(isClearLocalCacheAnnouncement({ clearsLocalCache: false })).toBe(
@@ -117,6 +171,8 @@ describe('Clear Local Cache handshake (#989)', () => {
       { clearSessionStorage: true },
     )
     expect(closeProfileDb).toHaveBeenCalled()
+    // A profile write would otherwise re-create the database being deleted.
+    expect(suspendProfileWritesUntilReload).toHaveBeenCalled()
     // Not yet: the tab can still write its per-tab state until it reloads.
     expect(sessionStorage.getItem('cyweb.tab.networkId')).toBe('n1')
 
@@ -131,10 +187,13 @@ describe('Clear Local Cache handshake (#989)', () => {
     const channel = new FakeChannel('cyweb-ui-events')
     const reload = vi.fn()
 
+    vi.mocked(suspendProfileWritesUntilReload).mockClear()
     await handleDatabaseDeleted(channel as unknown as BroadcastChannel, reload)
     channel.onmessage?.({ data: { type: DATABASE_RESET_COMPLETE } })
 
     expect(reload).toHaveBeenCalledTimes(1)
     expect(sessionStorage.getItem('cyweb.tab.networkId')).toBe('n1')
+    // Load Workspace keeps the profile database, and so its settings.
+    expect(suspendProfileWritesUntilReload).not.toHaveBeenCalled()
   })
 })

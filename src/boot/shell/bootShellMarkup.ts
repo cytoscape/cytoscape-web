@@ -28,6 +28,7 @@ export const BOOT_SHELL_ARMED_CLASS = 'boot-shell-error-button-armed'
 export const BOOT_SHELL_ACTION_CONFIRM_CLASS = 'boot-shell-error-action-confirm'
 /** Where a running action reports progress or why it failed. */
 export const BOOT_SHELL_ACTION_STATUS_CLASS = 'boot-shell-error-action-status'
+export const BOOT_SHELL_ACTION_STATUS_TESTID = 'boot-shell-action-status'
 
 /** `full` includes the toolbar strip; `content` sits below the real toolbar. */
 export type BootShellRegion = 'full' | 'content'
@@ -522,7 +523,7 @@ const errorActionHtml = (action: BootShellErrorAction): string => `
         <p class="${BOOT_SHELL_ACTION_CONFIRM_CLASS}" hidden>${escapeHtml(
           action.confirmMessage,
         )}</p>
-        <p class="${BOOT_SHELL_ACTION_STATUS_CLASS}" role="status" aria-live="polite" hidden></p>
+        <p class="${BOOT_SHELL_ACTION_STATUS_CLASS}" data-testid="${BOOT_SHELL_ACTION_STATUS_TESTID}" role="status" aria-live="polite" hidden></p>
       </div>`
 
 const errorHtml = (error: BootShellError): string => `

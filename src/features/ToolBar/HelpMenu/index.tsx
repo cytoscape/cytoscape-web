@@ -76,18 +76,20 @@ export const HelpMenu = () => {
   // reload, and says so when another tab is holding a database open; the clear
   // waits for that tab rather than failing. Success reloads inside the hook. A
   // failure has closed this tab's database connections, so nothing it does
-  // from here would be saved: report it, then reload so a retry starts clean.
+  // from here would be saved: the overlay stays up with the reason and offers
+  // Try Again (a retry is safe) or Reload.
   const {
     clear: clearCache,
     isClearing,
     waitingFor,
     reload,
   } = useClearLocalCache()
+  const [clearFailure, setClearFailure] = useState<string | null>(null)
   const handleClearLocalCache = (): void => {
+    setClearFailure(null)
     void clearCache().then((result) => {
       if (result.status === 'failed') {
-        alert(`${result.reason}\n\nCytoscape Web will now reload.`)
-        reload()
+        setClearFailure(result.reason)
       }
     })
   }
@@ -217,7 +219,13 @@ export const HelpMenu = () => {
         buttonTitle="Clear Cache"
         isAlert
       />
-      <ClearLocalCacheProgress open={isClearing} waitingFor={waitingFor} />
+      <ClearLocalCacheProgress
+        open={isClearing || clearFailure !== null}
+        waitingFor={waitingFor}
+        failure={isClearing ? null : clearFailure}
+        onRetry={handleClearLocalCache}
+        onReload={reload}
+      />
       {dialogs}
     </>
   )

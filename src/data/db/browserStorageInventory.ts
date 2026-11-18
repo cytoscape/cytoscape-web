@@ -40,15 +40,32 @@ export const CYWEB_LOCAL_STORAGE_KEYS = [
 export type CywebLocalStorageKey = (typeof CYWEB_LOCAL_STORAGE_KEYS)[number]
 
 /**
+ * dexie-observable's localStorage keys all end in the database name:
+ * `Dexie.Observable/latestRevision/<db>`, `Dexie.Observable/intercomm/<db>`
+ * and `Dexie.Observable/deadnode:<id>/<db>`. Only those for one of
+ * Cytoscape Web's databases are ours; another app on the origin may use the
+ * library for its own.
+ */
+export const DEXIE_OBSERVABLE_KEY_PREFIX = 'Dexie.Observable/'
+
+/**
  * localStorage key prefixes written by libraries on Cytoscape Web's behalf.
  * Matched with `startsWith`, never a regular expression.
  */
 export const CYWEB_LOCAL_STORAGE_PREFIXES: readonly string[] = [
-  // dexie-observable: `latestRevision/<db>`, `intercomm/<db>`, `deadnode:<id>`.
-  'Dexie.Observable/',
-  // keycloak-js: the state of a login redirect that never came back.
+  // keycloak-js: the state of a login redirect that never came back. The key
+  // carries no owner, only a random state id, so every one on the origin
+  // goes; at worst that restarts a login redirect that is in flight.
   'kc-callback-',
 ]
+
+const isCywebDexieObservableKey = (key: string): boolean => {
+  if (!key.startsWith(DEXIE_OBSERVABLE_KEY_PREFIX)) {
+    return false
+  }
+  const database = key.slice(key.lastIndexOf('/') + 1)
+  return CYWEB_DATABASE_NAMES.includes(database)
+}
 
 /** sessionStorage keys Cytoscape Web writes. Each tab has its own copy. */
 export const CYWEB_SESSION_STORAGE_KEYS = [
@@ -61,6 +78,7 @@ export type CywebSessionStorageKey = (typeof CYWEB_SESSION_STORAGE_KEYS)[number]
 
 const isCywebLocalKey = (key: string): boolean =>
   (CYWEB_LOCAL_STORAGE_KEYS as readonly string[]).includes(key) ||
+  isCywebDexieObservableKey(key) ||
   CYWEB_LOCAL_STORAGE_PREFIXES.some((prefix) => key.startsWith(prefix))
 
 /**
@@ -69,22 +87,23 @@ const isCywebLocalKey = (key: string): boolean =>
  *
  * @returns false when storage could not be read or written.
  */
-export const removeCywebLocalStorage = (
-  storage: Storage | undefined = globalThis.localStorage,
-): boolean => {
-  if (storage === undefined) {
-    return true
-  }
+export const removeCywebLocalStorage = (storage?: Storage): boolean => {
   try {
+    // Resolved in here, not as a default parameter: the `localStorage` getter
+    // itself throws SecurityError when the browser blocks site data.
+    const target = storage ?? globalThis.localStorage
+    if (target === undefined) {
+      return true
+    }
     // Collect first: removing while indexing shifts the remaining keys.
     const keys: string[] = []
-    for (let i = 0; i < storage.length; i++) {
-      const key = storage.key(i)
+    for (let i = 0; i < target.length; i++) {
+      const key = target.key(i)
       if (key !== null && isCywebLocalKey(key)) {
         keys.push(key)
       }
     }
-    keys.forEach((key) => storage.removeItem(key))
+    keys.forEach((key) => target.removeItem(key))
     return true
   } catch {
     return false
@@ -96,14 +115,14 @@ export const removeCywebLocalStorage = (
  *
  * @returns false when storage could not be written.
  */
-export const removeCywebSessionStorage = (
-  storage: Storage | undefined = globalThis.sessionStorage,
-): boolean => {
-  if (storage === undefined) {
-    return true
-  }
+export const removeCywebSessionStorage = (storage?: Storage): boolean => {
   try {
-    CYWEB_SESSION_STORAGE_KEYS.forEach((key) => storage.removeItem(key))
+    // Inside the try for the same reason as removeCywebLocalStorage.
+    const target = storage ?? globalThis.sessionStorage
+    if (target === undefined) {
+      return true
+    }
+    CYWEB_SESSION_STORAGE_KEYS.forEach((key) => target.removeItem(key))
     return true
   } catch {
     return false

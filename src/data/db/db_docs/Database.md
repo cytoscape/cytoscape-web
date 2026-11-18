@@ -117,7 +117,11 @@ code put on the origin are left alone. It announces on both scopes' channels
 connections, drop their own sessionStorage keys and reload. A delete that
 another tab blocks is waited for, not abandoned: after `CLEAR_WAIT_NOTICE_MS`
 the `onWaiting` callback names the databases, and each caller shows
-`waitingForOtherTabsMessage()`. A delete IndexedDB refuses makes the whole call
+`waitingForOtherTabsMessage()`. Peers keep waiting as long as the
+announcement's heartbeat (`RESET_HEARTBEAT_MS`) arrives, and both sides call
+`suspendProfileWritesUntilReload()` so a profile write cannot re-create the
+profile database. Only dexie-observable keys for Cytoscape Web's own databases
+are removed. A delete IndexedDB refuses makes the whole call
 `failed`, naming the database, and the storage keys stay. It imports no React, router or store code, because the boot-failure
 shell calls it before React mounts. `features/Manual/components/browserStorageInventory.test.ts` fails when
 a file starts writing Web Storage without being listed.
