@@ -74,9 +74,12 @@ with an action the reader can take, so its error shell offers
 `clearLocalCache()` function as the error page's button in
 `src/features/Error.tsx` and Help › Developer › Clear Local Cache. The React
 button cannot be reused directly because React never mounts on this path, so
-`clearLocalCache()` imports no React, router or store code. A clear that leaves
-any database behind throws, which re-enables the button and keeps the reader on
-the shell.
+`clearLocalCache()` imports no React, router or store code. The action writes
+to a status line under the button: while another tab holds a database open it
+names the database and asks the reader to close their other tabs (the clear
+then finishes and reloads by itself), and a clear that fails shows its reason
+there before throwing, which re-enables the button and keeps the reader on the
+shell.
 
 Two constraints on that button:
 

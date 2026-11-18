@@ -1,4 +1,7 @@
-import { clearLocalCache } from '@/data/db/clearLocalCache'
+import {
+  clearLocalCache,
+  waitingForOtherTabsMessage,
+} from '@/data/db/clearLocalCache'
 import {
   openDatabaseForStartup,
   type DbOpenResult,
@@ -46,14 +49,21 @@ export const RESET_DATABASE_ACTION_ID = 'reset-database'
  * not pay for a button it will never paint.
  */
 const registerResetAction = (): void => {
-  registerBootShellAction(RESET_DATABASE_ACTION_ID, async () => {
+  registerBootShellAction(RESET_DATABASE_ACTION_ID, async ({ setStatus }) => {
     logDb.info('[openDatabasePhase] clearing the local cache on request')
-    const result = await clearLocalCache()
+    const result = await clearLocalCache({
+      // Another tab holding a database open: the clear waits for it, and the
+      // reader needs to know what to close.
+      onWaiting: (databases) =>
+        setStatus(waitingForOtherTabsMessage(databases)),
+    })
 
     // A partial clear is not a clear. Throwing re-enables the button
     // (bootShellActions catches it) and leaves the reader on the same error
-    // shell, where a retry is safe, rather than reloading into it again.
+    // shell, where a retry is safe, rather than reloading into it again. The
+    // status line says why, or the click would look like it did nothing.
     if (result.status === 'failed') {
+      setStatus(result.reason)
       throw new Error(`local cache not cleared: ${result.reason}`)
     }
 

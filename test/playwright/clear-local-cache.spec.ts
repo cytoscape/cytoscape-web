@@ -121,4 +121,62 @@ test.describe('Clear Local Cache', () => {
     expect(names).not.toContain('cyweb-manual-db')
     expect(names).not.toContain('cyweb-manual-profile-db')
   })
+
+  test('waits for a tab that holds a database open, says so, then finishes', async ({
+    page,
+    context,
+  }) => {
+    await gotoAndSeedNetwork(page)
+    await page.evaluate(() => {
+      localStorage.setItem('cyweb-network-search', '{}')
+    })
+
+    // Same origin, but not the app: it never hears the reset announcement, and
+    // a raw connection ignores versionchange, so the delete is blocked.
+    const holder = await context.newPage()
+    await holder.goto('/silent-check-sso.html')
+    await holder.evaluate(
+      async () =>
+        await new Promise<void>((resolve, reject) => {
+          const request = indexedDB.open('cyweb-manual-db')
+          request.onsuccess = () => {
+            ;(window as unknown as { hold: IDBDatabase }).hold = request.result
+            resolve()
+          }
+          request.onerror = () => reject(request.error)
+        }),
+    )
+
+    await openClearLocalCacheDialog(page)
+    await page
+      .getByTestId('confirmation-dialog')
+      .getByRole('button', { name: 'Clear Cache' })
+      .click()
+
+    const waiting = page.getByTestId('clear-local-cache-waiting')
+    await expect(waiting).toContainText('cyweb-manual-db', { timeout: 10_000 })
+    await expect(waiting).toContainText('Close your other Cytoscape Web tabs')
+    // Still waiting, not given up: nothing is cleared yet.
+    expect(
+      await page.evaluate(() => localStorage.getItem('cyweb-network-search')),
+    ).toBe('{}')
+
+    const reloaded = page.waitForEvent('load', { timeout: 30_000 })
+    await holder.evaluate(() => {
+      ;(window as unknown as { hold: IDBDatabase }).hold.close()
+    })
+    await reloaded
+    await expect(page.locator('[data-testid="app-shell"]')).toBeVisible({
+      timeout: 30_000,
+    })
+    await expect
+      .poll(async () => await getWorkspaceNetworkCount(page), {
+        timeout: 30_000,
+      })
+      .toBe(0)
+    expect(
+      await page.evaluate(() => localStorage.getItem('cyweb-network-search')),
+    ).toBeNull()
+    await holder.close()
+  })
 })

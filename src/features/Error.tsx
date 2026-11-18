@@ -22,6 +22,7 @@ import {
 } from 'react-router-dom'
 
 import { type AppConfig, AppConfigContext } from '../AppConfigContext'
+import { waitingForOtherTabsMessage } from '../data/db/clearLocalCache'
 import {
   type DatabaseSnapshot,
   exportDatabaseSnapshot,
@@ -49,7 +50,7 @@ export const Error = (): ReactElement => {
   const [isSendingReport, setIsSendingReport] = useState(false)
   const [reportSent, setReportSent] = useState(false)
   const [reportError, setReportError] = useState<string | null>(null)
-  const { clear, isClearing } = useClearLocalCache()
+  const { clear, isClearing, waitingFor } = useClearLocalCache()
   const [clearError, setClearError] = useState<string | null>(null)
   const hasReportedRef = useRef(false)
 
@@ -217,9 +218,10 @@ export const Error = (): ReactElement => {
 
   /**
    * The clear a stuck user is most likely to reach, so every path has to end
-   * somewhere: the button shows progress while it runs (deleting a database
-   * can wait on another tab that still has it open), and a failure is shown
-   * here with the button enabled again for a retry. Success reloads.
+   * somewhere: the button shows progress while it runs, a delete that waits
+   * on another tab says so below it (the clear finishes once that tab lets
+   * go), and a failure is shown here with the button enabled again for a
+   * retry. Success reloads.
    */
   const handleClearCache = (): void => {
     setClearError(null)
@@ -300,6 +302,13 @@ export const Error = (): ReactElement => {
               : 'Clear Cache and Reload Cytoscape'}
           </Button>
         </Grid>
+        {isClearing && waitingFor !== null && waitingFor.length > 0 && (
+          <Grid item xs={12}>
+            <Alert data-testid="error-clear-cache-waiting" severity="info">
+              {waitingForOtherTabsMessage(waitingFor)}
+            </Alert>
+          </Grid>
+        )}
         {clearError !== null && (
           <Grid item xs={12}>
             <Alert

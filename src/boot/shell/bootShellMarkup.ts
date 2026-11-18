@@ -26,6 +26,8 @@ export const BOOT_SHELL_ACTION_ATTR = 'data-boot-action'
 export const BOOT_SHELL_ARMED_LABEL_ATTR = 'data-boot-action-armed-label'
 export const BOOT_SHELL_ARMED_CLASS = 'boot-shell-error-button-armed'
 export const BOOT_SHELL_ACTION_CONFIRM_CLASS = 'boot-shell-error-action-confirm'
+/** Where a running action reports progress or why it failed. */
+export const BOOT_SHELL_ACTION_STATUS_CLASS = 'boot-shell-error-action-status'
 
 /** `full` includes the toolbar strip; `content` sits below the real toolbar. */
 export type BootShellRegion = 'full' | 'content'
@@ -368,6 +370,11 @@ body {
   color: #c62828;
   max-width: 420px;
 }
+.boot-shell-error .boot-shell-error-action-status {
+  font-size: 0.85rem;
+  color: #444444;
+  max-width: 420px;
+}
 .boot-shell-bottom {
   height: 40px;
   flex-shrink: 0;
@@ -501,9 +508,9 @@ const statusHtml = (): string => `
 // Terminal state: no spinner and no "may take some time" — both actively
 // mislead when nothing more is coming. The version and build time stay, since
 // that is precisely what someone diagnosing this needs to read off the screen.
-// The confirm line is rendered up front and hidden rather than injected on
-// click, so arming the button never changes the markup this module produces —
-// only attributes and one `hidden` flag. That keeps the string the React
+// The confirm and status lines are rendered up front and hidden rather than
+// injected on click, so arming or running the button never changes the markup
+// this module produces — only attributes, `hidden` flags and the status text. That keeps the string the React
 // renderer diffs against stable, same reason the status message is imperative.
 const errorActionHtml = (action: BootShellErrorAction): string => `
       <div class="boot-shell-error-action">
@@ -515,6 +522,7 @@ const errorActionHtml = (action: BootShellErrorAction): string => `
         <p class="${BOOT_SHELL_ACTION_CONFIRM_CLASS}" hidden>${escapeHtml(
           action.confirmMessage,
         )}</p>
+        <p class="${BOOT_SHELL_ACTION_STATUS_CLASS}" role="status" aria-live="polite" hidden></p>
       </div>`
 
 const errorHtml = (error: BootShellError): string => `

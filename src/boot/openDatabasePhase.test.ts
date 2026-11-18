@@ -13,8 +13,9 @@ vi.mock('../data/db/startupOpen', () => ({
   openDatabaseForStartup: () => openDatabaseForStartup(),
 }))
 
-vi.mock('../data/db/clearLocalCache', () => ({
-  clearLocalCache: () => clearLocalCache(),
+vi.mock('../data/db/clearLocalCache', async (importOriginal) => ({
+  ...((await importOriginal()) as typeof import('../data/db/clearLocalCache')),
+  clearLocalCache: (options: unknown) => clearLocalCache(options),
 }))
 
 // Importing the module registers the phase's error classifier as a side effect,
@@ -55,6 +56,9 @@ const paintErrorShell = (cause: unknown): HTMLButtonElement | null => {
       ?.querySelector('button') ?? null
   )
 }
+
+const statusLine = (): HTMLElement | null =>
+  document.querySelector('.boot-shell-error-action-status')
 
 const failWith = async (result: Record<string, unknown>): Promise<unknown> => {
   openDatabaseForStartup.mockResolvedValue(result)
@@ -163,6 +167,46 @@ describe('openDatabasePhase database reset action', () => {
       expect(button?.disabled).toBe(false)
     })
     expect(reload).not.toHaveBeenCalled()
+    // And the reader is told why nothing happened.
+    expect(statusLine()?.textContent).toBe('Could not delete cyweb-db.')
+    expect(statusLine()?.hasAttribute('hidden')).toBe(false)
+  })
+
+  it('says which database another tab is holding while the clear waits', async () => {
+    let finish: (() => void) | undefined
+    clearLocalCache.mockImplementation(
+      async (options: { onWaiting?: (dbs: readonly string[]) => void }) => {
+        options.onWaiting?.(['cyweb-db'])
+        await new Promise<void>((resolve) => {
+          finish = resolve
+        })
+        return { status: 'cleared' }
+      },
+    )
+    const cause = await failWith({
+      kind: 'schema-too-new',
+      onDiskVersion: 12,
+      expectedVersion: 10,
+    })
+    const button = paintErrorShell(cause)
+
+    button?.click()
+    button?.click()
+
+    await vi.waitFor(() => {
+      expect(statusLine()?.textContent).toContain(
+        'Another tab is still using cyweb-db.',
+      )
+    })
+    expect(statusLine()?.textContent).toContain(
+      'Close your other Cytoscape Web tabs',
+    )
+    expect(reload).not.toHaveBeenCalled()
+
+    finish?.()
+    await vi.waitFor(() => {
+      expect(reload).toHaveBeenCalledTimes(1)
+    })
   })
 
   it('offers no button when IndexedDB is merely unavailable', async () => {

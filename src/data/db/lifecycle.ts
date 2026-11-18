@@ -14,14 +14,15 @@
  *
  * 1. deleter posts `DATABASE_DELETED`
  * 2. peers close their DB connection and post `DATABASE_DELETED_ACK`
- * 3. deleter waits a short grace period, then deletes (bounded — see
- *    `DELETE_TIMEOUT_MS` in `src/data/db/index.ts`)
+ * 3. deleter waits a short grace period, then deletes. `deleteDb` gives up
+ *    after `DELETE_TIMEOUT_MS` (`src/data/db/index.ts`); Clear Local Cache
+ *    waits for as long as a delete is blocked and says so on screen
+ *    (`clearLocalCache.ts`)
  * 4. deleter posts `DATABASE_RESET_COMPLETE`, whatever the outcome was
  * 5. peers reload — against a database that is already gone and freshly created
  *
- * Every wait is bounded: a wedged or closing tab must never leave the user
- * unable to reset their workspace, and a dead deleter must never leave peers
- * stuck on a blank page. BroadcastChannel is the right transport here because
+ * A dead deleter must never leave peers stuck on a blank page, so the peers'
+ * wait is bounded (`RESET_COMPLETE_TIMEOUT_MS`). BroadcastChannel is the right transport here because
  * this is a liveness signal — there is nothing to replay, and it has to arrive
  * before the data it refers to is gone.
  *
@@ -76,6 +77,10 @@ export const PEER_CLOSE_GRACE_MS = 300
  * literal rather than imported from the db module: this is evaluated at module
  * load, and every test that mocks `@/data/db` would then have to supply it.
  * `lifecycle.test.ts` guards the relationship.
+ *
+ * Clear Local Cache has no worst case: it waits for as long as another tab
+ * blocks a delete. Its peers then reload at this timeout, which is the early
+ * reload described next.
  *
  * Reloading early is safe but pointless: IndexedDB processes a database's
  * connection queue in order, so an `open()` issued while a delete is still

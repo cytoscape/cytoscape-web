@@ -16,6 +16,7 @@ import { BugReportMenuItem } from './BugReportMenuItem'
 import { CitationDialog } from './CitationDialog'
 import { CitationMenuItem } from './CitationMenuItem'
 import { ClearLocalCacheMenuItem } from './ClearLocalCacheMenuItem'
+import { ClearLocalCacheProgress } from './ClearLocalCacheProgress'
 import { CodeRepositoryMenuItem } from './CodeRepositoryMenuitem'
 import { DeveloperMenuItem } from './DeveloperMenuItem'
 import { ExportDatabaseMenuItem } from './ExportDatabaseMenuItem'
@@ -71,11 +72,17 @@ export const HelpMenu = () => {
     setOpenDialog(null)
   }
 
-  // Clear Local Cache. Success reloads inside the hook. A failure has closed
-  // this tab's database connections, so nothing it does from here would be
-  // saved: report it, then reload so a retry starts clean. `alert()` because
-  // the dialog has already closed and the menu has nowhere to render it.
-  const { clear: clearCache, reload } = useClearLocalCache()
+  // Clear Local Cache. The progress overlay covers the editor until the
+  // reload, and says so when another tab is holding a database open; the clear
+  // waits for that tab rather than failing. Success reloads inside the hook. A
+  // failure has closed this tab's database connections, so nothing it does
+  // from here would be saved: report it, then reload so a retry starts clean.
+  const {
+    clear: clearCache,
+    isClearing,
+    waitingFor,
+    reload,
+  } = useClearLocalCache()
   const handleClearLocalCache = (): void => {
     void clearCache().then((result) => {
       if (result.status === 'failed') {
@@ -210,6 +217,7 @@ export const HelpMenu = () => {
         buttonTitle="Clear Cache"
         isAlert
       />
+      <ClearLocalCacheProgress open={isClearing} waitingFor={waitingFor} />
       {dialogs}
     </>
   )

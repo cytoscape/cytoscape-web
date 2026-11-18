@@ -85,7 +85,10 @@ its handler on the failure path rather than at module scope so a healthy boot
 pays nothing. It calls `clearLocalCache()` — the same function as the error
 page's "Clear Cache and Reload Cytoscape" button and Help › Developer › Clear
 Local Cache, whose React wrappers cannot be reused here because React never
-mounts on this path.
+mounts on this path. A handler receives `setStatus`, which writes the hidden
+status line rendered under every action button: what the action is waiting for,
+or why it failed. The runner only re-enables the button on a throw, so a handler
+that fails says why first.
 
 **The app renders over the SSO check, not after it.** What keeps a logged-in
 user's startup requests from going out anonymously is not ordering but

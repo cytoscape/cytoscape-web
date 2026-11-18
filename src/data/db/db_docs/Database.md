@@ -104,8 +104,6 @@ The database uses version-based migrations. The current version is defined in `c
   reset completed, and the other three values each need different handling by the
   caller. The delete is bounded by `DELETE_TIMEOUT_MS` because IndexedDB waits
   indefinitely for other connections to close.
-- `deleteDatabaseBounded(timeoutMs, name?)`: Deletes one database by name,
-  bounded in time; resolves `'blocked'` when another connection holds it open.
 - `getDatabaseVersion()`: Returns the current database version
 
 ### Clear Local Cache
@@ -116,9 +114,11 @@ keeps in this browser: the four databases named in
 two), then the localStorage and sessionStorage keys listed there. Keys other
 code put on the origin are left alone. It announces on both scopes' channels
 (`ALL_UI_EVENTS_CHANNELS`), so editor and manual tabs release their
-connections, drop their own sessionStorage keys and reload. A database that
-cannot be deleted makes the whole call `failed`, naming it, and the storage
-keys stay. It imports no React, router or store code, because the boot-failure
+connections, drop their own sessionStorage keys and reload. A delete that
+another tab blocks is waited for, not abandoned: after `CLEAR_WAIT_NOTICE_MS`
+the `onWaiting` callback names the databases, and each caller shows
+`waitingForOtherTabsMessage()`. A delete IndexedDB refuses makes the whole call
+`failed`, naming the database, and the storage keys stay. It imports no React, router or store code, because the boot-failure
 shell calls it before React mounts. `features/Manual/components/browserStorageInventory.test.ts` fails when
 a file starts writing Web Storage without being listed.
 

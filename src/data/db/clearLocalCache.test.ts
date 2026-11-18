@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { resumeWritesForTesting } from '@/data/hooks/stores/persistenceScheduler'
 import { CYWEB_DATABASE_NAMES } from './browserStorageInventory'
-import { clearLocalCache } from './clearLocalCache'
+import { clearLocalCache, waitingForOtherTabsMessage } from './clearLocalCache'
 import { initializeDb } from './index'
 import { announceDatabaseReset } from './lifecycle'
 import { putProfileSetting } from './profileDb'
@@ -110,24 +110,54 @@ describe('clearLocalCache', () => {
     expect(releasePeers).toHaveBeenCalledTimes(1)
   })
 
-  it('reports a blocked database by name, keeps storage keys and still releases the peers', async () => {
+  it('waits for a blocked database, says which one, then finishes the clear', async () => {
     await seedDatabase('cyweb-manual-db')
     const blocker = await openUncooperativeConnection('cyweb-manual-db')
     localStorage.setItem('cyweb.onboarding', '{}')
+    const onWaiting = vi.fn()
+    let settled = false
 
-    try {
-      const result = await clearLocalCache({ timeoutMs: 50 })
+    const clearing = clearLocalCache({ noticeAfterMs: 20, onWaiting }).then(
+      (result) => {
+        settled = true
+        return result
+      },
+    )
 
-      expect(result.status).toBe('failed')
-      if (result.status !== 'failed') return
-      expect(result.notDeleted).toEqual(['cyweb-manual-db'])
-      expect(result.reason).toContain('cyweb-manual-db')
-      expect(result.reason).toContain('Close your other Cytoscape Web tabs')
-      // Nothing claims the clear happened: a retry removes these.
-      expect(localStorage.getItem('cyweb.onboarding')).toBe('{}')
-      expect(releasePeers).toHaveBeenCalledTimes(1)
-    } finally {
-      blocker.close()
-    }
+    await vi.waitFor(() => {
+      expect(onWaiting).toHaveBeenCalledWith(['cyweb-manual-db'])
+    })
+    // Giving up here would leave the delete queued in IndexedDB, and the
+    // reload that follows would hang on its own open() behind it.
+    expect(settled).toBe(false)
+    // Nothing claims the clear happened while it is still waiting.
+    expect(localStorage.getItem('cyweb.onboarding')).toBe('{}')
+    expect(releasePeers).not.toHaveBeenCalled()
+
+    blocker.close()
+
+    expect(await clearing).toEqual({ status: 'cleared' })
+    expect(await existingDatabaseNames()).not.toContain('cyweb-manual-db')
+    expect(localStorage.getItem('cyweb.onboarding')).toBeNull()
+    expect(releasePeers).toHaveBeenCalledTimes(1)
+  })
+
+  it('says nothing about waiting when no delete is blocked', async () => {
+    const onWaiting = vi.fn()
+
+    expect(await clearLocalCache({ noticeAfterMs: 20, onWaiting })).toEqual({
+      status: 'cleared',
+    })
+    await new Promise((resolve) => setTimeout(resolve, 40))
+    expect(onWaiting).not.toHaveBeenCalled()
+  })
+})
+
+describe('waitingForOtherTabsMessage', () => {
+  it('names the databases and tells the reader what to do', () => {
+    const message = waitingForOtherTabsMessage(['cyweb-db', 'cyweb-profile-db'])
+
+    expect(message).toContain('cyweb-db, cyweb-profile-db')
+    expect(message).toContain('Close your other Cytoscape Web tabs')
   })
 })

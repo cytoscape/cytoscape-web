@@ -206,19 +206,18 @@ the position data on a separate channel.
 
 ## 4. Destroying the database
 
-`resetWorkspace` deletes the whole database, which every other tab still has
-open — and IndexedDB will not delete a database with live connections. The
+Clear Local Cache (`clearLocalCache.ts`) and Load Workspace (`deleteDb`)
+delete whole databases, which every other tab still has open — and IndexedDB will not delete a database with live connections. The
 handshake in `src/data/db/lifecycle.ts`:
 
 1. deleter posts `DATABASE_DELETED`
 2. peers close their connection and post `DATABASE_DELETED_ACK`
-3. deleter waits a short grace period, then deletes — bounded by
-   `DELETE_TIMEOUT_MS`
+3. deleter waits a short grace period, then deletes — `deleteDb` gives up
+   after `DELETE_TIMEOUT_MS`; Clear Local Cache waits (see below)
 4. deleter posts `DATABASE_RESET_COMPLETE`, whatever the outcome was
 5. peers reload, against a database that is already gone and recreated
 
-Every wait is bounded, in both directions: a wedged tab must not stop a user
-resetting their workspace, and a deleter that dies must not leave peers stuck.
+A deleter that dies must not leave peers stuck, so the peers' wait is bounded.
 The previous version announced and deleted immediately while peers reloaded at
 once, so a reload could re-create the database mid-delete — the "ghost workspace"
 the announcement existed to prevent.
@@ -247,9 +246,18 @@ The three non-`deleted` outcomes exist because they need different handling and
 used to be indistinguishable. In particular, `reopen-failed` means the data IS
 gone: keeping the in-memory workspace there (the old behavior) let the next
 mutation re-persist it into the freshly created database — the ghost workspace
-again, arriving by a different route. `resetWorkspace` returns a
-`WorkspaceResetOutcome` so its callers can show an error or force a reload
-instead of chaining work behind a promise that might never settle.
+again, arriving by a different route. Load Workspace throws on anything but
+`deleted` instead of chaining work behind a promise that might never settle.
+
+Clear Local Cache does not use `deleteDb` and does not give up. A delete that
+times out is still queued in IndexedDB, and every later `open()` of that
+database queues behind it, so a tab that gave up and reloaded would hang on its
+own boot, unexplained, until the blocking tab let go. Instead the clear waits,
+and after `CLEAR_WAIT_NOTICE_MS` each entry point (the Help menu's overlay, the
+Error page, the startup screen's status line) names the database and asks the
+reader to close their other tabs; the clear finishes and reloads by itself once
+they do. Only a connection that ignores `versionchange` can block it, since
+every Cytoscape Web tab closes on both the announcement and `versionchange`.
 
 BroadcastChannel is correct here: this is a liveness signal, not data. There is
 nothing to replay, and it has to arrive _before_ the data it refers to is gone.
