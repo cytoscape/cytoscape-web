@@ -14,7 +14,7 @@ import { useNetworkStore } from './stores/NetworkStore'
 import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import { useOpaqueAspectStore } from './stores/OpaqueAspectStore'
 import { useRendererFunctionStore } from './stores/RendererFunctionStore'
-import { runLayoutWhenIdle } from './stores/runLayoutWhenIdle'
+import { runInitialLayoutWhenIdle } from './stores/runLayoutWhenIdle'
 import { useTableStore } from './stores/TableStore'
 import { useUiStateStore } from './stores/UiStateStore'
 import { useUndoStore } from './stores/UndoStore'
@@ -135,24 +135,16 @@ export const useRegisterNetwork = () => {
           // finish. It stops waiting if the network is removed meanwhile,
           // even if one with the same id is added back, and lays out the
           // network as it is on its turn, edits made meanwhile included.
-          runLayoutWhenIdle(
-            (claim) => {
-              const live = useNetworkStore.getState().networks.get(networkId)
-              return (
-                live === undefined ||
-                runEngineLayout({
-                  engine: layoutEngine,
-                  algorithm:
-                    layoutEngine.algorithms[defaultLayout.algorithmName],
-                  network: live,
-                  networkId,
-                  afterLayout: handleLayoutComplete,
-                  startLayout: claim,
-                  setIsRunning,
-                })
-              )
-            },
-            { networkId },
+          runInitialLayoutWhenIdle(networkId, (live, claim) =>
+            runEngineLayout({
+              engine: layoutEngine,
+              algorithm: layoutEngine.algorithms[defaultLayout.algorithmName],
+              network: live,
+              networkId,
+              afterLayout: handleLayoutComplete,
+              startLayout: claim,
+              setIsRunning,
+            }),
           )
         }
       }

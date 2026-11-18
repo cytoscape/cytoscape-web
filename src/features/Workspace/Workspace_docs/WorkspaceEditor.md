@@ -149,7 +149,7 @@ operations that are not undoable.
 1. **Check Layout:** Check if network summary has `hasLayout: true`
 2. **Select Default:** Get default layout based on network size and threshold
 3. **Find Engine:** Find layout engine matching default layout
-4. **Apply Layout:** Call engine.apply with nodes, edges, and callback
+4. **Apply Layout:** When the layout can start, check the current summary again. If a replacement already has positions, keep them and skip the initial layout.
 5. **Snapshot Modified:** Read the live `networkModified` flag before touching the view model
 6. **Update Positions:** Update node positions in view model
 7. **Fit Viewport:** Call fit function to center network

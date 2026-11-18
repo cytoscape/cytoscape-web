@@ -1,7 +1,9 @@
 import { logStore } from '../../../debug'
 import { IdType } from '../../../models/IdType'
+import type { Network } from '../../../models/NetworkModel'
 import { useLayoutStore } from './LayoutStore'
 import { useNetworkStore } from './NetworkStore'
+import { useNetworkSummaryStore } from './NetworkSummaryStore'
 
 /**
  * Claims the layout run for a network. `runLayoutWhenIdle` hands one to
@@ -24,6 +26,9 @@ export interface RunLayoutWhenIdleOptions {
 
 interface Waiter {
   readonly tryStart: (claim: ClaimLayout) => boolean
+  readonly networkId?: IdType
+  readonly onReplacement?: (hasLayout: boolean) => void
+  readonly onSkipped?: () => void
   stopWatching?: () => void
 }
 
@@ -57,6 +62,19 @@ const scheduleDrain = (): void => {
   }
   drainScheduled = true
   queueMicrotask(drain)
+}
+
+// A subnetwork can be replaced without having a summary to record whether
+// the replacement supplied positions. Keep that information until its turn.
+export const notifyLayoutOfNetworkReplacement = (
+  networkId: IdType,
+  hasLayout: boolean,
+): void => {
+  for (const waiter of queue) {
+    if (waiter.networkId === networkId) {
+      waiter.onReplacement?.(hasLayout)
+    }
+  }
 }
 
 /** Start the head of the queue, if the slot is free. */
@@ -123,12 +141,46 @@ const drain = (): void => {
 export const runLayoutWhenIdle = (
   tryStart: (claim: ClaimLayout) => boolean,
   options: RunLayoutWhenIdleOptions = {},
+): (() => void) =>
+  scheduleLayout({
+    tryStart,
+    networkId: options.networkId,
+    onSkipped: options.onNetworkRemoved,
+  })
+
+/** Run an automatic layout only if the network still needs initial positions. */
+export const runInitialLayoutWhenIdle = (
+  networkId: IdType,
+  start: (network: Network, claim: ClaimLayout) => boolean,
+  onSkipped?: () => void,
 ): (() => void) => {
-  if (queue.length === 0 && !isRunning() && tryStart(claimFromQueue)) {
+  let replacementHasLayout = false
+  return scheduleLayout({
+    networkId,
+    onSkipped,
+    onReplacement: (hasLayout) => {
+      replacementHasLayout = hasLayout
+    },
+    tryStart: (claim) => {
+      const network = useNetworkStore.getState().networks.get(networkId)
+      const summary = useNetworkSummaryStore.getState().summaries[networkId]
+      if (
+        network === undefined ||
+        (summary?.hasLayout ?? replacementHasLayout)
+      ) {
+        onSkipped?.()
+        return true
+      }
+      return start(network, claim)
+    },
+  })
+}
+
+const scheduleLayout = (waiter: Waiter): (() => void) => {
+  if (queue.length === 0 && !isRunning() && waiter.tryStart(claimFromQueue)) {
     return () => {}
   }
 
-  const waiter: Waiter = { tryStart }
   queue.push(waiter)
   if (queue.length === 1) {
     useLayoutStore.getState().setLayoutQueued(true)
@@ -142,12 +194,12 @@ export const runLayoutWhenIdle = (
     })
   }
 
-  const { networkId, onNetworkRemoved } = options
+  const { networkId, onSkipped } = waiter
   if (networkId !== undefined) {
     waiter.stopWatching = useNetworkStore.subscribe((state) => {
       if (!state.networks.has(networkId) && queue.includes(waiter)) {
         remove(waiter)
-        onNetworkRemoved?.()
+        onSkipped?.()
       }
     })
   }

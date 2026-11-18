@@ -7,7 +7,7 @@ import { Outlet, useParams } from 'react-router-dom'
 
 import { useLayoutStore } from '../../data/hooks/stores/LayoutStore'
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
-import { runLayoutWhenIdle } from '../../data/hooks/stores/runLayoutWhenIdle'
+import { runInitialLayoutWhenIdle } from '../../data/hooks/stores/runLayoutWhenIdle'
 import { useNetworkSummaryStore } from '../../data/hooks/stores/NetworkSummaryStore'
 import { useTableStore } from '../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
@@ -296,24 +296,16 @@ const WorkSpaceEditor = (): JSX.Element => {
             // removed meanwhile, even if one with the same id is added back,
             // and lays out the network as it is on its turn. The shared
             // runner also contains a failing engine (logged, flag lowered).
-            runLayoutWhenIdle(
-              (claim) => {
-                const live = useNetworkStore.getState().networks.get(networkId)
-                return (
-                  live === undefined ||
-                  runEngineLayout({
-                    engine: layoutEngine,
-                    algorithm:
-                      layoutEngine.algorithms[defaultLayout.algorithmName],
-                    network: live,
-                    networkId,
-                    afterLayout: handleLayoutComplete,
-                    startLayout: claim,
-                    setIsRunning,
-                  })
-                )
-              },
-              { networkId },
+            runInitialLayoutWhenIdle(networkId, (live, claim) =>
+              runEngineLayout({
+                engine: layoutEngine,
+                algorithm: layoutEngine.algorithms[defaultLayout.algorithmName],
+                network: live,
+                networkId,
+                afterLayout: handleLayoutComplete,
+                startLayout: claim,
+                setIsRunning,
+              }),
             )
           }
         }

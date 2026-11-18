@@ -7,7 +7,7 @@ import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
 import { useFilterStore } from '../../../data/hooks/stores/FilterStore'
 import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
-import { runLayoutWhenIdle } from '../../../data/hooks/stores/runLayoutWhenIdle'
+import { runInitialLayoutWhenIdle } from '../../../data/hooks/stores/runLayoutWhenIdle'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useUndoStore } from '../../../data/hooks/stores/UndoStore'
@@ -646,14 +646,10 @@ export const SubNetworkPanel = ({
           // lays out the network as it is on its turn, not as registered:
           // nodes may have been added or removed while it waited. It stops
           // waiting, and settles, if the network is removed meanwhile.
-          runLayoutWhenIdle(
-            (claim) => {
-              const live = useNetworkStore.getState().networks.get(network.id)
-              if (live === undefined) {
-                resolve()
-                return true
-              }
-              return runEngineLayout({
+          runInitialLayoutWhenIdle(
+            network.id,
+            (live, claim) =>
+              runEngineLayout({
                 engine,
                 algorithm: defaultLayout,
                 network: live,
@@ -662,9 +658,8 @@ export const SubNetworkPanel = ({
                 startLayout: claim,
                 setIsRunning,
                 onFailed: () => resolve(),
-              })
-            },
-            { networkId: network.id, onNetworkRemoved: resolve },
+              }),
+            resolve,
           )
         })
       }

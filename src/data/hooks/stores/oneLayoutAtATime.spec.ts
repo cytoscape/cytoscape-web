@@ -14,7 +14,12 @@ import { LayoutEngine } from '../../../models/LayoutModel/LayoutEngine'
 import { Network } from '../../../models/NetworkModel'
 import { useLayoutStore } from './LayoutStore'
 import { useNetworkStore } from './NetworkStore'
-import { ClaimLayout, runLayoutWhenIdle } from './runLayoutWhenIdle'
+import {
+  ClaimLayout,
+  notifyLayoutOfNetworkReplacement,
+  runInitialLayoutWhenIdle,
+  runLayoutWhenIdle,
+} from './runLayoutWhenIdle'
 
 vi.mock('../../../debug', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../../debug')>()),
@@ -310,6 +315,30 @@ describe('one layout at a time (#982)', () => {
       beforeEach(() => {
         useNetworkStore.getState().delete('watched')
         addNetwork()
+      })
+
+      it('settles a superseded initial layout and runs an explicit request for the same network', async () => {
+        useNetworkStore.getState().add(network)
+        run(timedEngine('cosmos', 2400, [100, 100]))
+        const initial = vi.fn(() => true)
+        const onSkipped = vi.fn()
+        runInitialLayoutWhenIdle(network.id, initial, onSkipped)
+        runLayoutWhenIdle(
+          (claim) => run(syncEngine('requested', [2, 2]), claim),
+          {
+            networkId: network.id,
+          },
+        )
+        notifyLayoutOfNetworkReplacement(network.id, true)
+        vi.advanceTimersByTime(2400)
+        await flushMicrotasks()
+
+        expect(initial).not.toHaveBeenCalled()
+        expect(onSkipped).toHaveBeenCalledTimes(1)
+        expect(undoEntries).toEqual([
+          'Apply cosmos layout',
+          'Apply requested layout',
+        ])
       })
 
       it('stops waiting when the network is removed, even if it comes back', async () => {

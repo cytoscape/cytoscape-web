@@ -192,7 +192,7 @@ describe('useRegisterNetwork', () => {
   // The wait widens the window in which the network can change before its
   // default layout completes. The completion must not undo those changes.
   describe('while the default layout waits for a running layout', () => {
-    const registerWhileBusy = (): void => {
+    const registerWhileBusy = () => {
       const apply = vi.fn(
         (
           _nodes: unknown,
@@ -217,6 +217,7 @@ describe('useRegisterNetwork', () => {
           makeSummary({ hasLayout: false }),
         )
       })
+      return apply
     }
 
     const finishRunningLayout = async (): Promise<void> => {
@@ -264,6 +265,16 @@ describe('useRegisterNetwork', () => {
       const summary = useNetworkSummaryStore.getState().summaries[NET_ID]
       expect(summary.name).toBe('Renamed')
       expect(summary.hasLayout).toBe(true)
+    })
+
+    it('skips the initial layout when the replacement already has positions', async () => {
+      const apply = registerWhileBusy()
+      act(() => {
+        useNetworkStore.getState().add(makeCyNetwork().network)
+        useNetworkSummaryStore.getState().update(NET_ID, { hasLayout: true })
+      })
+      await finishRunningLayout()
+      expect(apply).not.toHaveBeenCalled()
     })
   })
 

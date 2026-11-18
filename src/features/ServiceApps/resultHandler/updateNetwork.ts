@@ -3,6 +3,7 @@ import { useCallback } from 'react'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
+import { notifyLayoutOfNetworkReplacement } from '../../../data/hooks/stores/runLayoutWhenIdle'
 import { useOpaqueAspectStore } from '../../../data/hooks/stores/OpaqueAspectStore'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
@@ -143,6 +144,7 @@ export const useUpdateNetwork = (): (({
           type: networkView.type ?? DEF_VIEW_TYPE,
           viewId: `${networkId}-${networkView.type ?? DEF_VIEW_TYPE}-updatedByService`,
         })
+        notifyLayoutOfNetworkReplacement(networkId, anyNodeHasPosition)
         // A service-app result replaces the network wholesale and records no
         // undo entry, so it marks the network here rather than via postEdit.
         setNetworkModified(networkId, true)
