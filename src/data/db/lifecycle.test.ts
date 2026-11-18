@@ -98,7 +98,10 @@ describe('Clear Local Cache handshake (#989)', () => {
 
     release()
     for (const channel of FakeChannel.instances) {
-      expect(channel.posted[1]).toEqual({ type: DATABASE_RESET_COMPLETE })
+      expect(channel.posted[1]).toEqual({
+        type: DATABASE_RESET_COMPLETE,
+        resetId: (channel.posted[0] as { resetId: string }).resetId,
+      })
       expect(channel.closed).toBe(true)
     }
   })
@@ -236,5 +239,106 @@ describe('Clear Local Cache handshake (#989)', () => {
 
     stop()
     expect(channel.closed).toBe(true)
+  })
+
+  it('one reset carries the same id on its announcement, heartbeats and completion', async () => {
+    const announced = announceDatabaseReset()
+    await vi.advanceTimersByTimeAsync(PEER_CLOSE_GRACE_MS)
+    const release = await announced
+    await vi.advanceTimersByTimeAsync(RESET_HEARTBEAT_MS)
+    release()
+
+    const [channel] = FakeChannel.instances
+    const ids = new Set(
+      channel.posted.map((m) => (m as { resetId?: string }).resetId),
+    )
+    expect(ids.size).toBe(1)
+    expect([...ids][0]).toEqual(expect.any(String))
+  })
+
+  describe('two overlapping resets', () => {
+    const deleted = (resetId: string) => ({
+      data: { type: DATABASE_DELETED, tabId: 'other-tab', resetId },
+    })
+    const beat = (resetId: string) => ({
+      data: { type: DATABASE_RESET_IN_PROGRESS, resetId },
+    })
+    const complete = (resetId: string) => ({
+      data: { type: DATABASE_RESET_COMPLETE, resetId },
+    })
+
+    it('keeps both waits alive on their own heartbeats', async () => {
+      const channel = new FakeChannel('cyweb-ui-events')
+      const reload = vi.fn()
+      const peer = channel as unknown as BroadcastChannel
+      await handleDatabaseDeleted(peer, reload, { resetId: 'a' })
+      await handleDatabaseDeleted(peer, reload, { resetId: 'b' })
+
+      // Both deleters still working, well past one timeout.
+      for (let i = 0; i < 6; i++) {
+        await vi.advanceTimersByTimeAsync(RESET_HEARTBEAT_MS)
+        channel.onmessage?.(beat('a'))
+        channel.onmessage?.(beat('b'))
+      }
+      expect(reload).not.toHaveBeenCalled()
+
+      channel.onmessage?.(complete('a'))
+      await vi.advanceTimersByTimeAsync(0)
+      expect(reload).not.toHaveBeenCalled()
+
+      channel.onmessage?.(complete('b'))
+      expect(reload).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not reload when one completes while the other is still blocked', async () => {
+      const channel = new FakeChannel('cyweb-ui-events')
+      const reload = vi.fn()
+      const peer = channel as unknown as BroadcastChannel
+      await handleDatabaseDeleted(peer, reload, { resetId: 'fast' })
+      await handleDatabaseDeleted(peer, reload, { resetId: 'blocked' })
+
+      channel.onmessage?.(complete('fast'))
+      for (let i = 0; i < 6; i++) {
+        await vi.advanceTimersByTimeAsync(RESET_HEARTBEAT_MS)
+        channel.onmessage?.(beat('blocked'))
+      }
+      expect(reload).not.toHaveBeenCalled()
+
+      // The blocked one's deleter dies: its own timeout still ends the wait.
+      await vi.advanceTimersByTimeAsync(RESET_COMPLETE_TIMEOUT_MS)
+      expect(reload).toHaveBeenCalledTimes(1)
+    })
+
+    it('ignores heartbeats and completions for a reset it never heard', async () => {
+      const channel = new FakeChannel('cyweb-ui-events')
+      const reload = vi.fn()
+      await handleDatabaseDeleted(
+        channel as unknown as BroadcastChannel,
+        reload,
+        { resetId: 'mine' },
+      )
+
+      channel.onmessage?.(complete('someone-else'))
+      expect(reload).not.toHaveBeenCalled()
+
+      channel.onmessage?.(complete('mine'))
+      expect(reload).toHaveBeenCalledTimes(1)
+    })
+
+    it('listenForDatabaseReset files each announcement under its reset id', async () => {
+      const reload = vi.fn()
+      const stop = listenForDatabaseReset(reload)
+      const channel = FakeChannel.instances.at(-1)
+      if (channel === undefined) throw new Error('no channel opened')
+
+      channel.onmessage?.(deleted('a'))
+      channel.onmessage?.(deleted('b'))
+      await vi.advanceTimersByTimeAsync(0)
+      channel.onmessage?.(complete('a'))
+      expect(reload).not.toHaveBeenCalled()
+      channel.onmessage?.(complete('b'))
+      expect(reload).toHaveBeenCalledTimes(1)
+      stop()
+    })
   })
 })

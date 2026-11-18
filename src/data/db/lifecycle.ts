@@ -104,6 +104,11 @@ export const RESET_COMPLETE_TIMEOUT_MS = 6300
  */
 export const RESET_HEARTBEAT_MS = 2000
 
+const newResetId = (): string =>
+  typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `${getTabId()}-${Date.now()}-${Math.random().toString(36).slice(2)}`
+
 const delay = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -130,6 +135,9 @@ export const announceDatabaseReset = async (
   const names = options.channels ?? [UI_EVENTS_CHANNEL]
   const channels = names.map((name) => new BroadcastChannel(name))
   const acknowledged = new Set<string>()
+  // On every message of this reset, so a peer that hears two overlapping
+  // resets can tell whose heartbeat or completion it is.
+  const resetId = newResetId()
 
   for (const channel of channels) {
     channel.onmessage = (event) => {
@@ -140,6 +148,7 @@ export const announceDatabaseReset = async (
     channel.postMessage({
       type: DATABASE_DELETED,
       tabId: getTabId(),
+      resetId,
       clearsLocalCache: options.clearsLocalCache === true,
     })
   }
@@ -148,7 +157,7 @@ export const announceDatabaseReset = async (
   const heartbeat = setInterval(() => {
     for (const channel of channels) {
       try {
-        channel.postMessage({ type: DATABASE_RESET_IN_PROGRESS })
+        channel.postMessage({ type: DATABASE_RESET_IN_PROGRESS, resetId })
       } catch (e) {
         logDb.warn('[announceDatabaseReset] Failed to send a heartbeat', e)
       }
@@ -165,7 +174,7 @@ export const announceDatabaseReset = async (
     clearInterval(heartbeat)
     for (const channel of channels) {
       try {
-        channel.postMessage({ type: DATABASE_RESET_COMPLETE })
+        channel.postMessage({ type: DATABASE_RESET_COMPLETE, resetId })
       } catch (e) {
         logDb.warn('[announceDatabaseReset] Failed to release a peer', e)
       } finally {
@@ -196,33 +205,29 @@ export const isOwnResetAnnouncement = (data: unknown): boolean => {
 
 /**
  * Handle another tab deleting the database: release our connection, acknowledge,
- * and reload once the reset completes.
+ * and reload once every reset heard on this channel has completed or gone
+ * quiet (see `peerResetStates`).
  *
  * Callers must skip self-originated announcements — see
  * {@link isOwnResetAnnouncement}. BroadcastChannel excludes only the channel
- * OBJECT that posted, not the tab: `announceDatabaseReset` opens its own channel,
- * so the deleting tab's own listener (`listenForDatabaseReset`) receives the message too. Acting on it
- * would make the resetting tab close its own connection mid-delete and navigate
- * away from the reset it just performed.
+ * OBJECT that posted, not the tab: `announceDatabaseReset` opens its own
+ * channel, so the deleting tab's own listener (`listenForDatabaseReset`)
+ * receives the message too. Acting on it would make the resetting tab close its
+ * own connection mid-delete and navigate away from the reset it just performed.
  */
 export const handleDatabaseDeleted = async (
   channel: BroadcastChannel,
   reload: () => void,
-  options: { clearSessionStorage?: boolean } = {},
+  options: { clearSessionStorage?: boolean; resetId?: string } = {},
 ): Promise<void> => {
-  let reloaded = false
-  const reloadOnce = (): void => {
-    if (reloaded) {
-      return
-    }
-    reloaded = true
-    // Right before the reload, not on receipt: until then this tab's stores
-    // can still write their per-tab state back.
-    if (options.clearSessionStorage === true) {
-      removeCywebSessionStorage()
-    }
-    reload()
+  const resetId = options.resetId ?? UNIDENTIFIED_RESET
+  const state = peerResetStateFor(channel, reload)
+  if (options.clearSessionStorage === true) {
+    state.clearSessionStorage = true
   }
+  // Tracked before the awaits below, so a completion that arrives while this
+  // tab is still closing its connections is not missed.
+  state.track(resetId)
 
   try {
     // Release the connections first: until this resolves, the other tab's
@@ -245,25 +250,110 @@ export const handleDatabaseDeleted = async (
     // The channel can already be closed if this tab is tearing down.
     logDb.warn('[handleDatabaseDeleted] Failed to acknowledge', e)
   }
+}
 
-  // Reload as soon as the deleter says it is finished, or after the timeout if
-  // it goes quiet. Each heartbeat restarts the timeout: the deleter is still
-  // working, and a reload now could re-create what it already deleted.
-  let timer = setTimeout(reloadOnce, RESET_COMPLETE_TIMEOUT_MS)
-  const previousHandler = channel.onmessage
-  channel.onmessage = (event) => {
-    if (event.data?.type === DATABASE_RESET_COMPLETE) {
-      clearTimeout(timer)
-      reloadOnce()
+/**
+ * The id a peer files a reset under when its messages carry none: one sent by
+ * an older build during a deploy. Its announcement, heartbeats and completion
+ * all lack the id alike, so they still pair up.
+ */
+const UNIDENTIFIED_RESET = 'unidentified'
+
+/** The reset a `DATABASE_*` message belongs to. Narrows untrusted data. */
+const resetIdOf = (data: unknown): string => {
+  if (typeof data !== 'object' || data === null) {
+    return UNIDENTIFIED_RESET
+  }
+  const { resetId } = data as { resetId?: unknown }
+  return typeof resetId === 'string' && resetId !== ''
+    ? resetId
+    : UNIDENTIFIED_RESET
+}
+
+interface PeerResetState {
+  clearSessionStorage: boolean
+  track: (resetId: string) => void
+}
+
+/**
+ * One wait per channel, however many resets are announced on it.
+ *
+ * Two tabs can reset at once (a clear in each, say), and one of them can be
+ * blocked far longer than the other. Each reset is tracked by its id with its
+ * own timeout, restarted by its own heartbeats; the tab reloads only once
+ * every tracked reset has completed or gone quiet. Reloading when the first
+ * one completes would open the databases while the other's delete is still
+ * queued, and the boot would wait behind it.
+ */
+const peerResetStates = new WeakMap<BroadcastChannel, PeerResetState>()
+
+const peerResetStateFor = (
+  channel: BroadcastChannel,
+  reload: () => void,
+): PeerResetState => {
+  const existing = peerResetStates.get(channel)
+  if (existing !== undefined) {
+    return existing
+  }
+
+  const active = new Map<string, ReturnType<typeof setTimeout>>()
+  let reloaded = false
+
+  const reloadWhenIdle = (): void => {
+    if (reloaded || active.size > 0) {
       return
     }
-    if (event.data?.type === DATABASE_RESET_IN_PROGRESS) {
-      clearTimeout(timer)
-      timer = setTimeout(reloadOnce, RESET_COMPLETE_TIMEOUT_MS)
+    reloaded = true
+    // Right before the reload, not on receipt: until then this tab's stores
+    // can still write their per-tab state back.
+    if (state.clearSessionStorage) {
+      removeCywebSessionStorage()
+    }
+    reload()
+  }
+
+  // The timeout is the fallback for a deleter that died: it counts from the
+  // reset's last heartbeat (see RESET_HEARTBEAT_MS).
+  const arm = (resetId: string): void => {
+    clearTimeout(active.get(resetId))
+    active.set(
+      resetId,
+      setTimeout(() => {
+        active.delete(resetId)
+        reloadWhenIdle()
+      }, RESET_COMPLETE_TIMEOUT_MS),
+    )
+  }
+
+  const state: PeerResetState = {
+    clearSessionStorage: false,
+    track: arm,
+  }
+
+  const previousHandler = channel.onmessage
+  channel.onmessage = (event) => {
+    const type = event.data?.type
+    if (type === DATABASE_RESET_COMPLETE) {
+      const resetId = resetIdOf(event.data)
+      if (active.has(resetId)) {
+        clearTimeout(active.get(resetId))
+        active.delete(resetId)
+        reloadWhenIdle()
+      }
+      return
+    }
+    if (type === DATABASE_RESET_IN_PROGRESS) {
+      const resetId = resetIdOf(event.data)
+      if (active.has(resetId)) {
+        arm(resetId)
+      }
       return
     }
     previousHandler?.call(channel, event)
   }
+
+  peerResetStates.set(channel, state)
+  return state
 }
 
 /**
@@ -293,6 +383,7 @@ export const listenForDatabaseReset = (reload: () => void): (() => void) => {
     }
     void handleDatabaseDeleted(channel, reload, {
       clearSessionStorage: isClearLocalCacheAnnouncement(event.data),
+      resetId: resetIdOf(event.data),
     })
   }
 

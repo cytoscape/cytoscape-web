@@ -238,7 +238,10 @@ still working" (`lifecycle.test.ts` guards that relationship). Clear Local Cache
 has no worst case: while another tab blocks a delete it keeps waiting. Its
 heartbeat is what keeps peers from reloading in the meantime, since a peer that
 reloaded mid-clear could re-create a database the clear had already deleted.
-The timeout counts from the last heartbeat, so it still means the deleter died.
+The timeout counts from the last heartbeat, so it still means the deleter died. Every message of one
+reset carries the same `resetId`, so a peer that hears two overlapping resets
+(a clear in each of two tabs) waits for each on its own heartbeats and reloads
+only when the last has completed or gone quiet.
 
 `step 3` cannot wait forever. IndexedDB fires `blocked` and waits with no timeout
 of its own, so `deleteDb` races the delete against `DELETE_TIMEOUT_MS` and reports
@@ -248,8 +251,12 @@ one of four outcomes rather than a single boolean:
 | ---------------- | ------------------- | ----------- | ------------------------- |
 | `deleted`        | gone                | fresh, open | clear its stores          |
 | `delete-failed`  | intact              | reopened    | keep state, tell the user |
-| `delete-blocked` | delete still queued | none        | clear state and reload    |
+| `delete-blocked` | delete still queued | none        | keep state, tell the user |
 | `reopen-failed`  | gone                | none        | clear state and reload    |
+
+`delete-blocked` must not reload: the delete stays queued, and the reloaded
+tab's own `open()` would wait behind it until the blocking tab lets go. Load
+Workspace throws, and the reader is told.
 
 The three non-`deleted` outcomes exist because they need different handling and
 used to be indistinguishable. In particular, `reopen-failed` means the data IS
