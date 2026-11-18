@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { logStore } from '../../../debug'
 import { AppCatalogEntry } from '../../../models/AppModel/AppCatalogEntry'
@@ -30,13 +30,6 @@ const sampleInstalledApp = (
   installedAt: FIXED_TIME,
 })
 
-// The cross-tab reset handshake sleeps PEER_CLOSE_GRACE_MS (300ms) waiting for
-// peer tabs that do not exist under jsdom — 300ms per resetWorkspace test. The
-// handshake has its own coverage in lifecycle.test.ts.
-vi.mock('@/data/db/lifecycle', () => ({
-  announceDatabaseReset: vi.fn(async () => () => {}),
-}))
-
 // Mock the database operations to avoid IndexedDB issues in tests
 vi.mock('../../db', async (importOriginal) => {
   const actual = (await importOriginal()) as typeof import('../../db')
@@ -59,9 +52,6 @@ vi.mock('../../db', async (importOriginal) => {
     getNetworkFromDb: vi.fn().mockResolvedValue(undefined),
     getTablesFromDb: vi.fn().mockResolvedValue(undefined),
     getViewModelFromDb: vi.fn().mockResolvedValue(undefined),
-    // deleteDb reports which of four outcomes happened (see DeleteDbOutcome);
-    // only 'deleted' is a completed reset.
-    deleteDb: vi.fn().mockResolvedValue('deleted'),
   }
 })
 
@@ -639,156 +629,6 @@ describe('useWorkspaceStore', () => {
       })
 
       expect(result.current.workspace.networkModified).toEqual({})
-    })
-  })
-
-  describe('resetWorkspace', () => {
-    // A completed reset stops delayed writes until the reload, which never
-    // comes in a test
-    afterEach(async () => {
-      const { resumeWritesForTesting } = await import('./persistenceScheduler')
-      resumeWritesForTesting()
-    })
-
-    it('should reset workspace to empty state', async () => {
-      const { result } = renderHook(() => useWorkspaceStore())
-
-      act(() => {
-        result.current.setId('workspace-1')
-        result.current.setName('Test Workspace')
-        result.current.addNetworkIds(['network-1', 'network-2'])
-        result.current.setCurrentNetworkId('network-1')
-        result.current.setNetworkModified('network-1', true)
-      })
-
-      await act(async () => {
-        await result.current.resetWorkspace()
-      })
-
-      expect(result.current.workspace.id).toBe('')
-      expect(result.current.workspace.name).toBe('')
-      expect(result.current.workspace.networkIds).toEqual([])
-      expect(result.current.workspace.currentNetworkId).toBe('')
-      expect(result.current.workspace.networkModified).toEqual({})
-      expect(result.current.workspace.isRemote).toBe(false)
-    })
-
-    it('reports a completed reset', async () => {
-      const { result } = renderHook(() => useWorkspaceStore())
-
-      let outcome: any
-      await act(async () => {
-        outcome = await result.current.resetWorkspace()
-      })
-
-      expect(outcome).toEqual({ status: 'reset' })
-    })
-
-    it('stops delayed writes once the database is gone, but not when it is kept', async () => {
-      const scheduler = await import('./persistenceScheduler')
-      const { deleteDb } = await import('../../db')
-      const { result } = renderHook(() => useWorkspaceStore())
-      try {
-        vi.mocked(deleteDb).mockResolvedValueOnce('delete-failed')
-        await act(async () => {
-          await result.current.resetWorkspace()
-        })
-        scheduler.scheduleWrite('kept', 'test', async () => undefined)
-        expect(scheduler.pendingWriteCount()).toBe(1)
-
-        await act(async () => {
-          await result.current.resetWorkspace()
-        })
-        // The stores still hold the old workspace until the reload
-        expect(scheduler.pendingWriteCount()).toBe(0)
-        scheduler.scheduleWrite('stale', 'test', async () => undefined)
-        expect(scheduler.pendingWriteCount()).toBe(0)
-      } finally {
-        scheduler.resumeWritesForTesting()
-      }
-    })
-
-    /**
-     * `deleteDb` reports failure rather than throwing (callers await it without a
-     * try/catch). Resetting the store anyway would show the user an empty
-     * workspace while their data was still on disk, and the next write would
-     * persist that fiction.
-     */
-    it('does not clear the workspace when the database could not be deleted', async () => {
-      const { deleteDb } = await import('../../db')
-      vi.mocked(deleteDb).mockResolvedValueOnce('delete-failed')
-
-      const { result } = renderHook(() => useWorkspaceStore())
-
-      act(() => {
-        result.current.setId('workspace-1')
-        result.current.setName('Test Workspace')
-        result.current.addNetworkIds(['network-1'])
-      })
-
-      let outcome: any
-      await act(async () => {
-        outcome = await result.current.resetWorkspace()
-      })
-
-      expect(outcome.status).toBe('failed')
-      expect(result.current.workspace.id).toBe('workspace-1')
-      expect(result.current.workspace.name).toBe('Test Workspace')
-      expect(result.current.workspace.networkIds).toEqual(['network-1'])
-    })
-
-    /**
-     * The database IS gone in this case — it was `db.open()` that failed, not
-     * `Dexie.delete()`. Keeping the workspace in memory (the old behavior, which
-     * treated this identically to a failed delete) meant the next mutation
-     * re-persisted it into the fresh database: a partial ghost workspace, which
-     * is what the reset handshake exists to prevent.
-     */
-    it('clears the workspace and demands a reload when the database could not be reopened', async () => {
-      const { deleteDb } = await import('../../db')
-      vi.mocked(deleteDb).mockResolvedValueOnce('reopen-failed')
-
-      const { result } = renderHook(() => useWorkspaceStore())
-
-      act(() => {
-        result.current.setId('workspace-1')
-        result.current.addNetworkIds(['network-1'])
-      })
-
-      let outcome: any
-      await act(async () => {
-        outcome = await result.current.resetWorkspace()
-      })
-
-      expect(outcome.status).toBe('reload-required')
-      expect(outcome.reason).toBeTruthy()
-      expect(result.current.workspace.id).toBe('')
-      expect(result.current.workspace.networkIds).toEqual([])
-    })
-
-    /**
-     * A blocked delete stays queued inside IndexedDB, so it can land at any
-     * moment. Treating it as "nothing happened" would leave this tab writing to
-     * a database that is about to be destroyed.
-     */
-    it('clears the workspace and demands a reload when the delete was blocked', async () => {
-      const { deleteDb } = await import('../../db')
-      vi.mocked(deleteDb).mockResolvedValueOnce('delete-blocked')
-
-      const { result } = renderHook(() => useWorkspaceStore())
-
-      act(() => {
-        result.current.setId('workspace-1')
-        result.current.addNetworkIds(['network-1'])
-      })
-
-      let outcome: any
-      await act(async () => {
-        outcome = await result.current.resetWorkspace()
-      })
-
-      expect(outcome.status).toBe('reload-required')
-      expect(result.current.workspace.networkIds).toEqual([])
     })
   })
 

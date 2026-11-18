@@ -28,7 +28,10 @@ The `DataMenu` feature implements the **Data** toolbar menu. It centralizes all 
   - **Cleanup**
     - `RemoveNetworkMenuItem`: Remove the current network from the workspace.
     - `RemoveAllNetworksMenuItem`: Remove all networks.
-    - `ResetLocalWorkspaceMenuItem`: Clear cached workspace state and reset local data.
+
+Clear Local Cache, which used to close this menu as "Clear Local Database",
+moved to **Help › Developer** (#989): it is a troubleshooting tool, and here it
+was too easy to click by accident.
 
 The main `DataMenu` component wires these items into a hierarchical menu model.
 
@@ -41,7 +44,7 @@ The main `DataMenu` component wires these items into a hierarchical menu model.
   - **Open in Cytoscape Desktop**
   - **Import** (file import + table join)
   - **Save / Copy / Download / Export**
-  - **Remove / Reset**
+  - **Remove**
 - Separator items (`{ separator: true }`) visually segment logical groups.
 
 ### Interaction Flow
@@ -66,7 +69,7 @@ No row renders a dialog. A row is unmounted with the menu, and a dialog rendered
 | Save Copy to NDEx                          | HCX warning, from `useSaveNetworkCopyToNDExFlow`                                           |
 | Save Workspace / Save Workspace As         | `WorkspaceNamingDialog`, mounted only while open                                           |
 | Export › Network to Image                  | `ExportImage` (lazy, re-keyed on every open)                                               |
-| Remove / Remove All / Clear Local Database | `ConfirmationDialog`                                                                       |
+| Remove / Remove All                        | `ConfirmationDialog`                                                                       |
 
 - A flow whose dialog opens only after async work (the NDEx saves) lives in a hook the menu calls. It returns `{ start, dialogs }` and reads network data from the stores when the save runs, so the always-mounted menu subscribes to none of it.
 - A dialog that stays mounted and only toggles `open` re-keys itself on every open, so its fields re-seed (`ExportImage`). A dialog that subscribes to the whole workspace mounts only while open (`WorkspaceNamingDialog`).

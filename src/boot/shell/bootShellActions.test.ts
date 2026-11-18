@@ -20,7 +20,7 @@ const paintWithAction = (): HTMLButtonElement => {
       message: 'Two builds share this address.',
       action: {
         id: ACTION_ID,
-        label: 'Reset Workspace and Reload Cytoscape',
+        label: 'Clear Cache and Reload Cytoscape',
         confirmLabel: 'Confirm — permanently delete',
         confirmMessage: "This permanently deletes this browser's workspace.",
       },

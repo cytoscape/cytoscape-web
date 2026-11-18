@@ -27,6 +27,7 @@ import {
 import { Link, Navigate, useLocation, useParams } from 'react-router-dom'
 
 import { MANUAL_ROUTE_SEGMENT } from '@/data/db/dbScope'
+import { useReloadOnDatabaseReset } from '@/data/hooks/useReloadOnDatabaseReset'
 import { SnackbarMessageList } from '@/features/Messages'
 import { goToEditor } from './goToEditor'
 import { ManualNotFound, ManualPage, type TocEntry } from './ManualPage'
@@ -288,6 +289,10 @@ const PageFooter = ({ page }: { page: ManualPageDef }): ReactElement => {
  * The in-app user manual, at /manual/*. A separate top-level route: it never
  * mounts AppShell, and its tab uses the sandbox database (dbScope.ts).
  */
+const reloadManualTab = (): void => {
+  window.location.reload()
+}
+
 /** Below this width a page with a pinned demo folds the page list into a menu. */
 const NAV_BESIDE_DEMO_MIN_WIDTH = 1600
 
@@ -313,6 +318,10 @@ export default function ManualApp(): ReactElement {
 
   const path = params['*'] ?? ''
   const page = findManualPage(path)
+
+  // Clear Local Cache, run from any tab, deletes this tab's sandbox databases.
+  // Reload in place so the page and its demos reopen fresh ones.
+  useReloadOnDatabaseReset(reloadManualTab)
 
   useEffect(() => {
     document.title =

@@ -1,6 +1,8 @@
 import CodeIcon from '@mui/icons-material/Code'
 import { lazy, Suspense, useCallback, useState } from 'react'
 
+import { useClearLocalCache } from '@/data/hooks/useClearLocalCache'
+import { ConfirmationDialog } from '@/features/ConfirmationDialog'
 import { RootMenu } from '../../../models/AppModel/RootMenu'
 import { LazyDialogBoundary } from '@/features/LazyDialogBoundary'
 import { appendServiceMenuItems } from '../AppMenu/appendServiceMenuItems'
@@ -13,6 +15,7 @@ import { BugReportDialog } from './BugReportDialog'
 import { BugReportMenuItem } from './BugReportMenuItem'
 import { CitationDialog } from './CitationDialog'
 import { CitationMenuItem } from './CitationMenuItem'
+import { ClearLocalCacheMenuItem } from './ClearLocalCacheMenuItem'
 import { CodeRepositoryMenuItem } from './CodeRepositoryMenuitem'
 import { DeveloperMenuItem } from './DeveloperMenuItem'
 import { ExportDatabaseMenuItem } from './ExportDatabaseMenuItem'
@@ -41,6 +44,7 @@ type HelpDialog =
   | 'citation'
   | 'bug-report'
   | 'import-database'
+  | 'clear-local-cache'
 
 export const HelpMenu = () => {
   const { open, setOpen } = useMenuBarMenu('help-menu')
@@ -65,6 +69,20 @@ export const HelpMenu = () => {
   }
   const handleCloseDialog = (): void => {
     setOpenDialog(null)
+  }
+
+  // Clear Local Cache. Success reloads inside the hook. A failure has closed
+  // this tab's database connections, so nothing it does from here would be
+  // saved: report it, then reload so a retry starts clean. `alert()` because
+  // the dialog has already closed and the menu has nowhere to render it.
+  const { clear: clearCache, reload } = useClearLocalCache()
+  const handleClearLocalCache = (): void => {
+    void clearCache().then((result) => {
+      if (result.status === 'failed') {
+        alert(`${result.reason}\n\nCytoscape Web will now reload.`)
+        reload()
+      }
+    })
   }
 
   const closeMenu = useCallback((): void => {
@@ -112,6 +130,16 @@ export const HelpMenu = () => {
           template: (
             <ImportDatabaseMenuItem
               onClick={openDialogFromMenu('import-database')}
+            />
+          ),
+        },
+        {
+          separator: true,
+        },
+        {
+          template: (
+            <ClearLocalCacheMenuItem
+              onClick={openDialogFromMenu('clear-local-cache')}
             />
           ),
         },
@@ -173,6 +201,15 @@ export const HelpMenu = () => {
           </Suspense>
         </LazyDialogBoundary>
       )}
+      <ConfirmationDialog
+        title="Clear Local Cache?"
+        message="This will permanently delete all cached networks, styles, filters, installed apps and settings. This action cannot be undone."
+        onConfirm={handleClearLocalCache}
+        open={openDialog === 'clear-local-cache'}
+        setOpen={(open) => setOpenDialog(open ? 'clear-local-cache' : null)}
+        buttonTitle="Clear Cache"
+        isAlert
+      />
       {dialogs}
     </>
   )

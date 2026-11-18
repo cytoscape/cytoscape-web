@@ -55,9 +55,10 @@ rather than to a workspace (#705, #849):
 | `app` | `cyweb-profile-db` |
 | `manual` | `cyweb-manual-profile-db` |
 
-- **No reset path deletes it.** `deleteDb()` deletes `DB_NAME` only, so Clear
-  Local Workspace, Load Workspace and the boot-failure reset leave it alone.
-  `deleteDb.test.ts` guards this.
+- **Only Clear Local Cache deletes it.** `deleteDb()` deletes `DB_NAME` only, so
+  Load Workspace leaves it alone (`deleteDb.test.ts` guards this). Clear Local
+  Cache (`clearLocalCache.ts`: Help › Developer, the Error page and the
+  boot-failure shell) deletes it with every other Cytoscape Web database.
 - **Schema.** One key/value store, `settings` (`{ key, value }`), at version 1. A
   new setting is a new key and needs no version bump. A new store needs a new
   version number.
@@ -103,7 +104,23 @@ The database uses version-based migrations. The current version is defined in `c
   reset completed, and the other three values each need different handling by the
   caller. The delete is bounded by `DELETE_TIMEOUT_MS` because IndexedDB waits
   indefinitely for other connections to close.
+- `deleteDatabaseBounded(timeoutMs, name?)`: Deletes one database by name,
+  bounded in time; resolves `'blocked'` when another connection holds it open.
 - `getDatabaseVersion()`: Returns the current database version
+
+### Clear Local Cache
+
+`clearLocalCache()` (`clearLocalCache.ts`) deletes everything Cytoscape Web
+keeps in this browser: the four databases named in
+`browserStorageInventory.ts` (`cyweb-db`, `cyweb-profile-db` and the manual's
+two), then the localStorage and sessionStorage keys listed there. Keys other
+code put on the origin are left alone. It announces on both scopes' channels
+(`ALL_UI_EVENTS_CHANNELS`), so editor and manual tabs release their
+connections, drop their own sessionStorage keys and reload. A database that
+cannot be deleted makes the whole call `failed`, naming it, and the storage
+keys stay. It imports no React, router or store code, because the boot-failure
+shell calls it before React mounts. `features/Manual/components/browserStorageInventory.test.ts` fails when
+a file starts writing Web Storage without being listed.
 
 ### Network Operations
 

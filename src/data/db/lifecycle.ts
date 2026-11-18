@@ -1,8 +1,8 @@
 /**
  * Cross-tab handshake for destroying the IndexedDB database.
  *
- * `resetWorkspace` deletes the whole database, which every other tab still has
- * open. IndexedDB will not delete a database with live connections — it fires
+ * Clear Local Cache and Load Workspace delete whole databases, which every
+ * other tab still has open. IndexedDB will not delete a database with live connections — it fires
  * `blocked` and waits — so the other tabs have to be told to let go first.
  *
  * The earlier version announced the deletion and then deleted immediately, while
@@ -36,11 +36,22 @@
 import { closeDb } from '@/data/db'
 import { logDb } from '@/debug'
 import { getTabId } from '@/data/tabState/tabId'
+import { removeCywebSessionStorage } from './browserStorageInventory'
 import { currentDbScope, uiEventsChannelFor } from './dbScope'
+import { closeProfileDb } from './profileDb'
 
 // Scoped like the database, so a reset in the manual's sandbox never reloads
 // an editor tab (#839).
 export const UI_EVENTS_CHANNEL = uiEventsChannelFor(currentDbScope())
+
+/**
+ * Both scopes' channels. Clear Local Cache deletes the editor's and the
+ * manual's databases, so it has to reach the tabs of both.
+ */
+export const ALL_UI_EVENTS_CHANNELS: readonly string[] = [
+  uiEventsChannelFor('app'),
+  uiEventsChannelFor('manual'),
+]
 
 export const DATABASE_DELETED = 'DATABASE_DELETED'
 export const DATABASE_DELETED_ACK = 'DATABASE_DELETED_ACK'
@@ -60,7 +71,7 @@ export const PEER_CLOSE_GRACE_MS = 300
  * Must exceed the deleter's own worst case — `PEER_CLOSE_GRACE_MS` plus
  * `DELETE_TIMEOUT_MS` from `src/data/db/index.ts` — so it fires only when the
  * deleter really is gone rather than while it is still working.
- * `resetWorkspace` signals completion on every outcome (success, failure, and
+ * Every deleter signals completion on every outcome (success, failure, and
  * give-up), so a peer that times out has heard nothing at all. Written as a
  * literal rather than imported from the db module: this is evaluated at module
  * load, and every test that mocks `@/data/db` would then have to supply it.
@@ -76,6 +87,16 @@ export const RESET_COMPLETE_TIMEOUT_MS = 6300
 const delay = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms))
 
+export interface AnnounceDatabaseResetOptions {
+  /** Channels to announce on. Defaults to this document's scope only. */
+  channels?: readonly string[]
+  /**
+   * Set by Clear Local Cache: peers also drop their own sessionStorage keys
+   * before they reload, since this tab cannot reach another tab's copy.
+   */
+  clearsLocalCache?: boolean
+}
+
 /**
  * Tell other tabs to release the database, and wait for them to do so.
  *
@@ -83,17 +104,25 @@ const delay = (ms: number): Promise<void> =>
  * peers to reload. Peers are not counted — there is no reliable tab census — so
  * this is a bounded best-effort wait rather than a barrier.
  */
-export const announceDatabaseReset = async (): Promise<() => void> => {
-  const channel = new BroadcastChannel(UI_EVENTS_CHANNEL)
+export const announceDatabaseReset = async (
+  options: AnnounceDatabaseResetOptions = {},
+): Promise<() => void> => {
+  const names = options.channels ?? [UI_EVENTS_CHANNEL]
+  const channels = names.map((name) => new BroadcastChannel(name))
   const acknowledged = new Set<string>()
 
-  channel.onmessage = (event) => {
-    if (event.data?.type === DATABASE_DELETED_ACK) {
-      acknowledged.add(String(event.data.tabId))
+  for (const channel of channels) {
+    channel.onmessage = (event) => {
+      if (event.data?.type === DATABASE_DELETED_ACK) {
+        acknowledged.add(String(event.data.tabId))
+      }
     }
+    channel.postMessage({
+      type: DATABASE_DELETED,
+      tabId: getTabId(),
+      clearsLocalCache: options.clearsLocalCache === true,
+    })
   }
-
-  channel.postMessage({ type: DATABASE_DELETED, tabId: getTabId() })
   await delay(PEER_CLOSE_GRACE_MS)
 
   logDb.info(
@@ -101,13 +130,26 @@ export const announceDatabaseReset = async (): Promise<() => void> => {
   )
 
   return () => {
-    try {
-      channel.postMessage({ type: DATABASE_RESET_COMPLETE })
-    } finally {
-      channel.close()
+    for (const channel of channels) {
+      try {
+        channel.postMessage({ type: DATABASE_RESET_COMPLETE })
+      } catch (e) {
+        logDb.warn('[announceDatabaseReset] Failed to release a peer', e)
+      } finally {
+        channel.close()
+      }
     }
   }
 }
+
+/**
+ * Whether a `DATABASE_DELETED` announcement came from Clear Local Cache.
+ * Narrows the payload itself: any same-origin page can post on the channel.
+ */
+export const isClearLocalCacheAnnouncement = (data: unknown): boolean =>
+  typeof data === 'object' &&
+  data !== null &&
+  (data as { clearsLocalCache?: unknown }).clearsLocalCache === true
 
 export const isOwnResetAnnouncement = (data: unknown): boolean => {
   // `unknown`, not `any`: this reads a BroadcastChannel payload, which any
@@ -133,6 +175,7 @@ export const isOwnResetAnnouncement = (data: unknown): boolean => {
 export const handleDatabaseDeleted = async (
   channel: BroadcastChannel,
   reload: () => void,
+  options: { clearSessionStorage?: boolean } = {},
 ): Promise<void> => {
   let reloaded = false
   const reloadOnce = (): void => {
@@ -140,12 +183,20 @@ export const handleDatabaseDeleted = async (
       return
     }
     reloaded = true
+    // Right before the reload, not on receipt: until then this tab's stores
+    // can still write their per-tab state back.
+    if (options.clearSessionStorage === true) {
+      removeCywebSessionStorage()
+    }
     reload()
   }
 
   try {
-    // Release the connection first: until this resolves, the other tab's
-    // Dexie.delete() is blocked on us.
+    // Release the connections first: until this resolves, the other tab's
+    // Dexie.delete() is blocked on us. The profile database only matters to
+    // Clear Local Cache, but closing it is harmless otherwise: it reopens on
+    // its next use.
+    closeProfileDb()
     await closeDb()
   } catch (e) {
     logDb.warn('[handleDatabaseDeleted] Failed to close the database', e)

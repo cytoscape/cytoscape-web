@@ -45,7 +45,7 @@ We do not sell, rent, or trade your personal information to third parties. Howev
 
 ### 4. Data Security
 
-Data you save to NDEx is stored in NDEx. Please refer to the NDEx privacy policy for details about the measures taken to protect it. Data stored in your browser is protected by your browser and your computer. Anyone who uses the same browser profile can open it. **Data → Clear Local Database** deletes your workspace; your preferences stay until you clear this site's data in your browser.
+Data you save to NDEx is stored in NDEx. Please refer to the NDEx privacy policy for details about the measures taken to protect it. Data stored in your browser is protected by your browser and your computer. Anyone who uses the same browser profile can open it. **Help → Developer → Clear Local Cache** deletes everything Cytoscape Web stores in your browser, your workspace and your preferences alike. It does not sign you out of NDEx.
 
 ## Rights and Choices
 

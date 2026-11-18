@@ -79,12 +79,13 @@ reasons it is split that way: the markup module must stay dependency-free, and
 neither renderer can hand a button an `onClick` — both write the shell as an HTML
 string — so a single delegated listener on `document` serves both and survives a
 repaint. Every action is arm-then-confirm, since the only recovery worth offering
-this early is destructive. Today there is exactly one: resetting the database
+this early is destructive. Today there is exactly one: clearing the local cache
 after a `schema-too-new` open failure (`openDatabasePhase.ts`), which registers
 its handler on the failure path rather than at module scope so a healthy boot
-pays nothing. It reuses `deleteDb()` — the same primitive as the error page's
-"Reset Workspace" button, which cannot be reused directly here because it is MUI
-plus react-router and React never mounts on this path.
+pays nothing. It calls `clearLocalCache()` — the same function as the error
+page's "Clear Cache and Reload Cytoscape" button and Help › Developer › Clear
+Local Cache, whose React wrappers cannot be reused here because React never
+mounts on this path.
 
 **The app renders over the SSO check, not after it.** What keeps a logged-in
 user's startup requests from going out anonymously is not ordering but

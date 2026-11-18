@@ -435,21 +435,26 @@ export type DeleteDbOutcome =
 export const DELETE_TIMEOUT_MS = 5000
 
 /**
- * Delete the database, bounded in time, reporting whether it was blocked.
+ * Delete a database by name, bounded in time, reporting whether it was
+ * blocked. Rejects when IndexedDB refuses the delete outright.
  *
  * `Dexie.delete()` is not used because it builds its own throwaway instance,
  * which leaves no way to subscribe to `blocked`. Same work, one observable
  * instance.
+ *
+ * Exported for Clear Local Cache (`clearLocalCache.ts`), which deletes every
+ * Cytoscape Web database rather than only this document's.
  */
-const deleteDatabaseBounded = async (
+export const deleteDatabaseBounded = async (
   timeoutMs: number,
+  dbName: string = DB_NAME,
 ): Promise<'deleted' | 'blocked'> => {
   // `addons: []` keeps dexie-observable off the throwaway deleter instance;
   // this is what Dexie's own static `delete()` does.
-  const deleter = new Dexie(DB_NAME, { addons: [] })
+  const deleter = new Dexie(dbName, { addons: [] })
   const onBlocked = (): void => {
     logDb.warn(
-      `[DeleteDB] ${DB_NAME} delete is blocked: another connection still has ` +
+      `[DeleteDB] ${dbName} delete is blocked: another connection still has ` +
         'it open. Waiting for it to close.',
     )
   }

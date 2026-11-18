@@ -7,14 +7,14 @@ import { BOOT_SHELL_TESTID } from './shell/bootShellMarkup'
 import { showBootShell } from './shell/showBootShell'
 
 const openDatabaseForStartup = vi.fn()
-const deleteDb = vi.fn()
+const clearLocalCache = vi.fn()
 
 vi.mock('../data/db/startupOpen', () => ({
   openDatabaseForStartup: () => openDatabaseForStartup(),
 }))
 
-vi.mock('../data/db', () => ({
-  deleteDb: () => deleteDb(),
+vi.mock('../data/db/clearLocalCache', () => ({
+  clearLocalCache: () => clearLocalCache(),
 }))
 
 // Importing the module registers the phase's error classifier as a side effect,
@@ -27,7 +27,7 @@ const reload = vi.fn()
 
 beforeEach(() => {
   openDatabaseForStartup.mockReset()
-  deleteDb.mockReset().mockResolvedValue('deleted')
+  clearLocalCache.mockReset().mockResolvedValue({ status: 'cleared' })
   reload.mockReset()
   // jsdom's location.reload is not writable; replacing the whole descriptor is.
   Object.defineProperty(window, 'location', {
@@ -84,7 +84,7 @@ describe('openDatabasePhase database reset action', () => {
     expect(button?.getAttribute('data-boot-action')).toBe(
       RESET_DATABASE_ACTION_ID,
     )
-    expect(button?.textContent).toBe('Reset Workspace and Reload Cytoscape')
+    expect(button?.textContent).toBe('Clear Cache and Reload Cytoscape')
   })
 
   it('states the one thing to do, and keeps the versions as the detail', async () => {
@@ -100,7 +100,11 @@ describe('openDatabasePhase database reset action', () => {
 
     const error = classifyBootError(BootPhase.DATABASE, cause)
 
-    expect(error.message).toBe('Reset your local workspace to continue.')
+    expect(error.message).toBe('Clear your local cache to continue.')
+    expect(error.action?.confirmMessage).toBe(
+      'This will permanently delete all cached networks, styles, filters, ' +
+        'installed apps and settings. This action cannot be undone.',
+    )
     expect(error.detail).toBe('Stored version 12; this build expects 10.')
   })
 
@@ -115,7 +119,7 @@ describe('openDatabasePhase database reset action', () => {
     expect(error.detail).toBe('Stored version unknown; this build expects 10.')
   })
 
-  it('deletes the database and reloads only after the confirm click', async () => {
+  it('clears the local cache and reloads only after the confirm click', async () => {
     const cause = await failWith({
       kind: 'schema-too-new',
       onDiskVersion: 12,
@@ -124,17 +128,41 @@ describe('openDatabasePhase database reset action', () => {
     const button = paintErrorShell(cause)
 
     button?.click()
-    expect(deleteDb).not.toHaveBeenCalled()
+    expect(clearLocalCache).not.toHaveBeenCalled()
 
     button?.click()
     await vi.waitFor(() => {
-      expect(deleteDb).toHaveBeenCalledTimes(1)
+      expect(clearLocalCache).toHaveBeenCalledTimes(1)
     })
-    // Same primitive the error page's "Reset Workspace" button reaches through
-    // WorkspaceStore.resetWorkspace().
+    // The same function behind the Error page's button and Help › Developer.
     await vi.waitFor(() => {
       expect(reload).toHaveBeenCalledTimes(1)
     })
+  })
+
+  it('stays on the error shell, button enabled, when the clear fails', async () => {
+    clearLocalCache.mockResolvedValue({
+      status: 'failed',
+      notDeleted: ['cyweb-db'],
+      reason: 'Could not delete cyweb-db.',
+    })
+    const cause = await failWith({
+      kind: 'schema-too-new',
+      onDiskVersion: 12,
+      expectedVersion: 10,
+    })
+    const button = paintErrorShell(cause)
+
+    button?.click()
+    button?.click()
+    await vi.waitFor(() => {
+      expect(clearLocalCache).toHaveBeenCalledTimes(1)
+    })
+    // A partial clear is not a clear: no reload, and the button comes back.
+    await vi.waitFor(() => {
+      expect(button?.disabled).toBe(false)
+    })
+    expect(reload).not.toHaveBeenCalled()
   })
 
   it('offers no button when IndexedDB is merely unavailable', async () => {
@@ -146,7 +174,7 @@ describe('openDatabasePhase database reset action', () => {
     // Clearing the database is not the fix for private browsing, and offering
     // it would send people to destroy data for no reason.
     expect(paintErrorShell(cause)).toBeNull()
-    expect(deleteDb).not.toHaveBeenCalled()
+    expect(clearLocalCache).not.toHaveBeenCalled()
   })
 })
 

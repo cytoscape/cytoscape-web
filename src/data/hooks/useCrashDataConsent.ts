@@ -10,7 +10,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 
-const CONSENT_STORAGE_KEY = 'cytoscapeWebCrashDataConsent'
+export const CONSENT_STORAGE_KEY = 'cytoscapeWebCrashDataConsent'
 const CONSENT_EXPIRY_DAYS = 365
 
 export type ConsentStatus = 'unknown' | 'accepted' | 'declined'

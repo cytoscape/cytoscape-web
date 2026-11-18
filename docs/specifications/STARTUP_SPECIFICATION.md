@@ -70,15 +70,19 @@ IndexedDB — rendering over a dead database only relocates the failure.
 **The one recoverable fatal case carries a button.** A `schema-too-new` failure
 (this origin holds a database written by a newer build) is the only boot failure
 with an action the reader can take, so its error shell offers
-"Reset Workspace and Reload Cytoscape" — the same wording and the same
-`deleteDb()` primitive as the error page's button in `src/features/Error.tsx`,
-which cannot be reused directly because React never mounts on this path.
+"Clear Cache and Reload Cytoscape" — the same wording and the same
+`clearLocalCache()` function as the error page's button in
+`src/features/Error.tsx` and Help › Developer › Clear Local Cache. The React
+button cannot be reused directly because React never mounts on this path, so
+`clearLocalCache()` imports no React, router or store code. A clear that leaves
+any database behind throws, which re-enables the button and keeps the reader on
+the shell.
 
 Two constraints on that button:
 
 - **Arm, then confirm.** The first click swaps the label and reveals what will be
-  destroyed; only the second click runs. Clearing the database destroys the whole
-  local workspace with no undo, and the shell is too early to have the app's
+  destroyed; only the second click runs. Clearing the cache destroys every
+  network, style, installed app and setting with no undo, and the shell is too early to have the app's
   `ConfirmationDialog` available.
 - **Never offered for `unavailable`.** A blocked IndexedDB (private browsing) is
   not fixed by clearing data, and offering it there would send people to destroy

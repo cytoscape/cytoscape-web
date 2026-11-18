@@ -7,10 +7,11 @@ import { currentDbScope, profileDbNameFor } from './dbScope'
  * The browser-level database: settings that belong to this browser, not to a
  * workspace (#705, #849).
  *
- * `cyweb-db` is deleted whole by Clear Local Workspace, Load Workspace and the
- * boot-failure reset. Anything the user set up once for this browser has to
- * live somewhere those paths do not reach, and that is this database:
- * `deleteDb()` never touches it.
+ * `cyweb-db` is deleted whole by Load Workspace. Anything the user set up once
+ * for this browser has to live somewhere that path does not reach, and that is
+ * this database: `deleteDb()` never touches it. Only Clear Local Cache
+ * (`clearLocalCache.ts`), which deletes everything Cytoscape Web stores,
+ * deletes it.
  *
  * What does NOT belong here: secrets. IndexedDB is plaintext on disk and
  * readable by every script in the origin, with no expiry. API keys stay in
@@ -124,9 +125,9 @@ export const closeProfileDb = (): void => {
 }
 
 /**
- * Delete the whole profile database. No product path calls this: the profile
- * is meant to outlive every workspace reset. It exists so tests can start
- * clean.
+ * Delete the whole profile database, for tests that need to start clean. The
+ * product deletes it only through Clear Local Cache (`clearLocalCache.ts`),
+ * which deletes every Cytoscape Web database by name.
  */
 export const deleteProfileDb = async (): Promise<void> => {
   closeProfileDb()

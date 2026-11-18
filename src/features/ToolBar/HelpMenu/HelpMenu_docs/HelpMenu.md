@@ -50,6 +50,13 @@ The menu, top to bottom (`---` marks a divider):
   ***
   - Export Database Snapshot
   - Import Database Snapshot...
+  ***
+  - Clear Local Cache: after the "Clear Local Cache?" confirmation, deletes
+    everything Cytoscape Web keeps in this browser (`src/data/db/clearLocalCache.ts`)
+    and reloads. It lives here, last, behind a divider, so nobody runs it by
+    accident; it is a troubleshooting tool. On failure it names what could not
+    be deleted in an `alert()` and reloads, since the tab's database
+    connections are already closed.
 - License
 
 ---

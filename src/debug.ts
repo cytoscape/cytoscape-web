@@ -1,7 +1,7 @@
 import debug from 'debug'
 import hotkeys from 'hotkeys-js'
 
-const DEBUG_OVERRIDE_KEY = 'cyweb-debug-enabled'
+export const DEBUG_OVERRIDE_KEY = 'cyweb-debug-enabled'
 const DEBUG_SHORTCUT = '`,shift+`'
 
 type InitializeDebugOptions = {
