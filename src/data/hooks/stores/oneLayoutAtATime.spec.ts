@@ -13,9 +13,11 @@ import { LayoutAlgorithm } from '../../../models/LayoutModel/LayoutAlgorithm'
 import { LayoutEngine } from '../../../models/LayoutModel/LayoutEngine'
 import { Network } from '../../../models/NetworkModel'
 import { useLayoutStore } from './LayoutStore'
-import { runLayoutWhenIdle } from './runLayoutWhenIdle'
+import { useNetworkStore } from './NetworkStore'
+import { ClaimLayout, runLayoutWhenIdle } from './runLayoutWhenIdle'
 
-vi.mock('../../../debug', () => ({
+vi.mock('../../../debug', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../debug')>()),
   logUi: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
 }))
 
@@ -69,8 +71,13 @@ describe('one layout at a time (#982)', () => {
   let applied: Positions[]
   let undoEntries: string[]
 
-  const run = (engine: LayoutEngine): boolean => {
-    const { startLayout, setIsRunning } = useLayoutStore.getState()
+  /**
+   * Start `engine` on net1 the way the host does. A queued start passes the
+   * claim runLayoutWhenIdle hands it; an immediate one uses the store's.
+   */
+  const run = (engine: LayoutEngine, claim?: ClaimLayout): boolean => {
+    const { setIsRunning } = useLayoutStore.getState()
+    const startLayout = claim ?? useLayoutStore.getState().startLayout
     return runEngineLayout({
       engine,
       algorithm: engine.algorithms[engine.defaultAlgorithmName],
@@ -132,13 +139,13 @@ describe('one layout at a time (#982)', () => {
     }
 
     it('starts at once when no layout runs', () => {
-      runLayoutWhenIdle(() => run(syncEngine('auto', [1, 1])))
+      runLayoutWhenIdle((claim) => run(syncEngine('auto', [1, 1]), claim))
       expect(undoEntries).toEqual(['Apply auto layout'])
     })
 
     it('waits for the running layout, then starts', async () => {
       run(timedEngine('cosmos', 2400, [100, 100]))
-      runLayoutWhenIdle(() => run(syncEngine('auto', [1, 1])))
+      runLayoutWhenIdle((claim) => run(syncEngine('auto', [1, 1]), claim))
 
       expect(undoEntries).toEqual([])
       vi.advanceTimersByTime(2400)
@@ -151,8 +158,12 @@ describe('one layout at a time (#982)', () => {
 
     it('runs two waiting layouts one after the other, each once', async () => {
       run(timedEngine('cosmos', 2400, [100, 100]))
-      runLayoutWhenIdle(() => run(timedEngine('first', 1000, [1, 1])))
-      runLayoutWhenIdle(() => run(timedEngine('second', 1000, [2, 2])))
+      runLayoutWhenIdle((claim) =>
+        run(timedEngine('first', 1000, [1, 1]), claim),
+      )
+      runLayoutWhenIdle((claim) =>
+        run(timedEngine('second', 1000, [2, 2]), claim),
+      )
 
       vi.advanceTimersByTime(2400)
       await flushMicrotasks()
@@ -174,7 +185,9 @@ describe('one layout at a time (#982)', () => {
 
     it('does not run again when a synchronous layout lowers the flag while starting', async () => {
       run(timedEngine('cosmos', 2400, [100, 100]))
-      const tryStart = vi.fn(() => run(syncEngine('auto', [1, 1])))
+      const tryStart = vi.fn((claim: ClaimLayout) =>
+        run(syncEngine('auto', [1, 1]), claim),
+      )
       runLayoutWhenIdle(tryStart)
 
       vi.advanceTimersByTime(2400)
@@ -188,7 +201,9 @@ describe('one layout at a time (#982)', () => {
 
     it('starts nothing once cancelled', async () => {
       run(timedEngine('cosmos', 2400, [100, 100]))
-      const tryStart = vi.fn(() => run(syncEngine('auto', [1, 1])))
+      const tryStart = vi.fn((claim: ClaimLayout) =>
+        run(syncEngine('auto', [1, 1]), claim),
+      )
       const cancel = runLayoutWhenIdle(tryStart)
 
       cancel()
@@ -219,13 +234,13 @@ describe('one layout at a time (#982)', () => {
         startLayout,
         setIsRunning,
       })
-      runLayoutWhenIdle(() => {
+      runLayoutWhenIdle((claim) => {
         log.push('auto started')
-        return run(syncEngine('auto', [1, 1]))
+        return run(syncEngine('auto', [1, 1]), claim)
       })
-      runLayoutWhenIdle(() => {
+      runLayoutWhenIdle((claim) => {
         log.push('second auto started')
-        return run(syncEngine('auto', [2, 2]))
+        return run(syncEngine('auto', [2, 2]), claim)
       })
 
       vi.advanceTimersByTime(2400)
@@ -238,6 +253,105 @@ describe('one layout at a time (#982)', () => {
         'auto started',
         'second auto started',
       ])
+    })
+
+    // Review of #985: the slot freed by a finishing layout belongs to the
+    // layouts already waiting. A start made synchronously after the flag
+    // drops (a layout:completed listener, say) used to take it first, and
+    // repeated such starts could keep a waiting layout from ever running.
+    it('keeps the freed slot for the layouts already waiting', async () => {
+      const log: string[] = []
+      const { startLayout, setIsRunning } = useLayoutStore.getState()
+      let jumped: boolean | undefined
+      runEngineLayout({
+        engine: timedEngine('cosmos', 2400, [100, 100]),
+        algorithm: algorithmOf('cosmos'),
+        network,
+        networkId: 'net1',
+        afterLayout: () => {
+          setIsRunning(false)
+          // Something tries to start a layout right away
+          jumped = run(syncEngine('jumper', [9, 9]))
+        },
+        startLayout,
+        setIsRunning,
+      })
+      runLayoutWhenIdle((claim) => {
+        log.push('waiting layout started')
+        return run(syncEngine('auto', [1, 1]), claim)
+      })
+
+      vi.advanceTimersByTime(2400)
+      await flushMicrotasks()
+
+      expect(jumped).toBe(false)
+      expect(log).toEqual(['waiting layout started'])
+      expect(undoEntries).toEqual(['Apply auto layout'])
+    })
+
+    it('lets an immediate start through again once nothing waits', async () => {
+      run(timedEngine('cosmos', 2400, [100, 100]))
+      runLayoutWhenIdle((claim) => run(syncEngine('auto', [1, 1]), claim))
+      vi.advanceTimersByTime(2400)
+      await flushMicrotasks()
+
+      expect(run(syncEngine('later', [2, 2]))).toBe(true)
+    })
+
+    // Review of #985: a network deleted and added again under the same id
+    // while its layout waits must not get the old job's layout.
+    describe('with a network to watch', () => {
+      const addNetwork = (): void => {
+        useNetworkStore
+          .getState()
+          .add({ id: 'watched', nodes: [], edges: [] } as unknown as Network)
+      }
+
+      beforeEach(() => {
+        useNetworkStore.getState().delete('watched')
+        addNetwork()
+      })
+
+      it('stops waiting when the network is removed, even if it comes back', async () => {
+        run(timedEngine('cosmos', 2400, [100, 100]))
+        const tryStart = vi.fn((claim: ClaimLayout) =>
+          run(syncEngine('auto', [1, 1]), claim),
+        )
+        const onNetworkRemoved = vi.fn()
+        runLayoutWhenIdle(tryStart, {
+          networkId: 'watched',
+          onNetworkRemoved,
+        })
+
+        useNetworkStore.getState().delete('watched')
+        addNetwork()
+        vi.advanceTimersByTime(2400)
+        await flushMicrotasks()
+
+        expect(tryStart).not.toHaveBeenCalled()
+        expect(onNetworkRemoved).toHaveBeenCalledTimes(1)
+        // Nothing is left waiting, so the slot is free for anyone
+        expect(run(syncEngine('later', [2, 2]))).toBe(true)
+      })
+
+      it('starts as usual while the network stays', async () => {
+        run(timedEngine('cosmos', 2400, [100, 100]))
+        const onNetworkRemoved = vi.fn()
+        runLayoutWhenIdle((claim) => run(syncEngine('auto', [1, 1]), claim), {
+          networkId: 'watched',
+          onNetworkRemoved,
+        })
+
+        vi.advanceTimersByTime(2400)
+        await flushMicrotasks()
+        useNetworkStore.getState().delete('watched')
+
+        expect(undoEntries).toEqual([
+          'Apply cosmos layout',
+          'Apply auto layout',
+        ])
+        expect(onNetworkRemoved).not.toHaveBeenCalled()
+      })
     })
   })
 })

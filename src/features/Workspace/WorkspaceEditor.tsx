@@ -179,9 +179,6 @@ const WorkSpaceEditor = (): JSX.Element => {
 
   const setIsRunning: (isRunning: boolean, networkId?: IdType) => void =
     useLayoutStore((state) => state.setIsRunning)
-  const startLayout: (networkId: IdType) => boolean = useLayoutStore(
-    (state) => state.startLayout,
-  )
 
   const updateSummary = useNetworkSummaryStore((state) => state.update)
 
@@ -295,22 +292,28 @@ const WorkSpaceEditor = (): JSX.Element => {
 
             // Only one layout runs at a time (#982). This one must not be
             // dropped, or the network keeps no positions, so it waits for a
-            // running layout to finish; a network removed meanwhile is not
-            // laid out. The shared runner also contains a failing engine
-            // (logged, running flag lowered).
+            // running layout to finish. It stops waiting if the network is
+            // removed meanwhile, even if one with the same id is added back,
+            // and lays out the network as it is on its turn. The shared
+            // runner also contains a failing engine (logged, flag lowered).
             runLayoutWhenIdle(
-              () =>
-                !useNetworkStore.getState().networks.has(networkId) ||
-                runEngineLayout({
-                  engine: layoutEngine,
-                  algorithm:
-                    layoutEngine.algorithms[defaultLayout.algorithmName],
-                  network,
-                  networkId,
-                  afterLayout: handleLayoutComplete,
-                  startLayout,
-                  setIsRunning,
-                }),
+              (claim) => {
+                const live = useNetworkStore.getState().networks.get(networkId)
+                return (
+                  live === undefined ||
+                  runEngineLayout({
+                    engine: layoutEngine,
+                    algorithm:
+                      layoutEngine.algorithms[defaultLayout.algorithmName],
+                    network: live,
+                    networkId,
+                    afterLayout: handleLayoutComplete,
+                    startLayout: claim,
+                    setIsRunning,
+                  })
+                )
+              },
+              { networkId },
             )
           }
         }

@@ -367,7 +367,7 @@ export const AppCodes = {
     code: 'APP16',
     severity: 'error',
     message: (networkId: string) =>
-      `A layout is already running; no layout was started on network ${networkId}`,
+      `Another layout is running or waiting to start; no layout was started on network ${networkId}`,
   },
 } as const satisfies Record<string, ApiErrorCodeDef>
 

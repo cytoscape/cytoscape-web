@@ -10,10 +10,14 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
   running layout instead of failing with `APP16`, then runs. The promise
   resolves once the call's own layout has run, so a loop of awaited calls over
   several networks needs no `APP16` handling. Waiting calls start one after
-  another as soon as the layout before each ends. A call for an unknown network
-  or algorithm fails at once without waiting, and a network deleted while the
-  call waits resolves to `APP1`. There is no timeout. Off by default; a value
-  that is not a boolean fails with `APP9`. New field on `ApplyLayoutOptions`.
+  another, first come first served, as soon as the layout before each ends;
+  while calls wait, a call without the option fails with `APP16` even between
+  two layouts. A call for an unknown network or algorithm fails at once
+  without waiting, and a network deleted while the call waits resolves to
+  `APP1` at once. There is no timeout. Inside a layout algorithm's `run`,
+  `context.apis` ignores the option, since the run would wait for itself; do
+  not wait through `window.CyWebApi` there either. Off by default; a value that
+  is not a boolean fails with `APP9`. New field on `ApplyLayoutOptions`.
 - **`viewport.updateNodePositions(networkId, positions, { recordUndo: true })`**
   (#874) records the move as one undo entry, so the user can put every node
   back with a single Edit ▸ Undo, as after a drag or a layout. The entry holds

@@ -256,9 +256,6 @@ export const SubNetworkPanel = ({
 
   const setIsRunning: (isRunning: boolean, networkId?: IdType) => void =
     useLayoutStore((state) => state.setIsRunning)
-  const startLayout: (networkId: IdType) => boolean = useLayoutStore(
-    (state) => state.startLayout,
-  )
 
   const layoutEngines: LayoutEngine[] = useLayoutStore(
     (state) => state.layoutEngines,
@@ -282,6 +279,13 @@ export const SubNetworkPanel = ({
   )
 
   const prevQueryNetworkIdRef = useRef<string>()
+
+  // Which run of the data pipeline below is current. A run can outlive its
+  // effect: its subnetwork's layout may wait for another layout (#982), and
+  // the user may pick another subsystem meanwhile. A run that is no longer
+  // current still registers and lays out its subnetwork, which it needs when
+  // selected again, but publishes nothing.
+  const pipelineRunRef = useRef<number>(0)
 
   const getToken = useCredentialStore((state) => state.getToken)
   let interactionSourceUrl = interactionNetworkHost
@@ -645,31 +649,34 @@ export const SubNetworkPanel = ({
             resolve()
           }
 
-          runLayoutWhenIdle(() => {
-            // Removed while waiting: nothing left to lay out.
-            if (!useNetworkStore.getState().networks.has(network.id)) {
-              resolve()
-              return true
-            }
-            if (!startLayout(network.id)) {
-              return false
-            }
-            try {
-              const result = engine.apply(
-                network.nodes,
-                network.edges,
-                afterLayout,
-                defaultLayout,
-                network.id,
-              )
-              if (result instanceof Promise) {
-                result.catch(onFailure)
+          // Stops waiting, and settles, if the network is removed meanwhile
+          runLayoutWhenIdle(
+            (claim) => {
+              if (!useNetworkStore.getState().networks.has(network.id)) {
+                resolve()
+                return true
               }
-            } catch (error) {
-              onFailure(error)
-            }
-            return true
-          })
+              if (!claim(network.id)) {
+                return false
+              }
+              try {
+                const result = engine.apply(
+                  network.nodes,
+                  network.edges,
+                  afterLayout,
+                  defaultLayout,
+                  network.id,
+                )
+                if (result instanceof Promise) {
+                  result.catch(onFailure)
+                }
+              } catch (error) {
+                onFailure(error)
+              }
+              return true
+            },
+            { networkId: network.id, onNetworkRemoved: resolve },
+          )
         })
       }
 
@@ -687,6 +694,9 @@ export const SubNetworkPanel = ({
     if (data === undefined) {
       return
     }
+
+    const run = ++pipelineRunRef.current
+    const isCurrent = (): boolean => pipelineRunRef.current === run
 
     // Define an async function for processing data
     const processData = async () => {
@@ -740,10 +750,18 @@ export const SubNetworkPanel = ({
             data.visualStyleOptions,
           )
         }
+        // Superseded while registering (its layout may have waited): the
+        // subnetwork is ready for later, but another one is on screen now
+        if (!isCurrent()) {
+          return
+        }
 
         setProcessingProgress(80)
         setProcessingStage('Finalizing...')
         await yieldToUI()
+        if (!isCurrent()) {
+          return
+        }
 
         // if (queryNetworkId === newUuid) {
         //   setProcessingProgress(100)
@@ -765,9 +783,13 @@ export const SubNetworkPanel = ({
           `[${SubNetworkPanel.name}]: Failed to render the subnetwork`,
           error,
         )
-        setRenderFailed(true)
+        if (isCurrent()) {
+          setRenderFailed(true)
+        }
       } finally {
-        setIsProcessing(false)
+        if (isCurrent()) {
+          setIsProcessing(false)
+        }
       }
     }
 
@@ -776,6 +798,7 @@ export const SubNetworkPanel = ({
 
     // Cleanup function if the component unmounts during processing
     return () => {
+      pipelineRunRef.current += 1
       setIsProcessing(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once per fetched data; other deps would re-run the pipeline

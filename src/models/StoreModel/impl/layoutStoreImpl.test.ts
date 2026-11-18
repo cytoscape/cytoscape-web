@@ -83,6 +83,7 @@ const createDefaultState = (): LayoutState => {
     preferredHierarchicalLayout: defHierarchicalAlgorithm,
     isRunning: false,
     runningNetworkId: undefined,
+    layoutQueued: false,
   }
 }
 
@@ -147,6 +148,16 @@ describe('LayoutStoreImpl', () => {
       const running = setIsRunning(createDefaultState(), true, 'net1')
 
       expect(startLayout(running, 'net2')).toBeUndefined()
+      expect(startLayout(running, 'net2', true)).toBeUndefined()
+    })
+
+    // The slot a finishing layout frees belongs to the layouts waiting for
+    // it: only the queue's own claim may take it while they wait.
+    it('keeps a free slot for waiting layouts', () => {
+      const queued = { ...createDefaultState(), layoutQueued: true }
+
+      expect(startLayout(queued, 'net1')).toBeUndefined()
+      expect(startLayout(queued, 'net1', true)?.isRunning).toBe(true)
     })
   })
 

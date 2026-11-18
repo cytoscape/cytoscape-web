@@ -6,7 +6,10 @@ import { logApi } from '../../debug'
 import { useLayoutStore } from '../../data/hooks/stores/LayoutStore'
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
 import { useRendererFunctionStore } from '../../data/hooks/stores/RendererFunctionStore'
-import { runLayoutWhenIdle } from '../../data/hooks/stores/runLayoutWhenIdle'
+import {
+  ClaimLayout,
+  runLayoutWhenIdle,
+} from '../../data/hooks/stores/runLayoutWhenIdle'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { IdType } from '../../models/IdType'
 import { LayoutAlgorithm } from '../../models/LayoutModel/LayoutAlgorithm'
@@ -95,11 +98,16 @@ function findEngineAndAlgorithm(
  * that will fail anyway fails at once instead of waiting. Everything is read
  * at the attempt, not when `applyLayout` was called: with `waitIfBusy` the
  * attempt can come after another layout has changed the network.
+ *
+ * `claim` takes the slot: the store's `startLayout` for an immediate call,
+ * which also refuses while layouts wait for their turn, or the queue's claim
+ * on a waiting call's turn.
  */
 function attemptLayout(
   networkId: IdType,
   algorithmName: string | undefined,
   fitAfterLayout: boolean,
+  claim: ClaimLayout = (id) => useLayoutStore.getState().startLayout(id),
 ): Promise<ApiResult> | undefined {
   // Whether this attempt claimed the run: only then may a failure lower the
   // flag, which otherwise belongs to the layout that is running.
@@ -129,7 +137,7 @@ function attemptLayout(
     // one's positions and lower its running flag. The claim also points
     // the indicator at this network's view rather than the active one
     // (#979).
-    if (!useLayoutStore.getState().startLayout(networkId)) {
+    if (!claim(networkId)) {
       return undefined
     }
     started = true
@@ -275,19 +283,33 @@ export const layoutApi: LayoutApi = {
         return fail(AppCodes.LAYOUT_ALREADY_RUNNING, networkId)
       }
 
-      // Another layout is running: start this one as soon as it ends,
-      // through the queue the host's automatic layouts use. Waiting calls
-      // start one after another; each attempt re-checks the network, so one
-      // deleted meanwhile resolves to NETWORK_NOT_FOUND without running.
+      // Another layout is running, or others wait: start this one on its
+      // turn, through the queue the host's automatic layouts use. Waiting
+      // calls start one after another, first come first served. A network
+      // deleted meanwhile resolves to NETWORK_NOT_FOUND at once, and the
+      // attempt re-checks the network and algorithm on its turn.
       return await new Promise<ApiResult>((resolve) => {
-        runLayoutWhenIdle(() => {
-          const run = attemptLayout(networkId, algorithmName, fitAfterLayout)
-          if (run === undefined) {
-            return false
-          }
-          void run.then(resolve)
-          return true
-        })
+        runLayoutWhenIdle(
+          (claim) => {
+            const run = attemptLayout(
+              networkId,
+              algorithmName,
+              fitAfterLayout,
+              claim,
+            )
+            if (run === undefined) {
+              return false
+            }
+            void run.then(resolve)
+            return true
+          },
+          {
+            networkId,
+            // Deleted while waiting: settle now rather than on the slot
+            onNetworkRemoved: () =>
+              resolve(fail(AppCodes.NETWORK_NOT_FOUND, networkId)),
+          },
+        )
       })
     } catch (e) {
       return fail(AppCodes.OPERATION_FAILED, String(e))

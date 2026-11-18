@@ -1368,19 +1368,31 @@ for (const networkId of networkIds) {
 }
 ```
 
-- Waiting calls start one after another, in the same queue as the host's
-  automatic default layouts, and each starts as soon as the layout before it
-  ends — before a user click on a layout control can get in.
+- Waiting calls start one after another, first come first served, in the same
+  queue as the host's automatic default layouts, and each starts as soon as
+  the layout before it ends — before a user click on a layout control can get
+  in.
+- While calls wait, the slot is theirs: a call made without `waitIfBusy` fails
+  with `APP16` even in the instant between one layout's end and the next one's
+  start (a `layout:completed` listener that starts a layout right away, say),
+  and a new `waitIfBusy` call joins the end of the queue.
 - A call that would fail anyway fails at once without waiting: an unknown
   `networkId` (`APP1`) or `algorithmName` (`APP4`).
-- The network and algorithm are checked again when the call's turn comes: a
-  network deleted while the call waits resolves to `APP1` and nothing runs.
+- A network deleted while the call waits resolves to `APP1` at once, and
+  nothing runs, even if a network with the same id is added back. The network
+  and algorithm are also checked again when the call's turn comes.
 - Undo restores the positions from when the layout started, not from when the
   call was made, since a layout before it may have moved the nodes meanwhile.
 - There is no timeout: the call waits as long as the running layout takes.
 - `layout:started` fires when the layout actually starts, not when the call
   is made.
 - `waitIfBusy` must be a boolean; any other value fails with `APP9`.
+- **Never wait from inside a layout algorithm's `run`.** The run holds the
+  slot, so the call would wait for itself forever and block every later
+  layout. Through the run's `context.apis` (and its `forNetwork(...)`),
+  `waitIfBusy` is turned off while the run is pending: the call fails with
+  `APP16` at once. Calls through `window.CyWebApi` or an API object captured
+  elsewhere cannot be told apart and would wait forever.
 
 Lifecycle:
 
@@ -2119,7 +2131,7 @@ interface LayoutRunContext {
   readonly positions: LayoutPositions // current position of every node with a view
   readonly selectedNodeIds: readonly IdType[]
   readonly parameters: Readonly<Record<string, ParameterValue>> // current values by key, typed by declaration
-  readonly apis: AppContextApis // the registering app's per-app API object
+  readonly apis: AppContextApis // the registering app's per-app API object; layout.applyLayout ignores waitIfBusy while run is pending
 }
 
 interface RegisteredResourceInfo {

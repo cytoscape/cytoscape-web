@@ -27,11 +27,21 @@ const mockSetIsRunning = vi.fn((isRunning: boolean) => {
   mockLayoutState.isRunning = isRunning
   notifyLayoutListeners()
 })
-const mockStartLayout = vi.fn((_networkId: string): boolean => {
-  if (mockLayoutState.isRunning) return false
-  mockLayoutState.isRunning = true
+// While layouts wait (layoutQueued), only the queue's own claim may start.
+const mockStartLayout = vi.fn(
+  (_networkId: string, options?: { fromQueue?: boolean }): boolean => {
+    if (mockLayoutState.isRunning) return false
+    if (mockLayoutState.layoutQueued && options?.fromQueue !== true) {
+      return false
+    }
+    mockLayoutState.isRunning = true
+    notifyLayoutListeners()
+    return true
+  },
+)
+const mockSetLayoutQueued = vi.fn((queued: boolean) => {
+  mockLayoutState.layoutQueued = queued
   notifyLayoutListeners()
-  return true
 })
 
 const mockCircleAlgorithm = {
@@ -58,8 +68,10 @@ const mockLayoutState = {
   layoutEngines: mockLayoutEngines,
   preferredLayout: mockPreferredLayout,
   isRunning: false,
+  layoutQueued: false,
   setIsRunning: mockSetIsRunning,
   startLayout: mockStartLayout,
+  setLayoutQueued: mockSetLayoutQueued,
 }
 
 vi.mock('../../data/hooks/stores/LayoutStore', () => ({
@@ -75,9 +87,23 @@ vi.mock('../../data/hooks/stores/LayoutStore', () => ({
 // ── Mock: NetworkStore ────────────────────────────────────────────────────────
 
 const mockNetworks = new Map<string, any>()
+const mockNetworkListeners = new Set<(state: any) => void>()
+/** Delete a network and notify, as NetworkStore.delete does. */
+const deleteMockNetwork = (id: string): void => {
+  mockNetworks.delete(id)
+  for (const listener of mockNetworkListeners) {
+    listener({ networks: mockNetworks })
+  }
+}
 
 vi.mock('../../data/hooks/stores/NetworkStore', () => ({
-  useNetworkStore: { getState: vi.fn(() => ({ networks: mockNetworks })) },
+  useNetworkStore: {
+    getState: vi.fn(() => ({ networks: mockNetworks })),
+    subscribe: vi.fn((listener: (state: any) => void) => {
+      mockNetworkListeners.add(listener)
+      return () => mockNetworkListeners.delete(listener)
+    }),
+  },
 }))
 
 // ── Mock: ViewModelStore ──────────────────────────────────────────────────────
@@ -145,7 +171,9 @@ beforeEach(() => {
   mockLayoutState.layoutEngines = mockLayoutEngines
   mockLayoutState.preferredLayout = mockPreferredLayout
   mockLayoutState.isRunning = false
+  mockLayoutState.layoutQueued = false
   mockLayoutListeners.clear()
+  mockNetworkListeners.clear()
   // Default: no view model
   mockGetViewModel.mockReturnValue(undefined)
   // Default: fit function available
@@ -528,7 +556,10 @@ describe('applyLayout — waitIfBusy', () => {
     release()
     await flush()
     expect(mockLayoutEngines[0].apply).toHaveBeenCalledTimes(1)
-    expect(mockStartLayout).toHaveBeenLastCalledWith('net1')
+    // On its turn, through the queue's claim
+    expect(mockStartLayout).toHaveBeenLastCalledWith('net1', {
+      fromQueue: true,
+    })
     expect(mockDispatchCyWebEvent).toHaveBeenCalledWith('layout:started', {
       networkId: 'net1',
       algorithm: 'circle',
@@ -623,19 +654,49 @@ describe('applyLayout — waitIfBusy', () => {
     expect(mockLayoutListeners.size).toBe(0)
   })
 
-  it('fails with NETWORK_NOT_FOUND, running nothing, when the network is deleted while it waits', async () => {
+  it('fails with NETWORK_NOT_FOUND at once, running nothing, when the network is deleted while it waits', async () => {
     occupy()
     const call = layoutApi.applyLayout('net1', { waitIfBusy: true })
-    mockNetworks.delete('net1')
-    release()
-    await flush()
+    deleteMockNetwork('net1')
 
+    // Settled without waiting for the running layout
     const result = await call
     expect(!result.success && result.error.code).toBe(
       AppCodes.NETWORK_NOT_FOUND.code,
     )
     expect(mockLayoutEngines[0].apply).not.toHaveBeenCalled()
+    release()
+    await flush()
+    expect(mockLayoutEngines[0].apply).not.toHaveBeenCalled()
     expect(mockLayoutState.isRunning).toBe(false)
+  })
+
+  // Review of #985: a call made from a synchronous layout:completed listener
+  // used to take the freed slot ahead of a call already waiting for it.
+  it('does not let a start from a layout:completed listener jump ahead of a waiting call', async () => {
+    let jumper: Promise<any> | undefined
+    mockDispatchCyWebEvent.mockImplementation((type: string, detail: any) => {
+      if (type === 'layout:completed' && detail.networkId === 'net1') {
+        jumper = layoutApi.applyLayout('net1')
+      }
+    })
+    const first = layoutApi.applyLayout('net1')
+    const waiting = layoutApi.applyLayout('net2', { waitIfBusy: true })
+
+    finishers[0](new Map([['node1', [1, 1]]]))
+    await flush()
+
+    const jumped = await jumper
+    expect(!jumped.success && jumped.error.code).toBe(
+      AppCodes.LAYOUT_ALREADY_RUNNING.code,
+    )
+    expect(mockLayoutEngines[0].apply).toHaveBeenCalledTimes(2)
+    expect(mockLayoutEngines[0].apply.mock.calls[1][4]).toBe('net2')
+
+    finishers[1](new Map([['node1', [2, 2]]]))
+    expect((await first).success).toBe(true)
+    expect((await waiting).success).toBe(true)
+    mockDispatchCyWebEvent.mockReset()
   })
 
   it('still fails with LAYOUT_ALREADY_RUNNING without the option, or with false', async () => {

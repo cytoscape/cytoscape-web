@@ -515,7 +515,8 @@ network cannot be used against another — copy the style with
 **Severity:** error
 **Returned by:** `applyLayout`
 
-Another layout is running, so none was started. A layout never starts on a
+Another layout is running, or other layouts are waiting to start, so none was
+started. A layout never starts on a
 network that is already being laid out: the two runs would overwrite each
 other's positions and both be recorded as undo steps. Currently a layout
 running on any network blocks the call; a later version may let layouts on

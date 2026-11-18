@@ -40,7 +40,6 @@ export const useRegisterNetwork = () => {
 
   const layoutEngines = useLayoutStore((state) => state.layoutEngines)
   const setIsRunning = useLayoutStore((state) => state.setIsRunning)
-  const startLayout = useLayoutStore((state) => state.startLayout)
   const addSummary = useNetworkSummaryStore((state) => state.add)
   const updateSummary = useNetworkSummaryStore((state) => state.update)
   const updateNodePositions = useViewModelStore(
@@ -133,19 +132,27 @@ export const useRegisterNetwork = () => {
           // leaving the running flag stuck for the session. Only one layout
           // runs at a time (#982); this one must not be dropped, or the new
           // network keeps no positions, so it waits for a running layout to
-          // finish. A network deleted meanwhile is not laid out.
+          // finish. It stops waiting if the network is removed meanwhile,
+          // even if one with the same id is added back, and lays out the
+          // network as it is on its turn, edits made meanwhile included.
           runLayoutWhenIdle(
-            () =>
-              !useNetworkStore.getState().networks.has(networkId) ||
-              runEngineLayout({
-                engine: layoutEngine,
-                algorithm: layoutEngine.algorithms[defaultLayout.algorithmName],
-                network,
-                networkId,
-                afterLayout: handleLayoutComplete,
-                startLayout,
-                setIsRunning,
-              }),
+            (claim) => {
+              const live = useNetworkStore.getState().networks.get(networkId)
+              return (
+                live === undefined ||
+                runEngineLayout({
+                  engine: layoutEngine,
+                  algorithm:
+                    layoutEngine.algorithms[defaultLayout.algorithmName],
+                  network: live,
+                  networkId,
+                  afterLayout: handleLayoutComplete,
+                  startLayout: claim,
+                  setIsRunning,
+                })
+              )
+            },
+            { networkId },
           )
         }
       }

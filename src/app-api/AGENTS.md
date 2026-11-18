@@ -104,8 +104,11 @@ src/app-api/
     inside the layout promise resolution. Errors do NOT dispatch `layout:completed`. Only one
     layout runs at a time (#982): while one runs, `applyLayout` returns
     `fail(LAYOUT_ALREADY_RUNNING)` and dispatches nothing, unless the caller passed
-    `waitIfBusy: true` — then it queues through `runLayoutWhenIdle` and fires
-    `layout:started` when its turn comes. Every attempt (immediate or queued) goes
+    `waitIfBusy: true` — then it queues through `runLayoutWhenIdle` (first come first
+    served; the freed slot is kept for waiters) and fires `layout:started` when its
+    turn comes. An app layout's `run` gets `context.apis` with `waitIfBusy` turned off
+    while it is pending (`withoutLayoutWaits` in `appLayoutEngine.ts`): the run holds
+    the slot and would wait for itself. Every attempt (immediate or queued) goes
     through one `attemptLayout`, which validates, claims, and only then snapshots
     the positions for undo.
 11. **Per-app API objects are built in exactly one place** — `core/perAppApis.ts`

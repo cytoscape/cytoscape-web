@@ -158,6 +158,28 @@ describe('useLayoutStore', () => {
         result.current.setIsRunning(false)
       })
     })
+
+    it('refuses an outside start while layouts wait, but not the queue claim', () => {
+      const { result } = renderHook(() => useLayoutStore())
+      act(() => {
+        result.current.setIsRunning(false)
+        result.current.setLayoutQueued(true)
+      })
+
+      let outside = true
+      let queued = false
+      act(() => {
+        outside = result.current.startLayout('net1')
+        queued = result.current.startLayout('net1', { fromQueue: true })
+      })
+
+      expect(outside).toBe(false)
+      expect(queued).toBe(true)
+      act(() => {
+        result.current.setIsRunning(false)
+        result.current.setLayoutQueued(false)
+      })
+    })
   })
 
   describe('app engines', () => {

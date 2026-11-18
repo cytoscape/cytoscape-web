@@ -1,4 +1,98 @@
+import { logStore } from '../../../debug'
+import { IdType } from '../../../models/IdType'
 import { useLayoutStore } from './LayoutStore'
+import { useNetworkStore } from './NetworkStore'
+
+/**
+ * Claims the layout run for a network. `runLayoutWhenIdle` hands one to
+ * `tryStart`, which must start its layout with it (as `runEngineLayout`'s
+ * `startLayout`): the store's own `startLayout` refuses while layouts wait,
+ * the waiting one included.
+ */
+export type ClaimLayout = (networkId: IdType) => boolean
+
+export interface RunLayoutWhenIdleOptions {
+  /**
+   * Stop waiting when this network leaves the NetworkStore, even when a
+   * network with the same id is added again before the slot frees: the
+   * waiting job belongs to the network that was removed.
+   */
+  readonly networkId?: IdType
+  /** Called when the wait stops because `networkId` was removed. */
+  readonly onNetworkRemoved?: () => void
+}
+
+interface Waiter {
+  readonly tryStart: (claim: ClaimLayout) => boolean
+  stopWatching?: () => void
+}
+
+// One queue for the whole app: the layout slot is global (#982).
+const queue: Waiter[] = []
+let unsubscribeLayoutStore: (() => void) | undefined
+let drainScheduled = false
+
+const isRunning = (): boolean => useLayoutStore.getState().isRunning
+
+const claimFromQueue: ClaimLayout = (networkId) =>
+  useLayoutStore.getState().startLayout(networkId, { fromQueue: true })
+
+const remove = (waiter: Waiter): void => {
+  const index = queue.indexOf(waiter)
+  if (index === -1) {
+    return
+  }
+  queue.splice(index, 1)
+  waiter.stopWatching?.()
+  if (queue.length === 0) {
+    unsubscribeLayoutStore?.()
+    unsubscribeLayoutStore = undefined
+    useLayoutStore.getState().setLayoutQueued(false)
+  }
+}
+
+const scheduleDrain = (): void => {
+  if (drainScheduled) {
+    return
+  }
+  drainScheduled = true
+  queueMicrotask(drain)
+}
+
+/** Start the head of the queue, if the slot is free. */
+const drain = (): void => {
+  drainScheduled = false
+  const head = queue[0]
+  if (head === undefined || isRunning()) {
+    return
+  }
+  let started: boolean
+  try {
+    started = head.tryStart(claimFromQueue)
+  } catch (error) {
+    logStore.error(
+      '[runLayoutWhenIdle]: A waiting layout threw while starting; it is dropped',
+      error,
+    )
+    started = true
+  }
+  if (!started && !isRunning()) {
+    // The free slot was kept for this layout, so only a tryStart that does
+    // not use its claim refuses it. Drop it rather than stall the queue.
+    logStore.error(
+      '[runLayoutWhenIdle]: A waiting layout did not start on a free slot; it is dropped',
+    )
+    started = true
+  }
+  if (started) {
+    remove(head)
+  }
+  // A layout that finished inside its start, or a job with nothing left to
+  // lay out, leaves the slot free for the next one.
+  if (queue.length > 0 && !isRunning()) {
+    scheduleDrain()
+  }
+}
 
 /**
  * Start a layout as soon as no other layout runs (#982).
@@ -11,63 +105,58 @@ import { useLayoutStore } from './LayoutStore'
  * `applyLayout` call made with `waitIfBusy: true`.
  *
  * `tryStart` starts the layout through `runEngineLayout` (or anything else
- * that claims the run with `LayoutStore.startLayout`) and returns whether it
- * started. It is called at once when the flag is down; otherwise, and again
- * whenever another waiter took the slot first, each time the flag comes down.
- * It is never called again once it has returned true, even when the layout
- * finishes synchronously inside the call and lowers the flag.
+ * that claims the run) with the `claim` it is given, and returns whether it
+ * started (true also when it decided there is nothing to lay out). It is
+ * called at once when no layout runs or waits; otherwise it waits in one
+ * queue, first come first served, and is called exactly once, on its turn.
  *
- * After waiting, the start comes one microtask after the flag drops, not
- * inside the store notification. The finishing layout lowers the flag from
- * its own completion callback; starting there would run the next layout
- * nested in that callback, before the callback's remaining work (the App
- * API's `layout:completed`, a fit), and a queue of synchronous layouts would
- * nest one call stack per layout. A microtask still runs before any user
- * event, so waiting layouts keep their turn ahead of a click. Waiters start
- * in the order they began waiting.
+ * While layouts wait, the slot a finishing layout frees is kept for them:
+ * `LayoutStore.startLayout` refuses every other start until the queue is
+ * empty. A turn comes one microtask after the flag drops, not inside the
+ * store notification: the finishing layout lowers the flag from its own
+ * completion callback, and starting there would run the next layout nested
+ * in that callback, before its remaining work (the App API's
+ * `layout:completed`, a fit). A microtask still runs before any user event.
  *
  * @returns a function that stops waiting; a no-op once the layout started
  */
-export const runLayoutWhenIdle = (tryStart: () => boolean): (() => void) => {
-  let done = false
-  let starting = false
-  let scheduled = false
-  let unsubscribe: (() => void) | undefined
-
-  const attempt = (): void => {
-    // Read the live flag, not a listener argument: zustand hands every
-    // listener the state of the change that notified it, which is stale when
-    // an earlier listener has just started another layout.
-    if (done || starting || useLayoutStore.getState().isRunning) {
-      return
-    }
-    starting = true
-    try {
-      done = tryStart()
-    } finally {
-      starting = false
-    }
-    if (done) {
-      unsubscribe?.()
-    }
-  }
-
-  attempt()
-  if (done) {
+export const runLayoutWhenIdle = (
+  tryStart: (claim: ClaimLayout) => boolean,
+  options: RunLayoutWhenIdleOptions = {},
+): (() => void) => {
+  if (queue.length === 0 && !isRunning() && tryStart(claimFromQueue)) {
     return () => {}
   }
-  unsubscribe = useLayoutStore.subscribe(() => {
-    if (done || scheduled || useLayoutStore.getState().isRunning) {
-      return
-    }
-    scheduled = true
-    queueMicrotask(() => {
-      scheduled = false
-      attempt()
+
+  const waiter: Waiter = { tryStart }
+  queue.push(waiter)
+  if (queue.length === 1) {
+    useLayoutStore.getState().setLayoutQueued(true)
+    // Read the live state, not a listener argument: zustand hands every
+    // listener the state of the change that notified it, which is stale when
+    // an earlier listener has just started another layout.
+    unsubscribeLayoutStore = useLayoutStore.subscribe(() => {
+      if (queue.length > 0 && !isRunning()) {
+        scheduleDrain()
+      }
     })
-  })
-  return () => {
-    done = true
-    unsubscribe?.()
   }
+
+  const { networkId, onNetworkRemoved } = options
+  if (networkId !== undefined) {
+    waiter.stopWatching = useNetworkStore.subscribe((state) => {
+      if (!state.networks.has(networkId) && queue.includes(waiter)) {
+        remove(waiter)
+        onNetworkRemoved?.()
+      }
+    })
+  }
+
+  // The slot can be free while layouts wait: between a layout's end and the
+  // next turn, or because tryStart refused a free slot above (which only a
+  // tryStart that does not use its claim does). The drain takes it from here.
+  if (!isRunning()) {
+    scheduleDrain()
+  }
+  return () => remove(waiter)
 }
