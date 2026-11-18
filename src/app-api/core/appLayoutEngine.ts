@@ -95,6 +95,44 @@ const isPosition = (value: unknown): value is [number, number] =>
   Number.isFinite(value[1])
 
 /**
+ * The run's API object, with layout waits turned off while the run is active
+ * (#982). The run holds the only layout slot, so `applyLayout(..., {
+ * waitIfBusy: true })` from inside it would wait for itself forever, and
+ * every later layout would wait behind it. While `isActive()` such a call
+ * goes out without the wait and fails at once with `LAYOUT_ALREADY_RUNNING`;
+ * kept and used after the run, the object waits as asked. Covers
+ * `apis.layout` and `apis.forNetwork(...).layout`; a run that reaches the API
+ * some other way (`window.CyWebApi`) is warned about in the docs.
+ */
+const withoutLayoutWaits = (
+  apis: AppContextApis,
+  isActive: () => boolean,
+): AppContextApis => {
+  const noWait = <T>(options: T): T =>
+    isActive() && typeof options === 'object' && options !== null
+      ? { ...options, waitIfBusy: false }
+      : options
+  return {
+    ...apis,
+    layout: {
+      ...apis.layout,
+      applyLayout: (networkId, options) =>
+        apis.layout.applyLayout(networkId, noWait(options)),
+    },
+    forNetwork: (networkId) => {
+      const scoped = apis.forNetwork(networkId)
+      return {
+        ...scoped,
+        layout: {
+          ...scoped.layout,
+          applyLayout: (options) => scoped.layout.applyLayout(noWait(options)),
+        },
+      }
+    },
+  }
+}
+
+/**
  * The `apply` shared by every app engine. Builds the run context, calls the
  * app's `run`, validates what comes back and hands it to `afterLayout`.
  *
@@ -124,6 +162,8 @@ export const appEngineApply: LayoutEngine['apply'] = async (
       throw new Error(`Network '${networkId}' has no view to lay out`)
     }
 
+    // Whether entry.run is still pending; see withoutLayoutWaits
+    let running = true
     const positions: LayoutPositions = {}
     for (const [nodeId, nodeView] of Object.entries(
       viewModel.nodeViews ?? {},
@@ -138,10 +178,15 @@ export const appEngineApply: LayoutEngine['apply'] = async (
       positions,
       selectedNodeIds: [...(viewModel.selectedNodes ?? [])],
       parameters: { ...algorithm.parameters },
-      apis: buildPerAppApis(entry.appId),
+      apis: withoutLayoutWaits(buildPerAppApis(entry.appId), () => running),
     }
 
-    const result = await entry.run(context)
+    let result: unknown
+    try {
+      result = await entry.run(context)
+    } finally {
+      running = false
+    }
 
     // The app may have been disabled while `run` was pending: its cleanup
     // ran before its unmount(), so the registry no longer holds this entry.
