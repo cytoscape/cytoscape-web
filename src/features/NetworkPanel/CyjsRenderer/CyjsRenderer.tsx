@@ -359,16 +359,6 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     isLayoutRunningOn(state, id, activeNetworkId),
   )
 
-  // The canvas's container always reserves a 3px focus border (2px outer +
-  // 1px inner gap), transparent while the view is not focused, so the canvas
-  // and the floating toolbar never move. The border is only drawn on a
-  // hierarchy (`ui.enablePopup`), whose two canvases need it to show which one
-  // is focused — the same rule as NetworkPanel and SubNetworkPanel. The
-  // "Applying layout..." overlay is laid out against the container's padding
-  // box, so it has to know which case it is in.
-  const isHierarchy: boolean = useUiStateStore((state) => state.ui.enablePopup)
-  const isFocusBorderShown: boolean = isHierarchy && id === activeNetworkId
-
   const networkView: NetworkView | undefined = getViewModel(id)
   const vs: VisualStyle = visualStyles[id]
 
@@ -1562,23 +1552,31 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
           data-testid="layout-running-overlay"
           sx={{
             display: 'flex',
-            position: 'absolute',
-            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            // Positioned against the container's padding box, inside its 2px
-            // outer border. A drawn focus border stays visible: skip the 1px
-            // inner gap. A transparent one would show the network background
-            // around the overlay: cover it (2px each side).
-            inset: isFocusBorderShown ? '1px' : '-2px',
+            position: 'absolute',
+            inset: 0,
             p: 2,
-            backgroundColor: canvasOverlayBackground,
-            backdropFilter: 'blur(4px)',
             zIndex: 2,
           }}
         >
-          <CircularProgress size={40} />
-          <Typography variant="h6">Applying layout...</Typography>
+          <Box
+            data-testid="layout-running-message"
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 1,
+              p: 2,
+              backgroundColor: canvasOverlayBackground,
+              backdropFilter: 'blur(2px)',
+              border: (theme) => `1px solid ${theme.palette.divider}`,
+              borderRadius: '8px',
+            }}
+          >
+            <CircularProgress size={40} />
+            <Typography variant="h6">Applying layout...</Typography>
+          </Box>
         </Box>
       ) : null}
       <Box
@@ -1607,6 +1605,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
             left: 2,
             textAlign: 'center',
             backgroundColor: canvasOverlayBackground,
+            backdropFilter: 'blur(2px)',
             border: (theme) => `1px solid ${theme.palette.divider}`,
             borderRadius: '8px',
             px: 2,
