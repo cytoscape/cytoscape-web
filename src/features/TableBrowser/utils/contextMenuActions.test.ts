@@ -91,6 +91,7 @@ describe('contextMenuActions', () => {
       handleApplyToSelected({
         ...baseArgs,
         rows: selectedRowsSubset,
+        selectedElementIds: ['node-2'],
         contextMenuCell: [1, 0], // 'score' column, first selected row ('node-2', score 20)
       })
 
@@ -112,6 +113,42 @@ describe('contextMenuActions', () => {
       )
 
       expect(mockHandleContextMenuClose).toHaveBeenCalled()
+    })
+
+    // #848: with no network selection the table shows every row, so the
+    // action must not fall back to the displayed rows.
+    it('changes nothing when no element is selected in the network', () => {
+      handleApplyToSelected({
+        ...baseArgs,
+        selectedElementIds: [],
+        contextMenuCell: [1, 0],
+      })
+
+      expect(mockPostEdit).not.toHaveBeenCalled()
+      expect(mockApplyValueToElements).not.toHaveBeenCalled()
+      expect(mockHandleContextMenuClose).toHaveBeenCalled()
+    })
+
+    it('writes only to the selected elements, not every displayed row', () => {
+      handleApplyToSelected({
+        ...baseArgs,
+        selectedElementIds: ['node-2'],
+        contextMenuCell: [1, 0], // 'score' of 'node-1' (10)
+      })
+
+      expect(mockPostEdit).toHaveBeenCalledWith(
+        UndoCommandType.APPLY_VALUE_TO_SELECTED,
+        'Apply value to selected elements',
+        [networkId, 'node', [{ row: 'node-2', column: 'score', value: 20 }]],
+        [networkId, 'node', [{ row: 'node-2', column: 'score', value: 10 }]],
+      )
+      expect(mockApplyValueToElements).toHaveBeenCalledWith(
+        networkId,
+        'node',
+        'score',
+        10,
+        ['node-2'],
+      )
     })
   })
 

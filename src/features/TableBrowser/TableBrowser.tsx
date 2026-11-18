@@ -426,6 +426,7 @@ export default function TableBrowser(props: {
       setSort={setSort}
       duplicateColumn={duplicateColumn}
       columns={columns}
+      selectedElementIds={selectedElements ?? []}
     />
   )
 
@@ -559,6 +560,7 @@ export default function TableBrowser(props: {
         exclusiveSelect={exclusiveSelect}
         selection={selection}
         setSelection={setSelection}
+        selectedElementIds={selectedElements ?? []}
       />
       {listEditor !== null ? (
         <ListValueEditorDialog
