@@ -509,3 +509,20 @@ network's style set and mean nothing outside it, so an id read from one
 network cannot be used against another — copy the style with
 `getVisualStyle` + `applyVisualStyle` instead. Read the network's own ids with
 `getStyles`.
+
+### APP16 — `LAYOUT_ALREADY_RUNNING`
+
+**Severity:** error
+**Returned by:** `applyLayout`
+
+Another layout is running, or other layouts are waiting to start, so none was
+started. A layout never starts on a
+network that is already being laid out: the two runs would overwrite each
+other's positions and both be recorded as undo steps. Currently a layout
+running on any network blocks the call; a later version may let layouts on
+different networks run at the same time, so do not rely on `APP16` to know
+that no other network is being laid out. The running layout may have been
+started by the user, by an automatic default layout, or by another
+`applyLayout` call. Pass `waitIfBusy: true` to have `applyLayout` wait for it
+and then run instead of failing; without that option, retry after it finishes
+(a run started through `applyLayout` reports that with `layout:completed`).

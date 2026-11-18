@@ -33,10 +33,12 @@ const makeNetwork = (): Network =>
 
 describe('applyDefaultLayout (CW-539)', () => {
   let setIsRunning: Mock<(isRunning: boolean) => void>
+  let startLayout: Mock<(networkId: string) => boolean>
   let afterLayout: Mock<(positionMap: Map<string, [number, number]>) => void>
 
   beforeEach(() => {
     setIsRunning = vi.fn<(isRunning: boolean) => void>()
+    startLayout = vi.fn<(networkId: string) => boolean>(() => true)
     afterLayout = vi.fn<(positionMap: Map<string, [number, number]>) => void>()
   })
 
@@ -52,16 +54,17 @@ describe('applyDefaultLayout (CW-539)', () => {
       network,
       networkId: 'net1',
       afterLayout,
+      startLayout,
       setIsRunning,
     })
 
     expect(result).toBe(true)
-    expect(setIsRunning).toHaveBeenCalledWith(true, 'net1')
+    expect(startLayout).toHaveBeenCalledWith('net1')
     // The engine that owns the preferred algorithm runs it, not the first engine.
     expect(g6.apply).toHaveBeenCalledWith(
       network.nodes,
       network.edges,
-      afterLayout,
+      expect.any(Function), // runEngineLayout's once-only wrapper
       preferred,
       'net1',
     )
@@ -79,6 +82,7 @@ describe('applyDefaultLayout (CW-539)', () => {
       network,
       networkId: 'net1',
       afterLayout,
+      startLayout,
       setIsRunning,
     })
 
@@ -86,7 +90,7 @@ describe('applyDefaultLayout (CW-539)', () => {
     expect(first.apply).toHaveBeenCalledWith(
       network.nodes,
       network.edges,
-      afterLayout,
+      expect.any(Function), // runEngineLayout's once-only wrapper
       preferred,
       'net1',
     )
@@ -101,11 +105,12 @@ describe('applyDefaultLayout (CW-539)', () => {
       network: undefined,
       networkId: 'net1',
       afterLayout,
+      startLayout,
       setIsRunning,
     })
 
     expect(result).toBe(false)
-    expect(setIsRunning).not.toHaveBeenCalled()
+    expect(startLayout).not.toHaveBeenCalled()
     expect(engine.apply).not.toHaveBeenCalled()
   })
 
@@ -118,10 +123,31 @@ describe('applyDefaultLayout (CW-539)', () => {
       network: {} as Network,
       networkId: 'net1',
       afterLayout,
+      startLayout,
       setIsRunning,
     })
 
     expect(result).toBe(false)
     expect(engine.apply).not.toHaveBeenCalled()
+  })
+
+  // #982: only one layout at a time.
+  it('starts nothing and returns false while another layout runs', () => {
+    const engine = makeEngine('G6')
+    startLayout.mockReturnValue(false)
+
+    const result = applyDefaultLayout({
+      layoutEngines: [engine],
+      preferredLayout: makeAlgorithm('G6'),
+      network: makeNetwork(),
+      networkId: 'net1',
+      afterLayout,
+      startLayout,
+      setIsRunning,
+    })
+
+    expect(result).toBe(false)
+    expect(engine.apply).not.toHaveBeenCalled()
+    expect(setIsRunning).not.toHaveBeenCalled()
   })
 })

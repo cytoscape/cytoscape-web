@@ -81,6 +81,11 @@ export const LayoutOptionDialog = ({
 
   const setIsRunning: (isRunning: boolean, networkId?: IdType) => void =
     useLayoutStore((state) => state.setIsRunning)
+  const startLayout: (networkId: IdType) => boolean = useLayoutStore(
+    (state) => state.startLayout,
+  )
+  // Only one layout runs at a time (#982): Apply is disabled while one runs.
+  const layoutRunning: boolean = useLayoutStore((state) => state.isRunning)
 
   const layoutEngines: LayoutEngine[] = useLayoutStore(
     (state) => state.layoutEngines,
@@ -170,6 +175,7 @@ export const LayoutOptionDialog = ({
       network,
       networkId,
       afterLayout,
+      startLayout,
       setIsRunning,
     })
   }
@@ -252,7 +258,7 @@ export const LayoutOptionDialog = ({
         <Button
           data-testid="layout-option-dialog-apply-button"
           variant="contained"
-          disabled={allDisabled || overThreshold || hasErrors}
+          disabled={allDisabled || layoutRunning || overThreshold || hasErrors}
           onClick={handleApply}
         >
           Apply Layout

@@ -18,6 +18,7 @@ import { useTableStore } from './stores/TableStore'
 import { useUndoStore } from './stores/UndoStore'
 import { useViewModelStore } from './stores/ViewModelStore'
 import { useVisualStyleStore } from './stores/VisualStyleStore'
+import { useWorkspaceStore } from './stores/WorkspaceStore'
 import { useRegisterNetwork } from './useRegisterNetwork'
 
 // Store persistence must not hit IndexedDB
@@ -147,6 +148,134 @@ describe('useRegisterNetwork', () => {
       true,
     )
     expect(useLayoutStore.getState().isRunning).toBe(false)
+  })
+
+  // #982: only one layout runs at a time. The default layout of a network
+  // registered while another layout runs waits for it instead of being
+  // dropped, which would leave the new network without positions.
+  it('waits for a running layout, then applies the default layout', async () => {
+    const apply = vi.fn(
+      (
+        _nodes: unknown,
+        _edges: unknown,
+        afterLayout: (positions: Map<IdType, [number, number]>) => void,
+      ) => {
+        afterLayout(new Map([['n1', [42, 24]]]))
+      },
+    )
+    act(() => {
+      useLayoutStore.setState({
+        layoutEngines: [{ ...G6Layout, apply }] as any,
+      })
+      useLayoutStore.getState().startLayout('another-net')
+    })
+    const { result } = renderHook(() => useRegisterNetwork())
+
+    act(() => {
+      result.current(NET_ID, makeCyNetwork(), makeSummary({ hasLayout: false }))
+    })
+    expect(apply).not.toHaveBeenCalled()
+    expect(useLayoutStore.getState().runningNetworkId).toBe('another-net')
+
+    await act(async () => {
+      useLayoutStore.getState().setIsRunning(false)
+      await Promise.resolve()
+    })
+
+    expect(apply).toHaveBeenCalledTimes(1)
+    expect(useNetworkSummaryStore.getState().summaries[NET_ID].hasLayout).toBe(
+      true,
+    )
+    expect(useLayoutStore.getState().isRunning).toBe(false)
+  })
+
+  // The wait widens the window in which the network can change before its
+  // default layout completes. The completion must not undo those changes.
+  describe('while the default layout waits for a running layout', () => {
+    const registerWhileBusy = () => {
+      const apply = vi.fn(
+        (
+          _nodes: unknown,
+          _edges: unknown,
+          afterLayout: (positions: Map<IdType, [number, number]>) => void,
+        ) => {
+          afterLayout(new Map([['n1', [42, 24]]]))
+        },
+      )
+      act(() => {
+        useLayoutStore.setState({
+          layoutEngines: [{ ...G6Layout, apply }] as any,
+        })
+        useLayoutStore.getState().startLayout('another-net')
+        useWorkspaceStore.getState().setNetworkModified(NET_ID, false)
+      })
+      const { result } = renderHook(() => useRegisterNetwork())
+      act(() => {
+        result.current(
+          NET_ID,
+          makeCyNetwork(),
+          makeSummary({ hasLayout: false }),
+        )
+      })
+      return apply
+    }
+
+    const finishRunningLayout = async (): Promise<void> => {
+      await act(async () => {
+        useLayoutStore.getState().setIsRunning(false)
+        await Promise.resolve()
+      })
+    }
+
+    it('keeps the modified flag of an edit made meanwhile', async () => {
+      registerWhileBusy()
+      // An app edits the new network (markNetworkModified)
+      act(() => {
+        useWorkspaceStore.getState().setNetworkModified(NET_ID, true)
+      })
+
+      await finishRunningLayout()
+
+      expect(
+        useWorkspaceStore.getState().workspace.networkModified[NET_ID],
+      ).toBe(true)
+      expect(
+        useNetworkSummaryStore.getState().summaries[NET_ID].hasLayout,
+      ).toBe(true)
+    })
+
+    it('leaves an unedited network unmodified', async () => {
+      registerWhileBusy()
+
+      await finishRunningLayout()
+
+      expect(
+        useWorkspaceStore.getState().workspace.networkModified[NET_ID],
+      ).toBe(false)
+    })
+
+    it('keeps a rename made meanwhile', async () => {
+      registerWhileBusy()
+      act(() => {
+        useNetworkSummaryStore.getState().update(NET_ID, { name: 'Renamed' })
+      })
+
+      await finishRunningLayout()
+
+      const summary = useNetworkSummaryStore.getState().summaries[NET_ID]
+      expect(summary.name).toBe('Renamed')
+      expect(summary.hasLayout).toBe(true)
+    })
+
+    it('skips the initial layout when the replacement already has positions', async () => {
+      const apply = registerWhileBusy()
+      act(() => {
+        useNetworkStore.getState().add(makeCyNetwork().network)
+        useNetworkSummaryStore.getState().update(NET_ID, { hasLayout: true })
+      })
+      await finishRunningLayout()
+      expect(apply).not.toHaveBeenCalled()
+    })
   })
 
   it('resets isRunning when the default layout engine throws synchronously', () => {

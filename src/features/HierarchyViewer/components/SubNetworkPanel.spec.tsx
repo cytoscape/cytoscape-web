@@ -1,8 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, cleanup, render, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest'
 
 import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
+import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
@@ -380,6 +381,208 @@ describe('SubNetworkPanel selection sync with the Cell View (#931)', () => {
 
   // A click is for the subnetwork of the subsystem it selected. Another subsystem
   // can be selected before that one arrives, in the Tree View for example.
+  // Review of #985: a subnetwork's default layout can wait for another
+  // layout. The pipeline that registered it must not publish its view once
+  // the user has moved on to another subsystem.
+  describe('a subnetwork whose layout waits', () => {
+    const layoutApply = vi.fn(
+      (
+        nodes: { id: IdType }[],
+        _edges: unknown,
+        afterLayout: (p: Map<IdType, [number, number]>) => void,
+        _algorithm?: unknown,
+        _networkId?: IdType,
+      ) => {
+        afterLayout(new Map(nodes.map(({ id }) => [id, [1, 2]])))
+      },
+    )
+    const algorithm = {
+      name: 'fake',
+      engineName: 'fake',
+      displayName: 'Fake',
+      type: 'force',
+      description: '',
+      parameters: {},
+    }
+    let savedLayout: object
+
+    beforeEach(() => {
+      layoutApply.mockClear()
+      savedLayout = useLayoutStore.getState()
+      useLayoutStore.setState({
+        layoutEngines: [
+          {
+            name: 'fake',
+            defaultAlgorithmName: 'fake',
+            algorithms: { fake: algorithm },
+            apply: layoutApply,
+          },
+        ],
+        preferredLayout: algorithm,
+      } as any)
+      // Registration lays out the Cell View positions in a worker first
+      vi.stubGlobal(
+        'Worker',
+        class {
+          onmessage: ((event: { data: unknown }) => void) | null = null
+          postMessage(): void {
+            setTimeout(() =>
+              this.onmessage?.({ data: { success: true, positions: [] } }),
+            )
+          }
+          terminate(): void {}
+        },
+      )
+      // A is not in the stores, so selecting it registers and lays it out
+      useNetworkStore.getState().delete(SUB_A)
+    })
+
+    afterEach(() => {
+      vi.unstubAllGlobals()
+      useLayoutStore.getState().setIsRunning(false)
+      useLayoutStore.setState(savedLayout as any)
+    })
+
+    it('does not replace the subnetwork shown after it', async () => {
+      act(() => {
+        useLayoutStore.getState().startLayout('another-network')
+      })
+      followHierarchy()
+      render(<FollowsHierarchy />)
+      // A is registered and its layout is waiting
+      await waitFor(() =>
+        expect(useNetworkStore.getState().networks.has(SUB_A)).toBe(true),
+      )
+      await waitFor(() =>
+        expect(useLayoutStore.getState().layoutQueued).toBe(true),
+      )
+
+      act(() => {
+        selectInHierarchy(SUBSYSTEM_B)
+      })
+      await shown(SUB_B)
+
+      await act(async () => {
+        useLayoutStore.getState().setIsRunning(false)
+        await new Promise((resolve) => setTimeout(resolve, 50))
+      })
+
+      // A still got its layout, for when it is selected again
+      expect(layoutApply).toHaveBeenCalledTimes(1)
+      expect(layoutApply.mock.calls[0][4]).toBe(SUB_A)
+      expect(useSubNetworkStore.getState().currentSubNetworkId).toBe(SUB_B)
+    })
+
+    // Review of #985: a service may replace the subnetwork, style included,
+    // while its layout waits. The fetched style is added before the wait,
+    // and finishing the run must not write it again over the replacement.
+    it('adds the fetched style before its layout waits, and not again after', async () => {
+      const addStyle = useVisualStyleStore.getState().add as unknown as Mock
+      const stylesFor = (id: IdType): number =>
+        addStyle.mock.calls.filter(([networkId]) => networkId === id).length
+      act(() => {
+        useLayoutStore.getState().startLayout('another-network')
+      })
+      followHierarchy()
+      render(<FollowsHierarchy />)
+      await waitFor(() =>
+        expect(useLayoutStore.getState().layoutQueued).toBe(true),
+      )
+      expect(stylesFor(SUB_A)).toBe(1)
+
+      await act(async () => {
+        useLayoutStore.getState().setIsRunning(false)
+      })
+      await shown(SUB_A)
+
+      expect(stylesFor(SUB_A)).toBe(1)
+    })
+  })
+
+  describe('a subnetwork whose layout waits (live network)', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    // Review of #985: the queued layout used the nodes captured at
+    // registration, so a node added meanwhile was left unplaced.
+    it('lays out the nodes the network has on its turn', async () => {
+      const apply = vi.fn(
+        (
+          nodes: { id: IdType }[],
+          _edges: unknown,
+          afterLayout: (p: Map<IdType, [number, number]>) => void,
+        ) => afterLayout(new Map(nodes.map(({ id }) => [id, [1, 2]]))),
+      )
+      const algorithm = {
+        name: 'fake',
+        engineName: 'fake',
+        displayName: 'Fake',
+        type: 'force',
+        description: '',
+        parameters: {},
+      }
+      const savedLayout = useLayoutStore.getState()
+      useLayoutStore.setState({
+        layoutEngines: [
+          {
+            name: 'fake',
+            defaultAlgorithmName: 'fake',
+            algorithms: { fake: algorithm },
+            apply,
+          },
+        ],
+        preferredLayout: algorithm,
+      } as any)
+      vi.stubGlobal(
+        'Worker',
+        class {
+          onmessage: ((event: { data: unknown }) => void) | null = null
+          postMessage(): void {
+            setTimeout(() =>
+              this.onmessage?.({ data: { success: true, positions: [] } }),
+            )
+          }
+          terminate(): void {}
+        },
+      )
+      useNetworkStore.getState().delete(SUB_A)
+      act(() => {
+        useLayoutStore.getState().startLayout('another-network')
+      })
+
+      followHierarchy()
+      render(<FollowsHierarchy />)
+      await waitFor(() =>
+        expect(useLayoutStore.getState().layoutQueued).toBe(true),
+      )
+      // A node is added while the layout waits
+      act(() => {
+        const registered = useNetworkStore.getState().networks.get(SUB_A)!
+        useNetworkStore.setState({
+          networks: new Map(useNetworkStore.getState().networks).set(SUB_A, {
+            ...registered,
+            nodes: [...registered.nodes, { id: 'a3' }],
+          }),
+        } as any)
+      })
+
+      await act(async () => {
+        useLayoutStore.getState().setIsRunning(false)
+        await new Promise((resolve) => setTimeout(resolve, 50))
+      })
+
+      expect(apply).toHaveBeenCalledTimes(1)
+      expect(apply.mock.calls[0][0].map((n: { id: IdType }) => n.id)).toEqual([
+        'a1',
+        'a2',
+        'a3',
+      ])
+      useLayoutStore.getState().setIsRunning(false)
+      useLayoutStore.setState(savedLayout as any)
+    })
+  })
+
   describe('a click overtaken by another selection', () => {
     const overtaken = async () => {
       followHierarchy()

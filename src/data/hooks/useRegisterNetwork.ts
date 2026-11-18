@@ -14,6 +14,7 @@ import { useNetworkStore } from './stores/NetworkStore'
 import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import { useOpaqueAspectStore } from './stores/OpaqueAspectStore'
 import { useRendererFunctionStore } from './stores/RendererFunctionStore'
+import { runInitialLayoutWhenIdle } from './stores/runLayoutWhenIdle'
 import { useTableStore } from './stores/TableStore'
 import { useUiStateStore } from './stores/UiStateStore'
 import { useUndoStore } from './stores/UndoStore'
@@ -96,11 +97,19 @@ export const useRegisterNetwork = () => {
         )
 
         if (layoutEngine !== undefined) {
-          const summaryWithLayout = { ...summary, hasLayout: true }
-
+          // The layout can wait for another one (#982), so the network may
+          // change before it completes. The completion reads the live state
+          // instead of a copy taken at registration.
           const handleLayoutComplete = (
             positionMap: Map<IdType, [number, number]>,
           ): void => {
+            // Snapshot first, as createLayoutCompletionHandler does: an edit
+            // made while this layout waited or ran keeps its modified flag,
+            // so Save Workspace still uploads the network.
+            const modifiedMeanwhile =
+              useWorkspaceStore.getState().workspace.networkModified[
+                networkId
+              ] === true
             updateNodePositions(networkId, positionMap)
             const fitFunction = getFunction('cyjs', 'fit', networkId)
 
@@ -109,22 +118,34 @@ export const useRegisterNetwork = () => {
               fitFunction()
             }
 
-            updateSummary(networkId, summaryWithLayout)
+            // Only the layout field: a whole registration-time summary would
+            // overwrite a rename made meanwhile
+            updateSummary(networkId, { hasLayout: true })
             setIsRunning(false)
-            setNetworkModified(networkId, false)
+            if (!modifiedMeanwhile) {
+              setNetworkModified(networkId, false)
+            }
           }
 
           // The shared runner: a synchronous throw or a rejected promise
           // from `apply` is logged and resets `isRunning`, instead of
-          // leaving the running flag stuck for the session.
-          runEngineLayout({
-            engine: layoutEngine,
-            algorithm: layoutEngine.algorithms[defaultLayout.algorithmName],
-            network,
-            networkId,
-            afterLayout: handleLayoutComplete,
-            setIsRunning,
-          })
+          // leaving the running flag stuck for the session. Only one layout
+          // runs at a time (#982); this one must not be dropped, or the new
+          // network keeps no positions, so it waits for a running layout to
+          // finish. It stops waiting if the network is removed meanwhile,
+          // even if one with the same id is added back, and lays out the
+          // network as it is on its turn, edits made meanwhile included.
+          runInitialLayoutWhenIdle(networkId, (live, claim) =>
+            runEngineLayout({
+              engine: layoutEngine,
+              algorithm: layoutEngine.algorithms[defaultLayout.algorithmName],
+              network: live,
+              networkId,
+              afterLayout: handleLayoutComplete,
+              startLayout: claim,
+              setIsRunning,
+            }),
+          )
         }
       }
     }

@@ -300,7 +300,12 @@ export interface LayoutRunContext {
    * `validationType` `number` / `digits`, string otherwise.
    */
   readonly parameters: Readonly<Record<string, ParameterValue>>
-  /** The registering app's per-app API object. */
+  /**
+   * The registering app's per-app API object. While `run` is pending,
+   * `apis.layout.applyLayout` (and `apis.forNetwork(...).layout`) ignores
+   * `waitIfBusy` and fails with `LAYOUT_ALREADY_RUNNING` at once: the run
+   * holds the only layout slot and would otherwise wait for itself forever.
+   */
   readonly apis: AppContextApis
 }
 
