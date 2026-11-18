@@ -18,6 +18,7 @@ import { FilterConfig } from '../../../models/FilterModel'
 import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
 import { IdType } from '../../../models/IdType'
 import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
+import { runEngineLayout } from '../../../models/LayoutModel/impl/runEngineLayout'
 import { Network } from '../../../models/NetworkModel'
 import { Table, ValueType } from '../../../models/TableModel'
 import { NetworkView } from '../../../models/ViewModel'
@@ -640,40 +641,28 @@ export const SubNetworkPanel = ({
             setIsRunning(false)
             resolve()
           }
-          const onFailure = (error: unknown): void => {
-            logUi.error(
-              `[SubNetworkPanel]: Layout '${defaultLayout.displayName}' failed on ${network.id}:`,
-              error,
-            )
-            setIsRunning(false)
-            resolve()
-          }
 
-          // Stops waiting, and settles, if the network is removed meanwhile
+          // The shared runner settles once per run and logs failures. It
+          // lays out the network as it is on its turn, not as registered:
+          // nodes may have been added or removed while it waited. It stops
+          // waiting, and settles, if the network is removed meanwhile.
           runLayoutWhenIdle(
             (claim) => {
-              if (!useNetworkStore.getState().networks.has(network.id)) {
+              const live = useNetworkStore.getState().networks.get(network.id)
+              if (live === undefined) {
                 resolve()
                 return true
               }
-              if (!claim(network.id)) {
-                return false
-              }
-              try {
-                const result = engine.apply(
-                  network.nodes,
-                  network.edges,
-                  afterLayout,
-                  defaultLayout,
-                  network.id,
-                )
-                if (result instanceof Promise) {
-                  result.catch(onFailure)
-                }
-              } catch (error) {
-                onFailure(error)
-              }
-              return true
+              return runEngineLayout({
+                engine,
+                algorithm: defaultLayout,
+                network: live,
+                networkId: network.id,
+                afterLayout,
+                startLayout: claim,
+                setIsRunning,
+                onFailed: () => resolve(),
+              })
             },
             { networkId: network.id, onNetworkRemoved: resolve },
           )

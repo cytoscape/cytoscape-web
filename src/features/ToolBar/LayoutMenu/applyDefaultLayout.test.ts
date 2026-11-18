@@ -64,7 +64,7 @@ describe('applyDefaultLayout (CW-539)', () => {
     expect(g6.apply).toHaveBeenCalledWith(
       network.nodes,
       network.edges,
-      afterLayout,
+      expect.any(Function), // runEngineLayout's once-only wrapper
       preferred,
       'net1',
     )
@@ -90,7 +90,7 @@ describe('applyDefaultLayout (CW-539)', () => {
     expect(first.apply).toHaveBeenCalledWith(
       network.nodes,
       network.edges,
-      afterLayout,
+      expect.any(Function), // runEngineLayout's once-only wrapper
       preferred,
       'net1',
     )

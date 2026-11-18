@@ -328,6 +328,32 @@ describe('Scaling with no node positions (#880)', () => {
     expect(postEdit).toHaveBeenCalledTimes(1)
   })
 
+  // Review of #985: the layout-start reset is for a pending drag only. It
+  // used to re-infer the slider state and, since positions scaled by Both
+  // x10 are explained by Both x10 too, switched a Width picked since then
+  // back to Both, so the next commit scaled both axes.
+  it('keeps a scaling type picked since the last scale when a layout starts', () => {
+    act(() => {
+      useViewModelStore.getState().delete(NETWORK_ID)
+    })
+    seed()
+    render(<Scaling networkId={NETWORK_ID} />)
+    commit(9)
+    fireEvent.click(screen.getByLabelText('Width'))
+
+    act(() => {
+      useLayoutStore.getState().startLayout('another-net')
+    })
+
+    expect((screen.getByLabelText('Width') as HTMLInputElement).checked).toBe(
+      true,
+    )
+    expect(sliderValue()).toBe('9')
+    act(() => {
+      useLayoutStore.getState().setIsRunning(false)
+    })
+  })
+
   // #982: only one layout runs at a time. Scaling while a layout runs would
   // be overwritten by the layout's result, and its own start and finish
   // would lower the running layout's flag.

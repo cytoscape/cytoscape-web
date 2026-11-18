@@ -110,29 +110,29 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
   const hasNodes: boolean =
     networkView !== undefined && Object.keys(networkView.nodeViews).length > 0
 
+  // The slider value from before a drag that has not been released yet, or
+  // undefined when no drag is pending
+  const preDragValueRef: MutableRefObject<number | undefined> = useRef<
+    number | undefined
+  >(undefined)
+
   /**
    * Put the slider back when a layout starts mid-drag (#982). The layout
    * disables the slider, and MUI then drops the drag's release listeners, so
    * the drag never commits and the slider would keep a value nothing
-   * applied. The positions have not moved, so the value that explains them
-   * is the one to show. Runs only on the start of a layout; a layout that
-   * then moves this network's nodes is handled by the sync effect below.
+   * applied. Nothing moved, so the value from before the drag is the one to
+   * show. Only the value: the scaling type is left as the user picked it,
+   * even when another type also explains the positions. Runs only on the
+   * start of a layout; a layout that then moves this network's nodes is
+   * handled by the sync effect below.
    */
   useEffect(() => {
-    if (!layoutRunning || networkView === undefined) {
+    const preDragValue = preDragValueRef.current
+    if (!layoutRunning || preDragValue === undefined) {
       return
     }
-    const inferred: SliderState | undefined = inferSliderState(
-      networkView.nodeViews,
-      originalsRef.current,
-      anchorRef.current,
-      { scalingType, value: sliderValue },
-    )
-    if (inferred !== undefined) {
-      setSliderValue(inferred.value)
-      setScalingType(inferred.scalingType)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only the start of a layout cancels a drag; the slider's own state must not re-run this
+    preDragValueRef.current = undefined
+    setSliderValue(preDragValue)
   }, [layoutRunning])
 
   /**
@@ -142,6 +142,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
    */
   useEffect(() => {
     setSliderValue(0)
+    preDragValueRef.current = undefined
     originalsRef.current = new Map<IdType, Position>()
     anchorRef.current = [0, 0]
     lastNodeViewsRef.current = undefined
@@ -202,6 +203,9 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
   }, [networkView?.nodeViews])
 
   const handleChange = (event: Event, value: number | number[]): void => {
+    if (preDragValueRef.current === undefined) {
+      preDragValueRef.current = sliderValue
+    }
     setSliderValue(sliderValueOf(event, value))
   }
 
@@ -209,6 +213,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
     event: Event | SyntheticEvent,
     value: number | number[],
   ): void => {
+    preDragValueRef.current = undefined
     const valueAsNumber: number = sliderValueOf(event, value)
     setSliderValue(valueAsNumber)
     const scalingFactor = calcScale(valueAsNumber)

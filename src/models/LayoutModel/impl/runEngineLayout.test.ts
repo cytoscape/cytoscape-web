@@ -60,10 +60,14 @@ describe('runEngineLayout', () => {
     expect(apply).toHaveBeenCalledWith(
       network.nodes,
       network.edges,
-      afterLayout,
+      expect.any(Function),
       algorithm,
       'net1',
     )
+    // The engine's callback reaches afterLayout
+    const positions = new Map([['n1', [1, 2] as [number, number]]])
+    apply.mock.calls[0][2](positions)
+    expect(afterLayout).toHaveBeenCalledWith(positions)
     // The running flag stays up until afterLayout lowers it.
     expect(setIsRunning).not.toHaveBeenCalled()
   })
@@ -125,6 +129,73 @@ describe('runEngineLayout', () => {
 
     expect(setIsRunning).toHaveBeenCalledWith(false)
     expect(logUi.error).toHaveBeenCalledTimes(1)
+  })
+
+  // Review of #985: the flag is lowered once per run. An engine that reports
+  // positions and then fails used to lower it again, after the next queued
+  // layout had already claimed the slot, letting a third layout overlap it.
+  describe('once a run has completed', () => {
+    it('ignores a failure the engine reports afterwards', async () => {
+      runEngineLayout({
+        engine: makeEngine((_n, _e, done) => {
+          done(new Map())
+          return Promise.reject(new Error('late boom'))
+        }),
+        algorithm,
+        network,
+        networkId: 'net1',
+        afterLayout,
+        startLayout,
+        setIsRunning,
+      })
+      await Promise.resolve()
+      await Promise.resolve()
+
+      expect(afterLayout).toHaveBeenCalledTimes(1)
+      expect(setIsRunning).not.toHaveBeenCalled()
+      expect(logUi.error).toHaveBeenCalledTimes(1)
+    })
+
+    it('ignores a second completion', () => {
+      runEngineLayout({
+        engine: makeEngine((_n, _e, done) => {
+          done(new Map())
+          done(new Map())
+        }),
+        algorithm,
+        network,
+        networkId: 'net1',
+        afterLayout,
+        startLayout,
+        setIsRunning,
+      })
+
+      expect(afterLayout).toHaveBeenCalledTimes(1)
+    })
+
+    it('lowers the flag at once when afterLayout throws, and only then', async () => {
+      const throwing = vi.fn(() => {
+        throw new Error('afterLayout boom')
+      })
+      runEngineLayout({
+        engine: makeEngine((_n, _e, done) =>
+          Promise.resolve().then(() => done(new Map())),
+        ),
+        algorithm,
+        network,
+        networkId: 'net1',
+        afterLayout: throwing,
+        startLayout,
+        setIsRunning,
+      })
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+
+      expect(throwing).toHaveBeenCalledTimes(1)
+      expect(setIsRunning).toHaveBeenCalledTimes(1)
+      expect(setIsRunning).toHaveBeenCalledWith(false)
+    })
   })
 
   it('does not reset isRunning when a returned promise resolves (afterLayout owns that)', async () => {

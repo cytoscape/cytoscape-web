@@ -161,13 +161,37 @@ function attemptLayout(
       algorithm: resolvedAlgorithmName,
     })
 
-    // 7. Apply layout — callback-based; wrap in Promise
+    // 7. Apply layout — callback-based; wrap in Promise. The run settles
+    // once: whatever the engine reports after its first completion or
+    // failure is logged and ignored, and the flag is lowered once. A second
+    // lowering (an engine that reports positions, then rejects) could
+    // release the slot of the next layout, which may have claimed it since.
+    let settled = false
+    let released = false
+    const release = (): void => {
+      if (!released) {
+        released = true
+        useLayoutStore.getState().setIsRunning(false)
+      }
+    }
+    const lateReport = (what: string, detail?: unknown): void => {
+      logApi.error(
+        `[layoutApi]: Layout '${resolvedAlgorithmName}' on network ${networkId} ${what} after it had finished; ignored`,
+        ...(detail === undefined ? [] : [detail]),
+      )
+    }
+
     return new Promise<ApiResult>((resolve) => {
       try {
         const applyResult = engine.apply(
           network.nodes,
           network.edges,
           (positionMap: Map<IdType, [number, number]>) => {
+            if (settled) {
+              lateReport('reported positions')
+              return
+            }
+            settled = true
             try {
               // 8a. Update node positions
               useViewModelStore
@@ -198,7 +222,7 @@ function attemptLayout(
               }
 
               // 8d. setIsRunning(false)
-              useLayoutStore.getState().setIsRunning(false)
+              release()
 
               // 8e. Dispatch layout:completed
               dispatchCyWebEvent('layout:completed', {
@@ -209,7 +233,7 @@ function attemptLayout(
               // 8f. Resolve
               resolve(ok())
             } catch (callbackError) {
-              useLayoutStore.getState().setIsRunning(false)
+              release()
               resolve(
                 fail(
                   AppCodes.OPERATION_FAILED,
@@ -227,7 +251,12 @@ function attemptLayout(
         // stuck true and the returned promise pending forever.
         if (applyResult instanceof Promise) {
           applyResult.catch((err) => {
-            useLayoutStore.getState().setIsRunning(false)
+            if (settled) {
+              lateReport('failed', err)
+              return
+            }
+            settled = true
+            release()
             resolve(
               fail(
                 AppCodes.OPERATION_FAILED,
@@ -239,7 +268,12 @@ function attemptLayout(
       } catch (engineError) {
         // engine.apply threw synchronously — the promise executor's throw
         // would otherwise reject and cross the API boundary as an exception
-        useLayoutStore.getState().setIsRunning(false)
+        if (settled) {
+          lateReport('threw', engineError)
+          return
+        }
+        settled = true
+        release()
         resolve(
           fail(
             AppCodes.OPERATION_FAILED,

@@ -21,6 +21,12 @@ export interface RunEngineLayoutParams {
    * engine fails. On success `afterLayout` owns lowering it.
    */
   setIsRunning: (isRunning: boolean) => void
+  /**
+   * Called once if the run fails (the engine throws or rejects, or
+   * `afterLayout` throws), after the flag is lowered. For a caller that
+   * waits on the run and must settle either way.
+   */
+  onFailed?: (error: unknown) => void
 }
 
 /**
@@ -42,6 +48,13 @@ export interface RunEngineLayoutParams {
  * the other still ran. Automatic layouts that must not be dropped wait for
  * their turn with `runLayoutWhenIdle` (`data/hooks/stores/`).
  *
+ * A run settles once: the first completion or failure counts and anything
+ * the engine reports afterwards is logged and ignored. Lowering the flag a
+ * second time (an engine that reports positions, then rejects) could release
+ * the slot of the next layout, which may have claimed it in between. If
+ * `afterLayout` itself throws, the flag is lowered right then, in the same
+ * call, before any other layout can have started.
+ *
  * @returns true when the layout started, false when it was refused
  */
 export const runEngineLayout = ({
@@ -52,6 +65,7 @@ export const runEngineLayout = ({
   afterLayout,
   startLayout,
   setIsRunning,
+  onFailed,
 }: RunEngineLayoutParams): boolean => {
   if (!startLayout(networkId)) {
     logUi.warn(
@@ -60,19 +74,47 @@ export const runEngineLayout = ({
     return false
   }
 
+  const label = `Layout '${algorithm.displayName}' (${engine.name}) on network ${networkId}`
+  let settled = false
+
   const onFailure = (error: unknown): void => {
-    logUi.error(
-      `[runEngineLayout]: Layout '${algorithm.displayName}' (${engine.name}) failed on network ${networkId}:`,
-      error,
-    )
+    if (settled) {
+      logUi.error(
+        `[runEngineLayout]: ${label} failed after it had finished; ignored:`,
+        error,
+      )
+      return
+    }
+    settled = true
+    logUi.error(`[runEngineLayout]: ${label} failed:`, error)
     setIsRunning(false)
+    onFailed?.(error)
+  }
+
+  const onComplete = (positionMap: Map<IdType, [number, number]>): void => {
+    if (settled) {
+      logUi.warn(
+        `[runEngineLayout]: ${label} reported positions after it had finished; ignored`,
+      )
+      return
+    }
+    settled = true
+    try {
+      afterLayout(positionMap)
+    } catch (error) {
+      // It may have thrown before lowering the flag. Nothing else can have
+      // started within this call, so lowering it now releases only this run.
+      logUi.error(`[runEngineLayout]: ${label}: afterLayout failed:`, error)
+      setIsRunning(false)
+      onFailed?.(error)
+    }
   }
 
   try {
     const result = engine.apply(
       network.nodes,
       network.edges,
-      afterLayout,
+      onComplete,
       algorithm,
       networkId,
     )

@@ -443,6 +443,40 @@ describe('applyLayout — engine failure', () => {
     expect(mockLayoutState.isRunning).toBe(false)
   })
 
+  // Review of #985: the flag is lowered once per run, never again after a
+  // successor may have claimed the slot.
+  it('ignores a failure the engine reports after completing', async () => {
+    mockLayoutEngines[0].apply.mockImplementation(
+      (_nodes: any, _edges: any, callback: any) => {
+        callback(new Map([['node1', [1, 2]]]))
+        return Promise.reject(new Error('late boom'))
+      },
+    )
+
+    const result = await layoutApi.applyLayout('net1')
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(result.success).toBe(true)
+    expect(mockSetIsRunning).toHaveBeenCalledTimes(1)
+    expect(mockSetUndoStack).toHaveBeenCalledTimes(1)
+  })
+
+  it('ignores a second completion from the engine', async () => {
+    mockLayoutEngines[0].apply.mockImplementation(
+      (_nodes: any, _edges: any, callback: any) => {
+        callback(new Map([['node1', [1, 2]]]))
+        callback(new Map([['node1', [3, 4]]]))
+      },
+    )
+
+    const result = await layoutApi.applyLayout('net1')
+
+    expect(result.success).toBe(true)
+    expect(mockUpdateNodePositions).toHaveBeenCalledTimes(1)
+    expect(mockSetIsRunning).toHaveBeenCalledTimes(1)
+  })
+
   it('does not dispatch layout:completed when the engine throws', async () => {
     await layoutApi.applyLayout('net1')
     const completedCall = mockDispatchCyWebEvent.mock.calls.find(
