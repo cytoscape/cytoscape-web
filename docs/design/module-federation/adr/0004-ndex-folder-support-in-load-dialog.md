@@ -104,3 +104,9 @@ NDEx now serves one relevance-ranked list from `POST /v3/search/files` when `vis
 The dialog now sends one search with no `visibility` and shows one list (#760). This replaces the Public and Private tabs described above. The per-row visibility column tells public rows from private ones. "Only mine" still filters by `accountName`.
 
 Before this change, each tab ran its own search. Relevance scores from two searches are not comparable, so no ordering could interleave the two lists.
+
+## Amendment (2026-11-18): no "unlisted" in the UI
+
+Cytoscape Web no longer presents unlisted networks as a concept (#744). The third tab above was labelled **Private & Unlisted**, but it only ever requested `visibility: 'PRIVATE'`; no code path sent `UNLISTED`. #760 removed that label and its tooltip along with the tabs, and `LoadFromNdexDialog.spec.tsx` checks that no "unlisted" text is shown.
+
+The UNLISTED value in Context and the "unlisted" in Alternative 1 record NDEx v3 as it was when this ADR was written. They are not requirements for the dialog.
