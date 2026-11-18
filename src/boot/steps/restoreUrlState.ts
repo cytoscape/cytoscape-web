@@ -1,6 +1,7 @@
 import { useFilterStore } from '@/data/hooks/stores/FilterStore'
 import { useUiStateStore } from '@/data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '@/data/hooks/stores/ViewModelStore'
+import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
 import { SelectionStates } from '@/features/FloatingToolBar/ShareNetworkButton'
 import {
   DisplayMode,
@@ -10,16 +11,11 @@ import {
 import { FilterUrlParams } from '@/models/FilterModel/FilterUrlParams'
 import { GraphObjectType } from '@/models/NetworkModel/GraphObjectType'
 import type { IdType } from '@/models/IdType'
+import { isViewOfNetwork } from '@/models/UiModel/impl/uiImpl'
 import type { AppShellBootContext } from './appShellBootContext'
 
 // Restores shareable UI state from the URL (see ShareNetworkButton, which
 // produces these links).
-
-const MAX_VIEW_MODEL_RETRIES = 10
-const VIEW_MODEL_RETRY_DELAY_MS = 500
-
-/** Networks load asynchronously, so the active view is restored a beat later. */
-const NETWORK_VIEW_RESTORE_DELAY_MS = 1000
 
 /** Name of the filter config built from the filter URL parameters. */
 const DEFAULT_FILTER_NAME = 'checkboxFilter'
@@ -28,30 +24,45 @@ const splitIds = (value: string): IdType[] =>
   value === '' ? [] : value.split(' ')
 
 /**
- * Applies a selection once the view model for `viewId` exists, polling for it.
+ * Runs `onReady` once the view model for `viewId` exists (#965).
  *
- * Shared by the main-network and subnetwork paths, which were byte-identical
- * copies of this loop. Gives up silently after ~5s: a link pointing at a
- * network that never loads is not worth an error the user cannot act on.
+ * Waits on the store instead of polling for a fixed time, so a network that
+ * loads slowly still gets its shared state. The wait ends without running
+ * `onReady` if the user first opens a network that `viewId` is not a view of:
+ * the link's state belongs to the network they left. Returns a function that
+ * cancels the wait.
  */
-const selectWhenViewReady = (
+export const whenViewModelReady = (
   viewId: IdType,
-  nodes: IdType[],
-  edges: IdType[],
-  retryCount = 0,
-): void => {
-  const { getViewModel, exclusiveSelect } = useViewModelStore.getState()
+  onReady: () => void,
+): (() => void) => {
+  const isReady = (): boolean =>
+    useViewModelStore.getState().getViewModel(viewId) !== undefined
 
-  if (getViewModel(viewId) !== undefined) {
-    exclusiveSelect(viewId, nodes, edges)
-    return
+  if (isReady()) {
+    onReady()
+    return () => {}
   }
 
-  if (retryCount < MAX_VIEW_MODEL_RETRIES) {
-    setTimeout(() => {
-      selectWhenViewReady(viewId, nodes, edges, retryCount + 1)
-    }, VIEW_MODEL_RETRY_DELAY_MS)
+  let unsubscribeView = (): void => {}
+  let unsubscribeWorkspace = (): void => {}
+  const cancel = (): void => {
+    unsubscribeView()
+    unsubscribeWorkspace()
   }
+
+  unsubscribeView = useViewModelStore.subscribe(() => {
+    if (!isReady()) return
+    cancel()
+    onReady()
+  })
+  unsubscribeWorkspace = useWorkspaceStore.subscribe((state, previous) => {
+    const networkId = state.workspace.currentNetworkId
+    if (networkId === previous.workspace.currentNetworkId) return
+    if (!isViewOfNetwork(viewId, networkId)) cancel()
+  })
+
+  return cancel
 }
 
 const restoreSelection = (
@@ -67,7 +78,11 @@ const restoreSelection = (
     return
   }
 
-  selectWhenViewReady(viewId, splitIds(nodes), splitIds(edges))
+  whenViewModelReady(viewId, () => {
+    useViewModelStore
+      .getState()
+      .exclusiveSelect(viewId, splitIds(nodes), splitIds(edges))
+  })
 }
 
 /**
@@ -135,14 +150,14 @@ export const restoreUrlState = (
   restoreNetworkViewTab(search)
   restoreFilter(search)
 
-  // The active view and its subnetwork selection need the components that own
-  // them to exist first, hence the delay. Safe against the navigate() that
-  // strips the params right after this returns, because `search` is a
-  // mount-time snapshot rather than a live read.
+  // The active view and its subnetwork selection need that subnetwork to be
+  // loaded, so both wait for its view model instead of a fixed delay (#965).
+  // Safe against the navigate() that strips the params right after this
+  // returns, because `search` is a mount-time snapshot rather than a live read.
   const activeNetworkViewId = search.get('activeNetworkView')
-  setTimeout(() => {
-    if (activeNetworkViewId == null) return
+  if (activeNetworkViewId == null) return
 
+  whenViewModelReady(activeNetworkViewId, () => {
     useUiStateStore.getState().setActiveNetworkView(activeNetworkViewId)
     restoreSelection(
       search,
@@ -150,5 +165,5 @@ export const restoreUrlState = (
       'selectedSubnetworkNodes',
       'selectedSubnetworkEdges',
     )
-  }, NETWORK_VIEW_RESTORE_DELAY_MS)
+  })
 }
