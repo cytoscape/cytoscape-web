@@ -410,7 +410,34 @@ export const SubNetworkPanel = ({
     }
   }, [setCurrentSubNetworkId])
 
-  const updateNetworkView = (): string => {
+  /**
+   * Give a subnetwork the fetched style, falling back to the root network's
+   * style, and register that root style the first time.
+   */
+  const addFetchedStyle = (
+    newUuid: IdType,
+    visualStyle: VisualStyle | undefined,
+  ): void => {
+    // Add parent network's style to the shared style store
+    if (vs[rootNetworkId] === undefined && visualStyle !== undefined) {
+      // Register the original style to DB
+      addVisualStyle(rootNetworkId, visualStyle)
+      addVisualStyle(newUuid, visualStyle)
+    } else if (visualStyle === undefined) {
+      addVisualStyle(newUuid, vs[rootNetworkId])
+    } else {
+      // Just use the given style as-is
+      addVisualStyle(newUuid, visualStyle)
+    }
+  }
+
+  /**
+   * Show the fetched subnetwork. `addStyle` is false for a subnetwork this
+   * run registered: it got its style before its layout, which can wait for
+   * another layout (#982), and a service may have replaced the subnetwork,
+   * style included, in the meantime.
+   */
+  const updateNetworkView = (addStyle: boolean): string => {
     if (data === undefined) {
       return ''
     }
@@ -436,16 +463,8 @@ export const SubNetworkPanel = ({
         'Interaction Network: ' + newUuid,
     )
 
-    // Add parent network's style to the shared style store
-    if (vs[rootNetworkId] === undefined && visualStyle !== undefined) {
-      // Register the original style to DB
-      addVisualStyle(rootNetworkId, visualStyle)
-      addVisualStyle(newUuid, visualStyle)
-    } else if (visualStyle === undefined) {
-      addVisualStyle(newUuid, vs[rootNetworkId])
-    } else {
-      // Just use the given style as-is
-      addVisualStyle(newUuid, visualStyle)
+    if (addStyle) {
+      addFetchedStyle(newUuid, visualStyle)
     }
 
     // Register objects to the stores.
@@ -616,6 +635,8 @@ export const SubNetworkPanel = ({
     setProcessingStage('Finalizing network view...')
     setProcessingProgress(95)
     addViewModel(newNetworkId, networkView)
+    // The style comes before the layout, which can wait: see updateNetworkView
+    addFetchedStyle(newNetworkId, data?.visualStyle)
     await yieldToUI()
 
     // Step 6: Apply default layout if needed
@@ -724,7 +745,8 @@ export const SubNetworkPanel = ({
         // Check if the network is already in the store
         const newUuid: string = network.id.toString()
         const queryNetwork: Network | undefined = networks.get(newUuid)
-        if (queryNetwork === undefined) {
+        const registeredHere: boolean = queryNetwork === undefined
+        if (registeredHere) {
           // Call the async version of registerNetwork
           await registerNetwork(
             network,
@@ -755,7 +777,7 @@ export const SubNetworkPanel = ({
         //   return
         // }
 
-        if (updateNetworkView() === '') {
+        if (updateNetworkView(!registeredHere) === '') {
           setRenderFailed(true)
         }
 

@@ -10,6 +10,11 @@ export interface RunEngineLayoutParams {
   network: Network
   /** The network being laid out; app engines need it for the run context. */
   networkId: IdType
+  /**
+   * Applies the positions and lowers the flag. It must not start another
+   * layout itself: if it then threw, the cleanup below would lower the flag
+   * the new layout holds, since the flag carries no owner.
+   */
   afterLayout: (positionMap: Map<IdType, [number, number]>) => void
   /**
    * The layout store's `startLayout`: claims the single layout run for

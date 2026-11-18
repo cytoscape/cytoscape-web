@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, cleanup, render, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest'
 
 import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
 import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
@@ -471,6 +471,31 @@ describe('SubNetworkPanel selection sync with the Cell View (#931)', () => {
       expect(layoutApply).toHaveBeenCalledTimes(1)
       expect(layoutApply.mock.calls[0][4]).toBe(SUB_A)
       expect(useSubNetworkStore.getState().currentSubNetworkId).toBe(SUB_B)
+    })
+
+    // Review of #985: a service may replace the subnetwork, style included,
+    // while its layout waits. The fetched style is added before the wait,
+    // and finishing the run must not write it again over the replacement.
+    it('adds the fetched style before its layout waits, and not again after', async () => {
+      const addStyle = useVisualStyleStore.getState().add as unknown as Mock
+      const stylesFor = (id: IdType): number =>
+        addStyle.mock.calls.filter(([networkId]) => networkId === id).length
+      act(() => {
+        useLayoutStore.getState().startLayout('another-network')
+      })
+      followHierarchy()
+      render(<FollowsHierarchy />)
+      await waitFor(() =>
+        expect(useLayoutStore.getState().layoutQueued).toBe(true),
+      )
+      expect(stylesFor(SUB_A)).toBe(1)
+
+      await act(async () => {
+        useLayoutStore.getState().setIsRunning(false)
+      })
+      await shown(SUB_A)
+
+      expect(stylesFor(SUB_A)).toBe(1)
     })
   })
 

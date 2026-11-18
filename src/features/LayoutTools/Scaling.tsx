@@ -186,12 +186,20 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
       anchorRef.current,
       current,
     )
+    // During a drag, the value to restore if a layout cuts the drag off is
+    // the one that explains the positions now, not the one from before them
     if (inferred === undefined) {
       refreshPositions(nodeViews)
       setSliderValue(0)
+      if (preDragValueRef.current !== undefined) {
+        preDragValueRef.current = 0
+      }
       return
     }
     setSliderValue(inferred.value)
+    if (preDragValueRef.current !== undefined) {
+      preDragValueRef.current = inferred.value
+    }
     setScalingType(inferred.scalingType)
     // At x1.0 the anchor can follow the layout without moving any node
     if (inferred.value === 0) {

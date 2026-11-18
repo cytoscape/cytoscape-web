@@ -328,6 +328,62 @@ describe('Scaling with no node positions (#880)', () => {
     expect(postEdit).toHaveBeenCalledTimes(1)
   })
 
+  // Review of #985: positions written by something else during a drag (an
+  // app, another slider) make the slider show their value; the value to
+  // restore if a layout then cuts the drag off is that one, not the value
+  // from before the drag.
+  it('restores the value of positions written during a drag', () => {
+    act(() => {
+      useViewModelStore.getState().delete(NETWORK_ID)
+    })
+    seed()
+    render(<Scaling networkId={NETWORK_ID} />)
+    const root = screen.getByTestId('scaling-slider')
+    root.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        width: 200,
+        top: 0,
+        height: 20,
+        bottom: 20,
+        right: 200,
+        x: 0,
+        y: 0,
+      }) as DOMRect
+    act(() => {
+      fireEvent.mouseDown(root, { button: 0, clientX: 150, clientY: 10 })
+    })
+
+    // Something else scales the network by Both x10 about its center
+    const [cx, cy] = center(ORIGINAL)
+    act(() => {
+      useViewModelStore
+        .getState()
+        .updateNodePositions(
+          NETWORK_ID,
+          new Map(
+            Object.entries(ORIGINAL).map(([id, [x, y]]) => [
+              id,
+              [cx + (x - cx) * 10, cy + (y - cy) * 10] as [number, number],
+            ]),
+          ),
+        )
+    })
+    expect(sliderValue()).toBe('9')
+
+    act(() => {
+      useLayoutStore.getState().startLayout('another-net')
+    })
+    act(() => {
+      fireEvent.mouseUp(document, { clientX: 150, clientY: 10 })
+    })
+
+    expect(sliderValue()).toBe('9')
+    act(() => {
+      useLayoutStore.getState().setIsRunning(false)
+    })
+  })
+
   // Review of #985: the layout-start reset is for a pending drag only. It
   // used to re-infer the slider state and, since positions scaled by Both
   // x10 are explained by Both x10 too, switched a Width picked since then
