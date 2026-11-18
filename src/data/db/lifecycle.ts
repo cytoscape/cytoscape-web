@@ -201,7 +201,7 @@ export const isOwnResetAnnouncement = (data: unknown): boolean => {
  * Callers must skip self-originated announcements — see
  * {@link isOwnResetAnnouncement}. BroadcastChannel excludes only the channel
  * OBJECT that posted, not the tab: `announceDatabaseReset` opens its own channel,
- * so the deleting tab's `SyncTabs` channel receives the message too. Acting on it
+ * so the deleting tab's own listener (`listenForDatabaseReset`) receives the message too. Acting on it
  * would make the resetting tab close its own connection mid-delete and navigate
  * away from the reset it just performed.
  */
@@ -263,5 +263,40 @@ export const handleDatabaseDeleted = async (
       return
     }
     previousHandler?.call(channel, event)
+  }
+}
+
+/**
+ * Listen for another tab deleting this scope's databases, for the life of the
+ * document: release ours, and reload once the deleter is done.
+ *
+ * Installed once at boot (`src/boot/databaseResetListener.ts`), before the
+ * database opens, rather than by a component. Every screen a tab can be on
+ * has to hear it: the editor, the manual, the Error page and the startup
+ * failure screen alike. A tab that missed a Clear Local Cache would keep its
+ * session keys, API keys included, and keep showing data that is gone.
+ *
+ * @returns a function that stops listening.
+ */
+export const listenForDatabaseReset = (reload: () => void): (() => void) => {
+  const channel = new BroadcastChannel(UI_EVENTS_CHANNEL)
+
+  channel.onmessage = (event) => {
+    if (event.data?.type !== DATABASE_DELETED) {
+      return
+    }
+    // The resetting tab hears its own announcement: BroadcastChannel excludes
+    // only the posting channel object, and `announceDatabaseReset` opens a
+    // separate one. Acting on it would close our connection mid-delete.
+    if (isOwnResetAnnouncement(event.data)) {
+      return
+    }
+    void handleDatabaseDeleted(channel, reload, {
+      clearSessionStorage: isClearLocalCacheAnnouncement(event.data),
+    })
+  }
+
+  return () => {
+    channel.close()
   }
 }

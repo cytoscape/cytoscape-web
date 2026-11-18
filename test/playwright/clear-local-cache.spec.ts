@@ -182,4 +182,39 @@ test.describe('Clear Local Cache', () => {
     ).toBeNull()
     await holder.close()
   })
+
+  test('a tab on the Error page clears its session keys and starts over', async ({
+    page,
+    context,
+  }) => {
+    await gotoAndWaitReady(page)
+
+    // A peer that never mounts the editor: the boot listener is all it has.
+    const errorTab = await context.newPage()
+    await errorTab.goto('/error')
+    await expect(
+      errorTab.locator('[data-testid="error-reset-workspace-button"]'),
+    ).toBeVisible({ timeout: 30_000 })
+    await errorTab.evaluate(() => {
+      sessionStorage.setItem('cyweb.llm.apiKeys', '{"openai":"sk-test"}')
+    })
+
+    await openClearLocalCacheDialog(page)
+    await page
+      .getByTestId('confirmation-dialog')
+      .getByRole('button', { name: 'Clear Cache' })
+      .click()
+
+    // It leaves /error for the app root and boots a fresh editor.
+    await expect(errorTab).not.toHaveURL(/\/error$/, { timeout: 30_000 })
+    await expect(errorTab.locator('[data-testid="app-shell"]')).toBeVisible({
+      timeout: 30_000,
+    })
+    expect(
+      await errorTab.evaluate(() =>
+        sessionStorage.getItem('cyweb.llm.apiKeys'),
+      ),
+    ).toBeNull()
+    await errorTab.close()
+  })
 })

@@ -35,6 +35,12 @@ export const CYWEB_LOCAL_STORAGE_KEYS = [
   'cyweb-debug-enabled',
   // Written by the `debug` package when developer logging is switched on.
   'debug',
+  // Written by MUI's CssVarsProvider (`App.tsx`) when the theme toggle picks
+  // light or dark; with none, the app follows the system setting. MUI's
+  // default `modeStorageKey` and `colorSchemeStorageKey` plus `-light`/`-dark`.
+  'mui-mode',
+  'mui-color-scheme-light',
+  'mui-color-scheme-dark',
 ] as const
 
 export type CywebLocalStorageKey = (typeof CYWEB_LOCAL_STORAGE_KEYS)[number]

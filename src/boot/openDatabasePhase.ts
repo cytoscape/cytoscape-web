@@ -7,6 +7,7 @@ import {
   type DbOpenResult,
 } from '@/data/db/startupOpen'
 import { logDb } from '@/debug'
+import { appRootHref } from './appRootHref'
 import { registerBootErrorClassifier } from './bootError'
 import { BootPhase } from './bootPhases'
 import { registerBootShellAction } from './shell/bootShellActions'
@@ -68,8 +69,10 @@ const registerResetAction = (): void => {
     }
 
     // The boot already aborted partway through, so rerunning it from the top
-    // is the honest recovery.
-    window.location.reload()
+    // is the honest recovery. At the app root, not the current address: a
+    // share link or an `?import=` URL would load its data straight back into
+    // the cache that was just cleared.
+    window.location.assign(appRootHref())
   })
 }
 

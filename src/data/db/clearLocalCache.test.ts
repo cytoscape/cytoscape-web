@@ -101,6 +101,8 @@ describe('clearLocalCache', () => {
     // dexie-observable keys for another app's database on the same origin.
     localStorage.setItem('Dexie.Observable/latestRevision/other-db', '9')
     localStorage.setItem('kc-callback-abc', '{}')
+    localStorage.setItem('mui-mode', 'dark')
+    localStorage.setItem('mui-color-scheme-dark', 'dark')
     localStorage.setItem('another-app-on-this-origin', 'keep me')
     sessionStorage.setItem('cyweb.tab.viewState', '{}')
     sessionStorage.setItem('cyweb.llm.apiKeys', '{}')

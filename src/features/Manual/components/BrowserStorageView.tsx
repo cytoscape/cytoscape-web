@@ -68,6 +68,9 @@ const LOCAL_STORAGE_LABELS: Record<CywebLocalStorageKey, string> = {
   'cyweb-network-search': 'Your search box settings',
   'cyweb-debug-enabled': 'Developer logging switch',
   debug: 'Developer logging namespaces',
+  'mui-mode': 'Light, dark or system theme',
+  'mui-color-scheme-light': 'Color scheme used in light mode',
+  'mui-color-scheme-dark': 'Color scheme used in dark mode',
 }
 
 interface StoreCount {

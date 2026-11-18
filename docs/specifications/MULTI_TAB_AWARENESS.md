@@ -208,7 +208,10 @@ the position data on a separate channel.
 
 Clear Local Cache (`clearLocalCache.ts`) and Load Workspace (`deleteDb`)
 delete whole databases, which every other tab still has open — and IndexedDB will not delete a database with live connections. The
-handshake in `src/data/db/lifecycle.ts`:
+handshake in `src/data/db/lifecycle.ts`. Every tab takes part from boot on:
+`listenForDatabaseReset()` is installed for the life of the document
+(`src/boot/databaseResetListener.ts`), not by a component, so a tab on the
+Error page or the startup failure screen releases and reloads like any other:
 
 1. deleter posts `DATABASE_DELETED`
 2. peers close their connection and post `DATABASE_DELETED_ACK`

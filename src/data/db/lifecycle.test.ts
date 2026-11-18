@@ -9,6 +9,7 @@ import {
   DATABASE_RESET_IN_PROGRESS,
   handleDatabaseDeleted,
   isClearLocalCacheAnnouncement,
+  listenForDatabaseReset,
   PEER_CLOSE_GRACE_MS,
   RESET_COMPLETE_TIMEOUT_MS,
   RESET_HEARTBEAT_MS,
@@ -195,5 +196,45 @@ describe('Clear Local Cache handshake (#989)', () => {
     expect(sessionStorage.getItem('cyweb.tab.networkId')).toBe('n1')
     // Load Workspace keeps the profile database, and so its settings.
     expect(suspendProfileWritesUntilReload).not.toHaveBeenCalled()
+  })
+
+  it("a listener acts on another tab's announcement and ignores its own", async () => {
+    const reload = vi.fn()
+    const stop = listenForDatabaseReset(reload)
+    const channel = FakeChannel.instances.at(-1)
+    if (channel === undefined) throw new Error('no channel opened')
+
+    // This tab's own announcement (same tab id): must not close our databases.
+    const { getTabId } = await import('@/data/tabState/tabId')
+    channel.onmessage?.({
+      data: {
+        type: DATABASE_DELETED,
+        tabId: getTabId(),
+        clearsLocalCache: true,
+      },
+    })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(channel.posted).toEqual([])
+
+    sessionStorage.setItem('cyweb.llm.apiKeys', '{}')
+    channel.onmessage?.({
+      data: {
+        type: DATABASE_DELETED,
+        tabId: 'other-tab',
+        clearsLocalCache: true,
+      },
+    })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(channel.posted).toEqual([
+      expect.objectContaining({ type: 'DATABASE_DELETED_ACK' }),
+    ])
+    channel.onmessage?.({ data: { type: DATABASE_RESET_COMPLETE } })
+
+    expect(reload).toHaveBeenCalledTimes(1)
+    // A clear drops this tab's session keys, API keys included.
+    expect(sessionStorage.getItem('cyweb.llm.apiKeys')).toBeNull()
+
+    stop()
+    expect(channel.closed).toBe(true)
   })
 })

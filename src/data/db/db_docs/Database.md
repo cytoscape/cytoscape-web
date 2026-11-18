@@ -113,8 +113,11 @@ keeps in this browser: the four databases named in
 `browserStorageInventory.ts` (`cyweb-db`, `cyweb-profile-db` and the manual's
 two), then the localStorage and sessionStorage keys listed there. Keys other
 code put on the origin are left alone. It announces on both scopes' channels
-(`ALL_UI_EVENTS_CHANNELS`), so editor and manual tabs release their
-connections, drop their own sessionStorage keys and reload. A delete that
+(`ALL_UI_EVENTS_CHANNELS`), so the other tabs release their connections,
+drop their own sessionStorage keys and reload. They hear it through
+`listenForDatabaseReset()`, which the boot installs for the life of every
+document (`src/boot/databaseResetListener.ts`), so a tab on the Error page or
+the startup failure screen takes part too. A delete that
 another tab blocks is waited for, not abandoned: after `CLEAR_WAIT_NOTICE_MS`
 the `onWaiting` callback names the databases, and each caller shows
 `waitingForOtherTabsMessage()`. Peers keep waiting as long as the

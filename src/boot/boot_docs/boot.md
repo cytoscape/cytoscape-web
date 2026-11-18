@@ -35,7 +35,7 @@ index.html
             └─ import('./boot/bootstrap')
                  ├─ markBoot('init-exec')                      [init-exec]
                  ├─ createRoot(#root)
-                 ├─ phase RUNTIME    enableMapSet, debug, share-link key, tabManager
+                 ├─ phase RUNTIME    enableMapSet, debug, share-link key, tabManager, reset listener
                  ├─ startAuthentication()  ← not awaited; overlaps the DB open
                  │    └─ releaseTokenGate()  ← on SSO settle, any time later  [auth-settled]
                  ├─ phase DATABASE   openDatabaseForStartup()   ← the gate; fatal
@@ -88,7 +88,15 @@ Local Cache, whose React wrappers cannot be reused here because React never
 mounts on this path. A handler receives `setStatus`, which writes the hidden
 status line rendered under every action button: what the action is waiting for,
 or why it failed. The runner only re-enables the button on a throw, so a handler
-that fails says why first.
+that fails says why first. On success it navigates to the app root
+(`appRootHref.ts`), not the current address: a share link or an `?import=` URL
+would load its data straight back into the cache that was just cleared.
+
+**Every tab hears another tab's database reset from boot on.** RUNTIME installs
+`databaseResetListener.ts` for the life of the document, before the database
+opens and before React mounts, so the Error page and the startup failure screen
+hear a Clear Local Cache from another tab like the editor and the manual do. An
+editor tab then starts over at the app root, a manual tab reloads in place.
 
 **The app renders over the SSO check, not after it.** What keeps a logged-in
 user's startup requests from going out anonymously is not ordering but

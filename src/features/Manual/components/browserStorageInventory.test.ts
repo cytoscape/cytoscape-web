@@ -134,6 +134,34 @@ describe('browser storage inventory', () => {
     }
   })
 
+  /**
+   * MUI's CssVarsProvider persists the color mode itself, with no setItem in
+   * our code to find. With its storage-key props left at their defaults it
+   * writes `mui-mode` and `mui-color-scheme-light`/`-dark` (MUI 5,
+   * `InitColorSchemeScript` defaultConfig).
+   */
+  it('lists the keys of every CssVarsProvider', () => {
+    const providers = sourceFiles(SRC)
+      .filter((file) =>
+        /import\s*\{[^}]*CssVarsProvider[^}]*\}\s*from\s*'@mui\//.test(
+          readFileSync(file, 'utf8'),
+        ),
+      )
+      .map((file) => relative(SRC, file))
+
+    expect(providers).toEqual(['App.tsx'])
+    const app = readFileSync(join(SRC, 'App.tsx'), 'utf8')
+    // Custom keys would move the writes to names the inventory does not list.
+    expect(app).not.toMatch(/modeStorageKey|colorSchemeStorageKey/)
+    expect(CYWEB_LOCAL_STORAGE_KEYS).toEqual(
+      expect.arrayContaining([
+        'mui-mode',
+        'mui-color-scheme-light',
+        'mui-color-scheme-dark',
+      ]),
+    )
+  })
+
   it('names both scopes of both databases', () => {
     expect([...CYWEB_DATABASE_NAMES].sort()).toEqual(
       [

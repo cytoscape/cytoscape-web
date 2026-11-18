@@ -1,6 +1,5 @@
 import type { IDatabaseChange } from 'dexie-observable/api'
-import { ReactElement, useCallback, useEffect } from 'react'
-import { useHref } from 'react-router-dom'
+import { ReactElement, useEffect } from 'react'
 
 import { getDb } from '../data/db'
 import { useMessageStore } from '../data/hooks/stores/MessageStore'
@@ -17,7 +16,6 @@ import {
   onCrossTabSyncFailed,
   reportSyncListenerFailure,
 } from '@/data/sync/crossTabSyncHealth'
-import { useReloadOnDatabaseReset } from '@/data/hooks/useReloadOnDatabaseReset'
 
 /**
  * Tables holding workspace-wide state, relevant to a tab whatever network it is
@@ -198,14 +196,9 @@ export const SyncTabsAction = (): ReactElement => {
     }
   }, [])
 
-  // Root path with the router basename applied, so a deployment under a
-  // sub-path does not reload to the wrong origin root.
-  const rootHref = useHref('/')
-
-  const reloadAtRoot = useCallback((): void => {
-    window.location.assign(rootHref)
-  }, [rootHref])
-  useReloadOnDatabaseReset(reloadAtRoot)
+  // Another tab's Clear Local Cache or Load Workspace is handled for the
+  // whole document by the boot (`src/boot/databaseResetListener.ts`), so the
+  // Error page and the startup failure screen hear it too.
 
   useEffect(() => {
     // The copy lives here, not in `crossTabSyncHealth`: that module is in the

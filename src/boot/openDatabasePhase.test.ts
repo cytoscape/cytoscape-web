@@ -28,15 +28,17 @@ const { openDatabasePhase, RESET_DATABASE_ACTION_ID } = await import(
 )
 
 const reload = vi.fn()
+const assign = vi.fn()
 
 beforeEach(() => {
   openDatabaseForStartup.mockReset()
   clearLocalCache.mockReset().mockResolvedValue({ status: 'cleared' })
   reload.mockReset()
+  assign.mockReset()
   // jsdom's location.reload is not writable; replacing the whole descriptor is.
   Object.defineProperty(window, 'location', {
     configurable: true,
-    value: { ...window.location, reload },
+    value: { ...window.location, reload, assign },
   })
 })
 
@@ -142,9 +144,12 @@ describe('openDatabasePhase database reset action', () => {
       expect(clearLocalCache).toHaveBeenCalledTimes(1)
     })
     // The same function behind the Error page's button and Help › Developer.
+    // A full load at the app root, not a reload of this address: a share link
+    // or ?import= URL would refill the cache that was just cleared.
     await vi.waitFor(() => {
-      expect(reload).toHaveBeenCalledTimes(1)
+      expect(assign).toHaveBeenCalledWith('/')
     })
+    expect(reload).not.toHaveBeenCalled()
   })
 
   it('stays on the error shell, button enabled, when the clear fails', async () => {
@@ -169,7 +174,7 @@ describe('openDatabasePhase database reset action', () => {
     await vi.waitFor(() => {
       expect(button?.disabled).toBe(false)
     })
-    expect(reload).not.toHaveBeenCalled()
+    expect(assign).not.toHaveBeenCalled()
     // And the reader is told why nothing happened.
     expect(statusLine()?.textContent).toBe('Could not delete cyweb-db.')
     expect(statusLine()?.hasAttribute('hidden')).toBe(false)
@@ -204,11 +209,11 @@ describe('openDatabasePhase database reset action', () => {
     expect(statusLine()?.textContent).toContain(
       'Close your other Cytoscape Web tabs',
     )
-    expect(reload).not.toHaveBeenCalled()
+    expect(assign).not.toHaveBeenCalled()
 
     finish?.()
     await vi.waitFor(() => {
-      expect(reload).toHaveBeenCalledTimes(1)
+      expect(assign).toHaveBeenCalledWith('/')
     })
   })
 

@@ -77,7 +77,8 @@ button cannot be reused directly because React never mounts on this path, so
 `clearLocalCache()` imports no React, router or store code. The action writes
 to a status line under the button: while another tab holds a database open it
 names the database and asks the reader to close their other tabs (the clear
-then finishes and reloads by itself), and a clear that fails shows its reason
+then finishes and loads the app root by itself, dropping the current path and
+query), and a clear that fails shows its reason
 there before throwing, which re-enables the button and keeps the reader on the
 shell.
 
