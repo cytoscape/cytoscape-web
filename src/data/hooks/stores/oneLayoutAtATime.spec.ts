@@ -303,6 +303,24 @@ describe('one layout at a time (#982)', () => {
       expect(run(syncEngine('later', [2, 2]))).toBe(true)
     })
 
+    it('holds the running slot when a subscriber sees the last waiter leave', async () => {
+      const store = useLayoutStore.getState()
+      store.startLayout('other')
+      runLayoutWhenIdle((claim) => run(syncEngine('waiting', [1, 1]), claim))
+      let competingStart: boolean | undefined
+      const unsubscribe = useLayoutStore.subscribe((state, previous) => {
+        if (previous.layoutQueued && !state.layoutQueued) {
+          competingStart = run(syncEngine('competing', [2, 2]))
+        }
+      })
+
+      store.setIsRunning(false)
+      await flushMicrotasks()
+      unsubscribe()
+      expect(competingStart).toBe(false)
+      expect(undoEntries).toEqual(['Apply waiting layout'])
+    })
+
     // Review of #985: a network deleted and added again under the same id
     // while its layout waits must not get the old job's layout.
     describe('with a network to watch', () => {
