@@ -266,6 +266,11 @@ A Service App is a REST service. See the
 The service's `cyWebMenuItem` sets where its menu item appears: `root` names
 the top menu, and `path` the submenus and the item itself.
 
+When a service returns node positions with `updateLayouts`, Cytoscape Web
+applies them to the network the service was run on. If a layout is already
+running, the positions wait their turn. Later actions in the same response
+run after the positions have been processed.
+
 These example services can be used for testing or as a reference:
 
 1. Add Network

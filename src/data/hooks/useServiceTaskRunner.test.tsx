@@ -1,4 +1,4 @@
-import { act, renderHook } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ServiceApp } from '../../models/AppModel/ServiceApp'
@@ -173,6 +173,57 @@ describe('useServiceTaskRunner', () => {
       algorithmName: 'Test Service',
       message: 'ok',
     })
+  })
+
+  it('waits for a layout result before applying the next action to the same network', async () => {
+    act(() => seedCurrentNetwork())
+    let finishLayout!: () => void
+    const layout = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finishLayout = resolve
+        }),
+    )
+    const selection = vi.fn()
+    mockGetHandler.mockReturnValueOnce(layout).mockReturnValueOnce(selection)
+    mockRunTask.mockResolvedValue({
+      status: ServiceStatus.Complete,
+      result: [
+        { action: ServiceAppAction.UpdateLayouts, data: [] },
+        {
+          action: ServiceAppAction.UpdateSelection,
+          data: { nodes: [1], edges: [] },
+        },
+      ],
+    })
+    const run = renderRunner()
+    const task = run(SERVICE_URL)
+    await waitFor(() => expect(layout).toHaveBeenCalledTimes(1))
+    act(() => useWorkspaceStore.getState().setCurrentNetworkId('other'))
+    expect(selection).not.toHaveBeenCalled()
+
+    finishLayout()
+    await task
+    expect(selection).toHaveBeenCalledWith({
+      networkId: NET_ID,
+      responseObj: { nodes: [1], edges: [] },
+    })
+  })
+
+  it('keeps the submitted network as the target if the user switches while the service runs', async () => {
+    act(() => seedCurrentNetwork())
+    const handler = vi.fn()
+    mockGetHandler.mockReturnValue(handler)
+    mockRunTask.mockImplementation(async () => {
+      act(() => useWorkspaceStore.getState().setCurrentNetworkId('other'))
+      return {
+        status: ServiceStatus.Complete,
+        result: [{ action: ServiceAppAction.UpdateLayouts, data: [] }],
+      }
+    })
+    const run = renderRunner()
+    await run(SERVICE_URL)
+    expect(handler).toHaveBeenCalledWith({ networkId: NET_ID, responseObj: [] })
   })
 
   it('does not dispatch handlers when the task did not complete', async () => {

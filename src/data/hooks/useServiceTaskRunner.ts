@@ -130,18 +130,29 @@ export const useServiceTaskRunner = (): ((
         throw new Error(`Service not found for URL: ${url}`)
       }
 
+      // Keep the inputs and result actions on the network that started the task.
+      const networkId = currentNetworkIdRef.current
+      const input = {
+        network: networkRef.current,
+        table: tableRef.current,
+        visualStyle: visualStyleRef.current,
+        summary: summaryRef.current,
+        visualStyleOptions: visualStyleOptionsRef.current,
+        viewModel: viewModelRef.current,
+        opaqueAspect: opaqueAspectRef.current,
+      }
       // Apps that request no data (type 'none') skip the network/table guards.
       if (!sendsNoData(serviceApp.serviceInputDefinition)) {
         if (
           serviceApp.serviceInputDefinition?.inputNetwork &&
-          networkRef.current === undefined
+          input.network === undefined
         ) {
           throw new Error('Network not found')
         }
 
         if (
           serviceApp.serviceInputDefinition?.inputColumns &&
-          tableRef.current === undefined
+          input.table === undefined
         ) {
           throw new Error('Table not found')
         }
@@ -149,7 +160,7 @@ export const useServiceTaskRunner = (): ((
 
       // Resolve the current network's NDEx URL for auto-filled ndexUUID
       // parameters; empty when the network is not an NDEx network (CW-620).
-      const currentSummary = summaryRef.current
+      const currentSummary = input.summary
       const currentNdexNetworkUrl =
         currentSummary?.isNdex && currentSummary?.externalId
           ? ndexNetworkUrl(ndexBaseUrl, currentSummary.externalId)
@@ -168,14 +179,8 @@ export const useServiceTaskRunner = (): ((
         serviceUrl: url,
         algorithmName: serviceApp.name,
         customParameters: customParameters,
-        network: networkRef.current,
-        table: tableRef.current,
-        visualStyle: visualStyleRef.current,
-        summary: summaryRef.current,
-        visualStyleOptions: visualStyleOptionsRef.current,
-        viewModel: viewModelRef.current,
+        ...input,
         serviceInputDefinition: serviceApp.serviceInputDefinition,
-        opaqueAspect: opaqueAspectRef.current,
       })
 
       logApp.info(
@@ -189,8 +194,8 @@ export const useServiceTaskRunner = (): ((
           // Currently, HCX network is blocked for updateNetwork actions
           // In the future, if there are more limitations, we can turn these checker into a function
           if (
-            isHCX(summaryRef.current) &&
-            action === ServiceAppAction.UpdateNetwork
+            action === ServiceAppAction.UpdateNetwork &&
+            isHCX(useNetworkSummaryStore.getState().summaries[networkId])
           ) {
             addMessage({
               message: `Update network action is not supported for HCX networks`,
@@ -203,9 +208,9 @@ export const useServiceTaskRunner = (): ((
           if (actionHandler === undefined) {
             throw new Error(`Unsupported action: ${action}`)
           }
-          actionHandler({
+          await actionHandler({
             responseObj: data,
-            networkId: currentNetworkIdRef.current,
+            networkId,
           })
         }
       }

@@ -85,7 +85,8 @@ The ServiceApps feature is primarily a hook-based system that manages:
 ### Result Processing
 
 - Once complete, final result is retrieved
-- Result is processed by appropriate action handler
+- The runner awaits each result action in response order. Network updates target the network that was active when the task started.
+- An `updateLayouts` action applies its node coordinates together. If a layout is running or others are queued, the action waits for its turn in the layout queue. Removing the target network cancels its waiting coordinate update.
 - Handlers can:
   - Create new networks from results
   - Update existing networks
