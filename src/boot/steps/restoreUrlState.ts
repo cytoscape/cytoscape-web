@@ -23,18 +23,31 @@ const DEFAULT_FILTER_NAME = 'checkboxFilter'
 const splitIds = (value: string): IdType[] =>
   value === '' ? [] : value.split(' ')
 
+/** Network id the URL path names (`/:workspaceId/networks/:networkId`). */
+const urlNetworkId = (): IdType | undefined => {
+  const match = /\/networks\/([^/]+)/.exec(window.location.pathname)
+  return match === null ? undefined : decodeURIComponent(match[1])
+}
+
 /**
  * Runs `onReady` once the view model for `viewId` exists (#965).
  *
  * Waits on the store instead of polling for a fixed time, so a network that
  * loads slowly still gets its shared state. The wait ends without running
- * `onReady` if the user first opens a network that `viewId` is not a view of:
- * the link's state belongs to the network they left. Returns a function that
- * cancels the wait.
+ * `onReady` when the user has moved on, because the link's state belongs to
+ * what they left:
+ * - the current network changes to one that `viewId` is not a view of;
+ * - the URL names such a network when the view model arrives. A URL-driven
+ *   switch sets the current network only after the new load settles, while a
+ *   stale load of the old network still registers its view model;
+ * - `isAbandoned` returns true on a view model change.
+ *
+ * Returns a function that cancels the wait.
  */
 export const whenViewModelReady = (
   viewId: IdType,
   onReady: () => void,
+  isAbandoned: () => boolean = () => false,
 ): (() => void) => {
   const isReady = (): boolean =>
     useViewModelStore.getState().getViewModel(viewId) !== undefined
@@ -52,8 +65,19 @@ export const whenViewModelReady = (
   }
 
   unsubscribeView = useViewModelStore.subscribe(() => {
+    if (isAbandoned()) {
+      cancel()
+      return
+    }
     if (!isReady()) return
     cancel()
+    const routeNetworkId = urlNetworkId()
+    if (
+      routeNetworkId !== undefined &&
+      !isViewOfNetwork(viewId, routeNetworkId)
+    ) {
+      return
+    }
     onReady()
   })
   unsubscribeWorkspace = useWorkspaceStore.subscribe((state, previous) => {
@@ -157,13 +181,48 @@ export const restoreUrlState = (
   const activeNetworkViewId = search.get('activeNetworkView')
   if (activeNetworkViewId == null) return
 
-  whenViewModelReady(activeNetworkViewId, () => {
-    useUiStateStore.getState().setActiveNetworkView(activeNetworkViewId)
-    restoreSelection(
-      search,
-      activeNetworkViewId,
-      'selectedSubnetworkNodes',
-      'selectedSubnetworkEdges',
-    )
-  })
+  whenViewModelReady(
+    activeNetworkViewId,
+    () => {
+      useUiStateStore.getState().setActiveNetworkView(activeNetworkViewId)
+      restoreSelection(
+        search,
+        activeNetworkViewId,
+        'selectedSubnetworkNodes',
+        'selectedSubnetworkEdges',
+      )
+    },
+    subsystemDeselected(currentNetworkId, activeNetworkViewId),
+  )
+}
+
+/**
+ * For a hierarchy subnetwork view (`<hierarchyId>_<subsystemNodeId>`), returns
+ * a check that turns true once the user selects another subsystem in the
+ * hierarchy, so a slow subnetwork load cannot replace their newer choice.
+ *
+ * It only turns true after the subsystem has been seen selected: before the
+ * link's own selection applies, the hierarchy may still hold an older one.
+ * For any other view it never turns true.
+ */
+const subsystemDeselected = (
+  hierarchyId: IdType,
+  viewId: IdType,
+): (() => boolean) => {
+  if (hierarchyId === '' || !viewId.startsWith(`${hierarchyId}_`)) {
+    return () => false
+  }
+  const subsystemId = viewId.slice(hierarchyId.length + 1)
+  let seenSelected = false
+
+  return () => {
+    const selected = useViewModelStore
+      .getState()
+      .getViewModel(hierarchyId)?.selectedNodes
+    if (selected?.[0] === subsystemId) {
+      seenSelected = true
+      return false
+    }
+    return seenSelected
+  }
 }
