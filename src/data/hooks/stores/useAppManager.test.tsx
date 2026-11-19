@@ -8,7 +8,7 @@ import {
   type Mock,
 } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { createElement, ReactNode } from 'react'
+import { createElement, ReactNode, StrictMode } from 'react'
 
 import { AppConfigContext, defaultAppConfig } from '../../../AppConfigContext'
 import {
@@ -678,6 +678,36 @@ describe('useAppManager — load failure reasons', () => {
       ),
     )
     expect(useMessageStore.getState().messages).toHaveLength(1)
+  })
+
+  // The app renders under StrictMode, which in development runs every effect
+  // twice on mount. The startup pass must still run once: its guard used to
+  // be raised only after restore() settled, so a second pass started, loaded
+  // every app again and queued a second identical toast (#992).
+  it('runs the startup pass once under StrictMode', async () => {
+    mockLoadRemoteApp.mockResolvedValue(idMismatch)
+    seedWorkspace([
+      { id: 'one', status: AppStatus.Active },
+      { id: 'two', status: AppStatus.Active },
+    ])
+
+    renderHook(() => useAppManager(), {
+      wrapper: ({ children }: { children: ReactNode }) =>
+        createElement(StrictMode, null, wrapper({ children })),
+    })
+
+    await waitFor(() =>
+      expect(lastMessage()).toBe(
+        '2 apps failed to load — open App Manager for details.',
+      ),
+    )
+    // Let a second pass, if one started, reach its own toast.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    })
+    expect(useMessageStore.getState().messages).toHaveLength(1)
+    expect(mockMigrate).toHaveBeenCalledTimes(1)
+    expect(mockLoadRemoteApp).toHaveBeenCalledTimes(2)
   })
 })
 
