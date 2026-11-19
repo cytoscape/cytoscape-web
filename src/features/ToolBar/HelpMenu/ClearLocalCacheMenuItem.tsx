@@ -1,4 +1,4 @@
-import DeleteForeverIcon from '@mui/icons-material/DeleteForever'
+import CleaningServicesIcon from '@mui/icons-material/CleaningServices'
 import { ReactElement } from 'react'
 
 import { BaseMenuItemProps } from '../BaseMenuItemProps'
@@ -14,7 +14,7 @@ export const ClearLocalCacheMenuItem = (
   return (
     <DropdownMenuItem
       label="Clear Local Cache"
-      icon={<DeleteForeverIcon />}
+      icon={<CleaningServicesIcon />}
       onClick={props.onClick}
     />
   )
