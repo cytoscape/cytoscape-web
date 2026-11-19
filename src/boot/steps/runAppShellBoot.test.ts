@@ -288,6 +288,21 @@ describe('runAppShellBoot: deep links and imports', () => {
 
     expect(fetchUrlCx).toHaveBeenCalledWith('https://example.com/big.cx', 2048)
   })
+
+  it('falls back to the default limit when config.json omits maxUrlImportFileSize', async () => {
+    fetchUrlCx.mockRejectedValue(new Error('CX network too large'))
+    const ctx = makeContext({
+      search: new URLSearchParams('import=https://example.com/big.cx'),
+      maxUrlImportFileSize: undefined,
+    })
+
+    await runAppShellBoot(ctx)
+
+    expect(fetchUrlCx).toHaveBeenCalledWith(
+      'https://example.com/big.cx',
+      10000000,
+    )
+  })
 })
 
 describe('runAppShellBoot: per-tab network resolution', () => {

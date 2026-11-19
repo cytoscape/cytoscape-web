@@ -26,6 +26,7 @@
   ],
   "maxNetworkElementsThreshold": 20000,
   "maxNetworkFileSize": 524288000,
+  "maxUrlImportFileSize": 10000000,
   "urlBaseName": "/cytoscape/",
   "openAIAPIKey": "",
   "googleAnalyticsId": "G-BBK8LX4CX4"
