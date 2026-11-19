@@ -1,3 +1,4 @@
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import ChevronLeft from '@mui/icons-material/ChevronLeft'
 import ChevronRight from '@mui/icons-material/ChevronRight'
 import FilterAltIcon from '@mui/icons-material/FilterAlt'
@@ -13,7 +14,6 @@ import {
 } from '@mui/material'
 import { lazy, Suspense, useEffect, useState } from 'react'
 
-import llmLogo from '../../../assets/openai.svg'
 import { useNetworkSummaryStore } from '../../../data/hooks/stores/NetworkSummaryStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
@@ -192,14 +192,7 @@ export const NetworkBrowserPanel = ({
             {showLLMQueryPanel && (
               <Tab
                 data-testid="network-browser-panel-llm-query-tab"
-                icon={
-                  <img
-                    height="25"
-                    width="25"
-                    style={{ fill: 'gray' }}
-                    src={llmLogo}
-                  />
-                }
+                icon={<AutoAwesomeIcon />}
                 iconPosition="start"
                 label="LLM QUERY"
               />
