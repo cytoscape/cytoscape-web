@@ -1924,7 +1924,7 @@ describe('moveEdge', () => {
 directly (all other events come from `initEventBus` Zustand subscriptions). See
 [event-bus-specification.md § 1.4.5–1.4.6](event-bus-specification.md).
 
-**Reference implementation:** The pattern in [useRegisterNetwork.ts](../../../../src/data/hooks/useRegisterNetwork.ts) (lines 84–127) shows the existing layout execution flow and should be followed.
+The host's initial layout selection and execution are in `applyInitialLayout`. [useRegisterNetwork.ts](../../../../src/data/hooks/useRegisterNetwork.ts)
 
 **Undo behavior:** Undoable. `applyLayout` records one `UndoCommandType.APPLY_LAYOUT`
 entry with pre-layout and post-layout position maps:

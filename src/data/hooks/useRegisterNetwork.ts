@@ -5,9 +5,11 @@ import { isHCX } from '../../features/HierarchyViewer/utils/hierarchyUtil'
 import { validateAndRecordHcx } from '../../features/HierarchyViewer/utils/validateAndRecordHcx'
 import { CyNetwork } from '../../models/CyNetworkModel'
 import { IdType } from '../../models/IdType'
-import { LayoutEngine } from '../../models/LayoutModel'
 import { getDefaultLayout } from '../../models/LayoutModel/impl/layoutSelection'
-import { runEngineLayout } from '../../models/LayoutModel/impl/runEngineLayout'
+import {
+  runEngineLayout,
+  type RunEngineLayoutParams,
+} from '../../models/LayoutModel/impl/runEngineLayout'
 import { NetworkSummary } from '../../models/NetworkSummaryModel'
 import { useLayoutStore } from './stores/LayoutStore'
 import { useNetworkStore } from './stores/NetworkStore'
@@ -21,6 +23,45 @@ import { useUndoStore } from './stores/UndoStore'
 import { useViewModelStore } from './stores/ViewModelStore'
 import { useVisualStyleStore } from './stores/VisualStyleStore'
 import { useWorkspaceStore } from './stores/WorkspaceStore'
+
+/** Schedule the size-based initial layout for a newly registered or reloaded network. */
+export const applyInitialLayout = (
+  networkId: IdType,
+  summary: NetworkSummary,
+  maxNetworkElementsThreshold: number,
+  afterLayout: RunEngineLayoutParams['afterLayout'],
+): void => {
+  if (summary.hasLayout) return
+
+  runInitialLayoutWhenIdle(networkId, (network, claim) => {
+    const currentSummary =
+      useNetworkSummaryStore.getState().summaries[networkId] ?? summary
+    const layout = getDefaultLayout(
+      network.nodes.length + network.edges.length,
+      maxNetworkElementsThreshold,
+      isHCX(currentSummary),
+    )
+    // Finishing a skipped turn lets the next waiting network take the slot.
+    if (layout === undefined) return true
+
+    const { layoutEngines, setIsRunning } = useLayoutStore.getState()
+    const engine = layoutEngines.find(
+      (engine) => engine.name === layout.engineName,
+    )
+    const algorithm = engine?.algorithms[layout.algorithmName]
+    if (engine === undefined || algorithm === undefined) return true
+
+    return runEngineLayout({
+      engine,
+      algorithm,
+      network,
+      networkId,
+      afterLayout,
+      startLayout: claim,
+      setIsRunning,
+    })
+  })
+}
 
 export const useRegisterNetwork = () => {
   const { maxNetworkElementsThreshold } = useContext(AppConfigContext)
@@ -38,7 +79,6 @@ export const useRegisterNetwork = () => {
     (state) => state.setNetworkModified,
   )
 
-  const layoutEngines = useLayoutStore((state) => state.layoutEngines)
   const setIsRunning = useLayoutStore((state) => state.setIsRunning)
   const addSummary = useNetworkSummaryStore((state) => state.add)
   const updateSummary = useNetworkSummaryStore((state) => state.update)
@@ -82,73 +122,34 @@ export const useRegisterNetwork = () => {
       validateAndRecordHcx(networkId, summary, nodeTable, edgeTable)
     }
 
-    // Apply default layout if network doesn't have one
-    if (!summary.hasLayout) {
-      const totalNetworkElements = network.nodes.length + network.edges.length
-      const defaultLayout = getDefaultLayout(
-        totalNetworkElements,
-        maxNetworkElementsThreshold,
-        isHCX(summary),
-      )
+    applyInitialLayout(
+      networkId,
+      summary,
+      maxNetworkElementsThreshold,
+      (positionMap) => {
+        // Snapshot first, as createLayoutCompletionHandler does: an edit
+        // made while this layout waited or ran keeps its modified flag,
+        // so Save Workspace still uploads the network.
+        const modifiedMeanwhile =
+          useWorkspaceStore.getState().workspace.networkModified[networkId] ===
+          true
+        updateNodePositions(networkId, positionMap)
+        const fitFunction = getFunction('cyjs', 'fit', networkId)
 
-      if (defaultLayout !== undefined) {
-        const layoutEngine: LayoutEngine | undefined = layoutEngines.find(
-          (engine) => engine.name === defaultLayout.engineName,
-        )
-
-        if (layoutEngine !== undefined) {
-          // The layout can wait for another one (#982), so the network may
-          // change before it completes. The completion reads the live state
-          // instead of a copy taken at registration.
-          const handleLayoutComplete = (
-            positionMap: Map<IdType, [number, number]>,
-          ): void => {
-            // Snapshot first, as createLayoutCompletionHandler does: an edit
-            // made while this layout waited or ran keeps its modified flag,
-            // so Save Workspace still uploads the network.
-            const modifiedMeanwhile =
-              useWorkspaceStore.getState().workspace.networkModified[
-                networkId
-              ] === true
-            updateNodePositions(networkId, positionMap)
-            const fitFunction = getFunction('cyjs', 'fit', networkId)
-
-            // Fit the viewport to center the initial layout
-            if (fitFunction !== undefined) {
-              fitFunction()
-            }
-
-            // Only the layout field: a whole registration-time summary would
-            // overwrite a rename made meanwhile
-            updateSummary(networkId, { hasLayout: true })
-            setIsRunning(false)
-            if (!modifiedMeanwhile) {
-              setNetworkModified(networkId, false)
-            }
-          }
-
-          // The shared runner: a synchronous throw or a rejected promise
-          // from `apply` is logged and resets `isRunning`, instead of
-          // leaving the running flag stuck for the session. Only one layout
-          // runs at a time (#982); this one must not be dropped, or the new
-          // network keeps no positions, so it waits for a running layout to
-          // finish. It stops waiting if the network is removed meanwhile,
-          // even if one with the same id is added back, and lays out the
-          // network as it is on its turn, edits made meanwhile included.
-          runInitialLayoutWhenIdle(networkId, (live, claim) =>
-            runEngineLayout({
-              engine: layoutEngine,
-              algorithm: layoutEngine.algorithms[defaultLayout.algorithmName],
-              network: live,
-              networkId,
-              afterLayout: handleLayoutComplete,
-              startLayout: claim,
-              setIsRunning,
-            }),
-          )
+        // Fit the viewport to center the initial layout
+        if (fitFunction !== undefined) {
+          fitFunction()
         }
-      }
-    }
+
+        // Only the layout field: a whole registration-time summary would
+        // overwrite a rename made meanwhile
+        updateSummary(networkId, { hasLayout: true })
+        setIsRunning(false)
+        if (!modifiedMeanwhile) {
+          setNetworkModified(networkId, false)
+        }
+      },
+    )
   }
 
   return registerNetwork
