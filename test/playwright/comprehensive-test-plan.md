@@ -97,8 +97,6 @@ The application uses a URL structure of `/:workspaceId/networks/:networkId?param
   - Separator
   - "Remove Current Network" (disabled if no network)
   - "Remove All Networks" (disabled if no networks)
-  - Separator
-  - "Reset Local Workspace" → "Clear Local Database"
 
 #### 2.2 Open Sample Networks
 **Steps:**
@@ -235,13 +233,12 @@ The application uses a URL structure of `/:workspaceId/networks/:networkId?param
 **Negative Test:**
 - Attempt download with no network → verify button disabled
 
-#### 2.8 Clear Local Database
+#### 2.8 Clear Local Cache
 **Steps:**
 1. Load one or more networks
-2. Click "Data" menu
-3. Click "Reset Local Workspace" → "Clear Local Database"
-4. Confirm action if prompted
-5. Refresh page
+2. Click "Help" menu → "Developer" → "Clear Local Cache" (last item, after a divider)
+3. In the "Clear Local Cache?" dialog, click "Clear Cache"
+4. Wait for the reload
 
 **Expected Results:**
 - Confirmation dialog appears (if implemented)

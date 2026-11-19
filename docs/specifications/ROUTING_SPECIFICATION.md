@@ -435,10 +435,10 @@ The current responsibilities of each component and their purpose in fulfilling t
 - **NetworkTabs.tsx**: Display network view tabs (no longer manages URL parameters)
 - **ShareNetworkButton.tsx**: Generate URLs to share networks (includes activeNetworkViewTab)
 - **FilterPanel.tsx**: Set filters for interaction network
-- **Error.tsx**: Reset workspace, navigate to new workspace
+- **Error.tsx**: Clear the local cache, then a full page load at the root
 - **UpdateNetworkDialog.tsx**: Navigate to network after deleting it, retrieving update from NDEx
 - **LoadWorkspaceDialog.tsx**: Navigate to root and load workspace from NDEx
-- **ResetLocalWorkspace.tsx**: Navigate to root after deleting workspace
+- **HelpMenu (Clear Local Cache)**: Full page load at the root after clearing the local cache
 - **CheckboxFilter.tsx**: Update search params
 
 ## Open Questions

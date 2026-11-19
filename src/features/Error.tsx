@@ -22,6 +22,7 @@ import {
 } from 'react-router-dom'
 
 import { type AppConfig, AppConfigContext } from '../AppConfigContext'
+import { waitingForOtherTabsMessage } from '../data/db/clearLocalCache'
 import {
   type DatabaseSnapshot,
   exportDatabaseSnapshot,
@@ -31,10 +32,7 @@ import {
   exportPartialSnapshotForNetwork,
   sendErrorReport,
 } from '../data/external-api/error-report'
-import {
-  type ResetWorkspaceResult,
-  useResetWorkspace,
-} from '../data/hooks/useResetWorkspace'
+import { useClearLocalCache } from '../data/hooks/useClearLocalCache'
 import { useWorkspaceStore } from '../data/hooks/stores/WorkspaceStore'
 import { useCrashDataConsent } from '../data/hooks/useCrashDataConsent'
 import { logDb } from '../debug'
@@ -52,8 +50,8 @@ export const Error = (): ReactElement => {
   const [isSendingReport, setIsSendingReport] = useState(false)
   const [reportSent, setReportSent] = useState(false)
   const [reportError, setReportError] = useState<string | null>(null)
-  const { reset, isResetting } = useResetWorkspace()
-  const [resetError, setResetError] = useState<string | null>(null)
+  const { clear, isClearing, waitingFor } = useClearLocalCache()
+  const [clearError, setClearError] = useState<string | null>(null)
   const hasReportedRef = useRef(false)
 
   useEffect(() => {
@@ -219,18 +217,17 @@ export const Error = (): ReactElement => {
   }, [hasConsented, sendErrorReportAsync])
 
   /**
-   * This is the reset a stuck user is most likely to reach, so every path has to
-   * end somewhere: the button shows progress while the reset runs (deleting the
-   * database can wait on another tab that still has it open), and both failure
-   * modes report rather than leaving a dead button.
+   * The clear a stuck user is most likely to reach, so every path has to end
+   * somewhere: the button shows progress while it runs, a delete that waits
+   * on another tab says so below it (the clear finishes once that tab lets
+   * go), and a failure is shown here with the button enabled again for a
+   * retry. Success reloads.
    */
-  const handleReset = (): void => {
-    setResetError(null)
-    void reset().then((result: ResetWorkspaceResult) => {
-      // Only 'failed' leaves the user here; the other two are already
-      // navigating away, so there is nothing to render for them.
+  const handleClearCache = (): void => {
+    setClearError(null)
+    void clear().then((result) => {
       if (result.status === 'failed') {
-        setResetError(result.reason)
+        setClearError(result.reason)
       }
     })
   }
@@ -283,10 +280,12 @@ export const Error = (): ReactElement => {
           </Grid>
         )}
         <Grid item xs={12}>
-          <Typography variant="body1">
-            Your local cache might contain outdated workspace data and it can be
-            the cause of this error. Please reset your local workspace cache and
-            restart the app using the button below.
+          <Typography variant="body1" data-testid="error-clear-cache-message">
+            Your local cache might contain outdated data and it can be the cause
+            of this error.
+            <br />
+            Please clear your local cache and restart the app using the button
+            below.
           </Typography>
         </Grid>
         <Grid item xs={12}>
@@ -294,23 +293,30 @@ export const Error = (): ReactElement => {
             data-testid="error-reset-workspace-button"
             variant="outlined"
             color={'warning'}
-            onClick={handleReset}
-            disabled={isResetting}
-            startIcon={isResetting ? <CircularProgress size={16} /> : undefined}
+            onClick={handleClearCache}
+            disabled={isClearing}
+            startIcon={isClearing ? <CircularProgress size={16} /> : undefined}
           >
-            {isResetting
-              ? 'Resetting workspace...'
-              : 'Reset Workspace and Reload Cytoscape'}
+            {isClearing
+              ? 'Clearing cache...'
+              : 'Clear Cache and Reload Cytoscape'}
           </Button>
         </Grid>
-        {resetError !== null && (
+        {isClearing && waitingFor !== null && waitingFor.length > 0 && (
+          <Grid item xs={12}>
+            <Alert data-testid="error-clear-cache-waiting" severity="info">
+              {waitingForOtherTabsMessage(waitingFor)}
+            </Alert>
+          </Grid>
+        )}
+        {clearError !== null && (
           <Grid item xs={12}>
             <Alert
               data-testid="error-reset-workspace-error"
               severity="error"
-              onClose={() => setResetError(null)}
+              onClose={() => setClearError(null)}
             >
-              {resetError}
+              {clearError}
             </Alert>
           </Grid>
         )}

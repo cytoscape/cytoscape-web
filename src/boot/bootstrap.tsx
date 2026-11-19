@@ -11,6 +11,7 @@ import { rememberNdexAccessKeyFromUrl } from '../data/external-api/ndex/accessKe
 import { initializeDebug, logStartup } from '../debug'
 import ErrorBoundary from '../features/ErrorBoundary'
 import { AppBootstrap } from './AppBootstrap'
+import { installDatabaseResetListener } from './databaseResetListener'
 import { BootPhase } from './bootPhases'
 import { getBootState } from './bootState'
 import { initializeGoogleAnalytics } from './googleAnalytics'
@@ -74,6 +75,16 @@ const initializeApp = async (): Promise<void> => {
       initializeTabManager()
     } catch (cause) {
       logStartup.warn('[boot]: tab identity unavailable', cause)
+    }
+
+    // Before the database opens and before anything renders, so every screen
+    // this tab can end up on, the startup failure screen included, hears
+    // another tab's Clear Local Cache. Guarded like the tab manager: a context
+    // without BroadcastChannel loses cross-tab resets, not the app.
+    try {
+      installDatabaseResetListener()
+    } catch (cause) {
+      logStartup.warn('[boot]: cross-tab reset listener unavailable', cause)
     }
   })
 

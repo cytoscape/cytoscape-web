@@ -14,7 +14,7 @@ import {
  * `deleteDb` used to return a single boolean and wait forever.
  *
  * IndexedDB will not delete a database that still has open connections: it fires
- * `blocked` and waits, with no timeout of its own. `Reset Local Workspace` hands
+ * `blocked` and waits, with no timeout of its own. A database reset hands
  * peers a 300ms grace period to let go (`src/data/db/lifecycle.ts`) and then
  * deletes regardless, so a peer whose main thread is busy — mid-parse of a large
  * network, say — leaves the delete waiting on it with nothing to bound the wait.
@@ -74,7 +74,8 @@ describe('deleteDb', () => {
 
 /**
  * Browser-level settings live in a second database so that no workspace reset
- * takes them along (#705, #849). `deleteDb` is what every reset path calls.
+ * takes them along (#705, #849). `deleteDb` is what Load Workspace calls; only
+ * Clear Local Cache deletes the profile database (`clearLocalCache.test.ts`).
  */
 describe('deleteDb and the profile database', () => {
   it('leaves browser-level settings in place', async () => {
