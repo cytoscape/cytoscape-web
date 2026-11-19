@@ -10,9 +10,6 @@ import { trackEvent } from '@/data/analytics/trackEvent'
 
 const IMPORT_QUERY_KEY = 'import'
 
-/** 10MB cap for URL imports (below the general maxNetworkFileSize). */
-const MAX_NETWORK_FILE_SIZE = 10000000
-
 /**
  * Imports CX2 networks named by `?import=<url>` (repeatable).
  *
@@ -35,7 +32,7 @@ export const runUrlImports = async (
     try {
       const { cyNetwork, summary } = await fetchUrlCx(
         importUrl,
-        MAX_NETWORK_FILE_SIZE,
+        ctx.maxUrlImportFileSize,
       )
       const {
         network,

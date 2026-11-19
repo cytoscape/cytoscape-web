@@ -42,6 +42,11 @@ export interface AppShellBootContext {
    * confirmation dialog exists.
    */
   allowsLocalhostAppsOn?: string
+  /**
+   * Size limit, in bytes, for networks loaded from `?import=<url>`, from
+   * AppConfigContext (`maxUrlImportFileSize`).
+   */
+  maxUrlImportFileSize: number
 }
 
 /**

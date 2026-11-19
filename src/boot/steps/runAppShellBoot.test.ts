@@ -91,6 +91,7 @@ const makeContext = (
   navigate: vi.fn(),
   loadNetworkSummaries: vi.fn().mockResolvedValue({}),
   appInstallAllowedOrigins: [ALLOWED_ORIGIN],
+  maxUrlImportFileSize: 10000000,
   ...overrides,
 })
 
@@ -274,6 +275,18 @@ describe('runAppShellBoot: deep links and imports', () => {
     expect(useWorkspaceStore.getState().workspace.currentNetworkId).toBe(
       'imported-1',
     )
+  })
+
+  it('limits ?import= URLs to the configured maxUrlImportFileSize', async () => {
+    fetchUrlCx.mockRejectedValue(new Error('CX network too large'))
+    const ctx = makeContext({
+      search: new URLSearchParams('import=https://example.com/big.cx'),
+      maxUrlImportFileSize: 2048,
+    })
+
+    await runAppShellBoot(ctx)
+
+    expect(fetchUrlCx).toHaveBeenCalledWith('https://example.com/big.cx', 2048)
   })
 })
 

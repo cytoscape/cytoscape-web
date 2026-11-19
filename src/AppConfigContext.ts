@@ -23,6 +23,11 @@ export interface AppConfig {
   maxNetworkElementsThreshold: number
   maxEdgeCountThreshold: number
   maxNetworkFileSize: number
+  /**
+   * Largest CX2 file, in bytes, that a `?import=<url>` link may load
+   * (runUrlImports). Kept separate from, and below, `maxNetworkFileSize`.
+   */
+  maxUrlImportFileSize: number
   testNetworks: IdType[]
   urlBaseName: string
   openAIAPIKey: string
@@ -55,6 +60,7 @@ export const defaultAppConfig: AppConfig = {
   maxEdgeCountThreshold: 20000,
   maxNetworkElementsThreshold: 20000, // max number of elements (nodes + edges) that can be rendered with cy.js
   maxNetworkFileSize: 524288000, // 500MB in bytes - CX2 file size limit, from NDEx or a local file (networkSizeLimit.ts)
+  maxUrlImportFileSize: 10000000, // 10MB in bytes - CX2 file size limit for ?import=<url> links (runUrlImports.ts)
   testNetworks: [
     '4ae2709d-3055-11ec-94bf-525400c25d22',
     '8b3faf53-3056-11ec-94bf-525400c25d22',
