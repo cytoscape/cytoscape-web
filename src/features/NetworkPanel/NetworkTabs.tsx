@@ -47,6 +47,15 @@ export const NetworkTabs = ({
   }
 
   const rendererList = Object.values(renderers)
+  // The stored index can name no tab: `?activeNetworkViewTab=` is checked at
+  // boot, before the tabs are known. Show the first tab then rather than
+  // hiding every renderer (#995).
+  const shownIndex: number =
+    Number.isInteger(selected) &&
+    selected >= 0 &&
+    selected < rendererList.length
+      ? selected
+      : 0
   return (
     <Box
       data-testid="network-tabs"
@@ -83,7 +92,7 @@ export const NetworkTabs = ({
               minHeight: TABS_HEIGHT,
             },
           }}
-          value={selected}
+          value={shownIndex}
           onChange={handleChange}
         >
           {rendererList.map((renderer: Renderer, index: number) => {
@@ -129,7 +138,7 @@ export const NetworkTabs = ({
               isActive={isActive}
               bgColor={bgColor}
               handleClick={handleClick}
-              selected={index === selected}
+              selected={index === shownIndex}
               boxSize={boxSize}
               hasTab={true}
             />
