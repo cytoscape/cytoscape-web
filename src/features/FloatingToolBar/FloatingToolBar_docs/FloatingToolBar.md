@@ -97,7 +97,7 @@ Button that copies a shareable URL to the clipboard.
   - Encodes `selectedSubnetworkEdges` parameter with selected edges in the subnetwork
   - Both main network and subnetwork selections can be encoded simultaneously
 - Copies URL to clipboard
-- Shows success message after copying
+- Shows a success message only after the clipboard write succeeds; shows an error message when the clipboard is unavailable (insecure context, e.g. plain http) or the browser refuses the write (`src/utils/copyToClipboard.ts`)
 - Disabled for local networks (must be saved to NDEx first)
 
 **Subnetwork Detection:**

@@ -23,6 +23,10 @@ import {
   handleApplyToSelected,
   handleSelectFromSelection,
 } from '../utils/contextMenuActions'
+import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
+import { logUi } from '../../../debug'
+import { MessageSeverity } from '../../../models/MessageModel'
+import { copyToClipboard } from '../../../utils/copyToClipboard'
 
 export interface TableContextMenuProps {
   contextMenu: {
@@ -83,6 +87,24 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
 }) => {
   const elementTypeName = currentTableIsNodeTable ? 'Node' : 'Edge'
   const pluralElementTypeName = currentTableIsNodeTable ? 'nodes' : 'edges'
+  const addMessage = useMessageStore((state) => state.addMessage)
+
+  // A refused or unavailable clipboard must not fail silently (or throw, as
+  // `navigator.clipboard` is undefined outside a secure context).
+  const copyOrReport = React.useCallback(
+    (text: string, what: string): void => {
+      void copyToClipboard(text).then((copied) => {
+        if (!copied) {
+          addMessage({
+            message: `Could not copy the ${what} to the clipboard.`,
+            duration: 5000,
+            severity: MessageSeverity.ERROR,
+          })
+        }
+      })
+    },
+    [addMessage],
+  )
 
   const onApplyToEntireColumn = React.useCallback(() => {
     if (contextMenu === null) return
@@ -141,13 +163,15 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
     const column = allColumns?.[columnIndex]
     const columnKey = column.id
     const cellValue = (rowData as any)?.[columnKey]
-    navigator.clipboard.writeText(String(cellValue ?? ''))
+    copyOrReport(String(cellValue ?? ''), 'cell value')
     handleContextMenuClose()
-  }, [contextMenu, rows, allColumns, handleContextMenuClose])
+  }, [contextMenu, rows, allColumns, handleContextMenuClose, copyOrReport])
 
   const onPaste = React.useCallback(() => {
     activeEditorRef.current?.emit('paste').catch(() => {
-      console.warn('Programmatic paste blocked by browser. Please use Ctrl+V.')
+      logUi.warn(
+        '[TableContextMenu]: Programmatic paste blocked by browser. Please use Ctrl+V.',
+      )
     })
     handleContextMenuClose()
   }, [activeEditorRef, handleContextMenuClose])
@@ -162,10 +186,10 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
     const [, rowIndex] = contextMenu.cell
     const elementId = getElementId(rows?.[rowIndex])
     if (elementId !== '') {
-      navigator.clipboard.writeText(elementId)
+      copyOrReport(elementId, 'ID')
     }
     handleContextMenuClose()
-  }, [contextMenu, rows, handleContextMenuClose])
+  }, [contextMenu, rows, handleContextMenuClose, copyOrReport])
 
   const onSelectInViewport = React.useCallback(() => {
     if (contextMenu === null) return

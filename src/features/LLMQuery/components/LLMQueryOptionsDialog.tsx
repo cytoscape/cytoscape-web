@@ -41,6 +41,7 @@ import {
 import { LLMTemplate, templates } from '../model/LLMTemplate'
 import { hasEnteredLLMApiKey, useLLMQueryStore } from '../store'
 import { useHydrateLLMQueryOptions } from '../store/useHydrateLLMQueryOptions'
+import { copyToClipboard } from '../../../utils/copyToClipboard'
 
 // Present for password managers only: they file a saved secret under a
 // username, and offer nothing for a password field that has none beside it.
@@ -307,19 +308,21 @@ const LLMQueryOptionsDialogContent = (
     setFetchingModels(false)
   }
 
-  const copyTextToClipboard = async (text: string): Promise<void> => {
-    if ('clipboard' in navigator) {
-      return await navigator.clipboard.writeText(text)
-    }
-  }
-
   const handleCopyTemplateClick = (): void => {
-    void copyTextToClipboard(localLLMTemplate.rawText).then(() => {
-      addMessage({
-        message: `LLM prompt copied to clipboard`,
-        duration: 4000,
-        severity: MessageSeverity.INFO,
-      })
+    void copyToClipboard(localLLMTemplate.rawText).then((copied) => {
+      addMessage(
+        copied
+          ? {
+              message: `LLM prompt copied to clipboard`,
+              duration: 4000,
+              severity: MessageSeverity.INFO,
+            }
+          : {
+              message: 'Could not copy the LLM prompt to the clipboard.',
+              duration: 5000,
+              severity: MessageSeverity.ERROR,
+            },
+      )
     })
   }
 

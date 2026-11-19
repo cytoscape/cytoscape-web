@@ -16,7 +16,7 @@ import { DialogCloseButton } from '@/components/DialogCloseButton'
 import logo from '../../../assets/cytoscape.svg'
 import packageInfo from '../../../../package.json'
 import { getDatabaseVersion } from '../../../data/db'
-import { logUi } from '../../../debug'
+import { copyToClipboard } from '../../../utils/copyToClipboard'
 
 export const CODE_REPO_URL = 'https://github.com/cytoscape/cytoscape-web'
 export const CYTOSCAPE_HOME_URL = 'https://home.cytoscape.org/'
@@ -70,9 +70,9 @@ export const AboutDialog = ({
 
   const handleCopyInfo = (): void => {
     const infoToCopy = `Version: ${packageInfo.version}\nBuild ID: ${commitHash}\nBuild Date: ${buildDate}\nCache Version: ${getDatabaseVersion()}`
-    navigator.clipboard.writeText(infoToCopy).catch((err) => {
-      logUi.error(`[${handleCopyInfo.name}]: Failed to copy: `, err)
-    })
+    // copyToClipboard logs a failure and never throws, even without a
+    // clipboard (insecure context).
+    void copyToClipboard(infoToCopy)
   }
 
   return (

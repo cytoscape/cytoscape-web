@@ -11,7 +11,7 @@ import { ReactElement } from 'react'
 
 import { CyDialog } from '@/components/CyDialog'
 import { DialogCloseButton } from '@/components/DialogCloseButton'
-import { logUi } from '../../../debug'
+import { copyToClipboard } from '../../../utils/copyToClipboard'
 
 interface LicenseDialogProps {
   open: boolean
@@ -45,9 +45,9 @@ export const LicenseDialog = ({
   `
 
   const handleCopyText = (): void => {
-    navigator.clipboard.writeText(LicenseText).catch((err) => {
-      logUi.error(`[${handleCopyText.name}]: Failed to copy text: `, err)
-    })
+    // copyToClipboard logs a failure and never throws, even without a
+    // clipboard (insecure context).
+    void copyToClipboard(LicenseText)
   }
 
   return (
