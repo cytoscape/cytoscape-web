@@ -45,6 +45,7 @@ describe('AppConfigContext', () => {
       'maxNetworkElementsThreshold',
       'maxEdgeCountThreshold',
       'maxNetworkFileSize',
+      'maxUrlImportFileSize',
       'urlBaseName',
       'undoStackSize',
       'errorReportEndpoint',

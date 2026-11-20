@@ -1,3 +1,4 @@
+import { defaultAppConfig } from '@/AppConfigContext'
 import { putNetworkSummaryToDb } from '@/data/db'
 import { useNetworkStore } from '@/data/hooks/stores/NetworkStore'
 import { useTableStore } from '@/data/hooks/stores/TableStore'
@@ -10,8 +11,17 @@ import { trackEvent } from '@/data/analytics/trackEvent'
 
 const IMPORT_QUERY_KEY = 'import'
 
-/** 10MB cap for URL imports (below the general maxNetworkFileSize). */
-const MAX_NETWORK_FILE_SIZE = 10000000
+/**
+ * The configured URL-import size limit, or the default when a deployment's
+ * config.json leaves it out or sets an unusable value: a missing limit must
+ * not mean no limit.
+ */
+export const urlImportSizeLimit = (configured: number | undefined): number =>
+  typeof configured === 'number' &&
+  Number.isFinite(configured) &&
+  configured > 0
+    ? configured
+    : defaultAppConfig.maxUrlImportFileSize
 
 /**
  * Imports CX2 networks named by `?import=<url>` (repeatable).
@@ -35,7 +45,7 @@ export const runUrlImports = async (
     try {
       const { cyNetwork, summary } = await fetchUrlCx(
         importUrl,
-        MAX_NETWORK_FILE_SIZE,
+        urlImportSizeLimit(ctx.maxUrlImportFileSize),
       )
       const {
         network,

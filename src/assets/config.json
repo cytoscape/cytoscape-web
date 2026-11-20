@@ -24,6 +24,7 @@
   "maxNetworkElementsThreshold": 26000,
   "maxEdgeCountThreshold": 20000,
   "maxNetworkFileSize": 524288000,
+  "maxUrlImportFileSize": 10000000,
   "urlBaseName": "/",
   "openAIAPIKey": "",
   "googleAnalyticsId": "G-B3X9SFXC2P",
