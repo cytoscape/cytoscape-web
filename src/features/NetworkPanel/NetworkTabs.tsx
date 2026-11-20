@@ -49,7 +49,9 @@ export const NetworkTabs = ({
   const rendererList = Object.values(renderers)
   // The stored index can name no tab: `?activeNetworkViewTab=` is checked at
   // boot, before the tabs are known. Show the first tab then rather than
-  // hiding every renderer (#995).
+  // hiding every renderer (#995). This is display only: the stored index is
+  // kept, so a renderer that is briefly missing does not lose the user's tab.
+  // Only a click replaces it (see the Tab `onClick` below).
   const shownIndex: number =
     Number.isInteger(selected) &&
     selected >= 0 &&
@@ -114,6 +116,13 @@ export const NetworkTabs = ({
                   // When clicking a tab (even if already selected), activate the network view
                   // This handles the case where onChange doesn't fire for already-selected tabs
                   handleClick?.()
+                  // The same gap hides a click on the fallback tab: it is
+                  // shown as selected while the store still holds the index
+                  // that named no tab. Store the click, so the panel does not
+                  // jump back to that index once the tab exists (#995).
+                  if (selected !== index) {
+                    setSelected(index)
+                  }
                 }}
               />
             )

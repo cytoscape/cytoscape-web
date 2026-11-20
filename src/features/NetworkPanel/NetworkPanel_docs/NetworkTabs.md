@@ -26,6 +26,16 @@ When a tab is clicked, the component activates the network view:
 - If a user clicks an already-selected tab, `onChange` won't fire
 - The `onClick` handler on individual `Tab` components ensures activation happens even when clicking an already-selected tab
 
+**Fallback tab**
+
+When `activeTabIndex` names no tab, the first tab is shown as selected, but the
+store keeps the index it has. The fallback never writes to the store, so a
+renderer that is removed for a moment does not lose the tab the user chose.
+A click does write: `onClick` stores the clicked index when it differs from
+`activeTabIndex`. Without that, a click on the fallback tab would be lost,
+because MUI treats that tab as already selected and skips `onChange`, and the
+panel would jump to the old index as soon as that tab existed again.
+
 ### Box Size
 
 `useContainerSize` tracks the box that holds the renderers with a

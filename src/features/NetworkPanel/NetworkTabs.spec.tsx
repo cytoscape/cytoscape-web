@@ -1,4 +1,4 @@
-import { act, render } from '@testing-library/react'
+import { act, fireEvent, render } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
@@ -129,4 +129,53 @@ describe('NetworkTabs', () => {
       expect(getAllByRole('tab')[0].getAttribute('aria-selected')).toBe('true')
     },
   )
+
+  // The fallback only changes what is shown. A renderer that is briefly
+  // missing must not cost the user the tab they had chosen.
+  it('leaves the stored tab index alone while it shows the fallback tab', () => {
+    act(() => {
+      useUiStateStore.getState().setNetworkViewTabIndex(1)
+    })
+    render(
+      <NetworkTabs
+        network={{ id: 'n' } as Network}
+        views={[]}
+        renderers={{ r: renderer }}
+        isActive
+      />,
+    )
+
+    expect(selectedByRenderer.get('r')).toBe(true)
+    expect(useUiStateStore.getState().ui.networkViewUi.activeTabIndex).toBe(1)
+  })
+
+  // MUI skips `onChange` for the tab it already shows as selected, so a click
+  // on the fallback tab used to leave the stale index in the store, and the
+  // panel jumped back to it once that tab existed again.
+  it('stores the index of the fallback tab when the user clicks it', () => {
+    act(() => {
+      useUiStateStore.getState().setNetworkViewTabIndex(1)
+    })
+    const handleClick = vi.fn()
+    const props = {
+      network: { id: 'n' } as Network,
+      views: [],
+      isActive: true,
+      handleClick,
+    }
+    const { getAllByRole, rerender } = render(
+      <NetworkTabs {...props} renderers={{ r: renderer }} />,
+    )
+
+    fireEvent.click(getAllByRole('tab')[0])
+
+    expect(handleClick).toHaveBeenCalled()
+    expect(useUiStateStore.getState().ui.networkViewUi.activeTabIndex).toBe(0)
+
+    rerender(
+      <NetworkTabs {...props} renderers={{ r: renderer, c: cellView }} />,
+    )
+    expect(selectedByRenderer.get('r')).toBe(true)
+    expect(selectedByRenderer.get('c')).toBe(false)
+  })
 })
