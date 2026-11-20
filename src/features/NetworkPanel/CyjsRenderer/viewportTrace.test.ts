@@ -1,5 +1,5 @@
 import type { Core } from 'cytoscape'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   classifyZoomCause,
@@ -88,6 +88,30 @@ describe('parseStoredTrace', () => {
     ])
     expect(parseStoredTrace(raw)).toEqual([good])
     expect(({} as Record<string, unknown>).polluted).toBeUndefined()
+  })
+
+  it('drops entries whose optional fields have the wrong type', () => {
+    const good = {
+      t: '2026-11-20T00:00:00.000Z',
+      kind: 'zoom',
+      what: 'wheel',
+      visibility: 'visible',
+      focused: true,
+      count: 2,
+      zoomBefore: 1,
+      zoomAfter: 0.5,
+    }
+    const raw = JSON.stringify([
+      good,
+      { ...good, count: '2' },
+      { ...good, count: 0 },
+      { ...good, count: 1.5 },
+      { ...good, zoomAfter: 'x' },
+      { ...good, zoomBefore: null },
+      { ...good, networkId: 7 },
+      { ...good, stack: {} },
+    ])
+    expect(parseStoredTrace(raw)).toEqual([good])
   })
 
   it('keeps only the newest MAX_TRACE_ENTRIES', () => {
@@ -245,6 +269,37 @@ describe('page events and persistence', () => {
     persistTrace()
     resetViewportTraceForTests()
     expect(getViewportTrace().map((e) => e.what)).toContain('hidden')
+  })
+
+  it('saves every entry recorded while the page is hidden', () => {
+    // Chrome can discard a hidden page without firing another event.
+    const visibility = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('hidden')
+    const { cy } = createCy()
+    const uninstall = installViewportTrace(cy, null)
+    traceZoomEvents(cy, 'net-1')
+
+    cy.zoom(0.6)
+
+    const stored = parseStoredTrace(sessionStorage.getItem(TRACE_STORAGE_KEY))
+    expect(stored.filter((e) => e.kind === 'zoom')).toMatchObject([
+      { zoomAfter: 0.6, visibility: 'hidden' },
+    ])
+    uninstall()
+    visibility.mockRestore()
+  })
+
+  it('does not save small visible zooms on every change', () => {
+    const { cy } = createCy()
+    const uninstall = installViewportTrace(cy, null)
+    traceZoomEvents(cy, 'net-1')
+
+    cy.zoom(0.6)
+
+    const stored = parseStoredTrace(sessionStorage.getItem(TRACE_STORAGE_KEY))
+    expect(stored.filter((e) => e.kind === 'zoom')).toEqual([])
+    uninstall()
   })
 
   it('caps the buffer at MAX_TRACE_ENTRIES', () => {

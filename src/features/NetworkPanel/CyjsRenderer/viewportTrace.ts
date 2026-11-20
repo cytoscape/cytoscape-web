@@ -68,12 +68,29 @@ let pageListenersInstalled = false
 const isEntry = (value: unknown): value is ViewportTraceEntry => {
   if (typeof value !== 'object' || value === null) return false
   const v = value as Record<string, unknown>
+  const optional = (key: string, check: (field: unknown) => boolean) =>
+    v[key] === undefined || check(v[key])
+  const isString = (field: unknown) => typeof field === 'string'
+  const isFiniteNumber = (field: unknown) =>
+    typeof field === 'number' && Number.isFinite(field)
   return (
     typeof v.t === 'string' &&
     (v.kind === 'zoom' || v.kind === 'page') &&
     typeof v.what === 'string' &&
     typeof v.visibility === 'string' &&
-    typeof v.focused === 'boolean'
+    typeof v.focused === 'boolean' &&
+    optional('networkId', isString) &&
+    optional('zoomBefore', isFiniteNumber) &&
+    optional('zoomAfter', isFiniteNumber) &&
+    optional(
+      'count',
+      (field) =>
+        typeof field === 'number' && Number.isInteger(field) && field > 0,
+    ) &&
+    optional('cySize', isString) &&
+    optional('box', isString) &&
+    optional('detail', isString) &&
+    optional('stack', isString)
   )
 }
 
@@ -158,6 +175,10 @@ export const recordPageEvent = (what: string, detail?: string): void => {
     ...(detail !== undefined ? { detail } : {}),
     ...pageState(),
   })
+  // As in recordZoom: a hidden page may be discarded without another event.
+  if (document.visibilityState === 'hidden') {
+    persistTrace()
+  }
 }
 
 // ── Cause tracking ────────────────────────────────────────────────────────────
@@ -287,6 +308,10 @@ const recordZoom = (cy: Core, networkId: string): void => {
         'for network %s. Run debug.viewportTrace() for the timeline.',
       networkId,
     )
+    persistTrace()
+  } else if (document.visibilityState === 'hidden') {
+    // The hidden event saved the buffer, but Chrome can discard a hidden page
+    // without firing another one: save each change made after it.
     persistTrace()
   }
 }
