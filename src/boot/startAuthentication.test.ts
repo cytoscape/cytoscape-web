@@ -63,6 +63,57 @@ describe('startAuthentication', () => {
     })
   })
 
+  it('restores the saved location after successful authentication', async () => {
+    window.history.replaceState({}, '', '/0/networks/abc?left=open')
+
+    sessionStorage.setItem(
+      'cyweb:keycloak:return-location',
+      JSON.stringify({
+        relativeUrl: '/0/networks/abc?left=open',
+        createdAt: Date.now(),
+      }),
+    )
+
+    startAuthentication({
+      keycloak: makeKeycloak(Promise.resolve(true)),
+      checkUserVerification: vi.fn().mockResolvedValue({ isVerified: true }),
+      urlBaseName: '/',
+    })
+
+    await vi.runAllTimersAsync()
+
+    expect(window.location.pathname).toBe('/0/networks/abc')
+    expect(window.location.search).toBe('?left=open')
+    expect(
+      sessionStorage.getItem('cyweb:keycloak:return-location'),
+    ).toBeNull()
+  })
+
+  it('does not restore the saved location when authentication fails', async () => {
+    window.history.replaceState({}, '', '/')
+
+    sessionStorage.setItem(
+      'cyweb:keycloak:return-location',
+      JSON.stringify({
+        relativeUrl: '/0/networks/abc?left=open',
+        createdAt: Date.now(),
+      }),
+    )
+
+    startAuthentication({
+      keycloak: makeKeycloak(Promise.resolve(false)),
+      checkUserVerification: vi.fn(),
+      urlBaseName: '/',
+    })
+
+    await vi.runAllTimersAsync()
+
+    expect(window.location.pathname).toBe('/')
+    expect(window.location.search).toBe('')
+    expect(
+      sessionStorage.getItem('cyweb:keycloak:return-location'),
+    ).not.toBeNull()
+  })
   it('stays authenticated when the verification lookup fails', async () => {
     // The lookup is a second network call made *after* the SSO check already
     // succeeded, so its failure says nothing about whether the user is signed

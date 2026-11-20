@@ -16,6 +16,7 @@ import { BootPhase } from './bootPhases'
 import { getBootState } from './bootState'
 import { initializeGoogleAnalytics } from './googleAnalytics'
 import { initializeKeycloak, KeycloakContext } from './keycloak'
+import { saveAuthReturnLocation } from './authReturnLocation'
 import { markBoot } from './metrics/bootMarks'
 import { openDatabasePhase } from './openDatabasePhase'
 import { isBootAborted, runPhase } from './runBoot'
@@ -87,10 +88,11 @@ const initializeApp = async (): Promise<void> => {
       logStartup.warn('[boot]: cross-tab reset listener unavailable', cause)
     }
   })
+  saveAuthReturnLocation(appConfig.urlBaseName)
 
   const { keycloak, handleVerify, handleCancel, checkUserVerification } =
     initializeKeycloak()
-
+    
   // Started before the database gate on purpose: the silent-SSO check is
   // network-bound while the database open is disk-bound, so the two overlap.
   // Not awaited — the app renders optimistically over the SSO check.
