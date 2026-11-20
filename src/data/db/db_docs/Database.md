@@ -55,9 +55,10 @@ rather than to a workspace (#705, #849):
 | `app` | `cyweb-profile-db` |
 | `manual` | `cyweb-manual-profile-db` |
 
-- **No reset path deletes it.** `deleteDb()` deletes `DB_NAME` only, so Clear
-  Local Workspace, Load Workspace and the boot-failure reset leave it alone.
-  `deleteDb.test.ts` guards this.
+- **Only Clear Local Cache deletes it.** `deleteDb()` deletes `DB_NAME` only, so
+  Load Workspace leaves it alone (`deleteDb.test.ts` guards this). Clear Local
+  Cache (`clearLocalCache.ts`: Help › Developer, the Error page and the
+  boot-failure shell) deletes it with every other Cytoscape Web database.
 - **Schema.** One key/value store, `settings` (`{ key, value }`), at version 1. A
   new setting is a new key and needs no version bump. A new store needs a new
   version number.
@@ -104,6 +105,29 @@ The database uses version-based migrations. The current version is defined in `c
   caller. The delete is bounded by `DELETE_TIMEOUT_MS` because IndexedDB waits
   indefinitely for other connections to close.
 - `getDatabaseVersion()`: Returns the current database version
+
+### Clear Local Cache
+
+`clearLocalCache()` (`clearLocalCache.ts`) deletes everything Cytoscape Web
+keeps in this browser: the four databases named in
+`browserStorageInventory.ts` (`cyweb-db`, `cyweb-profile-db` and the manual's
+two), then the localStorage and sessionStorage keys listed there. Keys other
+code put on the origin are left alone. It announces on both scopes' channels
+(`ALL_UI_EVENTS_CHANNELS`), so the other tabs release their connections,
+drop their own sessionStorage keys and reload. They hear it through
+`listenForDatabaseReset()`, which the boot installs for the life of every
+document (`src/boot/databaseResetListener.ts`), so a tab on the Error page or
+the startup failure screen takes part too. A delete that
+another tab blocks is waited for, not abandoned: after `CLEAR_WAIT_NOTICE_MS`
+the `onWaiting` callback names the databases, and each caller shows
+`waitingForOtherTabsMessage()`. Peers keep waiting as long as the
+announcement's heartbeat (`RESET_HEARTBEAT_MS`) arrives, and both sides call
+`suspendProfileWritesUntilReload()` so a profile write cannot re-create the
+profile database. Only dexie-observable keys for Cytoscape Web's own databases
+are removed. A delete IndexedDB refuses makes the whole call
+`failed`, naming the database, and the storage keys stay. It imports no React, router or store code, because the boot-failure
+shell calls it before React mounts. `features/Manual/components/browserStorageInventory.test.ts` fails when
+a file starts writing Web Storage without being listed.
 
 ### Network Operations
 

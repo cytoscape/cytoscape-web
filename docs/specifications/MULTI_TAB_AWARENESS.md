@@ -206,19 +206,23 @@ the position data on a separate channel.
 
 ## 4. Destroying the database
 
-`resetWorkspace` deletes the whole database, which every other tab still has
-open — and IndexedDB will not delete a database with live connections. The
-handshake in `src/data/db/lifecycle.ts`:
+Clear Local Cache (`clearLocalCache.ts`) and Load Workspace (`deleteDb`)
+delete whole databases, which every other tab still has open — and IndexedDB will not delete a database with live connections. The
+handshake in `src/data/db/lifecycle.ts`. Every tab takes part from boot on:
+`listenForDatabaseReset()` is installed for the life of the document
+(`src/boot/databaseResetListener.ts`), not by a component, so a tab on the
+Error page or the startup failure screen releases and reloads like any other:
 
 1. deleter posts `DATABASE_DELETED`
 2. peers close their connection and post `DATABASE_DELETED_ACK`
-3. deleter waits a short grace period, then deletes — bounded by
-   `DELETE_TIMEOUT_MS`
+3. deleter waits a short grace period, then deletes — `deleteDb` gives up
+   after `DELETE_TIMEOUT_MS`; Clear Local Cache waits (see below). Meanwhile
+   it posts `DATABASE_RESET_IN_PROGRESS` every `RESET_HEARTBEAT_MS`
 4. deleter posts `DATABASE_RESET_COMPLETE`, whatever the outcome was
 5. peers reload, against a database that is already gone and recreated
 
-Every wait is bounded, in both directions: a wedged tab must not stop a user
-resetting their workspace, and a deleter that dies must not leave peers stuck.
+A deleter that dies must not leave peers stuck, so the peers' wait is bounded:
+`RESET_COMPLETE_TIMEOUT_MS` after the last heartbeat.
 The previous version announced and deleted immediately while peers reloaded at
 once, so a reload could re-create the database mid-delete — the "ghost workspace"
 the announcement existed to prevent.
@@ -230,7 +234,14 @@ that never processes the announcement still lets go once its event loop turns.
 What the handshake adds is _ordering_ — peers reload after the delete instead of
 racing it. `RESET_COMPLETE_TIMEOUT_MS` is therefore set above the deleter's own
 worst case, so the fallback reload means "the deleter died", not "the deleter is
-still working" (`lifecycle.test.ts` guards that relationship).
+still working" (`lifecycle.test.ts` guards that relationship). Clear Local Cache
+has no worst case: while another tab blocks a delete it keeps waiting. Its
+heartbeat is what keeps peers from reloading in the meantime, since a peer that
+reloaded mid-clear could re-create a database the clear had already deleted.
+The timeout counts from the last heartbeat, so it still means the deleter died. Every message of one
+reset carries the same `resetId`, so a peer that hears two overlapping resets
+(a clear in each of two tabs) waits for each on its own heartbeats and reloads
+only when the last has completed or gone quiet.
 
 `step 3` cannot wait forever. IndexedDB fires `blocked` and waits with no timeout
 of its own, so `deleteDb` races the delete against `DELETE_TIMEOUT_MS` and reports
@@ -240,16 +251,33 @@ one of four outcomes rather than a single boolean:
 | ---------------- | ------------------- | ----------- | ------------------------- |
 | `deleted`        | gone                | fresh, open | clear its stores          |
 | `delete-failed`  | intact              | reopened    | keep state, tell the user |
-| `delete-blocked` | delete still queued | none        | clear state and reload    |
+| `delete-blocked` | delete still queued | none        | keep state, tell the user |
 | `reopen-failed`  | gone                | none        | clear state and reload    |
+
+`delete-blocked` must not reload: the delete stays queued, and the reloaded
+tab's own `open()` would wait behind it until the blocking tab lets go. Load
+Workspace throws, and the reader is told.
 
 The three non-`deleted` outcomes exist because they need different handling and
 used to be indistinguishable. In particular, `reopen-failed` means the data IS
 gone: keeping the in-memory workspace there (the old behavior) let the next
 mutation re-persist it into the freshly created database — the ghost workspace
-again, arriving by a different route. `resetWorkspace` returns a
-`WorkspaceResetOutcome` so its callers can show an error or force a reload
-instead of chaining work behind a promise that might never settle.
+again, arriving by a different route. Load Workspace throws on anything but
+`deleted` instead of chaining work behind a promise that might never settle.
+
+Clear Local Cache does not use `deleteDb` and does not give up. A delete that
+times out is still queued in IndexedDB, and every later `open()` of that
+database queues behind it, so a tab that gave up and reloaded would hang on its
+own boot, unexplained, until the blocking tab let go. Instead the clear waits,
+and after `CLEAR_WAIT_NOTICE_MS` each entry point (the Help menu's overlay, the
+Error page, the startup screen's status line) names the database and asks the
+reader to close their other tabs; the clear finishes and reloads by itself once
+they do. Only a connection that ignores `versionchange` can block it, since
+every Cytoscape Web tab closes on both the announcement and `versionchange`.
+While it waits, both the clearing tab and its peers refuse profile-database
+writes (`suspendProfileWritesUntilReload()`): that database does not go through
+the persistence scheduler, so without the switch a saved setting would
+re-create it after its delete.
 
 BroadcastChannel is correct here: this is a liveness signal, not data. There is
 nothing to replay, and it has to arrive _before_ the data it refers to is gone.
