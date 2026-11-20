@@ -12,6 +12,7 @@ import {
 import { DEBUG_OVERRIDE_KEY } from '@/debug'
 import { LLM_API_KEYS_SESSION_KEY } from '@/features/LLMQuery/store/storageKeys'
 import { NETWORK_SEARCH_STORAGE_KEY } from '@/features/NetworkSearch/store/networkSearchProviderSelectionStore'
+import { TRACE_STORAGE_KEY } from '@/features/NetworkPanel/CyjsRenderer/viewportTrace'
 import { ONBOARDING_STORAGE_KEY } from '@/features/Onboarding/store/onboardingPersistence'
 import {
   CYWEB_DATABASE_NAMES,
@@ -78,6 +79,10 @@ const WRITERS: Record<
   'features/LLMQuery/store/llmKeySession.ts': {
     storage: 'session',
     keys: { LLM_API_KEYS_SESSION_KEY },
+  },
+  'features/NetworkPanel/CyjsRenderer/viewportTrace.ts': {
+    storage: 'session',
+    keys: { TRACE_STORAGE_KEY },
   },
 }
 

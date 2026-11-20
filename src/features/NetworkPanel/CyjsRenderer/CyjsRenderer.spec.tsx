@@ -33,6 +33,7 @@ import { CyjsRenderer } from './CyjsRenderer'
 // which references the whole instance and exhausts the heap.
 
 const created = vi.hoisted(() => ({ instances: [] as Core[] }))
+const cancelPendingFit = vi.hoisted(() => vi.fn())
 
 vi.mock('cytoscape', async (importOriginal) => {
   // `export =` module: its namespace's `default` is the factory itself.
@@ -72,6 +73,7 @@ vi.mock('./useCenterAnchoredResize', () => ({
   useCenterAnchoredResize: () => {},
   panReferenceSize: () => null,
   setPanReferenceSize: () => {},
+  cancelPendingFit,
 }))
 vi.mock('./useNodeGraphicsSync', () => ({
   useNodeGraphicsSync: () => undefined,
@@ -258,6 +260,7 @@ describe('CyjsRenderer style and table updates (regression: #861)', () => {
   it('redraws in full when handed another network', async () => {
     const { cy, rerender } = await mount(seed())
     const other = seed('other-net', ['m1', 'm2', 'm3'])
+    cancelPendingFit.mockClear()
 
     rerender(<CyjsRenderer network={other} />)
 
@@ -265,6 +268,8 @@ describe('CyjsRenderer style and table updates (regression: #861)', () => {
       expect(cy.nodes().length).toBe(3)
     })
     expect(cy.getElementById('n1').length).toBe(0)
+    // A fit still waiting to be redone belonged to the network before (#1005).
+    expect(cancelPendingFit).toHaveBeenCalledWith(cy)
 
     // Changes now go to the network on screen, not the one before it.
     setDefault(VisualPropertyName.NodeWidth, 55, 'other-net')

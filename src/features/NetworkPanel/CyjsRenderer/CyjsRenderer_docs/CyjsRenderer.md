@@ -22,6 +22,8 @@ The feature is split into three main parts:
 - **`cyjsRenderUtil.ts`**: Maps visual styles to Cytoscape.js styles and applies view models
 - **`renderGuard.ts`**: Decides when a full render is needed (by topology version) and which style inputs are already applied (#861)
 - **`annotations/`**: Canvas-based annotation renderer layered on top of the Cytoscape viewport
+- **`useCenterAnchoredResize.ts`**: Keeps the graph's center fixed when the canvas is resized (zoom unchanged), and redoes a `fit()` that was made while the canvas was not laid out yet (below 50 px, e.g. a tab reloaded in the background) once it gets its real size
+- **`viewportTrace.ts`**: Always-on recorder of zoom changes and their causes, plus page lifecycle events, read with `debug.viewportTrace()` (see `docs/specifications/DEBUG_GUIDE.md` §6)
 - **`registerCyExtensions.ts`**: Registers custom Cytoscape.js extensions (e.g., export, layouts)
 
 This separation keeps the React component focused on orchestration while delegating data and style transformation to utilities.

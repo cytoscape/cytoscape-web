@@ -95,6 +95,17 @@ describe('isGraphVisible', () => {
     expect(isGraphVisible(cy)).toBe(true)
   })
 
+  // A hidden canvas (0 x 0) has a zero-area extent. A fit there used to do
+  // nothing; it is now redone when the canvas is shown (useCenterAnchoredResize),
+  // which would replace a saved viewport the graph is still visible in.
+  it('defaults to visible when the canvas is hidden (zero-area extent)', () => {
+    const cy = fakeCy({
+      boundingBox: { x1: 100, y1: 100, x2: 200, y2: 200 },
+      extent: { x1: 5, y1: 5, x2: 5, y2: 5 },
+    })
+    expect(isGraphVisible(cy)).toBe(true)
+  })
+
   it('defaults to visible when the renderer throws', () => {
     expect(isGraphVisible(fakeCy({ throws: true }))).toBe(true)
   })
