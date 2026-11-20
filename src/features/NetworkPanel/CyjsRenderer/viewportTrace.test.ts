@@ -1,5 +1,9 @@
+import { renderHook } from '@testing-library/react'
 import type { Core } from 'cytoscape'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { removeCywebSessionStorage } from '@/data/db/browserStorageInventory'
+import { registerDebugTool } from '@/debug'
 
 import {
   classifyZoomCause,
@@ -13,7 +17,13 @@ import {
   resetViewportTraceForTests,
   TRACE_STORAGE_KEY,
   traceZoomEvents,
+  useViewportTrace,
 } from './viewportTrace'
+
+vi.mock('@/debug', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/debug')>()
+  return { ...actual, registerDebugTool: vi.fn(() => vi.fn()) }
+})
 
 // ── Cytoscape.js stand-in ─────────────────────────────────────────────────────
 // Enough of the instance for the trace: zoom get/set that emits 'zoom', a fit
@@ -309,5 +319,45 @@ describe('page events and persistence', () => {
     const trace = getViewportTrace()
     expect(trace).toHaveLength(MAX_TRACE_ENTRIES)
     expect(trace.at(-1)?.what).toBe(`e${MAX_TRACE_ENTRIES + 9}`)
+  })
+})
+
+describe('Clear Local Cache', () => {
+  it('forgets the trace and does not write it back as the page unloads', () => {
+    const { cy } = createCy()
+    const uninstall = installViewportTrace(cy, null)
+    traceZoomEvents(cy, 'net-1')
+    cy.zoom(0.6)
+    persistTrace()
+
+    removeCywebSessionStorage()
+    // The reload that follows a clear fires pagehide, which persists.
+    window.dispatchEvent(new Event('pagehide'))
+
+    expect(sessionStorage.getItem(TRACE_STORAGE_KEY)).toBeNull()
+    expect(getViewportTrace().filter((e) => e.kind === 'zoom')).toEqual([])
+    uninstall()
+  })
+})
+
+describe('debug tools', () => {
+  it('are registered once for the page and stay while renderers come and go', () => {
+    const registered = vi.mocked(registerDebugTool)
+    const container = { current: document.createElement('div') }
+    const first = renderHook(() => useViewportTrace(createCy().cy, container))
+    const second = renderHook(() => useViewportTrace(createCy().cy, container))
+
+    first.unmount()
+    second.unmount()
+
+    const names = registered.mock.calls.map(([name]) => name)
+    expect(names.filter((name) => name === 'viewportTrace')).toHaveLength(1)
+    expect(names.filter((name) => name === 'clearViewportTrace')).toHaveLength(
+      1,
+    )
+    // None of their unregister functions was called.
+    for (const result of registered.mock.results) {
+      expect(result.value).not.toHaveBeenCalled()
+    }
   })
 })

@@ -20,6 +20,7 @@
 import type { Core } from 'cytoscape'
 import { RefObject, useEffect } from 'react'
 
+import { onCywebSessionStorageRemoved } from '@/data/db/browserStorageInventory'
 import { logUi, registerDebugTool } from '@/debug'
 
 export type ZoomCause = 'fit' | 'wheel' | 'pinch' | 'other'
@@ -62,6 +63,11 @@ const STACK_LINES = 25
 let entries: ViewportTraceEntry[] = []
 let loaded = false
 let pageListenersInstalled = false
+/**
+ * Set once a cache reset removed the stored trace: the page is about to
+ * reload, and its pagehide must not write the old trace back.
+ */
+let persistenceStopped = false
 
 // ── Buffer ────────────────────────────────────────────────────────────────────
 
@@ -121,6 +127,7 @@ const loadOnce = (): void => {
 }
 
 export const persistTrace = (): void => {
+  if (persistenceStopped) return
   try {
     sessionStorage.setItem(TRACE_STORAGE_KEY, JSON.stringify(entries))
   } catch {
@@ -338,6 +345,17 @@ const installPageListeners = (): void => {
     | undefined
   const wasDiscarded =
     (document as Document & { wasDiscarded?: boolean }).wasDiscarded === true
+  // Once for the page, like the buffer they read: a renderer unmounting
+  // (e.g. the hierarchy's subnetwork view) must not remove them.
+  registerDebugTool('viewportTrace', getViewportTrace)
+  registerDebugTool('clearViewportTrace', clearViewportTrace)
+
+  // Clear Local Cache (here or from another tab) removes the stored trace.
+  onCywebSessionStorageRemoved(() => {
+    entries = []
+    persistenceStopped = true
+  })
+
   recordPageEvent(
     'load',
     `navigation=${nav?.type ?? '?'} wasDiscarded=${wasDiscarded} ` +
@@ -455,17 +473,7 @@ export const useViewportTrace = (
 ): void => {
   useEffect(() => {
     if (cy === null) return
-    const uninstall = installViewportTrace(cy, containerRef.current)
-    const unregister = registerDebugTool('viewportTrace', getViewportTrace)
-    const unregisterClear = registerDebugTool(
-      'clearViewportTrace',
-      clearViewportTrace,
-    )
-    return () => {
-      unregisterClear()
-      unregister()
-      uninstall()
-    }
+    return installViewportTrace(cy, containerRef.current)
   }, [cy, containerRef])
 }
 
@@ -473,4 +481,5 @@ export const useViewportTrace = (
 export const resetViewportTraceForTests = (): void => {
   entries = []
   loaded = false
+  persistenceStopped = false
 }

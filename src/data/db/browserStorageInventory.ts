@@ -118,6 +118,22 @@ export const removeCywebLocalStorage = (storage?: Storage): boolean => {
   }
 }
 
+const sessionStorageRemovedListeners = new Set<() => void>()
+
+/**
+ * Be told after removeCywebSessionStorage has removed the keys. For a writer
+ * that saves on `pagehide` (viewportTrace): without this it would write its key
+ * back during the reload that follows a cache reset. Returns an unsubscribe.
+ */
+export const onCywebSessionStorageRemoved = (
+  listener: () => void,
+): (() => void) => {
+  sessionStorageRemovedListeners.add(listener)
+  return () => {
+    sessionStorageRemovedListeners.delete(listener)
+  }
+}
+
 /**
  * Remove Cytoscape Web's keys from this tab's sessionStorage. Never throws.
  *
@@ -131,8 +147,15 @@ export const removeCywebSessionStorage = (storage?: Storage): boolean => {
       return true
     }
     CYWEB_SESSION_STORAGE_KEYS.forEach((key) => target.removeItem(key))
-    return true
   } catch {
     return false
   }
+  sessionStorageRemovedListeners.forEach((listener) => {
+    try {
+      listener()
+    } catch {
+      // A listener's failure must not fail the reset.
+    }
+  })
+  return true
 }

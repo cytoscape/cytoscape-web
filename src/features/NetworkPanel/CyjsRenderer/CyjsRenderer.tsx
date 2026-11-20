@@ -73,6 +73,7 @@ import {
 } from './renderGuard'
 import { syncCySelection } from './syncCySelection'
 import {
+  cancelPendingFit,
   panReferenceSize,
   setPanReferenceSize,
   useCenterAnchoredResize,
@@ -488,6 +489,8 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
 
     // Remove all event listeners and elements from the Cytoscape instance
     cy.removeAllListeners()
+    // A fit still waiting to be redone belongs to the outgoing network.
+    cancelPendingFit(cy)
     cy.startBatch()
     cy.remove('*')
 

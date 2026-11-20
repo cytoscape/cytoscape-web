@@ -3,6 +3,7 @@ import type { Core } from 'cytoscape'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  cancelPendingFit,
   panReferenceSize,
   setPanReferenceSize,
   useCenterAnchoredResize,
@@ -507,6 +508,20 @@ describe('useCenterAnchoredResize', () => {
 
       expect(cy.nativeFit).toHaveBeenCalledTimes(1)
       expect(cy.camera.zoom).toBe(3)
+      expect(cy.panBy).toHaveBeenCalledWith({ x: 388, y: 0 })
+    })
+
+    it('does not fit again after the pending fit is cancelled', () => {
+      // renderNetwork cancels it when it swaps networks: a restored camera
+      // equal to the fitted one must not be fitted again for the new network.
+      const cy = createFittableCy({ width: 24, height: 665 })
+      renderWith(cy)
+
+      cy.fit()
+      cancelPendingFit(cy as unknown as Core)
+      resizeTo(cy, 800, 665)
+
+      expect(cy.nativeFit).toHaveBeenCalledTimes(1)
       expect(cy.panBy).toHaveBeenCalledWith({ x: 388, y: 0 })
     })
 

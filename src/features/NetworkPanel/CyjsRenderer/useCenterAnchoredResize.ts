@@ -81,6 +81,15 @@ interface PendingFit {
 
 const pendingFits = new WeakMap<Core, PendingFit>()
 
+/**
+ * Forget a fit waiting to be redone. renderNetwork calls this when it puts
+ * another network on the instance: a restored camera that happens to equal the
+ * fitted one would otherwise be fitted again for the wrong network.
+ */
+export const cancelPendingFit = (cy: Core): void => {
+  pendingFits.delete(cy)
+}
+
 /** True while the camera is still the one the pending fit left. */
 const isCameraUnchanged = (cy: Core, pending: PendingFit): boolean => {
   const pan = cy.pan()
