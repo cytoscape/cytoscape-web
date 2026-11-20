@@ -4,6 +4,12 @@ All notable changes to Cytoscape Web are documented here.
 
 ## [Unreleased]
 
+### Changed
+
+- The light/dark mode button in the toolbar opens a menu with System, Light and Dark.
+  System follows the operating system setting again after Light or Dark was picked,
+  which the old toggle could not undo. The button shows the current choice (#850)
+
 ## [1.1.1] — 2026-10-28
 
 An in-app user manual, keyboard shortcuts for undo, redo and delete, a Select menu, a new
