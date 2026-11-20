@@ -54,6 +54,8 @@ const SESSION_STORAGE_LABELS: Record<CywebSessionStorageKey, string> = {
   'cyweb.tab.viewState': 'Which panels and tabs are open',
   'cyweb.tab.networkId': 'Which network is shown',
   'cyweb.llm.apiKeys': 'The LLM Query API key you entered, if any',
+  'cyweb.debug.viewportTrace':
+    'A diagnostic log of recent zoom changes in the network view',
 }
 
 /**

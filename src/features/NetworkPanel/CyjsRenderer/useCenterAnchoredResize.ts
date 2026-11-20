@@ -14,6 +14,13 @@
 //   left panel grows by d  → container left edge moves +d, pan -d/2 → graph +d/2
 //   right panel grows by d → container width -d,           pan -d/2 → graph -d/2
 //   bottom panel grows by d → container height -d,         pan -d/2 → graph up d/2
+//
+// Keeping the zoom is wrong in one case: a fit made while the canvas was not
+// laid out. A tab reloaded in the background gets no ResizeObserver callbacks,
+// so the split panes stay at their minimum and the canvas is ~24 px wide (or
+// 0 x 0). A fit there zooms the network down to 24 px, and keeping that zoom
+// when the canvas grows to its real size left the network a speck. Such a fit
+// is redone at the real size instead, unless the camera has changed since.
 
 import type { Core } from 'cytoscape'
 import { RefObject, useEffect } from 'react'
@@ -53,6 +60,36 @@ const cachedSize = (cy: Core): Size | null => {
 }
 
 type Resize = () => Core
+type Fit = Core['fit']
+
+/**
+ * Below this many pixels in either dimension the canvas is taken to be not
+ * laid out yet (Allotment's 30 px pane minimum, minus borders, is 24 px), and a
+ * fit made there is redone once it is.
+ */
+export const MIN_FIT_SIZE = 50
+
+const isLaidOut = (size: Size | null): size is Size =>
+  size !== null && size.width >= MIN_FIT_SIZE && size.height >= MIN_FIT_SIZE
+
+/** A fit made on a canvas that was not laid out, and the camera it left. */
+interface PendingFit {
+  readonly args: Parameters<Fit>
+  readonly zoom: number
+  readonly pan: { x: number; y: number }
+}
+
+const pendingFits = new WeakMap<Core, PendingFit>()
+
+/** True while the camera is still the one the pending fit left. */
+const isCameraUnchanged = (cy: Core, pending: PendingFit): boolean => {
+  const pan = cy.pan()
+  return (
+    cy.zoom() === pending.zoom &&
+    pan.x === pending.pan.x &&
+    pan.y === pending.pan.y
+  )
+}
 
 /**
  * Per instance: the last size the pan was relative to while the container was
@@ -104,11 +141,18 @@ export const setPanReferenceSize = (cy: Core, size: Size): void => {
  * (0 x 0, e.g. an inactive tab) nothing is panned, and the last visible size —
  * or one declared with setPanReferenceSize — is the baseline for when it is
  * shown again.
+ *
+ * It also wraps `cy.fit()`: a fit made while the canvas is below MIN_FIT_SIZE
+ * (not laid out yet) is redone, with the same arguments, on each resize until
+ * the canvas is laid out, as long as nothing has moved the camera since.
  */
 const installCenterAnchoredResize = (cy: Core): (() => void) => {
-  const target = cy as Core & { resize: Resize }
+  const target = cy as Core & { resize: Resize; fit: Fit }
   const hadOwnResize = Object.prototype.hasOwnProperty.call(target, 'resize')
   const nativeResize = target.resize
+  const hadOwnFit = Object.prototype.hasOwnProperty.call(target, 'fit')
+  const nativeFit = target.fit
+  let installed = true
   const initial = cachedSize(cy)
   if (initial !== null) {
     lastVisibleSizes.set(cy, initial)
@@ -126,6 +170,19 @@ const installCenterAnchoredResize = (cy: Core): (() => void) => {
       return cy
     }
     lastVisibleSizes.set(cy, after)
+
+    const pending = pendingFits.get(cy)
+    if (pending !== undefined) {
+      if (isCameraUnchanged(cy, pending)) {
+        // Through target.fit, so this fit is recorded again if the canvas is
+        // still not laid out, and cleared once it is.
+        target.fit(...pending.args)
+        renderNow(cy)
+        return cy
+      }
+      pendingFits.delete(cy)
+    }
+
     if (before === null) {
       return cy
     }
@@ -139,11 +196,43 @@ const installCenterAnchoredResize = (cy: Core): (() => void) => {
     return cy
   }
 
+  const centerAnchoredFit = function centerAnchoredFit(
+    ...args: Parameters<Fit>
+  ): Core {
+    const result = nativeFit.apply(cy, args)
+    if (!installed || cy.destroyed()) {
+      return result
+    }
+    if (isLaidOut(cachedSize(cy))) {
+      pendingFits.delete(cy)
+    } else {
+      const pan = cy.pan()
+      pendingFits.set(cy, {
+        args,
+        zoom: cy.zoom(),
+        pan: { x: pan.x, y: pan.y },
+      })
+    }
+    return result
+  }
+  target.fit = centerAnchoredFit
+
   return () => {
+    installed = false
+    pendingFits.delete(cy)
     if (hadOwnResize) {
       target.resize = nativeResize
     } else {
       delete (target as Partial<typeof target>).resize
+    }
+    // Another wrapper (viewportTrace) may sit on top of this one: leave it in
+    // place; this one now passes straight through.
+    if (target.fit === centerAnchoredFit) {
+      if (hadOwnFit) {
+        target.fit = nativeFit
+      } else {
+        delete (target as Partial<typeof target>).fit
+      }
     }
   }
 }

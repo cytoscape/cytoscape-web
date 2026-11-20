@@ -79,6 +79,7 @@ export const CYWEB_SESSION_STORAGE_KEYS = [
   'cyweb.tab.viewState',
   'cyweb.tab.networkId',
   'cyweb.llm.apiKeys',
+  'cyweb.debug.viewportTrace',
 ] as const
 
 export type CywebSessionStorageKey = (typeof CYWEB_SESSION_STORAGE_KEYS)[number]
