@@ -7,7 +7,6 @@ import { Outlet, useParams } from 'react-router-dom'
 
 import { useLayoutStore } from '../../data/hooks/stores/LayoutStore'
 import { useNetworkStore } from '../../data/hooks/stores/NetworkStore'
-import { runInitialLayoutWhenIdle } from '../../data/hooks/stores/runLayoutWhenIdle'
 import { useNetworkSummaryStore } from '../../data/hooks/stores/NetworkSummaryStore'
 import { useTableStore } from '../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../data/hooks/stores/UiStateStore'
@@ -16,9 +15,9 @@ import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { useLoadCyNetwork } from '../../data/hooks/useLoadCyNetwork'
 import { useLoadNetworkSummaries } from '../../data/hooks/useLoadNetworkSummaries'
+import { applyInitialLayout } from '../../data/hooks/useRegisterNetwork'
 import { useRemountKeyOnReveal } from '../../data/hooks/useRemountKeyOnReveal'
 import { IdType } from '../../models/IdType'
-import { LayoutEngine } from '../../models/LayoutModel'
 import { Ui } from '../../models/UiModel'
 import { Panel } from '../../models/UiModel/Panel'
 import { PanelState } from '../../models/UiModel/PanelState'
@@ -54,8 +53,6 @@ import { useRendererFunctionStore } from '../../data/hooks/stores/RendererFuncti
 import { useUndoStore } from '../../data/hooks/stores/UndoStore'
 import { logUi } from '../../debug'
 import { CyNetwork } from '../../models'
-import { getDefaultLayout } from '../../models/LayoutModel/impl/layoutSelection'
-import { runEngineLayout } from '../../models/LayoutModel/impl/runEngineLayout'
 import { useCreateNetworkFromTableStore } from '../TableDataLoader/store/createNetworkFromTableStore'
 import { useJoinTableToNetworkStore } from '../TableDataLoader/store/joinTableToNetworkStore'
 
@@ -173,10 +170,6 @@ const WorkSpaceEditor = (): JSX.Element => {
     [number, number]
   >([0, 0])
 
-  const layoutEngines: LayoutEngine[] = useLayoutStore(
-    (state) => state.layoutEngines,
-  )
-
   const setIsRunning: (isRunning: boolean, networkId?: IdType) => void =
     useLayoutStore((state) => state.setIsRunning)
 
@@ -250,66 +243,30 @@ const WorkSpaceEditor = (): JSX.Element => {
         validateAndRecordHcx(networkId, summary, nodeTable, edgeTable)
       }
 
-      // Apply default layout if network doesn't have one
-      if (!summary.hasLayout) {
-        const totalNetworkElements = network.nodes.length + network.edges.length
-        const defaultLayout = getDefaultLayout(
-          totalNetworkElements,
-          maxNetworkElementsThreshold,
-          isHCX(summary),
-        )
-
-        if (defaultLayout !== undefined) {
-          const layoutEngine: LayoutEngine | undefined = layoutEngines.find(
-            (engine) => engine.name === defaultLayout.engineName,
-          )
-
-          if (layoutEngine !== undefined) {
-            const handleLayoutComplete = createLayoutCompletionHandler(
-              networkId,
-              {
-                // Read from the store directly to get the value current at
-                // callback time rather than the stale closure value.
-                isNetworkModified: (id) =>
-                  useWorkspaceStore.getState().workspace.networkModified[id] ===
-                  true,
-                updateNodePositions,
-                fitViewport: (id) => {
-                  const fitFunction = getFunction('cyjs', 'fit', id)
-                  if (fitFunction !== undefined) {
-                    fitFunction()
-                  }
-                },
-                // Only the layout field: the layout can wait for another one
-                // (#982), and a whole summary copied now would overwrite a
-                // rename made meanwhile.
-                markLayoutApplied: (id) =>
-                  updateSummary(id, { hasLayout: true }),
-                setLayoutRunning: setIsRunning,
-                setNetworkModified,
-              },
-            )
-
-            // Only one layout runs at a time (#982). This one must not be
-            // dropped, or the network keeps no positions, so it waits for a
-            // running layout to finish. It stops waiting if the network is
-            // removed meanwhile, even if one with the same id is added back,
-            // and lays out the network as it is on its turn. The shared
-            // runner also contains a failing engine (logged, flag lowered).
-            runInitialLayoutWhenIdle(networkId, (live, claim) =>
-              runEngineLayout({
-                engine: layoutEngine,
-                algorithm: layoutEngine.algorithms[defaultLayout.algorithmName],
-                network: live,
-                networkId,
-                afterLayout: handleLayoutComplete,
-                startLayout: claim,
-                setIsRunning,
-              }),
-            )
-          }
-        }
-      }
+      applyInitialLayout(
+        networkId,
+        summary,
+        maxNetworkElementsThreshold,
+        createLayoutCompletionHandler(networkId, {
+          // Read from the store directly to get the value current at
+          // callback time rather than the stale closure value.
+          isNetworkModified: (id) =>
+            useWorkspaceStore.getState().workspace.networkModified[id] === true,
+          updateNodePositions,
+          fitViewport: (id) => {
+            const fitFunction = getFunction('cyjs', 'fit', id)
+            if (fitFunction !== undefined) {
+              fitFunction()
+            }
+          },
+          // Only the layout field: the layout can wait for another one
+          // (#982), and a whole summary copied now would overwrite a
+          // rename made meanwhile.
+          markLayoutApplied: (id) => updateSummary(id, { hasLayout: true }),
+          setLayoutRunning: setIsRunning,
+          setNetworkModified,
+        }),
+      )
     } catch (error) {
       logUi.error(
         `[${WorkSpaceEditor.name}]:[${loadCurrentNetworkById.name}]: Failed to load network: ${error}`,

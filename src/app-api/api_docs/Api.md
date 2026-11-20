@@ -1376,6 +1376,8 @@ for (const networkId of networkIds) {
   with `APP16` even in the instant between one layout's end and the next one's
   start (a `layout:completed` listener that starts a layout right away, say),
   and a new `waitIfBusy` call joins the end of the queue.
+- Once the last queued layout fires `layout:completed`, its listener can
+  start another layout immediately, even if the engine completed synchronously.
 - A call that would fail anyway fails at once without waiting: an unknown
   `networkId` (`APP1`) or `algorithmName` (`APP4`).
 - A network deleted while the call waits resolves to `APP1` at once, and

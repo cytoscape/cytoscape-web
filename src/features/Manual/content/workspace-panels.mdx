@@ -100,7 +100,9 @@ A network without saved node positions gets a layout when it opens: **gForce
 Layout (force-directed)** for a network, **Hierarchical Layout (DAGRE)** for a
 hierarchy, and **Grid Layout** when the network has 1,000 or more nodes and
 edges combined. A network with more than 26,000 nodes and edges combined gets
-no automatic layout.
+no automatic layout. If another layout is running, Cytoscape Web uses the
+network size when its turn arrives, including any nodes or edges added or
+removed while it waited.
 
 <a id="style_tab" />
 

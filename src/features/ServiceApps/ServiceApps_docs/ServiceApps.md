@@ -85,7 +85,10 @@ The ServiceApps feature is primarily a hook-based system that manages:
 ### Result Processing
 
 - Once complete, final result is retrieved
-- Result is processed by appropriate action handler
+- The runner awaits each result action in response order. Network updates target the network that was active when the task started.
+- An `updateLayouts` action applies its node coordinates together. If a layout is running or others are queued, the action waits for its turn in the layout queue. Removing the target network cancels its waiting coordinate update.
+- Before each action that writes to the target network (`updateNetwork`, `updateTables`, `updateLayouts`, `updateSelection`, `addTables`), the runner checks that the network is still in the `NetworkStore`. If it was deleted while the service ran or while an earlier action waited, the action is skipped and one warning message is shown for the run. `addNetworks` and `openURL` still run. Without the check, `updateNetwork` would add the deleted network back to the stores, outside the workspace list.
+- The request's `visualStyle` and named-style set are captured together when the task starts, before the access token is fetched, so both describe the same active style.
 - Handlers can:
   - Create new networks from results
   - Update existing networks

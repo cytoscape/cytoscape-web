@@ -86,7 +86,15 @@ const drain = (): void => {
   }
   let started: boolean
   try {
-    started = head.tryStart(claimFromQueue)
+    started = head.tryStart((networkId) => {
+      if (!claimFromQueue(networkId)) {
+        return false
+      }
+      // The slot is held when removing the last waiter notifies subscribers.
+      // A synchronous engine can now complete with the queue up to date.
+      remove(head)
+      return true
+    })
   } catch (error) {
     logStore.error(
       '[runLayoutWhenIdle]: A waiting layout threw while starting; it is dropped',
@@ -102,7 +110,8 @@ const drain = (): void => {
     )
     started = true
   }
-  if (started) {
+  // A skipped or failed job may have finished without claiming the slot.
+  if (started && queue[0] === head) {
     remove(head)
   }
   // A layout that finished inside its start, or a job with nothing left to

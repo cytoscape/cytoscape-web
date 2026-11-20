@@ -558,6 +558,7 @@ describe('applyLayout — waitIfBusy', () => {
 
   afterEach(() => {
     mockLayoutEngines[0].apply.mockReset()
+    mockDispatchCyWebEvent.mockReset()
   })
 
   /** A layout someone else started (the user, an automatic layout). */
@@ -730,7 +731,34 @@ describe('applyLayout — waitIfBusy', () => {
     finishers[1](new Map([['node1', [2, 2]]]))
     expect((await first).success).toBe(true)
     expect((await waiting).success).toBe(true)
-    mockDispatchCyWebEvent.mockReset()
+  })
+
+  it('accepts a call from a synchronous completion listener once the last queued layout finishes', async () => {
+    mockLayoutEngines[0].apply.mockImplementation((_nodes, _edges, done) =>
+      done(new Map()),
+    )
+    const listenerCalls: Array<ReturnType<typeof layoutApi.applyLayout>> = []
+    mockDispatchCyWebEvent.mockImplementation((type, detail) => {
+      if (type === 'layout:completed' && detail.networkId === 'net1') {
+        listenerCalls.push(layoutApi.applyLayout('net2'))
+      }
+    })
+
+    occupy()
+    const first = layoutApi.applyLayout('net1', { waitIfBusy: true })
+    const last = layoutApi.applyLayout('net1', { waitIfBusy: true })
+    release()
+    await expect(Promise.all([first, last])).resolves.toMatchObject([
+      { success: true },
+      { success: true },
+    ])
+    await expect(Promise.all(listenerCalls)).resolves.toMatchObject([
+      { success: false, error: { code: AppCodes.LAYOUT_ALREADY_RUNNING.code } },
+      { success: true },
+    ])
+    expect(
+      mockLayoutEngines[0].apply.mock.calls.map((call) => call[4]),
+    ).toEqual(['net1', 'net1', 'net2'])
   })
 
   it('still fails with LAYOUT_ALREADY_RUNNING without the option, or with false', async () => {
