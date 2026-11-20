@@ -47,6 +47,11 @@ interface RunTaskProps {
   network?: Network
   table?: TableRecord
   visualStyle?: VisualStyle
+  /**
+   * The named-style set captured together with `visualStyle`. When omitted,
+   * the set is read from the store as the request is built.
+   */
+  visualStyleSet?: VisualStyleSet
   summary?: NetworkSummary
   visualStyleOptions?: VisualStyleOptions
   viewModel?: NetworkView
@@ -264,6 +269,7 @@ export const useRunTask = (): ((
       customParameters,
       network,
       visualStyle,
+      visualStyleSet,
       summary,
       table,
       visualStyleOptions,
@@ -292,7 +298,7 @@ export const useRunTask = (): ((
             visualStyleOptions,
             viewModel,
             opaqueAspect,
-            getVisualStyleSetSnapshot(network.id),
+            visualStyleSet ?? getVisualStyleSetSnapshot(network.id),
           )
         } else if (inputColumns !== null && table !== undefined) {
           data = createTableDataObj(

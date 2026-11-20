@@ -31,8 +31,24 @@ import { useOpaqueAspectStore } from './stores/OpaqueAspectStore'
 import { useTableStore } from './stores/TableStore'
 import { useUiStateStore } from './stores/UiStateStore'
 import { useViewModelStore } from './stores/ViewModelStore'
-import { useVisualStyleStore } from './stores/VisualStyleStore'
+import {
+  getVisualStyleSetSnapshot,
+  useVisualStyleStore,
+} from './stores/VisualStyleStore'
 import { useWorkspaceStore } from './stores/WorkspaceStore'
+
+/**
+ * Result actions that write to the network the task was started on. The
+ * others (`addNetworks`, `openURL`) need no target and always run.
+ */
+const NETWORK_TARGETED_ACTIONS: ReadonlySet<ServiceAppAction> = new Set([
+  ServiceAppAction.AddTables,
+  ServiceAppAction.UpdateLayouts,
+  ServiceAppAction.UpdateNetwork,
+  ServiceAppAction.UpdateSelection,
+  ServiceAppAction.UpdateTables,
+])
+
 export interface RunTaskResult {
   status: ServiceStatus
   algorithmName: string
@@ -136,6 +152,9 @@ export const useServiceTaskRunner = (): ((
         network: networkRef.current,
         table: tableRef.current,
         visualStyle: visualStyleRef.current,
+        // Taken with `visualStyle`, before the token wait below: read after
+        // it, the set could describe a style activated meanwhile.
+        visualStyleSet: getVisualStyleSetSnapshot(networkId),
         summary: summaryRef.current,
         visualStyleOptions: visualStyleOptionsRef.current,
         viewModel: viewModelRef.current,
@@ -190,7 +209,30 @@ export const useServiceTaskRunner = (): ((
 
       // Process the result to update the workspace state
       if (result.status === ServiceStatus.Complete) {
+        let targetRemovedReported = false
         for (const { action, data } of result.result) {
+          // The target is fixed at task start, so it can be deleted while the
+          // service runs or while an earlier action waits (updateLayouts
+          // queues behind a running layout). Writing to it then would add
+          // the network back to the stores, outside the workspace list.
+          // Checked per action: the delete can land between two of them.
+          if (
+            NETWORK_TARGETED_ACTIONS.has(action) &&
+            !useNetworkStore.getState().networks.has(networkId)
+          ) {
+            logApp.warn(
+              `[${useServiceTaskRunner.name}]: Skipped ${action}: network ${networkId} was removed while the task ran`,
+            )
+            if (!targetRemovedReported) {
+              targetRemovedReported = true
+              addMessage({
+                message: `The network was removed while ${serviceApp.name} ran, so its updates to that network were skipped`,
+                duration: 4000,
+                severity: MessageSeverity.WARNING,
+              })
+            }
+            continue
+          }
           // Currently, HCX network is blocked for updateNetwork actions
           // In the future, if there are more limitations, we can turn these checker into a function
           if (
