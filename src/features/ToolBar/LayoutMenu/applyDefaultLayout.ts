@@ -11,7 +11,9 @@ export interface ApplyDefaultLayoutParams {
   /** The network being laid out; app engines need it for the run context. */
   networkId: IdType
   afterLayout: (positionMap: Map<IdType, [number, number]>) => void
-  setIsRunning: (isRunning: boolean, networkId?: IdType) => void
+  /** The layout store's `startLayout`, which refuses while a layout runs. */
+  startLayout: (networkId: IdType) => boolean
+  setIsRunning: (isRunning: boolean) => void
 }
 
 /**
@@ -19,8 +21,9 @@ export interface ApplyDefaultLayoutParams {
  * behavior of the FloatingToolBar apply-layout button. The engine that owns the
  * preferred algorithm is resolved by name, falling back to the first available
  * engine. Returns false without doing anything when there is no usable network
- * or engine, so callers can guard the disabled/no-network case. A failing
- * engine is contained by runEngineLayout (logged, isRunning reset).
+ * or engine, so callers can guard the disabled/no-network case, and false
+ * when another layout is already running (#982). A failing engine is
+ * contained by runEngineLayout (logged, isRunning reset).
  */
 export const applyDefaultLayout = ({
   layoutEngines,
@@ -28,6 +31,7 @@ export const applyDefaultLayout = ({
   network,
   networkId,
   afterLayout,
+  startLayout,
   setIsRunning,
 }: ApplyDefaultLayoutParams): boolean => {
   if (network === undefined || network.nodes === undefined) {
@@ -42,13 +46,13 @@ export const applyDefaultLayout = ({
     return false
   }
 
-  runEngineLayout({
+  return runEngineLayout({
     engine,
     algorithm: preferredLayout,
     network,
     networkId,
     afterLayout,
+    startLayout,
     setIsRunning,
   })
-  return true
 }

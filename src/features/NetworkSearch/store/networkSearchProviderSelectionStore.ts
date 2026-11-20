@@ -16,6 +16,9 @@ interface NetworkSearchProviderSelectionStore {
   setSelectedProviderId: (id: string) => void
 }
 
+/** localStorage key of this store (listed in browserStorageInventory.ts). */
+export const NETWORK_SEARCH_STORAGE_KEY = 'cyweb-network-search'
+
 export const useNetworkSearchProviderSelectionStore =
   create<NetworkSearchProviderSelectionStore>()(
     persist(
@@ -25,6 +28,6 @@ export const useNetworkSearchProviderSelectionStore =
           set({ selectedProviderId: id })
         },
       }),
-      { name: 'cyweb-network-search' },
+      { name: NETWORK_SEARCH_STORAGE_KEY },
     ),
   )

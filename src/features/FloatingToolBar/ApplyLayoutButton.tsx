@@ -58,6 +58,12 @@ export const ApplyLayoutButton = ({
 
   const setIsRunning: (isRunning: boolean, networkId?: IdType) => void =
     useLayoutStore((state) => state.setIsRunning)
+  const startLayout: (networkId: IdType) => boolean = useLayoutStore(
+    (state) => state.startLayout,
+  )
+  // Only one layout runs at a time (#982): the button is disabled while one
+  // runs, on any network.
+  const layoutRunning: boolean = useLayoutStore((state) => state.isRunning)
 
   const layoutEngines: LayoutEngine[] = useLayoutStore(
     (state) => state.layoutEngines,
@@ -126,6 +132,7 @@ export const ApplyLayoutButton = ({
         network,
         networkId,
         afterLayout,
+        startLayout,
         setIsRunning,
       })
     } else {
@@ -154,14 +161,20 @@ export const ApplyLayoutButton = ({
       aria-label="apply-layout"
       size="small"
       disableFocusRipple={true}
-      disabled={disabled}
+      disabled={true}
     >
       <ApplyLayoutIcon fontSize="inherit" />
     </IconButton>
   )
-  if (disabled) {
+  if (disabled || layoutRunning) {
     return (
-      <Tooltip title={'Layouts cannot be applied to the current network view'}>
+      <Tooltip
+        title={
+          disabled
+            ? 'Layouts cannot be applied to the current network view'
+            : 'A layout is already running'
+        }
+      >
         <Box>{innerButtonDisabled}</Box>
       </Tooltip>
     )

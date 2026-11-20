@@ -5,7 +5,7 @@
 // LayoutEngine contract. Stores are mocked; the cleanup registry is real so
 // the module-level registerAppCleanup() call is exercised.
 import { enableMapSet } from 'immer'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { cleanupAllForApp } from '../../data/hooks/stores/AppCleanupRegistry'
 import { useLayoutStore } from '../../data/hooks/stores/LayoutStore'
@@ -28,6 +28,7 @@ import {
   unregisterAllAppLayouts,
   unregisterAppLayout,
 } from './appLayoutEngine'
+import { buildPerAppApis } from './perAppApis'
 
 enableMapSet()
 
@@ -312,7 +313,7 @@ describe('appLayoutEngine', () => {
       expect(ctx.selectedNodeIds).toEqual(['n2'])
       expect(ctx.parameters).toEqual({ Spacing: 60, Label: 'x' })
       expect(ctx.parameters).not.toBe(algorithm.parameters)
-      expect(ctx.apis).toEqual({ boundTo: APP })
+      expect(ctx.apis).toMatchObject({ boundTo: APP })
 
       expect(afterLayout).toHaveBeenCalledTimes(1)
       const map: Map<IdType, [number, number]> = afterLayout.mock.calls[0][0]
@@ -321,6 +322,89 @@ describe('appLayoutEngine', () => {
         ['n2', [20, 20]],
       ])
       expect(logApi.warn).toHaveBeenCalled() // the dropped 'ghost' entry
+    })
+
+    // Review of #985: a run holds the only layout slot. An app that awaited
+    // applyLayout(..., { waitIfBusy: true }) from inside its own run waited
+    // for itself forever, and every later layout waited behind it.
+    describe('layout calls from inside the run', () => {
+      const applyLayout = vi.fn(async () => ({ success: true }))
+      const scopedApplyLayout = vi.fn(async () => ({ success: true }))
+
+      beforeEach(() => {
+        applyLayout.mockClear()
+        scopedApplyLayout.mockClear()
+        vi.mocked(buildPerAppApis).mockImplementation(
+          (appId: string) =>
+            ({
+              boundTo: appId,
+              layout: { applyLayout, getAvailableLayouts: vi.fn() },
+              forNetwork: vi.fn(() => ({
+                layout: { applyLayout: scopedApplyLayout },
+              })),
+            }) as any,
+        )
+      })
+
+      afterEach(() => {
+        vi.mocked(buildPerAppApis).mockImplementation(
+          (appId: string) => ({ boundTo: appId }) as any,
+        )
+      })
+
+      it('do not wait for a running layout while the run is active', async () => {
+        let ctx: LayoutRunContext | undefined
+        const run = vi.fn(async (context: LayoutRunContext) => {
+          ctx = context
+          await context.apis.layout.applyLayout('other', {
+            algorithmName: 'grid',
+            waitIfBusy: true,
+          })
+          await context.apis
+            .forNetwork('other')
+            .layout.applyLayout({ waitIfBusy: true })
+          return {}
+        })
+        registerAppLayout(APP, makeOptions({ run }))
+
+        await appEngineApply(
+          nodes,
+          edges,
+          vi.fn(),
+          buildAppLayoutAlgorithm(APP, makeOptions()),
+          NET,
+        )
+
+        expect(applyLayout).toHaveBeenCalledWith('other', {
+          algorithmName: 'grid',
+          waitIfBusy: false,
+        })
+        expect(scopedApplyLayout).toHaveBeenCalledWith({ waitIfBusy: false })
+
+        // Kept and used after the run, the object waits as asked
+        await ctx!.apis.layout.applyLayout('other', { waitIfBusy: true })
+        expect(applyLayout).toHaveBeenLastCalledWith('other', {
+          waitIfBusy: true,
+        })
+      })
+
+      it('are passed on unchanged when they do not ask to wait', async () => {
+        const run = vi.fn(async (context: LayoutRunContext) => {
+          await context.apis.layout.applyLayout('other')
+          return {}
+        })
+        registerAppLayout(APP, makeOptions({ run }))
+
+        await appEngineApply(
+          nodes,
+          edges,
+          vi.fn(),
+          buildAppLayoutAlgorithm(APP, makeOptions()),
+          NET,
+        )
+
+        expect(applyLayout).toHaveBeenCalledWith('other', undefined)
+      })
     })
 
     it('passes the current parameter values, not the registration defaults', async () => {

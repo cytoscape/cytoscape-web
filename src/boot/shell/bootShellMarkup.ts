@@ -26,6 +26,9 @@ export const BOOT_SHELL_ACTION_ATTR = 'data-boot-action'
 export const BOOT_SHELL_ARMED_LABEL_ATTR = 'data-boot-action-armed-label'
 export const BOOT_SHELL_ARMED_CLASS = 'boot-shell-error-button-armed'
 export const BOOT_SHELL_ACTION_CONFIRM_CLASS = 'boot-shell-error-action-confirm'
+/** Where a running action reports progress or why it failed. */
+export const BOOT_SHELL_ACTION_STATUS_CLASS = 'boot-shell-error-action-status'
+export const BOOT_SHELL_ACTION_STATUS_TESTID = 'boot-shell-action-status'
 
 /** `full` includes the toolbar strip; `content` sits below the real toolbar. */
 export type BootShellRegion = 'full' | 'content'
@@ -368,6 +371,11 @@ body {
   color: #c62828;
   max-width: 420px;
 }
+.boot-shell-error .boot-shell-error-action-status {
+  font-size: 0.85rem;
+  color: #444444;
+  max-width: 420px;
+}
 .boot-shell-bottom {
   height: 40px;
   flex-shrink: 0;
@@ -414,7 +422,7 @@ body {
 // React shell takes over from the plain-DOM one, producing a logo flash.
 const CYTOSCAPE_LOGO_SVG = `<svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M14.6375 7.89337C14.587 8.38962 14.4428 8.86975 14.211 9.31084L17.9715 13.1506C18.5094 12.8914 19.0947 12.7473 19.6945 12.7265L21.2605 7.56658C20.8605 7.27001 20.52 6.89945 20.2585 6.47577L14.6375 7.89337ZM14.0107 5.34079L19.7123 3.90284C19.9682 1.98591 21.6113 0.51532 23.5871 0.51532C25.7458 0.51532 27.4967 2.26636 27.4967 4.42495C27.4967 6.52991 25.8317 8.24716 23.7475 8.33126L22.2025 13.4216C23.4207 14.2131 24.1716 15.5717 24.1716 17.0491C24.1716 18.2891 23.6434 19.4541 22.7334 20.2696L24.4249 23.6459C24.6061 23.6202 24.7894 23.6075 24.9728 23.6075C27.1316 23.6075 28.8825 25.3585 28.8825 27.5172C28.8825 29.6756 27.1316 31.4267 24.9728 31.4267C22.8141 31.4267 21.0632 29.6756 21.0632 27.5172C21.0632 26.5172 21.4427 25.5679 22.117 24.8472L20.3616 21.3436C20.1908 21.364 20.0186 21.3743 19.8463 21.3743C18.9707 21.3743 18.1255 21.1118 17.4101 20.6227L15.4226 22.3731C15.4361 22.4759 15.4427 22.5796 15.4427 22.6838C15.4427 24.0008 14.3746 25.0692 13.0574 25.0692C11.7403 25.0692 10.672 24.0008 10.672 22.6838C10.672 21.3665 11.7403 20.2981 13.0574 20.2981C13.2848 20.2981 13.5098 20.3304 13.7265 20.3935L15.7969 18.5704C15.6916 18.29 15.6159 17.9995 15.5709 17.7033L10.6353 17.0385C9.95997 18.2935 8.64337 19.0955 7.19197 19.0955C5.03325 19.0955 3.28247 17.3445 3.28247 15.186C3.28247 13.0274 5.03325 11.2767 7.19197 11.2767C9.09124 11.2767 10.695 12.6388 11.0349 14.4651L15.9696 15.13C16.0023 15.0638 16.037 14.9984 16.0733 14.9338L12.3026 11.0833C11.8133 11.2956 11.2855 11.405 10.7481 11.405C8.58948 11.405 6.83857 9.65414 6.83857 7.49554C6.83857 5.33695 8.58948 3.58604 10.7481 3.58604C12.073 3.58591 13.2928 4.2542 14.0107 5.34079Z" fill="#EA9123"/></svg>`
 
-const ERROR_ICON_SVG = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#c62828" d="M12 2 1 21h22L12 2Zm0 5.5 7.5 12.9h-15L12 7.5ZM11 11v4.5h2V11h-2Zm0 5.75v2h2v-2h-2Z"/></svg>`
+const ERROR_ICON_SVG = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="#c62828" d="M12 5.99 19.53 19H4.47zM12 2 1 21h22z"/><path fill="#c62828" d="M13 16h-2v2h2zm0-6h-2v5h2z"/></svg>`
 
 const escapeHtml = (value: string): string =>
   value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -501,9 +509,9 @@ const statusHtml = (): string => `
 // Terminal state: no spinner and no "may take some time" — both actively
 // mislead when nothing more is coming. The version and build time stay, since
 // that is precisely what someone diagnosing this needs to read off the screen.
-// The confirm line is rendered up front and hidden rather than injected on
-// click, so arming the button never changes the markup this module produces —
-// only attributes and one `hidden` flag. That keeps the string the React
+// The confirm and status lines are rendered up front and hidden rather than
+// injected on click, so arming or running the button never changes the markup
+// this module produces — only attributes, `hidden` flags and the status text. That keeps the string the React
 // renderer diffs against stable, same reason the status message is imperative.
 const errorActionHtml = (action: BootShellErrorAction): string => `
       <div class="boot-shell-error-action">
@@ -515,6 +523,7 @@ const errorActionHtml = (action: BootShellErrorAction): string => `
         <p class="${BOOT_SHELL_ACTION_CONFIRM_CLASS}" hidden>${escapeHtml(
           action.confirmMessage,
         )}</p>
+        <p class="${BOOT_SHELL_ACTION_STATUS_CLASS}" data-testid="${BOOT_SHELL_ACTION_STATUS_TESTID}" role="status" aria-live="polite" hidden></p>
       </div>`
 
 const errorHtml = (error: BootShellError): string => `

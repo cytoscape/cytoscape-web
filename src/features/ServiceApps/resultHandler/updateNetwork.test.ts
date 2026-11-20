@@ -1,7 +1,10 @@
 import { act, renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
+import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
+import { runInitialLayoutWhenIdle } from '../../../data/hooks/stores/runLayoutWhenIdle'
 import { useViewModelStore } from '../../../data/hooks/stores/ViewModelStore'
 import { validateCX2 } from '../../../models/CxModel/impl/validator'
 import { MessageSeverity } from '../../../models/MessageModel'
@@ -37,6 +40,39 @@ const existingView = {
   selectedNodes: ['1'],
   selectedEdges: [],
 }
+
+it('keeps service positions when a subnetwork without a summary has a queued initial layout', async () => {
+  useNetworkStore
+    .getState()
+    .add({ id: networkId, nodes: [{ id: '1' }], edges: [] })
+  useLayoutStore.getState().startLayout('other-network')
+  const initial = vi.fn(() => {
+    useViewModelStore
+      .getState()
+      .updateNodePositions(networkId, new Map([['1', [42, 24]]]))
+    return true
+  })
+  runInitialLayoutWhenIdle(networkId, initial)
+
+  const { result } = renderHook(() => useUpdateNetwork())
+  await act(async () => {
+    await result.current({
+      networkId,
+      responseObj: [
+        { CXVersion: '2.0', hasFragments: false },
+        { metaData: [{ name: 'nodes', elementCount: 1 }] },
+        { nodes: [{ id: 1, x: 111, y: 222 }] },
+        { status: [{ error: '', success: true }] },
+      ],
+    })
+    useLayoutStore.getState().setIsRunning(false)
+  })
+
+  expect(
+    useViewModelStore.getState().getViewModel(networkId)?.nodeViews['1'],
+  ).toMatchObject({ x: 111, y: 222 })
+  expect(initial).not.toHaveBeenCalled()
+})
 
 describe('useUpdateNetwork column type conflict (#951)', () => {
   beforeEach(() => {

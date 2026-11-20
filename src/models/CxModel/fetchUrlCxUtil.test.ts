@@ -106,4 +106,35 @@ describe('fetchUrlCx', () => {
       fetchUrlCx('https://example.org/net.cx2', 10_000),
     ).rejects.toThrow()
   })
+
+  it('correctly sets hasLayout to true when nodes have coordinates including zero (issue #962)', async () => {
+    const cxWithZeroCoords = [
+      { CXVersion: '2.0' },
+      {
+        metaData: [
+          { name: 'nodes', elementCount: 2 },
+          { name: 'edges', elementCount: 1 },
+        ],
+      },
+      {
+        nodes: [
+          { id: 1, x: 0, y: 100 },
+          { id: 2, x: 100, y: 0 },
+        ],
+      },
+      { edges: [{ id: 1, s: 1, t: 2 }] },
+      { status: [{ success: true }] },
+    ]
+    mockFetch({ body: JSON.stringify(cxWithZeroCoords) })
+
+    const { summary } = await fetchUrlCx('https://example.org/net.cx2', 10_000)
+    expect(summary.hasLayout).toBe(true)
+  })
+
+  it('correctly sets hasLayout to false when nodes have no coordinates', async () => {
+    mockFetch({ body: JSON.stringify(VALID_CX) })
+
+    const { summary } = await fetchUrlCx('https://example.org/net.cx2', 10_000)
+    expect(summary.hasLayout).toBe(false)
+  })
 })

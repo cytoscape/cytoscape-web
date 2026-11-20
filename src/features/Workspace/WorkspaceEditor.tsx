@@ -15,9 +15,9 @@ import { useVisualStyleStore } from '../../data/hooks/stores/VisualStyleStore'
 import { useWorkspaceStore } from '../../data/hooks/stores/WorkspaceStore'
 import { useLoadCyNetwork } from '../../data/hooks/useLoadCyNetwork'
 import { useLoadNetworkSummaries } from '../../data/hooks/useLoadNetworkSummaries'
+import { applyInitialLayout } from '../../data/hooks/useRegisterNetwork'
 import { useRemountKeyOnReveal } from '../../data/hooks/useRemountKeyOnReveal'
 import { IdType } from '../../models/IdType'
-import { LayoutEngine } from '../../models/LayoutModel'
 import { Ui } from '../../models/UiModel'
 import { Panel } from '../../models/UiModel/Panel'
 import { PanelState } from '../../models/UiModel/PanelState'
@@ -53,7 +53,6 @@ import { useRendererFunctionStore } from '../../data/hooks/stores/RendererFuncti
 import { useUndoStore } from '../../data/hooks/stores/UndoStore'
 import { logUi } from '../../debug'
 import { CyNetwork } from '../../models'
-import { getDefaultLayout } from '../../models/LayoutModel/impl/layoutSelection'
 import { useCreateNetworkFromTableStore } from '../TableDataLoader/store/createNetworkFromTableStore'
 import { useJoinTableToNetworkStore } from '../TableDataLoader/store/joinTableToNetworkStore'
 
@@ -171,10 +170,6 @@ const WorkSpaceEditor = (): JSX.Element => {
     [number, number]
   >([0, 0])
 
-  const layoutEngines: LayoutEngine[] = useLayoutStore(
-    (state) => state.layoutEngines,
-  )
-
   const setIsRunning: (isRunning: boolean, networkId?: IdType) => void =
     useLayoutStore((state) => state.setIsRunning)
 
@@ -248,55 +243,30 @@ const WorkSpaceEditor = (): JSX.Element => {
         validateAndRecordHcx(networkId, summary, nodeTable, edgeTable)
       }
 
-      // Apply default layout if network doesn't have one
-      if (!summary.hasLayout) {
-        const totalNetworkElements = network.nodes.length + network.edges.length
-        const defaultLayout = getDefaultLayout(
-          totalNetworkElements,
-          maxNetworkElementsThreshold,
-          isHCX(summary),
-        )
-
-        if (defaultLayout !== undefined) {
-          const layoutEngine: LayoutEngine | undefined = layoutEngines.find(
-            (engine) => engine.name === defaultLayout.engineName,
-          )
-
-          if (layoutEngine !== undefined) {
-            const summaryWithLayout = { ...summary, hasLayout: true }
-
-            setIsRunning(true, networkId)
-            const handleLayoutComplete = createLayoutCompletionHandler(
-              networkId,
-              {
-                // Read from the store directly to get the value current at
-                // callback time rather than the stale closure value.
-                isNetworkModified: (id) =>
-                  useWorkspaceStore.getState().workspace.networkModified[id] ===
-                  true,
-                updateNodePositions,
-                fitViewport: (id) => {
-                  const fitFunction = getFunction('cyjs', 'fit', id)
-                  if (fitFunction !== undefined) {
-                    fitFunction()
-                  }
-                },
-                markLayoutApplied: (id) => updateSummary(id, summaryWithLayout),
-                setLayoutRunning: setIsRunning,
-                setNetworkModified,
-              },
-            )
-
-            layoutEngine.apply(
-              network.nodes,
-              network.edges,
-              handleLayoutComplete,
-              layoutEngine.algorithms[defaultLayout.algorithmName],
-              networkId,
-            )
-          }
-        }
-      }
+      applyInitialLayout(
+        networkId,
+        summary,
+        maxNetworkElementsThreshold,
+        createLayoutCompletionHandler(networkId, {
+          // Read from the store directly to get the value current at
+          // callback time rather than the stale closure value.
+          isNetworkModified: (id) =>
+            useWorkspaceStore.getState().workspace.networkModified[id] === true,
+          updateNodePositions,
+          fitViewport: (id) => {
+            const fitFunction = getFunction('cyjs', 'fit', id)
+            if (fitFunction !== undefined) {
+              fitFunction()
+            }
+          },
+          // Only the layout field: the layout can wait for another one
+          // (#982), and a whole summary copied now would overwrite a
+          // rename made meanwhile.
+          markLayoutApplied: (id) => updateSummary(id, { hasLayout: true }),
+          setLayoutRunning: setIsRunning,
+          setNetworkModified,
+        }),
+      )
     } catch (error) {
       logUi.error(
         `[${WorkSpaceEditor.name}]:[${loadCurrentNetworkById.name}]: Failed to load network: ${error}`,

@@ -149,28 +149,31 @@ Clear the browser's cache, then reload Cytoscape Web.
 [This page](https://www.wikihow.com/Clear-Your-Browser%27s-Cache) describes
 how in each browser.
 
-### 3. Clear the Local Database
+### 3. Clear the Local Cache
 
-Choose **Data → Clear Local Database**. A dialog titled
-**Reset Local Workspace (for developers)** asks you to confirm. Click
-**Reset Workspace (cannot be undone)** to continue.
+Choose **Help → Developer → Clear Local Cache**. A dialog titled
+**Clear Local Cache?** asks you to confirm. Click **Clear Cache** to continue.
 
 This deletes everything Cytoscape Web keeps in your browser: every network in
-the workspace, styles, filters and settings. Cytoscape Web then restarts with
-an empty workspace. Networks saved to NDEx are not affected and can be loaded
-again.
+the workspace, styles, Workspace Styles, filters, installed apps, and your
+settings and preferences. Cytoscape Web then reloads as if you were opening it
+for the first time, welcome dialog included. Networks saved to NDEx are not
+affected and can be loaded again, and you stay signed in.
 
 <Note severity="warning">
-Clearing the local database cannot be undone. Save any network you want to
+Clearing the local cache cannot be undone. Save any network you want to
 keep to NDEx first, or keep a copy with **Help → Developer → Export Database
 Snapshot**.
 </Note>
 
-Close other Cytoscape Web tabs first. The reset waits for them to release
-the database, and may reload the page if it cannot finish.
+Your other Cytoscape Web tabs, including this manual, release their data and
+reload too. If another tab is still holding on to some of the data, Cytoscape
+Web tells you which and waits. Close your other Cytoscape Web tabs: the cache
+is cleared and Cytoscape Web reloads as soon as they are closed.
 
-If Cytoscape Web shows an error page instead of the workspace, the page offers
-the same reset with the **Reset Workspace and Reload Cytoscape** button.
+If Cytoscape Web shows an error page instead of the workspace, or cannot start
+because this browser holds data from a newer version, the page offers the same
+clear with the **Clear Cache and Reload Cytoscape** button.
 
 ### Database Snapshots
 

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 
-const STORAGE_KEY = 'cytoscapeWebDesktopPermissionNoticeSeen'
+export const DESKTOP_PERMISSION_NOTICE_STORAGE_KEY =
+  'cytoscapeWebDesktopPermissionNoticeSeen'
 
 /**
  * Whether the one-time "local network permission" explanation has already been
@@ -11,7 +12,9 @@ export const hasSeenDesktopPermissionNotice = (): boolean => {
     return true
   }
   try {
-    return localStorage.getItem(STORAGE_KEY) === 'true'
+    return (
+      localStorage.getItem(DESKTOP_PERMISSION_NOTICE_STORAGE_KEY) === 'true'
+    )
   } catch {
     // If localStorage is unavailable, don't nag on every click.
     return true
@@ -23,7 +26,7 @@ export const markDesktopPermissionNoticeSeen = (): void => {
     return
   }
   try {
-    localStorage.setItem(STORAGE_KEY, 'true')
+    localStorage.setItem(DESKTOP_PERMISSION_NOTICE_STORAGE_KEY, 'true')
   } catch {
     // Ignore quota / access errors.
   }
