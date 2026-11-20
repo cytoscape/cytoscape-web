@@ -146,10 +146,10 @@ operations that are not undoable.
 
 ## Layout Application Flow
 
-1. **Check Layout:** Check if network summary has `hasLayout: true`
-2. **Select Default:** Get default layout based on network size and threshold
-3. **Find Engine:** Find layout engine matching default layout
-4. **Apply Layout:** When the layout can start, check the current summary again. If a replacement already has positions, keep them and skip the initial layout.
+1. Schedule an initial layout if the loaded summary has no saved positions.
+2. When its turn arrives, check the current network and summary. Skip a removed network or a replacement that already has positions.
+3. Count the current nodes and edges. Skip the layout above the configured maximum. Within the maximum, use Grid for 1,000 or more elements, Dagre for a smaller hierarchy, and gForce for other smaller networks.
+4. Run the selected algorithm on the same network used for the count.
 5. **Snapshot Modified:** Read the live `networkModified` flag before touching the view model
 6. **Update Positions:** Update node positions in view model
 7. **Fit Viewport:** Call fit function to center network
@@ -160,7 +160,7 @@ operations that are not undoable.
 
 1. **Exclude Selection from Modifications:** Selection state changes (selectedNodes, selectedEdges) don't count as network modifications because they're temporary UI state
 
-2. **Automatic Layout:** Networks without layouts automatically get default layouts to ensure they're always viewable
+2. **Automatic Layout:** A network without saved positions gets a default layout when its turn arrives if its size is within the configured limit.
 
 3. **Loading Prevention:** Prevents concurrent loads using ref to avoid race conditions and duplicate API calls
 

@@ -1,10 +1,13 @@
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { AppConfigContext, defaultAppConfig } from '../../AppConfigContext'
 import { useHcxValidatorStore } from '../../features/HierarchyViewer/store/HcxValidatorStore'
 import type { CyNetwork } from '../../models/CyNetworkModel'
 import type { IdType } from '../../models/IdType'
+import { CyjsLayout } from '../../models/LayoutModel/impl/Cyjs/cyjsLayout'
 import { G6Layout } from '../../models/LayoutModel/impl/G6/g6Layout'
+import type { LayoutEngine } from '../../models/LayoutModel/LayoutEngine'
 import NetworkFn from '../../models/NetworkModel'
 import type { NetworkSummary } from '../../models/NetworkSummaryModel'
 import { createTable } from '../../models/TableModel/impl/inMemoryTable'
@@ -14,6 +17,7 @@ import { useLayoutStore } from './stores/LayoutStore'
 import { useMessageStore } from './stores/MessageStore'
 import { useNetworkStore } from './stores/NetworkStore'
 import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
+import { runLayoutWhenIdle } from './stores/runLayoutWhenIdle'
 import { useTableStore } from './stores/TableStore'
 import { useUndoStore } from './stores/UndoStore'
 import { useViewModelStore } from './stores/ViewModelStore'
@@ -227,6 +231,66 @@ describe('useRegisterNetwork', () => {
       })
     }
 
+    it.each([
+      { before: 1, after: 1001, algorithm: 'grid' },
+      { before: 1, after: 1002, algorithm: undefined },
+      { before: 1002, after: 1, algorithm: 'gForce' },
+    ])(
+      'selects the initial layout at its turn when size changes from $before to $after',
+      async ({ before, after, algorithm }) => {
+        const apply = vi.fn<LayoutEngine['apply']>((_nodes, _edges, complete) =>
+          complete(new Map()),
+        )
+        useLayoutStore.setState({
+          layoutEngines: [
+            { ...G6Layout, apply },
+            { ...CyjsLayout, apply },
+          ],
+        })
+        useLayoutStore.getState().startLayout('another-net')
+        const { result } = renderHook(useRegisterNetwork, {
+          wrapper: ({ children }) => (
+            <AppConfigContext.Provider
+              value={{ ...defaultAppConfig, maxNetworkElementsThreshold: 1001 }}
+            >
+              {children}
+            </AppConfigContext.Provider>
+          ),
+        })
+        // One node plus its edges exercises the combined element count.
+        const networkOfSize = (size: number) =>
+          NetworkFn.createNetworkFromLists(
+            NET_ID,
+            [{ id: 'n1' }],
+            Array.from({ length: size - 1 }, (_, i) => ({
+              id: `e${i}`,
+              s: 'n1',
+              t: 'n1',
+            })),
+          )
+        const next = vi.fn(() => true)
+        act(() => {
+          result.current(
+            NET_ID,
+            { ...makeCyNetwork(), network: networkOfSize(before) },
+            makeSummary({ hasLayout: false }),
+          )
+          useNetworkStore.getState().add(networkOfSize(after))
+          runLayoutWhenIdle(next)
+        })
+        await finishRunningLayout()
+
+        expect(
+          apply.mock.calls.map(([, , , selected]) => selected.name),
+        ).toEqual(algorithm ? [algorithm] : [])
+        expect(
+          useNetworkSummaryStore.getState().summaries[NET_ID].hasLayout,
+        ).toBe(algorithm !== undefined)
+        expect(next).toHaveBeenCalledTimes(1)
+        expect(useLayoutStore.getState().isRunning).toBe(false)
+      },
+    )
+
     it('keeps the modified flag of an edit made meanwhile', async () => {
       registerWhileBusy()
       // An app edits the new network (markNetworkModified)
@@ -265,6 +329,30 @@ describe('useRegisterNetwork', () => {
       const summary = useNetworkSummaryStore.getState().summaries[NET_ID]
       expect(summary.name).toBe('Renamed')
       expect(summary.hasLayout).toBe(true)
+    })
+
+    it('uses Dagre if the live summary identifies a small hierarchy', async () => {
+      const apply = registerWhileBusy()
+      act(() => {
+        useNetworkSummaryStore.getState().update(NET_ID, {
+          properties: [
+            {
+              predicateString: 'HCX::interactionNetworkUUID',
+              value: 'root',
+              dataType: 'string',
+              subNetworkId: null,
+            },
+          ],
+        })
+      })
+      await finishRunningLayout()
+      expect(apply).toHaveBeenCalledWith(
+        expect.any(Array),
+        expect.any(Array),
+        expect.any(Function),
+        expect.objectContaining({ name: 'dagre' }),
+        NET_ID,
+      )
     })
 
     it('skips the initial layout when the replacement already has positions', async () => {
