@@ -177,6 +177,25 @@ describe('LayoutOptionDialog', () => {
     expect(screen.getByText(/at least 1/)).toBeTruthy()
   })
 
+  // #982: only one layout runs at a time.
+  it('disables Apply while a layout runs', () => {
+    useLayoutStore.setState({ isRunning: true } as any)
+    renderDialog()
+
+    expect(
+      screen
+        .getByTestId('layout-option-dialog-apply-button')
+        .hasAttribute('disabled'),
+    ).toBe(true)
+    // Close stays available: it is the dialog's only exit.
+    expect(
+      screen
+        .getByTestId('layout-option-dialog-close-button')
+        .hasAttribute('disabled'),
+    ).toBe(false)
+    useLayoutStore.setState({ isRunning: false } as any)
+  })
+
   it('renders an app algorithm with fieldsets from groups after switching to it', () => {
     renderDialog()
     fireEvent.mouseDown(screen.getByTestId('layout-selector-combobox'))

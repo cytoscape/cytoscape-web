@@ -213,7 +213,7 @@ https://cd.ndexbio.org/cy/cytocontainer/v1/iqueryenrichment
 ## Keeping Your Apps
 
 Your apps and Service Apps are saved in your browser, with the rest of your
-workspace. **Data → Clear Local Database** removes them.
+workspace. **Help → Developer → Clear Local Cache** removes them.
 
 To keep them, save the workspace to NDEx with **Data → Save Workspace As...**.
 The saved workspace records which apps you installed and which are on, and
@@ -265,6 +265,13 @@ A Service App is a REST service. See the
 [Service App specification](https://github.com/cytoscape/cytoscape-web/wiki/Specification-for-Service-App-in-Cytoscape-Web-%28draft-v2%29).
 The service's `cyWebMenuItem` sets where its menu item appears: `root` names
 the top menu, and `path` the submenus and the item itself.
+
+When a service returns node positions with `updateLayouts`, Cytoscape Web
+applies them to the network the service was run on. If a layout is already
+running, the positions wait their turn. Later actions in the same response
+run after the positions have been processed. If that network is deleted before
+the service finishes, the updates to it are skipped with a warning; new
+networks and URLs the service returns still open.
 
 These example services can be used for testing or as a reference:
 

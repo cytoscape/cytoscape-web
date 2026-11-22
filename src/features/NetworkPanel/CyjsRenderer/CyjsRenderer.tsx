@@ -73,11 +73,13 @@ import {
 } from './renderGuard'
 import { syncCySelection } from './syncCySelection'
 import {
+  cancelPendingFit,
   panReferenceSize,
   setPanReferenceSize,
   useCenterAnchoredResize,
 } from './useCenterAnchoredResize'
 import { useNodeGraphicsSync } from './useNodeGraphicsSync'
+import { traceZoomEvents, useViewportTrace } from './viewportTrace'
 import { isGraphVisible } from './viewportRecovery'
 import { panForCanvasSize } from './viewportRestore'
 
@@ -379,6 +381,8 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
   // Keep the graph centered when a docked panel (or the window) resizes the
   // canvas, as Cytoscape Desktop does — Cytoscape.js alone anchors top-left.
   useCenterAnchoredResize(cy, cyContainer)
+  // Record every zoom change and its cause (debug.viewportTrace()).
+  useViewportTrace(cy, cyContainer)
   const nodeGraphicsRef = useRef<
     Record<IdType, ResolvedNodeGraphics> | undefined
   >(nodeGraphics)
@@ -485,6 +489,8 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
 
     // Remove all event listeners and elements from the Cytoscape instance
     cy.removeAllListeners()
+    // A fit still waiting to be redone belongs to the outgoing network.
+    cancelPendingFit(cy)
     cy.startBatch()
     cy.remove('*')
 
@@ -903,6 +909,7 @@ const CyjsRenderer = ({ network }: NetworkRendererProps): ReactElement => {
     // Store the handler in a ref for later use
     viewportChangeHandlerRef.current = viewportChangeHandler
     cy.on('viewport', viewportChangeHandler)
+    traceZoomEvents(cy, id)
 
     // --- Annotation Rendering ---
     paintAnnotations()

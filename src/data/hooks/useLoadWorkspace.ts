@@ -79,7 +79,7 @@ export const useLoadWorkspace = (
     try {
       // Step 1: Clear the database
       logDb.info('[loadWorkspace] Clearing database')
-      // Same handshake resetWorkspace uses: other tabs hold this database open,
+      // Same handshake Clear Local Cache uses: other tabs hold this database open,
       // and IndexedDB will not delete one with live connections. Without it an
       // import with a second tab open reliably returns 'delete-blocked' and
       // fails below.

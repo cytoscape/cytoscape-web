@@ -31,6 +31,7 @@ The ToolBar is organized into menu categories, each with its own submenu system.
 
 ### Supporting Components
 - **SearchBox**: Search functionality
+- **ThemeToggleButton**: Appearance menu (System / Light / Dark). The button shows the current choice's icon; a click opens an MUI `Menu` (a single detached surface, so a modal Popover is fine here). The choice goes through `useColorScheme().setMode` and MUI persists it as `mui-mode` (#850)
 - **FileUpload**: File upload dialog
 - **GenericFileUploadDialog**: Generic file upload UI
 - **DatabaseSnapshotFileUpload**: Database snapshot upload

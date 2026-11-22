@@ -21,10 +21,32 @@ test.describe('error route', () => {
     await expect(page).toHaveURL(/\/error$/)
   })
 
-  test('Reset Workspace leaves the error page for the editor', async ({
+  test('shows the Clear Local Cache text and button', async ({ page }) => {
+    await page.goto('/error')
+
+    const button = page.locator('[data-testid="error-reset-workspace-button"]')
+    await expect(button).toHaveText('Clear Cache and Reload Cytoscape', {
+      timeout: 30_000,
+    })
+    const message = page.getByTestId('error-clear-cache-message')
+    await expect(message).toContainText(
+      'Your local cache might contain outdated data and it can be the cause of this error.',
+    )
+    await expect(message).toContainText(
+      'Please clear your local cache and restart the app using the button below.',
+    )
+    // The two sentences sit on separate lines.
+    await expect(message.locator('br')).toHaveCount(1)
+  })
+
+  test('Clear Cache and Reload leaves the error page for a clean editor', async ({
     page,
   }) => {
     await page.goto('/error')
+    await page.evaluate(() => {
+      localStorage.setItem('cyweb-network-search', '{}')
+      localStorage.setItem('another-app-on-this-origin', 'keep me')
+    })
     await page
       .locator('[data-testid="error-reset-workspace-button"]')
       .click({ timeout: 30_000 })
@@ -33,5 +55,11 @@ test.describe('error route', () => {
       timeout: 30_000,
     })
     await expect(page).not.toHaveURL(/\/error$/)
+    // The same clear as Help › Developer › Clear Local Cache.
+    const storage = await page.evaluate(() => ({
+      search: localStorage.getItem('cyweb-network-search'),
+      foreign: localStorage.getItem('another-app-on-this-origin'),
+    }))
+    expect(storage).toEqual({ search: null, foreign: 'keep me' })
   })
 })

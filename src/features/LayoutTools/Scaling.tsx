@@ -12,6 +12,7 @@ import {
 import { useLayoutStore } from '../../data/hooks/stores/LayoutStore'
 import { useViewModelStore } from '../../data/hooks/stores/ViewModelStore'
 import { useUndoStack } from '../../data/hooks/useUndoStack'
+import { logUi } from '../../debug'
 import { IdType } from '../../models/IdType'
 import { UndoCommandType } from '../../models/StoreModel/UndoStoreModel'
 import { NetworkView, NodeView } from '../../models/ViewModel'
@@ -84,6 +85,14 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
   // Notify other components that the manual layout is running
   const setIsRunning: (isRunning: boolean, networkId?: IdType) => void =
     useLayoutStore((state) => state.setIsRunning)
+  const startLayout: (networkId: IdType) => boolean = useLayoutStore(
+    (state) => state.startLayout,
+  )
+  // Only one layout runs at a time (#982). Scaling moves every node, so the
+  // slider is disabled while a layout runs: the layout's result would
+  // overwrite the scaling, and scaling's own start and finish would lower
+  // the running layout's flag.
+  const layoutRunning: boolean = useLayoutStore((state) => state.isRunning)
 
   // Update node positions in the network view model
   const updateNodePositions: (
@@ -101,6 +110,31 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
   const hasNodes: boolean =
     networkView !== undefined && Object.keys(networkView.nodeViews).length > 0
 
+  // The slider value from before a drag that has not been released yet, or
+  // undefined when no drag is pending
+  const preDragValueRef: MutableRefObject<number | undefined> = useRef<
+    number | undefined
+  >(undefined)
+
+  /**
+   * Put the slider back when a layout starts mid-drag (#982). The layout
+   * disables the slider, and MUI then drops the drag's release listeners, so
+   * the drag never commits and the slider would keep a value nothing
+   * applied. Nothing moved, so the value from before the drag is the one to
+   * show. Only the value: the scaling type is left as the user picked it,
+   * even when another type also explains the positions. Runs only on the
+   * start of a layout; a layout that then moves this network's nodes is
+   * handled by the sync effect below.
+   */
+  useEffect(() => {
+    const preDragValue = preDragValueRef.current
+    if (!layoutRunning || preDragValue === undefined) {
+      return
+    }
+    preDragValueRef.current = undefined
+    setSliderValue(preDragValue)
+  }, [layoutRunning])
+
   /**
    * Forget the previous network's positions when the network is switched.
    * The sync effect below, declared after this one, then reads the new
@@ -108,6 +142,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
    */
   useEffect(() => {
     setSliderValue(0)
+    preDragValueRef.current = undefined
     originalsRef.current = new Map<IdType, Position>()
     anchorRef.current = [0, 0]
     lastNodeViewsRef.current = undefined
@@ -151,12 +186,20 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
       anchorRef.current,
       current,
     )
+    // During a drag, the value to restore if a layout cuts the drag off is
+    // the one that explains the positions now, not the one from before them
     if (inferred === undefined) {
       refreshPositions(nodeViews)
       setSliderValue(0)
+      if (preDragValueRef.current !== undefined) {
+        preDragValueRef.current = 0
+      }
       return
     }
     setSliderValue(inferred.value)
+    if (preDragValueRef.current !== undefined) {
+      preDragValueRef.current = inferred.value
+    }
     setScalingType(inferred.scalingType)
     // At x1.0 the anchor can follow the layout without moving any node
     if (inferred.value === 0) {
@@ -168,6 +211,9 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
   }, [networkView?.nodeViews])
 
   const handleChange = (event: Event, value: number | number[]): void => {
+    if (preDragValueRef.current === undefined) {
+      preDragValueRef.current = sliderValue
+    }
     setSliderValue(sliderValueOf(event, value))
   }
 
@@ -175,6 +221,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
     event: Event | SyntheticEvent,
     value: number | number[],
   ): void => {
+    preDragValueRef.current = undefined
     const valueAsNumber: number = sliderValueOf(event, value)
     setSliderValue(valueAsNumber)
     const scalingFactor = calcScale(valueAsNumber)
@@ -191,8 +238,14 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
       return
     }
 
-    // Start the layout, on this network's view (#979)
-    setIsRunning(true, networkId)
+    // Start the layout, on this network's view (#979), unless another
+    // layout is running (#982)
+    if (!startLayout(networkId)) {
+      logUi.warn(
+        `[Scaling]: Scaling not applied to network ${networkId}: a layout is running`,
+      )
+      return
+    }
 
     // Scale relative to the original positions
     const positions = new Map<IdType, Position>()
@@ -278,7 +331,7 @@ export const Scaling = ({ networkId }: ScalingProps): JSX.Element => {
           min={SLIDER_MIN}
           max={SLIDER_MAX}
           track={false}
-          disabled={!hasNodes}
+          disabled={!hasNodes || layoutRunning}
           onChangeCommitted={handleUpdate}
           onChange={handleChange}
         />

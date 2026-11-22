@@ -7,6 +7,7 @@ import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
 import { useFilterStore } from '../../../data/hooks/stores/FilterStore'
 import { useLayoutStore } from '../../../data/hooks/stores/LayoutStore'
 import { useNetworkStore } from '../../../data/hooks/stores/NetworkStore'
+import { runInitialLayoutWhenIdle } from '../../../data/hooks/stores/runLayoutWhenIdle'
 import { useTableStore } from '../../../data/hooks/stores/TableStore'
 import { useUiStateStore } from '../../../data/hooks/stores/UiStateStore'
 import { useUndoStore } from '../../../data/hooks/stores/UndoStore'
@@ -17,6 +18,7 @@ import { FilterConfig } from '../../../models/FilterModel'
 import { DisplayMode } from '../../../models/FilterModel/DisplayMode'
 import { IdType } from '../../../models/IdType'
 import { LayoutAlgorithm, LayoutEngine } from '../../../models/LayoutModel'
+import { runEngineLayout } from '../../../models/LayoutModel/impl/runEngineLayout'
 import { Network } from '../../../models/NetworkModel'
 import { Table, ValueType } from '../../../models/TableModel'
 import { NetworkView } from '../../../models/ViewModel'
@@ -279,6 +281,13 @@ export const SubNetworkPanel = ({
 
   const prevQueryNetworkIdRef = useRef<string>()
 
+  // Which run of the data pipeline below is current. A run can outlive its
+  // effect: its subnetwork's layout may wait for another layout (#982), and
+  // the user may pick another subsystem meanwhile. A run that is no longer
+  // current still registers and lays out its subnetwork, which it needs when
+  // selected again, but publishes nothing.
+  const pipelineRunRef = useRef<number>(0)
+
   const getToken = useCredentialStore((state) => state.getToken)
   let interactionSourceUrl = interactionNetworkHost
   const { ndexBaseUrl } = useContext(AppConfigContext)
@@ -401,7 +410,34 @@ export const SubNetworkPanel = ({
     }
   }, [setCurrentSubNetworkId])
 
-  const updateNetworkView = (): string => {
+  /**
+   * Give a subnetwork the fetched style, falling back to the root network's
+   * style, and register that root style the first time.
+   */
+  const addFetchedStyle = (
+    newUuid: IdType,
+    visualStyle: VisualStyle | undefined,
+  ): void => {
+    // Add parent network's style to the shared style store
+    if (vs[rootNetworkId] === undefined && visualStyle !== undefined) {
+      // Register the original style to DB
+      addVisualStyle(rootNetworkId, visualStyle)
+      addVisualStyle(newUuid, visualStyle)
+    } else if (visualStyle === undefined) {
+      addVisualStyle(newUuid, vs[rootNetworkId])
+    } else {
+      // Just use the given style as-is
+      addVisualStyle(newUuid, visualStyle)
+    }
+  }
+
+  /**
+   * Show the fetched subnetwork. `addStyle` is false for a subnetwork this
+   * run registered: it got its style before its layout, which can wait for
+   * another layout (#982), and a service may have replaced the subnetwork,
+   * style included, in the meantime.
+   */
+  const updateNetworkView = (addStyle: boolean): string => {
     if (data === undefined) {
       return ''
     }
@@ -427,16 +463,8 @@ export const SubNetworkPanel = ({
         'Interaction Network: ' + newUuid,
     )
 
-    // Add parent network's style to the shared style store
-    if (vs[rootNetworkId] === undefined && visualStyle !== undefined) {
-      // Register the original style to DB
-      addVisualStyle(rootNetworkId, visualStyle)
-      addVisualStyle(newUuid, visualStyle)
-    } else if (visualStyle === undefined) {
-      addVisualStyle(newUuid, vs[rootNetworkId])
-    } else {
-      // Just use the given style as-is
-      addVisualStyle(newUuid, visualStyle)
+    if (addStyle) {
+      addFetchedStyle(newUuid, visualStyle)
     }
 
     // Register objects to the stores.
@@ -607,6 +635,8 @@ export const SubNetworkPanel = ({
     setProcessingStage('Finalizing network view...')
     setProcessingProgress(95)
     addViewModel(newNetworkId, networkView)
+    // The style comes before the layout, which can wait: see updateNetworkView
+    addFetchedStyle(newNetworkId, data?.visualStyle)
     await yieldToUI()
 
     // Step 6: Apply default layout if needed
@@ -616,8 +646,15 @@ export const SubNetworkPanel = ({
       // Make layout application async. A throwing or rejecting engine
       // (an app engine rejects on any failure) must still settle the
       // promise, or this pipeline would hang with isRunning stuck.
+      // Only one layout runs at a time (#982): when one is running (the
+      // hierarchy's own default layout, typically), this one waits for it
+      // rather than being dropped, which would leave the nodes unplaced.
       const applyLayoutAsync = (): Promise<void> => {
         return new Promise((resolve) => {
+          if (network === undefined || engine === undefined) {
+            resolve()
+            return
+          }
           const afterLayout = (
             positionMap: Map<IdType, [number, number]>,
           ): void => {
@@ -625,34 +662,26 @@ export const SubNetworkPanel = ({
             setIsRunning(false)
             resolve()
           }
-          const onFailure = (error: unknown): void => {
-            logUi.error(
-              `[SubNetworkPanel]: Layout '${defaultLayout.displayName}' failed on ${network.id}:`,
-              error,
-            )
-            setIsRunning(false)
-            resolve()
-          }
 
-          if (network !== undefined && engine !== undefined) {
-            setIsRunning(true, network.id)
-            try {
-              const result = engine.apply(
-                network.nodes,
-                network.edges,
+          // The shared runner settles once per run and logs failures. It
+          // lays out the network as it is on its turn, not as registered:
+          // nodes may have been added or removed while it waited. It stops
+          // waiting, and settles, if the network is removed meanwhile.
+          runInitialLayoutWhenIdle(
+            network.id,
+            (live, claim) =>
+              runEngineLayout({
+                engine,
+                algorithm: defaultLayout,
+                network: live,
+                networkId: network.id,
                 afterLayout,
-                defaultLayout,
-                network.id,
-              )
-              if (result instanceof Promise) {
-                result.catch(onFailure)
-              }
-            } catch (error) {
-              onFailure(error)
-            }
-          } else {
-            resolve()
-          }
+                startLayout: claim,
+                setIsRunning,
+                onFailed: () => resolve(),
+              }),
+            resolve,
+          )
         })
       }
 
@@ -670,6 +699,9 @@ export const SubNetworkPanel = ({
     if (data === undefined) {
       return
     }
+
+    const run = ++pipelineRunRef.current
+    const isCurrent = (): boolean => pipelineRunRef.current === run
 
     // Define an async function for processing data
     const processData = async () => {
@@ -713,7 +745,8 @@ export const SubNetworkPanel = ({
         // Check if the network is already in the store
         const newUuid: string = network.id.toString()
         const queryNetwork: Network | undefined = networks.get(newUuid)
-        if (queryNetwork === undefined) {
+        const registeredHere: boolean = queryNetwork === undefined
+        if (registeredHere) {
           // Call the async version of registerNetwork
           await registerNetwork(
             network,
@@ -723,10 +756,18 @@ export const SubNetworkPanel = ({
             data.visualStyleOptions,
           )
         }
+        // Superseded while registering (its layout may have waited): the
+        // subnetwork is ready for later, but another one is on screen now
+        if (!isCurrent()) {
+          return
+        }
 
         setProcessingProgress(80)
         setProcessingStage('Finalizing...')
         await yieldToUI()
+        if (!isCurrent()) {
+          return
+        }
 
         // if (queryNetworkId === newUuid) {
         //   setProcessingProgress(100)
@@ -736,7 +777,7 @@ export const SubNetworkPanel = ({
         //   return
         // }
 
-        if (updateNetworkView() === '') {
+        if (updateNetworkView(!registeredHere) === '') {
           setRenderFailed(true)
         }
 
@@ -748,9 +789,13 @@ export const SubNetworkPanel = ({
           `[${SubNetworkPanel.name}]: Failed to render the subnetwork`,
           error,
         )
-        setRenderFailed(true)
+        if (isCurrent()) {
+          setRenderFailed(true)
+        }
       } finally {
-        setIsProcessing(false)
+        if (isCurrent()) {
+          setIsProcessing(false)
+        }
       }
     }
 
@@ -759,6 +804,7 @@ export const SubNetworkPanel = ({
 
     // Cleanup function if the component unmounts during processing
     return () => {
+      pipelineRunRef.current += 1
       setIsProcessing(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once per fetched data; other deps would re-run the pipeline

@@ -4,7 +4,10 @@ import {
   registerBootShellAction,
   resetBootShellActionsForTesting,
 } from './bootShellActions'
-import { BOOT_SHELL_TESTID } from './bootShellMarkup'
+import {
+  BOOT_SHELL_ACTION_STATUS_TESTID,
+  BOOT_SHELL_TESTID,
+} from './bootShellMarkup'
 import { showBootShell } from './showBootShell'
 
 const ACTION_ID = 'reset-database'
@@ -20,7 +23,7 @@ const paintWithAction = (): HTMLButtonElement => {
       message: 'Two builds share this address.',
       action: {
         id: ACTION_ID,
-        label: 'Reset Workspace and Reload Cytoscape',
+        label: 'Clear Cache and Reload Cytoscape',
         confirmLabel: 'Confirm — permanently delete',
         confirmMessage: "This permanently deletes this browser's workspace.",
       },
@@ -96,6 +99,60 @@ describe('boot shell recovery actions', () => {
     expect(button.classList.contains('boot-shell-error-button-armed')).toBe(
       true,
     )
+  })
+
+  it('lets the action write a status line next to the button', async () => {
+    let setStatus: ((text: string | null) => void) | undefined
+    let finish: (() => void) | undefined
+    registerBootShellAction(ACTION_ID, async (context) => {
+      setStatus = context.setStatus
+      await new Promise<void>((resolve) => {
+        finish = resolve
+      })
+    })
+    const button = paintWithAction()
+    const status = (): HTMLElement | null =>
+      document.querySelector(
+        `[data-testid="${BOOT_SHELL_ACTION_STATUS_TESTID}"]`,
+      )
+
+    // Present from the first paint, hidden and empty.
+    expect(status()?.hasAttribute('hidden')).toBe(true)
+
+    button.click()
+    button.click()
+    await vi.waitFor(() => {
+      expect(setStatus).toBeDefined()
+    })
+
+    setStatus?.('Another tab is still using cyweb-db.')
+    expect(status()?.textContent).toBe('Another tab is still using cyweb-db.')
+    expect(status()?.hasAttribute('hidden')).toBe(false)
+    expect(status()?.getAttribute('role')).toBe('status')
+
+    setStatus?.(null)
+    expect(status()?.hasAttribute('hidden')).toBe(true)
+    finish?.()
+  })
+
+  it('keeps the status an action wrote when it fails', async () => {
+    registerBootShellAction(ACTION_ID, async ({ setStatus }) => {
+      setStatus('Could not delete cyweb-db. Please try again.')
+      throw new Error('not cleared')
+    })
+    const button = paintWithAction()
+
+    button.click()
+    button.click()
+
+    await vi.waitFor(() => {
+      expect(button.hasAttribute('disabled')).toBe(false)
+    })
+    expect(
+      document.querySelector(
+        `[data-testid="${BOOT_SHELL_ACTION_STATUS_TESTID}"]`,
+      )?.textContent,
+    ).toBe('Could not delete cyweb-db. Please try again.')
   })
 
   it('ignores clicks for an id with no registered handler', () => {

@@ -115,6 +115,10 @@ export function processDeclarativeResources(cyApp: CyApp): void {
 }
 
 export const useAppManager = (): AppManagerCommands => {
+  // Raised the moment the startup pass begins, so it runs once per hook
+  // instance. StrictMode re-runs the init effect straight after its first
+  // run; a guard raised any later (it used to wait for restore()) let a
+  // second pass start alongside the first (#992).
   const initRef = useRef<boolean>(false)
   // Track last processed app state to prevent unnecessary re-runs
   const lastAppsState = useRef<string>('')
@@ -714,6 +718,7 @@ export const useAppManager = (): AppManagerCommands => {
 
   useEffect(() => {
     if (initRef.current === false) {
+      initRef.current = true
       const init = async (): Promise<void> => {
         // 1. Read persisted manifestSource from IndexedDB
         const savedSource = await getAppSettingFromDb('manifestSource')
@@ -978,8 +983,6 @@ export const useAppManager = (): AppManagerCommands => {
         }
       }
     }
-
-    initRef.current = true
   }, [apps, restored])
 
   return {

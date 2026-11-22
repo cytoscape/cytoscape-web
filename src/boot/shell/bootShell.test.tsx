@@ -111,7 +111,7 @@ describe('BootShell / showBootShell parity', () => {
           detail: 'onDisk=12 expected=11',
           action: {
             id: 'reset-database',
-            label: 'Reset Workspace and Reload Cytoscape',
+            label: 'Clear Cache and Reload Cytoscape',
             confirmLabel: 'Confirm — permanently delete',
             confirmMessage: 'This permanently deletes the local workspace.',
           },
@@ -291,7 +291,7 @@ describe('bootShellInnerHtml', () => {
         message: 'Two builds share this address.',
         action: {
           id: 'reset-database',
-          label: 'Reset Workspace and Reload Cytoscape',
+          label: 'Clear Cache and Reload Cytoscape',
           confirmLabel: 'Confirm — permanently delete',
           confirmMessage: 'This permanently deletes the local workspace.',
         },
@@ -300,7 +300,7 @@ describe('bootShellInnerHtml', () => {
     const shell = root.querySelector(`[data-testid="${BOOT_SHELL_TESTID}"]`)
     const button = shell?.querySelector('button')
 
-    expect(button?.textContent).toBe('Reset Workspace and Reload Cytoscape')
+    expect(button?.textContent).toBe('Clear Cache and Reload Cytoscape')
     expect(button?.getAttribute('data-boot-action')).toBe('reset-database')
     expect(button?.classList.contains('boot-shell-error-button-armed')).toBe(
       false,

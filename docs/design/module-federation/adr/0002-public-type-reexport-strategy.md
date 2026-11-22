@@ -88,7 +88,7 @@ External apps could use it as a dev dependency.
 **Deprecated (February 2026) — superseded by `@cytoscape-web/api-types`:**
 
 The four unresolved issues that originally deferred this alternative
-([module-federation-design.md § 1.3](../design/module-federation/module-federation-design.md))
+([module-federation-design.md § 1.3](../module-federation-design.md))
 were never fixed. Instead, Phase 0 delivered `@cytoscape-web/api-types` — a new npm workspace
 package (`packages/api-types/`) built from scratch with a curated type surface via
 `ElementTypes.ts`. It adds event bus declarations (`CyWebEvents`, `CyWebEventMap`) and ambient
@@ -129,7 +129,7 @@ export const Types = { IdType, Network, ... } // Not possible for TS types
 
 **Related documents:**
 
-- [phase0-shared-types-design.md](../design/module-federation/specifications/phase0-shared-types-design.md) § 3.3 — `ElementTypes.ts` full type list
-- [phase0-shared-types-design.md](../design/module-federation/specifications/phase0-shared-types-design.md) § 7.2 — External dependency risk analysis
-- [module-federation-design.md](../design/module-federation/module-federation-design.md) § 1.3 — `@cytoscape-web/types` package fix plan
+- [phase0-shared-types-design.md](../specifications/phase0-shared-types-design.md) § 3.3 — `ElementTypes.ts` full type list
+- [phase0-shared-types-design.md](../specifications/phase0-shared-types-design.md) § 7.2 — External dependency risk analysis
+- [module-federation-design.md](../module-federation-design.md) § 1.3 — `@cytoscape-web/types` package fix plan
 - [ADR 0003](0003-framework-agnostic-core-layer.md) — Framework-agnostic core layer; `window.CyWebApi` consumers use these same types

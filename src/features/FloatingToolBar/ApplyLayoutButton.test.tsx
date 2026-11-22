@@ -15,11 +15,16 @@ import { ApplyLayoutButton } from './ApplyLayoutButton'
 vi.mock('../../data/hooks/stores/LayoutStore', async () => {
   const { create } = await vi.importActual<typeof import('zustand')>('zustand')
   return {
-    useLayoutStore: create<any>((set: any) => ({
+    useLayoutStore: create<any>((set: any, get: any) => ({
       layoutEngines: [] as LayoutEngine[],
       preferredLayout: undefined as unknown as LayoutAlgorithm,
       isRunning: false,
       setIsRunning: (isRunning: boolean) => set({ isRunning }),
+      startLayout: () => {
+        if (get().isRunning) return false
+        set({ isRunning: true })
+        return true
+      },
     })),
   }
 })
@@ -80,6 +85,7 @@ describe('ApplyLayoutButton', () => {
         },
       ],
       preferredLayout: circle,
+      isRunning: false,
     } as any)
     useWorkspaceStore.setState((state) => {
       state.workspace.currentNetworkId = 'net2'
@@ -118,5 +124,25 @@ describe('ApplyLayoutButton', () => {
 
     expect(fitNet2).toHaveBeenCalledTimes(1)
     expect(fitNet1).not.toHaveBeenCalled()
+  })
+
+  // #982: only one layout runs at a time.
+  it('is disabled while a layout runs, on any network, and starts nothing', () => {
+    useLayoutStore.setState({ isRunning: true } as any)
+    render(<ApplyLayoutButton rendererId="cyjs" targetNetworkId="net1" />)
+
+    const button = screen.getByTestId('apply-layout-button')
+    expect(button.hasAttribute('disabled')).toBe(true)
+    fireEvent.click(button)
+    expect(
+      useLayoutStore.getState().layoutEngines[0].apply,
+    ).not.toHaveBeenCalled()
+
+    act(() => {
+      useLayoutStore.getState().setIsRunning(false)
+    })
+    expect(
+      screen.getByTestId('apply-layout-button').hasAttribute('disabled'),
+    ).toBe(false)
   })
 })
