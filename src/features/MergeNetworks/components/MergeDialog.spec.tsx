@@ -51,9 +51,11 @@ describe('MergeDialog merged network name', () => {
     renderDialog()
     fireEvent.change(nameInput(), { target: { value: '' } })
     expect(mergeButton().disabled).toBe(true)
-    expect(
-      screen.getByText('Please enter a name for the merged network.'),
-    ).toBeTruthy()
+    const message = screen.getByText(
+      'Please enter a name for the merged network.',
+    )
+    expect(nameInput().getAttribute('aria-invalid')).toBe('true')
+    expect(nameInput().getAttribute('aria-describedby')).toBe(message.id)
   })
 
   it('treats a name of only spaces as empty', () => {

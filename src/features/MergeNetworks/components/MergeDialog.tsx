@@ -778,7 +778,10 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
             value={mergedNetworkName}
             onChange={handleNameChange}
             error={isNameBlank}
-            inputProps={{ 'data-testid': 'merge-dialog-name-input' }}
+            inputProps={{
+              'data-testid': 'merge-dialog-name-input',
+              'aria-describedby': 'merged-network-name-message',
+            }}
             fullWidth
             size="small"
             InputProps={{
@@ -789,6 +792,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
             }}
           />
           <Typography
+            id="merged-network-name-message"
             component="caption"
             sx={{
               color: (theme) =>
