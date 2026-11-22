@@ -174,6 +174,9 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
   const [strictRemoveMode, setStrictRemoveMode] = useState(false) // Flag to indicate the rules of difference merge
   const [isNameDuplicate, setIsNameDuplicate] = useState(false) // Flag to indicate whether the network name is a duplicate
   const existingNetNames = new Set(workSpaceNetworks.map((pair) => pair[0])) // Set of existing network names
+  // A blank name would create a network with no title: block Merge until one
+  // is entered, as the other naming dialogs do
+  const isNameBlank = mergedNetworkName.trim() === ''
   const nodesDuplication = useNodesDuplicationStore(
     (state) => state.nodesDuplication,
   )
@@ -582,7 +585,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
       const [newCyNetwork, networkSummary] = await createMergedNetwork(
         sourceNetworkIds,
         newNetworkId,
-        mergedNetworkName,
+        mergedNetworkName.trim(),
         networkRecords,
         nodeMatchingTableObj,
         edgeMatchingTableObj,
@@ -774,6 +777,8 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
             placeholder="Enter merged network name"
             value={mergedNetworkName}
             onChange={handleNameChange}
+            error={isNameBlank}
+            inputProps={{ 'data-testid': 'merge-dialog-name-input' }}
             fullWidth
             size="small"
             InputProps={{
@@ -786,15 +791,20 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
           <Typography
             component="caption"
             sx={{
-              color: (theme) => theme.palette.warning.main,
+              color: (theme) =>
+                isNameBlank
+                  ? theme.palette.error.main
+                  : theme.palette.warning.main,
               textAlign: 'left',
               fontSize: '0.875rem',
               ml: 0.5,
             }}
           >
-            {isNameDuplicate
-              ? 'Warning: A network with this name already exists in your workspace.'
-              : '\u00A0'}
+            {isNameBlank
+              ? 'Please enter a name for the merged network.'
+              : isNameDuplicate
+                ? 'Warning: A network with this name already exists in your workspace.'
+                : '\u00A0'}
           </Typography>
         </FormControl>
 
@@ -1088,7 +1098,13 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
           Cancel
         </Button>
         <Tooltip
-          title={mergeTooltipIsOpen ? mergeTooltipText : ''}
+          title={
+            mergeTooltipIsOpen
+              ? mergeTooltipText
+              : isNameBlank
+                ? 'Merge is disabled because the merged network name is empty.'
+                : ''
+          }
           placement="top"
           arrow
         >
@@ -1096,7 +1112,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
             <Button
               data-testid="merge-dialog-merge-button"
               variant="contained"
-              disabled={mergeTooltipIsOpen}
+              disabled={mergeTooltipIsOpen || isNameBlank}
               onClick={handleMerge}
               sx={{ px: 2.5 }}
             >
