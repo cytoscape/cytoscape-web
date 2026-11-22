@@ -26,6 +26,7 @@ import { isHCX } from '../HierarchyViewer/utils/hierarchyUtil'
 import { validateAndRecordHcx } from '../HierarchyViewer/utils/validateAndRecordHcx'
 import { SnackbarMessageList } from '../Messages'
 import { setTabNetworkId } from '@/data/tabState/tabNetwork'
+import { activeViewAfterLoad } from './activeViewAfterLoad'
 import { createLayoutCompletionHandler } from './layoutCompletion'
 import { NetworkBrowserPanel } from './NetworkBrowserPanel/NetworkBrowserPanel'
 import { OpenRightPanelButton } from './SidePanel/OpenRightPanelButton'
@@ -345,8 +346,15 @@ const WorkSpaceEditor = (): JSX.Element => {
       // Remember this tab's active network so a cross-tab reload restores it
       // even if the URL loses its network segment (CW-722).
       setTabNetworkId(networkId)
-      // Synchronize activeNetworkView with currentNetworkId
-      setActiveNetworkView(networkId)
+      // Synchronize activeNetworkView with currentNetworkId, but keep a
+      // subnetwork view of this network that a shared link already restored
+      // (#965). Read the store directly: the render-time value can be stale.
+      setActiveNetworkView(
+        activeViewAfterLoad(
+          useUiStateStore.getState().ui.activeNetworkView,
+          networkId,
+        ),
+      )
     },
   })
 

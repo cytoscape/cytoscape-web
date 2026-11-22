@@ -213,13 +213,15 @@ const subsystemDeselected = (
     return () => false
   }
   const subsystemId = viewId.slice(hierarchyId.length + 1)
-  let seenSelected = false
+  const isSubsystemSelected = (): boolean =>
+    useViewModelStore.getState().getViewModel(hierarchyId)?.selectedNodes[0] ===
+    subsystemId
+  // When the hierarchy is already loaded, restoreUrlState() selected the
+  // subsystem before this guard was created, so start from the current state.
+  let seenSelected = isSubsystemSelected()
 
   return () => {
-    const selected = useViewModelStore
-      .getState()
-      .getViewModel(hierarchyId)?.selectedNodes
-    if (selected?.[0] === subsystemId) {
+    if (isSubsystemSelected()) {
       seenSelected = true
       return false
     }

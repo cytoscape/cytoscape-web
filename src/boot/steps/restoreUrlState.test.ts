@@ -175,4 +175,26 @@ describe('restoreUrlState selection restore (#965)', () => {
     expect(useUiStateStore.getState().ui.activeNetworkView).not.toBe(SUB_ID)
     expect(selectedNodesOf(SUB_ID)).toEqual([])
   })
+
+  it('drops the subnetwork restore when the hierarchy was loaded first and the user selects another subsystem', () => {
+    // The hierarchy is already loaded, so restoreUrlState() selects the
+    // subsystem at once, before the subsystem guard exists.
+    addView(MAIN_ID)
+
+    restoreUrlState(
+      contextFor(
+        `selectednodes=${SUBSYSTEM_ID}&activeNetworkView=${SUB_ID}&selectedSubnetworkNodes=n2`,
+      ),
+      MAIN_ID,
+    )
+
+    expect(selectedNodesOf(MAIN_ID)).toEqual([SUBSYSTEM_ID])
+    act(() => {
+      useViewModelStore.getState().exclusiveSelect(MAIN_ID, ['n1'], [])
+    })
+    addView(SUB_ID)
+
+    expect(useUiStateStore.getState().ui.activeNetworkView).not.toBe(SUB_ID)
+    expect(selectedNodesOf(SUB_ID)).toEqual([])
+  })
 })
