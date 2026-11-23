@@ -1,7 +1,9 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { ReactElement } from 'react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
+import { MessageSeverity } from '../../../models/MessageModel'
 import { AboutDialog } from './AboutDialog'
 import { BugReportDialog } from './BugReportDialog'
 import { CitationDialog } from './CitationDialog'
@@ -85,5 +87,48 @@ describe('CitationDialog', () => {
     fireEvent.click(screen.getByTestId('citation-dialog-copy-bibtex-button'))
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(2))
     expect(writeText).toHaveBeenLastCalledWith(citationsAsBibtex())
+  })
+})
+
+/**
+ * Issue #994: a refused clipboard write must tell the user, not fail silently.
+ */
+describe.each<[string, HelpDialog, string]>([
+  ['AboutDialog', AboutDialog, 'about-dialog-copy-button'],
+  ['LicenseDialog', LicenseDialog, 'license-dialog-copy-button'],
+])('%s copy button', (_name, Dialog, testId) => {
+  beforeEach(() => {
+    useMessageStore.getState().resetMessages()
+  })
+
+  it('shows an error when the clipboard refuses the write', async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error('denied'))
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    })
+    render(<Dialog open={true} onClose={vi.fn()} />)
+
+    fireEvent.click(screen.getByTestId(testId))
+
+    await waitFor(() =>
+      expect(useMessageStore.getState().messages.at(-1)?.severity).toBe(
+        MessageSeverity.ERROR,
+      ),
+    )
+  })
+
+  it('shows no error when the copy succeeds', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    })
+    render(<Dialog open={true} onClose={vi.fn()} />)
+
+    fireEvent.click(screen.getByTestId(testId))
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1))
+    expect(useMessageStore.getState().messages).toHaveLength(0)
   })
 })

@@ -16,6 +16,8 @@ import { DialogCloseButton } from '@/components/DialogCloseButton'
 import logo from '../../../assets/cytoscape.svg'
 import packageInfo from '../../../../package.json'
 import { getDatabaseVersion } from '../../../data/db'
+import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
+import { MessageSeverity } from '../../../models/MessageModel'
 import { copyToClipboard } from '../../../utils/copyToClipboard'
 
 export const CODE_REPO_URL = 'https://github.com/cytoscape/cytoscape-web'
@@ -64,15 +66,25 @@ export const AboutDialog = ({
         formatDateForHash(process.env.REACT_APP_LAST_COMMIT_TIME)
       : 'N/A'
 
+  const addMessage = useMessageStore((state) => state.addMessage)
+
   const buildDate = process.env.REACT_APP_BUILD_TIME
     ? new Date(process.env.REACT_APP_BUILD_TIME).toLocaleString()
     : 'N/A'
 
   const handleCopyInfo = (): void => {
     const infoToCopy = `Version: ${packageInfo.version}\nBuild ID: ${commitHash}\nBuild Date: ${buildDate}\nCache Version: ${getDatabaseVersion()}`
-    // copyToClipboard logs a failure and never throws, even without a
-    // clipboard (insecure context).
-    void copyToClipboard(infoToCopy)
+    // copyToClipboard never throws, even without a clipboard (insecure
+    // context); it resolves false instead, which the user must be told.
+    void copyToClipboard(infoToCopy).then((copied) => {
+      if (!copied) {
+        addMessage({
+          message: 'Could not copy the version information to the clipboard.',
+          duration: 5000,
+          severity: MessageSeverity.ERROR,
+        })
+      }
+    })
   }
 
   return (
@@ -162,6 +174,7 @@ export const AboutDialog = ({
             Cache Version: {getDatabaseVersion()}
           </Typography>
           <Button
+            data-testid="about-dialog-copy-button"
             onClick={handleCopyInfo}
             variant="outlined"
             startIcon={<ContentCopyIcon />}
