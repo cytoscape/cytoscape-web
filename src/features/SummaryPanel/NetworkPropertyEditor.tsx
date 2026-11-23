@@ -41,6 +41,10 @@ const NetworkPropertyEditor = (
   const [localSummaryState, setLocalSummaryState] = useState(summary)
 
   const open = anchorEl !== undefined
+  // A blank name would leave the network with no title: block Confirm until
+  // one is entered, as the Merge dialog does. Duplicate names stay allowed,
+  // since imported CX2 networks can already share a name.
+  const isNameBlank = (localSummaryState.name ?? '').trim() === ''
   const updateNetworkSummary = useNetworkSummaryStore((state) => state.update)
 
   const editor = useEditor({
@@ -119,9 +123,14 @@ const NetworkPropertyEditor = (
           />
           <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
             <TextField
+              id="network-property-editor-name"
               data-testid="network-property-editor-name-input"
               size="small"
               label="Name"
+              error={isNameBlank}
+              helperText={
+                isNameBlank ? 'Please enter a name for the network.' : ' '
+              }
               sx={{ width: '60%', mr: 1, fontSize: 12 }}
               value={localSummaryState.name}
               onChange={(e) => {
@@ -190,6 +199,7 @@ const NetworkPropertyEditor = (
           <Button
             data-testid="network-property-editor-confirm-button"
             variant="contained"
+            disabled={isNameBlank}
             onClick={(e) => {
               if (isEqual(localSummaryState, summary)) {
                 onClose(e)

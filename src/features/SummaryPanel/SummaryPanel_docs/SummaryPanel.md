@@ -95,7 +95,10 @@ network to NDEx first"). See `networkRowActions.ts`.
 - Choosing "Edit network properties" in the overflow menu opens a popover editor
   anchored to the overflow button
 - Editor allows editing:
-  - Name: Simple text input
+  - Name: Simple text input. A blank name (empty or only spaces) turns the
+    field red with "Please enter a name for the network." and disables
+    Confirm. Duplicate names are allowed, since imported CX2 networks can
+    already share a name.
   - Version: Simple text input
   - Description: Rich text editor (Tiptap)
 - Changes are saved to NetworkSummaryStore
