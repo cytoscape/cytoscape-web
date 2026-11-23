@@ -1,7 +1,8 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 
+import useNodesDuplicationStore from '../store/nodesDuplicationStore'
 import MergeDialog from './MergeDialog'
 
 const renderDialog = (workSpaceNetworks: [string, string][] = []): void => {
@@ -54,6 +55,8 @@ describe('MergeDialog merged network name', () => {
     const message = screen.getByText(
       'Please enter a name for the merged network.',
     )
+    // A <caption> outside a <table> is invalid DOM nesting
+    expect(message.tagName).toBe('P')
     expect(nameInput().getAttribute('aria-invalid')).toBe('true')
     expect(nameInput().getAttribute('aria-describedby')).toBe(message.id)
   })
@@ -82,5 +85,17 @@ describe('MergeDialog merged network name', () => {
     expect(mergeButton().disabled).toBe(true)
     expect(nameInput().getAttribute('aria-invalid')).toBe('true')
     expect(nameInput().getAttribute('aria-describedby')).toBe(message.id)
+  })
+})
+
+describe('MergeDialog duplicate matching values notice', () => {
+  it('is not rendered as a <caption> outside a table', () => {
+    renderDialog()
+    act(() => {
+      useNodesDuplicationStore.getState().setNodesDuplication({ 'net-1': true })
+    })
+    const notice = screen.getByText(/Some nodes have duplicate values/)
+    expect(notice.tagName).not.toBe('CAPTION')
+    act(() => useNodesDuplicationStore.getState().resetStore())
   })
 })

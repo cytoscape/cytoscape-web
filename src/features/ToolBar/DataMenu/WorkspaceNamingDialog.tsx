@@ -4,7 +4,6 @@ import {
   DialogContent,
   DialogTitle,
   TextField,
-  Typography,
 } from '@mui/material'
 import { useState } from 'react'
 
@@ -46,8 +45,11 @@ export const WorkspaceNamingDialog = ({
     networkModifiedStatus,
   } = useWorkspaceData()
   const [workspaceName, setWorkspaceName] = useState('')
-  const [showWarning, setShowWarning] = useState(false)
-  const [warningMessage, setWarningMessage] = useState('')
+  // The field opens empty (the current name is only a placeholder), so the
+  // error waits until the user has typed: Save alone is disabled until then
+  const [isNameTouched, setIsNameTouched] = useState(false)
+  const isNameBlank = workspaceName.trim() === ''
+  const showNameError = isNameTouched && isNameBlank
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [workspaceIdToBeOverwritten, setWorkspaceIdToBeOverwritten] = useState<
     string | undefined
@@ -104,11 +106,7 @@ export const WorkspaceNamingDialog = ({
   }
 
   const onSave = async () => {
-    if (workspaceName.trim().length === 0) {
-      setWarningMessage('Please enter a workspace name')
-      setShowWarning(true)
-      return
-    }
+    if (isNameBlank) return
     try {
       const accessToken = await getToken()
       const existingWorkspaces = await fetchMyNdexWorkspaces(
@@ -160,6 +158,7 @@ export const WorkspaceNamingDialog = ({
   }
   const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setWorkspaceName(event.target.value)
+    setIsNameTouched(true)
   }
 
   return (
@@ -180,14 +179,10 @@ export const WorkspaceNamingDialog = ({
             onChange={handleNameChange}
             onKeyDown={(e) => {
               e.stopPropagation()
-              setShowWarning(false)
             }}
+            error={showNameError}
+            helperText={showNameError ? 'Please enter a workspace name.' : ' '}
           />
-          {showWarning && (
-            <Typography color="error" variant="body2">
-              {warningMessage}
-            </Typography>
-          )}
         </DialogContent>
         <DialogActions>
           <Button
@@ -200,7 +195,7 @@ export const WorkspaceNamingDialog = ({
           <Button
             data-testid="workspace-naming-save-button"
             variant="contained"
-            disabled={workspaceName.trim().length === 0}
+            disabled={isNameBlank}
             onClick={onSave}
             sx={{ px: 4 }}
           >

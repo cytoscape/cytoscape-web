@@ -13,7 +13,6 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
-  FormHelperText,
   IconButton,
   InputLabel,
   MenuItem,
@@ -382,20 +381,18 @@ const LLMQueryOptionsDialogContent = (
           </Select>
         </FormControl>
         {localProvider !== 'openai' && (
-          <FormControl sx={{ mb: 2 }} fullWidth>
-            <TextField
-              data-testid="llm-query-options-base-url-input"
-              size="small"
-              fullWidth
-              label="Endpoint URL"
-              value={localBaseUrl}
-              error={endpointError !== undefined}
-              onChange={(e) => handleBaseUrlChange(e.target.value)}
-            />
-            <FormHelperText error={endpointError !== undefined}>
-              {endpointError ?? baseUrlHelp}
-            </FormHelperText>
-          </FormControl>
+          <TextField
+            id="llm-query-options-base-url"
+            data-testid="llm-query-options-base-url-input"
+            size="small"
+            fullWidth
+            label="Endpoint URL"
+            value={localBaseUrl}
+            error={endpointError !== undefined}
+            helperText={endpointError ?? baseUrlHelp}
+            onChange={(e) => handleBaseUrlChange(e.target.value)}
+            sx={{ mb: 2 }}
+          />
         )}
         <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
           <Autocomplete
