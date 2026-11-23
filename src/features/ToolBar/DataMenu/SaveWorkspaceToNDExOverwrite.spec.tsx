@@ -3,8 +3,10 @@ import Keycloak from 'keycloak-js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { KeycloakContext } from '@/boot/keycloak'
+import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { useSaveWorkspace } from '../../../data/hooks/useSaveWorkspaceToNDEx'
 import { useWorkspaceData } from '../../../data/hooks/useWorkspaceData'
+import { MessageSeverity } from '../../../models/MessageModel'
 import { SaveWorkspaceToNDExOverwriteMenuItem } from './SaveWorkspaceToNDExOverwrite'
 
 vi.mock('../../../data/hooks/useSaveWorkspaceToNDEx')
@@ -40,6 +42,7 @@ const renderRow = (isRemoteWorkspace: boolean) => {
 describe('SaveWorkspaceToNDExOverwriteMenuItem', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    useMessageStore.getState().resetMessages()
     saveWorkspace.mockResolvedValue(undefined)
     ;(useSaveWorkspace as unknown as Mock).mockReturnValue(saveWorkspace)
   })
@@ -65,5 +68,23 @@ describe('SaveWorkspaceToNDExOverwriteMenuItem', () => {
     expect(onSaveAs).toHaveBeenCalledTimes(1)
     expect(saveWorkspace).not.toHaveBeenCalled()
     expect(document.querySelector('[role="dialog"]')).toBeNull()
+  })
+
+  // #541: saveWorkspace reports a failure only by rejecting, so the row's
+  // message is the only one the user sees.
+  it('shows one error message when the overwrite fails', async () => {
+    saveWorkspace.mockRejectedValue(new Error('NDEx is down'))
+    renderRow(true)
+
+    fireEvent.click(screen.getByText('Save Workspace'))
+
+    await waitFor(() =>
+      expect(useMessageStore.getState().messages).toHaveLength(1),
+    )
+    const [message] = useMessageStore.getState().messages
+    expect(message.severity).toBe(MessageSeverity.ERROR)
+    expect(message.message).toBe(
+      'Failed to update the workspace to NDEx: NDEx is down',
+    )
   })
 })
