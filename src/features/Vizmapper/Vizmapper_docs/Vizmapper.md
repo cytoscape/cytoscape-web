@@ -50,12 +50,15 @@ The Vizmapper is organized around visual properties, which are grouped into thre
 ### Style Manager (multiple visual styles)
 
 - **StyleManager/StyleManager.tsx**: Selector row rendered above the tabs
-  - Dropdown to switch the network's active named style
+  - Style picker button showing the active style's thumbnail and name; it
+    opens **StylePickerDialog**, a grid of previews of this network's styles,
+    other networks' styles and the workspace library
   - Menu: New Style (copy of current), Duplicate, Rename, Delete,
     Save Style to Workspace, Apply Style from Workspace
   - Every operation marks the network as modified
-  - Switching styles clears the network's undo/redo history (recorded edits
-    reference the previous style)
+  - Switching styles is an undoable edit (`SWITCH_STYLE`, #656) and keeps the
+    network's undo/redo history. Deleting a style clears that history, because
+    a recorded switch to a deleted style cannot be replayed
 - **StyleManager/StyleNameDialog.tsx**: Name prompt shared by create/rename/save
 - **StyleManager/StyleLibraryDialog.tsx**: Workspace-level style library browser,
   titled "Workspace Styles" in the UI (#704);
