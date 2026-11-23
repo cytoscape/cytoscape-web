@@ -107,6 +107,18 @@ describe('LLMQueryOptionsDialog', () => {
     ).toHaveProperty('disabled', true)
   })
 
+  it('links the endpoint help to the Endpoint URL input', () => {
+    render(<LLMQueryOptionsDialog open={true} handleClose={() => {}} />)
+
+    selectProvider('custom')
+    const input = within(
+      screen.getByTestId('llm-query-options-base-url-input'),
+    ).getByRole('textbox')
+    const help = screen.getByText(/Base URL of an OpenAI-compatible/)
+    expect(help.id).not.toBe('')
+    expect(input.getAttribute('aria-describedby')).toBe(help.id)
+  })
+
   it('saves a custom endpoint key as the custom key and forgets the OpenAI key', () => {
     act(() => useLLMQueryStore.getState().setLLMApiKey('sk-openai'))
     render(<LLMQueryOptionsDialog open={true} handleClose={() => {}} />)

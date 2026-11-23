@@ -947,7 +947,6 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
               sx={{ color: (theme) => theme.palette.warning.main }}
             />
             <Typography
-              component="caption"
               sx={{
                 color: (theme) => theme.palette.warning.main,
                 textAlign: 'left',
