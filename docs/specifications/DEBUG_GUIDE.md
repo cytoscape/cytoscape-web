@@ -127,6 +127,28 @@ window.debug.cy.zoom(2) // Set zoom level
 window.debug.cy.pan({ x: 100, y: 100 }) // Pan the viewport
 ```
 
+### Viewport Trace (zoom history)
+
+The main network view keeps a flight recorder of its zoom
+(`src/features/NetworkPanel/CyjsRenderer/viewportTrace.ts`). Recording is
+always on; reading it needs debug mode:
+
+```js
+debug.viewportTrace() // timeline, oldest first
+copy(JSON.stringify(debug.viewportTrace(), null, 2)) // to the clipboard
+debug.clearViewportTrace() // start over
+```
+
+Each `zoom` entry gives the cause (`fit`, `wheel`, `pinch`, or `other` with a
+stack), `zoomBefore`/`zoomAfter`, `cySize` (the canvas size Cytoscape.js had
+cached, which `fit()` uses) and `box` (the container's real size), and whether
+the page was visible and focused. `page` entries record visibility changes,
+`freeze`/`resume`, `pageshow`/`pagehide`, focus/blur, window resizes,
+device-pixel-ratio changes, and each `load` with `wasDiscarded` (the browser
+discarded the background tab and reloaded it). The buffer (300 entries) lives
+in `sessionStorage`, so it survives that reload. A single zoom change that
+more than halves the zoom is also logged with `logUi.warn`.
+
 ### Other Exposed Objects
 
 Depending on your app setup, you may also find other objects such as:

@@ -1,6 +1,5 @@
 import type { IDatabaseChange } from 'dexie-observable/api'
 import { ReactElement, useEffect } from 'react'
-import { useHref } from 'react-router-dom'
 
 import { getDb } from '../data/db'
 import { useMessageStore } from '../data/hooks/stores/MessageStore'
@@ -17,12 +16,6 @@ import {
   onCrossTabSyncFailed,
   reportSyncListenerFailure,
 } from '@/data/sync/crossTabSyncHealth'
-import {
-  DATABASE_DELETED,
-  handleDatabaseDeleted,
-  isOwnResetAnnouncement,
-  UI_EVENTS_CHANNEL,
-} from '@/data/db/lifecycle'
 
 /**
  * Tables holding workspace-wide state, relevant to a tab whatever network it is
@@ -203,32 +196,9 @@ export const SyncTabsAction = (): ReactElement => {
     }
   }, [])
 
-  // Root path with the router basename applied, so a deployment under a
-  // sub-path does not reload to the wrong origin root.
-  const rootHref = useHref('/')
-
-  useEffect(() => {
-    const channel = new BroadcastChannel(UI_EVENTS_CHANNEL)
-
-    channel.onmessage = (event) => {
-      if (event.data?.type !== DATABASE_DELETED) {
-        return
-      }
-      // The resetting tab hears its own announcement: BroadcastChannel excludes
-      // only the posting channel object, and `announceDatabaseReset` opens a
-      // separate one. Acting on it would close our connection mid-delete.
-      if (isOwnResetAnnouncement(event.data)) {
-        return
-      }
-      void handleDatabaseDeleted(channel, () => {
-        window.location.assign(rootHref)
-      })
-    }
-
-    return () => {
-      channel.close()
-    }
-  }, [rootHref])
+  // Another tab's Clear Local Cache or Load Workspace is handled for the
+  // whole document by the boot (`src/boot/databaseResetListener.ts`), so the
+  // Error page and the startup failure screen hear it too.
 
   useEffect(() => {
     // The copy lives here, not in `crossTabSyncHealth`: that module is in the

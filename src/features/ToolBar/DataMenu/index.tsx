@@ -8,7 +8,6 @@ import { useCredentialStore } from '../../../data/hooks/stores/CredentialStore'
 import { useWorkspaceStore } from '../../../data/hooks/stores/WorkspaceStore'
 import { useCytoscapeDesktopPermissionNotice } from '../../../data/hooks/useCytoscapeDesktopPermissionNotice'
 import { useOpenNetworkInCytoscapeFromStores } from '../../../data/hooks/useOpenInCytoscapeDesktop'
-import { useResetWorkspace } from '../../../data/hooks/useResetWorkspace'
 import { useDeleteCyNetwork } from '../../../data/hooks/useDeleteCyNetwork'
 import { RootMenu } from '../../../models/AppModel/RootMenu'
 import { ConfirmationDialog } from '../../ConfirmationDialog'
@@ -52,7 +51,6 @@ import { useSaveNetworkToNDExFlow } from './useSaveNetworkToNDExFlow'
 import { OpenNetworkInCytoscapeMenuItem } from './OpenNetworkInCytoscapeMenuItem'
 import { RemoveAllNetworksMenuItem } from './RemoveAllNetworksMenuItem'
 import { RemoveNetworkMenuItem } from './RemoveNetworkMenuItem'
-import { ResetLocalWorkspaceMenuItem } from './ResetLocalWorkspace'
 import { SaveToNDExMenuItem } from './SaveToNDExMenuItem'
 import { SaveWorkspaceToNDExMenuItem } from './SaveWorkspaceToNDEx'
 import { SaveWorkspaceToNDExOverwriteMenuItem } from './SaveWorkspaceToNDExOverwrite'
@@ -63,8 +61,6 @@ export const DataMenu = () => {
   const [openWorkspaceDialog, setOpenWorkspaceDialog] = useState(false)
   const [openDeleteNetworkDialog, setOpenDeleteNetworkDialog] = useState(false)
   const [openDeleteAllNetworksDialog, setOpenDeleteAllNetworksDialog] =
-    useState(false)
-  const [openResetLocalWorkspaceDialog, setOpenResetLocalWorkspaceDialog] =
     useState(false)
 
   const handleClose = (): void => {
@@ -202,44 +198,9 @@ export const DataMenu = () => {
     setOpenDeleteAllNetworksDialog(false)
   }
 
-  const { reset } = useResetWorkspace()
-
   const handleDeleteAllNetworks = (): void => {
     handleCloseDeleteAllNetworksDialog()
     deleteAllNetworks()
-  }
-
-  // Reset local workspace handlers
-  const handleOpenResetLocalWorkspaceDialog = (): void => {
-    handleClose()
-    setOpenResetLocalWorkspaceDialog(true)
-  }
-  const handleCloseResetLocalWorkspaceDialog = (): void => {
-    setOpenResetLocalWorkspaceDialog(false)
-  }
-
-  /**
-   * `ConfirmationDialog` has already closed itself by the time this runs, so
-   * every path from here has to end in something the user can see: previously a
-   * reset that could not complete simply did nothing — no navigation, no error,
-   * and (before `deleteDb` was bounded) no end either, because a peer tab holding
-   * the database open left `Dexie.delete` waiting indefinitely.
-   */
-  const handleResetLocalWorkspace = (): void => {
-    // useResetWorkspace owns the outcome branching and the navigation; this
-    // handler only reports, and `alert()` is the reporting channel here because
-    // the dialog has already closed and the menu has nowhere to render a
-    // message.
-    void reset().then((result) => {
-      if (result.status === 'failed') {
-        handleCloseResetLocalWorkspaceDialog()
-        alert(`Failed to reset workspace. ${result.reason}`)
-        return
-      }
-      if (result.status === 'reloading') {
-        alert(`${result.reason} Reloading Cytoscape Web.`)
-      }
-    })
   }
 
   const builtInItems: MenuItem[] = [
@@ -323,16 +284,6 @@ export const DataMenu = () => {
         />
       ),
     },
-    {
-      separator: true,
-    },
-    {
-      template: (
-        <ResetLocalWorkspaceMenuItem
-          onClick={handleOpenResetLocalWorkspaceDialog}
-        />
-      ),
-    },
   ]
   const menuItems = appendServiceMenuItems(builtInItems, serviceMenuItems)
 
@@ -409,15 +360,6 @@ export const DataMenu = () => {
         open={openDeleteAllNetworksDialog}
         setOpen={setOpenDeleteAllNetworksDialog}
         buttonTitle="Yes (cannot be undone)"
-        isAlert
-      />
-      <ConfirmationDialog
-        title="Reset Local Workspace (for developers)"
-        message="Are you sure you want to reset all workspace data? (This deletes all of the local cache)"
-        onConfirm={handleResetLocalWorkspace}
-        open={openResetLocalWorkspaceDialog}
-        setOpen={setOpenResetLocalWorkspaceDialog}
-        buttonTitle="Reset Workspace (cannot be undone)"
         isAlert
       />
       {saveFlow.dialogs}

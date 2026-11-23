@@ -9,6 +9,8 @@ export interface LayoutState {
   isRunning: boolean
   /** The network the running layout is for, when its caller named one. */
   runningNetworkId: IdType | undefined
+  /** Whether layouts wait for the slot; a free slot is then kept for them. */
+  layoutQueued: boolean
 }
 
 export interface LayoutAction {
@@ -20,8 +22,27 @@ export interface LayoutAction {
   ) => void
   setPreferredLayout: (engineName: string, algorithmName: string) => void
   /**
+   * Claim the single layout run for `networkId` (#982): raises the running
+   * flag and returns true when no layout runs, and returns false, changing
+   * nothing, when one already does. Only one layout runs at a time, so every
+   * layout start goes through this check-and-set; the run's owner lowers the
+   * flag with `setIsRunning(false)` when it finishes or fails.
+   *
+   * Also returns false while layouts wait for the slot (`layoutQueued`), so
+   * a start cannot jump ahead of them. `fromQueue` is for the queue's own
+   * claim (`runLayoutWhenIdle`) and nothing else.
+   */
+  startLayout: (
+    networkId: IdType,
+    options?: { readonly fromQueue?: boolean },
+  ) => boolean
+  /** Set by `runLayoutWhenIdle` only: whether layouts wait for the slot. */
+  setLayoutQueued: (queued: boolean) => void
+  /**
    * Raise or lower the running flag. Pass the network being laid out when
    * raising it, so "Applying layout..." shows on that network's view (#979).
+   * Raising it here skips the one-layout-at-a-time check; start a layout
+   * with `startLayout` instead.
    */
   setIsRunning: (isRunning: boolean, networkId?: IdType) => void
 

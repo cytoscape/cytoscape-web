@@ -29,11 +29,16 @@ import { LayoutMenu } from './index'
 vi.mock('@/data/hooks/stores/LayoutStore', async () => {
   const { create } = await vi.importActual<typeof import('zustand')>('zustand')
   return {
-    useLayoutStore: create<any>((set: any) => ({
+    useLayoutStore: create<any>((set: any, get: any) => ({
       layoutEngines: [] as LayoutEngine[],
       preferredLayout: undefined as unknown as LayoutAlgorithm,
       isRunning: false,
       setIsRunning: (isRunning: boolean) => set({ isRunning }),
+      startLayout: () => {
+        if (get().isRunning) return false
+        set({ isRunning: true })
+        return true
+      },
     })),
   }
 })
@@ -386,6 +391,65 @@ describe('LayoutMenu app algorithms', () => {
     expect(row.parentElement?.getAttribute('aria-label')).toBe(
       'Layouts are disabled since the network view is empty',
     )
+  })
+})
+
+// #982: only one layout runs at a time, so every row that starts one is
+// disabled while a layout runs; the rows that open a tool stay enabled.
+describe('LayoutMenu while a layout runs', () => {
+  beforeEach(() => {
+    vi.mocked(isAppLayoutEnabled).mockReturnValue(true)
+    vi.mocked(useServiceAppMenu).mockReturnValue({
+      menuItems: [],
+      dialogs: null,
+      handleRun: vi.fn(),
+    })
+    useWorkspaceStore.setState({
+      workspace: { currentNetworkId: 'net1', networkIds: ['net1'] },
+    } as any)
+  })
+
+  const ariaDisabled = (testId: string): string | null =>
+    screen.getByTestId(testId).getAttribute('aria-disabled')
+
+  it('disables Apply Default Layout, the core rows and the app rows', () => {
+    const coreApply = vi.fn()
+    const appApply = vi.fn()
+    seedEngines([
+      makeCoreEngine(coreApply),
+      makeAppEngine(
+        'appX',
+        [makeAlgorithm('appX', 'appX::row', 'Row Layout')],
+        appApply,
+      ),
+    ])
+    useLayoutStore.setState({ isRunning: true } as any)
+    render(<LayoutMenu />)
+    openMenu()
+
+    expect(ariaDisabled('layout-menu-apply-default')).toBe('true')
+    expect(ariaDisabled('layout-menu-item-core-circle')).toBe('true')
+    expect(ariaDisabled('layout-menu-item-core-dagre')).toBe('true')
+    expect(ariaDisabled('layout-menu-item-appX-row')).toBe('true')
+    expect(ariaDisabled('layout-menu-layout-tools')).toBeNull()
+    expect(ariaDisabled('layout-menu-settings')).toBeNull()
+
+    fireEvent.click(screen.getByTestId('layout-menu-item-core-circle'))
+    expect(coreApply).not.toHaveBeenCalled()
+    expect(appApply).not.toHaveBeenCalled()
+  })
+
+  it('enables the rows again once the layout has finished', () => {
+    seedEngines([makeCoreEngine()])
+    useLayoutStore.setState({ isRunning: true } as any)
+    render(<LayoutMenu />)
+    act(() => {
+      useLayoutStore.getState().setIsRunning(false)
+    })
+    openMenu()
+
+    expect(ariaDisabled('layout-menu-apply-default')).toBeNull()
+    expect(ariaDisabled('layout-menu-item-core-circle')).toBeNull()
   })
 })
 

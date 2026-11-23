@@ -7,10 +7,11 @@ import { currentDbScope, profileDbNameFor } from './dbScope'
  * The browser-level database: settings that belong to this browser, not to a
  * workspace (#705, #849).
  *
- * `cyweb-db` is deleted whole by Clear Local Workspace, Load Workspace and the
- * boot-failure reset. Anything the user set up once for this browser has to
- * live somewhere those paths do not reach, and that is this database:
- * `deleteDb()` never touches it.
+ * `cyweb-db` is deleted whole by Load Workspace. Anything the user set up once
+ * for this browser has to live somewhere that path does not reach, and that is
+ * this database: `deleteDb()` never touches it. Only Clear Local Cache
+ * (`clearLocalCache.ts`), which deletes everything Cytoscape Web stores,
+ * deletes it.
  *
  * What does NOT belong here: secrets. IndexedDB is plaintext on disk and
  * readable by every script in the origin, with no expiry. API keys stay in
@@ -62,10 +63,36 @@ class CyProfileDB extends Dexie {
 }
 
 let profileDb: CyProfileDB | undefined
+let suspendedUntilReload = false
 
 const getProfileDb = (): CyProfileDB => {
+  if (suspendedUntilReload) {
+    throw new Error(
+      'The profile database is being deleted by Clear Local Cache; ' +
+        'settings cannot be read or saved until the page reloads.',
+    )
+  }
   profileDb ??= new CyProfileDB(PROFILE_DB_NAME)
   return profileDb
+}
+
+/**
+ * Refuse every profile read and write until the page reloads. Clear Local
+ * Cache calls this before it deletes the database, in its own tab and in its
+ * peers: `closeProfileDb()` alone would let the next `putProfileSetting` open,
+ * and so re-create, the database the clear has just deleted.
+ *
+ * Separate from `suspendWritesUntilReload()` on purpose (see the header):
+ * Load Workspace flips that one, and does not delete this database. A refused
+ * write rejects like any failed write; a refused read is "not saved".
+ */
+export const suspendProfileWritesUntilReload = (): void => {
+  suspendedUntilReload = true
+  closeProfileDb()
+}
+
+export const resumeProfileWritesForTesting = (): void => {
+  suspendedUntilReload = false
 }
 
 /**
@@ -124,9 +151,9 @@ export const closeProfileDb = (): void => {
 }
 
 /**
- * Delete the whole profile database. No product path calls this: the profile
- * is meant to outlive every workspace reset. It exists so tests can start
- * clean.
+ * Delete the whole profile database, for tests that need to start clean. The
+ * product deletes it only through Clear Local Cache (`clearLocalCache.ts`),
+ * which deletes every Cytoscape Web database by name.
  */
 export const deleteProfileDb = async (): Promise<void> => {
   closeProfileDb()

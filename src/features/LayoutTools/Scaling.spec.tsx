@@ -278,6 +278,166 @@ describe('Scaling with no node positions (#880)', () => {
     expect(postEdit).toHaveBeenCalledTimes(1)
   })
 
+  // #982: a layout that starts on another network mid-drag disables the
+  // slider, and MUI then drops the drag's release listeners, so the drag
+  // never commits. The slider must not keep showing a value nothing applied.
+  it('puts the slider back when a layout starts mid-drag', () => {
+    act(() => {
+      useViewModelStore.getState().delete(NETWORK_ID)
+    })
+    seed()
+    render(<Scaling networkId={NETWORK_ID} />)
+    const before = positions()
+
+    // Geometry for this slider only: 0..200 px across -9..9
+    const root = screen.getByTestId('scaling-slider')
+    root.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        width: 200,
+        top: 0,
+        height: 20,
+        bottom: 20,
+        right: 200,
+        x: 0,
+        y: 0,
+      }) as DOMRect
+    act(() => {
+      fireEvent.mouseDown(root, { button: 0, clientX: 150, clientY: 10 })
+      fireEvent.mouseMove(document, { buttons: 1, clientX: 190, clientY: 10 })
+    })
+    expect(sliderValue()).not.toBe('0')
+
+    act(() => {
+      useLayoutStore.getState().startLayout('another-net')
+    })
+    act(() => {
+      fireEvent.mouseUp(document, { clientX: 190, clientY: 10 })
+    })
+
+    expect(sliderValue()).toBe('0')
+    expect(positions()).toEqual(before)
+    expect(postEdit).not.toHaveBeenCalled()
+
+    // Once the layout ends, a drag commits as usual
+    act(() => {
+      useLayoutStore.getState().setIsRunning(false)
+    })
+    commit(9)
+    expect(sliderValue()).toBe('9')
+    expect(postEdit).toHaveBeenCalledTimes(1)
+  })
+
+  // Review of #985: positions written by something else during a drag (an
+  // app, another slider) make the slider show their value; the value to
+  // restore if a layout then cuts the drag off is that one, not the value
+  // from before the drag.
+  it('restores the value of positions written during a drag', () => {
+    act(() => {
+      useViewModelStore.getState().delete(NETWORK_ID)
+    })
+    seed()
+    render(<Scaling networkId={NETWORK_ID} />)
+    const root = screen.getByTestId('scaling-slider')
+    root.getBoundingClientRect = () =>
+      ({
+        left: 0,
+        width: 200,
+        top: 0,
+        height: 20,
+        bottom: 20,
+        right: 200,
+        x: 0,
+        y: 0,
+      }) as DOMRect
+    act(() => {
+      fireEvent.mouseDown(root, { button: 0, clientX: 150, clientY: 10 })
+    })
+
+    // Something else scales the network by Both x10 about its center
+    const [cx, cy] = center(ORIGINAL)
+    act(() => {
+      useViewModelStore
+        .getState()
+        .updateNodePositions(
+          NETWORK_ID,
+          new Map(
+            Object.entries(ORIGINAL).map(([id, [x, y]]) => [
+              id,
+              [cx + (x - cx) * 10, cy + (y - cy) * 10] as [number, number],
+            ]),
+          ),
+        )
+    })
+    expect(sliderValue()).toBe('9')
+
+    act(() => {
+      useLayoutStore.getState().startLayout('another-net')
+    })
+    act(() => {
+      fireEvent.mouseUp(document, { clientX: 150, clientY: 10 })
+    })
+
+    expect(sliderValue()).toBe('9')
+    act(() => {
+      useLayoutStore.getState().setIsRunning(false)
+    })
+  })
+
+  // Review of #985: the layout-start reset is for a pending drag only. It
+  // used to re-infer the slider state and, since positions scaled by Both
+  // x10 are explained by Both x10 too, switched a Width picked since then
+  // back to Both, so the next commit scaled both axes.
+  it('keeps a scaling type picked since the last scale when a layout starts', () => {
+    act(() => {
+      useViewModelStore.getState().delete(NETWORK_ID)
+    })
+    seed()
+    render(<Scaling networkId={NETWORK_ID} />)
+    commit(9)
+    fireEvent.click(screen.getByLabelText('Width'))
+
+    act(() => {
+      useLayoutStore.getState().startLayout('another-net')
+    })
+
+    expect((screen.getByLabelText('Width') as HTMLInputElement).checked).toBe(
+      true,
+    )
+    expect(sliderValue()).toBe('9')
+    act(() => {
+      useLayoutStore.getState().setIsRunning(false)
+    })
+  })
+
+  // #982: only one layout runs at a time. Scaling while a layout runs would
+  // be overwritten by the layout's result, and its own start and finish
+  // would lower the running layout's flag.
+  it('disables the slider and scales nothing while a layout runs', () => {
+    act(() => {
+      useViewModelStore.getState().delete(NETWORK_ID)
+    })
+    seed()
+    act(() => {
+      useLayoutStore.getState().startLayout('another-net')
+    })
+    render(<Scaling networkId={NETWORK_ID} />)
+
+    expect((screen.getByRole('slider') as HTMLInputElement).disabled).toBe(true)
+    commit(9)
+
+    expect(postEdit).not.toHaveBeenCalled()
+    expect(useLayoutStore.getState().isRunning).toBe(true)
+    expect(useLayoutStore.getState().runningNetworkId).toBe('another-net')
+
+    act(() => {
+      useLayoutStore.getState().setIsRunning(false)
+    })
+    expect((screen.getByRole('slider') as HTMLInputElement).disabled).toBe(
+      false,
+    )
+  })
+
   const expectControlsDisabled = (disabled: boolean): void => {
     expect((screen.getByRole('slider') as HTMLInputElement).disabled).toBe(
       disabled,

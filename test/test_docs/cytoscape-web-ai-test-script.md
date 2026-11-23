@@ -111,9 +111,9 @@ d) Toggle “Export full network image” on/off; compare full vs viewport-only 
 
 a) Remove the current network and also remove multiple selections via Workspace; confirm removal from Workspace list.
 
-### **1.10 Clear Local Database**
+### **1.10 Clear Local Cache**
 
-a) Data → Clear Local Database. Confirm the app resets (networks, apps/service apps, and local settings cleared).
+a) Help → Developer → Clear Local Cache, then Clear Cache. Confirm the app reloads as on a first visit (welcome dialog shown; networks, apps/service apps, Workspace Styles and local settings cleared; still signed in).
 
 b) Reopen app and confirm a clean slate.
 
@@ -215,7 +215,7 @@ b) For a network with a node column containing gene symbols list(s), run enrichm
 
 a) Save Workspace; reload Cytoscape Web and open that workspace; confirm Apps and Service Apps are restored.
 
-b) Clear Local Database; confirm Apps/Service Apps are cleared.
+b) Help → Developer → Clear Local Cache; confirm Apps/Service Apps are cleared.
 
 ## **7\) Help Menu**
 
@@ -495,9 +495,9 @@ a) Select a row; click SELECT NODES (or SELECT EDGES); verify network view selec
 
 \- Clear cache per browser docs; reopen Cytoscape Web; confirm normal operation resumes.
 
-### **16.3 Clear Local Database**
+### **16.3 Clear Local Cache**
 
-\- As a last resort, Data → Clear Local Database; confirm the environment resets to a clean state.
+\- As a last resort, Help → Developer → Clear Local Cache; confirm the environment resets to a clean state.
 
 ### **16.4 Bug Reporting**
 

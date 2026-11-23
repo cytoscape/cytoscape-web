@@ -1,9 +1,8 @@
 import { render as rtlRender } from '@testing-library/react'
 import type { ReactElement } from 'react'
-import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { closeDb, getDb } from '../data/db'
+import { getDb } from '../data/db'
 import { useMessageStore } from '@/data/hooks/stores/MessageStore'
 import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
 import { getTabId } from '@/data/tabState/tabId'
@@ -16,12 +15,6 @@ import {
   reportSyncListenerFailure,
   resetCrossTabSyncHealthForTesting,
 } from '@/data/sync/crossTabSyncHealth'
-import {
-  DATABASE_DELETED,
-  DATABASE_DELETED_ACK,
-  DATABASE_RESET_COMPLETE,
-  RESET_COMPLETE_TIMEOUT_MS,
-} from '@/data/db/lifecycle'
 import { SyncTabsAction } from './SyncTabs'
 
 vi.mock('../data/db', () => ({
@@ -36,17 +29,13 @@ vi.mock('@/data/sync/crossTabHydration', () => ({
 const OTHER_TAB = 'cyweb-some-other-tab'
 const CURRENT_NETWORK = 'net-current'
 
-// SyncTabs resolves the base-path-aware root href via useHref, so it needs a
-// router context.
-const render = (ui: ReactElement) =>
-  rtlRender(<MemoryRouter>{ui}</MemoryRouter>)
+const render = (ui: ReactElement) => rtlRender(ui)
 
 describe('SyncTabs', () => {
   /** Captures the listener SyncTabs subscribes to db.on('changes'). */
   let changesListener: ((changes: any[]) => void) | null = null
   let unsubscribe: ReturnType<typeof vi.fn>
   let channels: any[] = []
-  let mockClose: ReturnType<typeof vi.fn>
 
   const emitChanges = async (changes: any[]): Promise<void> => {
     // The subscription happens after `await getDb()`, so let that settle.
@@ -77,13 +66,12 @@ describe('SyncTabs', () => {
 
     vi.mocked(getDb).mockResolvedValue({ on: dbOn } as any)
 
-    mockClose = vi.fn()
     vi.stubGlobal(
       'BroadcastChannel',
       vi.fn().mockImplementation(function (this: any, name: string) {
         this.name = name
         this.postMessage = vi.fn()
-        this.close = mockClose
+        this.close = vi.fn()
         this.onmessage = null
         channels.push(this)
       }),
@@ -108,11 +96,12 @@ describe('SyncTabs', () => {
     vi.unstubAllGlobals()
   })
 
-  it('opens only the ui-events channel — db sync rides on db.on(changes)', () => {
+  it('opens no BroadcastChannel — db sync rides on db.on(changes)', () => {
     render(<SyncTabsAction />)
 
-    expect(channels).toHaveLength(1)
-    expect(channels[0].name).toBe('cyweb-ui-events')
+    // Database resets from other tabs are heard by the boot's document-wide
+    // listener (`listenForDatabaseReset`), not here.
+    expect(channels).toHaveLength(0)
   })
 
   it('hydrates changes written by another tab', async () => {
@@ -168,14 +157,13 @@ describe('SyncTabs', () => {
     expect(hydrateFromCrossTabChange).not.toHaveBeenCalled()
   })
 
-  it('unsubscribes the db listener and closes the ui channel on unmount', async () => {
+  it('unsubscribes the db listener on unmount', async () => {
     const { unmount } = render(<SyncTabsAction />)
     await vi.waitFor(() => expect(changesListener).not.toBeNull())
 
     unmount()
 
     expect(unsubscribe).toHaveBeenCalled()
-    expect(mockClose).toHaveBeenCalledTimes(1)
   })
 
   it('does not subscribe when unmounted before getDb resolves', async () => {
@@ -250,97 +238,6 @@ describe('SyncTabs', () => {
       markCrossTabSyncReady()
 
       expect(hydrateFromCrossTabChange).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('database reset handshake', () => {
-    it('releases the database and acknowledges before reloading', async () => {
-      render(<SyncTabsAction />)
-      const uiEventsChannel = channels.find((c) => c.name === 'cyweb-ui-events')
-
-      uiEventsChannel.onmessage({ data: { type: DATABASE_DELETED } })
-      await vi.waitFor(() => expect(closeDb).toHaveBeenCalled())
-
-      // Connection released first, then acknowledged: until this tab lets go,
-      // the deleting tab's Dexie.delete() is blocked on it.
-      expect(uiEventsChannel.postMessage).toHaveBeenCalledWith(
-        expect.objectContaining({ type: DATABASE_DELETED_ACK }),
-      )
-      // Still on the page — reloading now could re-create the database while
-      // the delete is in flight.
-      expect(window.location.assign).not.toHaveBeenCalled()
-    })
-
-    it('reloads once the deleting tab reports the reset is complete', async () => {
-      render(<SyncTabsAction />)
-      const uiEventsChannel = channels.find((c) => c.name === 'cyweb-ui-events')
-
-      uiEventsChannel.onmessage({ data: { type: DATABASE_DELETED } })
-      await vi.waitFor(() =>
-        expect(uiEventsChannel.postMessage).toHaveBeenCalled(),
-      )
-
-      uiEventsChannel.onmessage({ data: { type: DATABASE_RESET_COMPLETE } })
-
-      expect(window.location.assign).toHaveBeenCalledWith('/')
-    })
-
-    it('reloads anyway if the deleting tab never reports completion', async () => {
-      vi.useFakeTimers()
-      try {
-        render(<SyncTabsAction />)
-        const uiEventsChannel = channels.find(
-          (c) => c.name === 'cyweb-ui-events',
-        )
-
-        uiEventsChannel.onmessage({ data: { type: DATABASE_DELETED } })
-        await vi.waitFor(() => expect(closeDb).toHaveBeenCalled())
-
-        vi.advanceTimersByTime(RESET_COMPLETE_TIMEOUT_MS + 1)
-
-        expect(window.location.assign).toHaveBeenCalledWith('/')
-      } finally {
-        vi.useRealTimers()
-      }
-    })
-
-    it('ignores its own reset announcement so the deleter does not self-reset', async () => {
-      // BroadcastChannel excludes only the posting channel object, not the tab:
-      // announceDatabaseReset opens its own channel, so the resetting tab's
-      // SyncTabs channel receives the message too. Acting on it would close our
-      // connection mid-delete and navigate away from our own reset.
-      render(<SyncTabsAction />)
-      const uiEventsChannel = channels.find((c) => c.name === 'cyweb-ui-events')
-
-      uiEventsChannel.onmessage({
-        data: { type: DATABASE_DELETED, tabId: getTabId() },
-      })
-      await Promise.resolve()
-      await Promise.resolve()
-
-      expect(closeDb).not.toHaveBeenCalled()
-      expect(window.location.assign).not.toHaveBeenCalled()
-    })
-
-    it('still acts on a reset announced by another tab', async () => {
-      render(<SyncTabsAction />)
-      const uiEventsChannel = channels.find((c) => c.name === 'cyweb-ui-events')
-
-      uiEventsChannel.onmessage({
-        data: { type: DATABASE_DELETED, tabId: OTHER_TAB },
-      })
-
-      await vi.waitFor(() => expect(closeDb).toHaveBeenCalled())
-    })
-
-    it('ignores unrelated ui-event messages', () => {
-      render(<SyncTabsAction />)
-      const uiEventsChannel = channels.find((c) => c.name === 'cyweb-ui-events')
-
-      uiEventsChannel.onmessage({ data: { type: 'SOMETHING_ELSE' } })
-
-      expect(closeDb).not.toHaveBeenCalled()
-      expect(window.location.assign).not.toHaveBeenCalled()
     })
   })
 

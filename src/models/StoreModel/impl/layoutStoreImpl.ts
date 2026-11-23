@@ -17,6 +17,11 @@ export interface LayoutState {
    * undefined when no layout runs or the caller did not say (#979).
    */
   runningNetworkId: IdType | undefined
+  /**
+   * Whether layouts are waiting for the slot (`runLayoutWhenIdle`). While
+   * they are, a free slot is theirs: only the queue's claim may take it.
+   */
+  layoutQueued: boolean
 }
 
 /**
@@ -68,6 +73,26 @@ export const setIsRunning = (
     runningNetworkId: isRunning ? networkId : undefined,
   }
 }
+
+/**
+ * Claim the single layout run for `networkId` (#982). Returns the state with
+ * the running flag raised for that network, or undefined when a layout
+ * already runs: only one runs at a time, so a second one can neither
+ * overwrite the first's positions nor lower its flag.
+ *
+ * While layouts wait for the slot (`layoutQueued`), a free slot is kept for
+ * them and only the queue's own claim (`fromQueue`) may take it. Otherwise a
+ * start made right after a layout ends, before the waiting one's turn, would
+ * jump the queue, and repeated such starts could keep it waiting forever.
+ */
+export const startLayout = (
+  state: LayoutState,
+  networkId: IdType,
+  fromQueue = false,
+): LayoutState | undefined =>
+  state.isRunning || (state.layoutQueued && !fromQueue)
+    ? undefined
+    : setIsRunning(state, true, networkId)
 
 /**
  * Whether the "Applying layout..." indicator belongs on the view of

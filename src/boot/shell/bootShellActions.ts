@@ -1,6 +1,7 @@
 import {
   BOOT_SHELL_ACTION_ATTR,
   BOOT_SHELL_ACTION_CONFIRM_CLASS,
+  BOOT_SHELL_ACTION_STATUS_CLASS,
   BOOT_SHELL_ARMED_CLASS,
   BOOT_SHELL_ARMED_LABEL_ATTR,
 } from './bootShellMarkup'
@@ -20,7 +21,18 @@ import {
 // Deliberately dependency-free for the same reason as the markup: this is
 // reachable before the app chunks land.
 
-type BootShellActionHandler = () => void | Promise<void>
+export interface BootShellActionContext {
+  /**
+   * Show a line under the button (null hides it): what the action is waiting
+   * for, or why it failed. The runner only re-enables the button on a throw,
+   * so an action that fails says why here first.
+   */
+  setStatus: (text: string | null) => void
+}
+
+type BootShellActionHandler = (
+  context: BootShellActionContext,
+) => void | Promise<void>
 
 const handlers = new Map<string, BootShellActionHandler>()
 let listening = false
@@ -42,6 +54,24 @@ const arm = (button: HTMLElement): void => {
     ?.querySelector(`.${BOOT_SHELL_ACTION_CONFIRM_CLASS}`)
     ?.removeAttribute('hidden')
 }
+
+const statusSetterFor =
+  (button: HTMLElement): BootShellActionContext['setStatus'] =>
+  (text) => {
+    const status = button.parentElement?.querySelector(
+      `.${BOOT_SHELL_ACTION_STATUS_CLASS}`,
+    )
+    if (!(status instanceof HTMLElement)) {
+      return
+    }
+    // textContent, never innerHTML: the text can carry database names.
+    status.textContent = text ?? ''
+    if (text === null) {
+      status.setAttribute('hidden', '')
+    } else {
+      status.removeAttribute('hidden')
+    }
+  }
 
 const onClick = (event: Event): void => {
   const target = event.target
@@ -68,9 +98,12 @@ const onClick = (event: Event): void => {
   // Disable before running: these actions end in a reload, and a second click
   // landing on a half-deleted database has nothing good to do.
   button.setAttribute('disabled', '')
+  const setStatus = statusSetterFor(button)
+  // A retry starts without the last attempt's message.
+  setStatus(null)
   void (async () => {
     try {
-      await run()
+      await run({ setStatus })
     } catch {
       // The shell is already in its terminal error state and the action's own
       // logging has run; re-enable so the reader can try again.

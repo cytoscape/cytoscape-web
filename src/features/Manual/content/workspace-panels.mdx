@@ -76,8 +76,9 @@ at once, one tab's change is lost without a warning.
 
 If a tab stops receiving changes from the others, it shows a message that
 asks you to reload it. Reload it before you edit there; otherwise its edits
-can overwrite the other tabs' work. Resetting the workspace in one tab
-reloads the others.
+can overwrite the other tabs' work. Clearing the local cache (**Help →
+Developer → Clear Local Cache**) in one tab reloads the others, manual tabs
+included. Opening a workspace from NDEx reloads the other editor tabs only.
 
 ### Network Size Limits
 
@@ -99,7 +100,9 @@ A network without saved node positions gets a layout when it opens: **gForce
 Layout (force-directed)** for a network, **Hierarchical Layout (DAGRE)** for a
 hierarchy, and **Grid Layout** when the network has 1,000 or more nodes and
 edges combined. A network with more than 26,000 nodes and edges combined gets
-no automatic layout.
+no automatic layout. If another layout is running, Cytoscape Web uses the
+network size when its turn arrives, including any nodes or edges added or
+removed while it waited.
 
 <a id="style_tab" />
 
@@ -136,4 +139,5 @@ the current positions, so you can scale again from there. Scaling can be
 undone with **Edit → Undo**, and the slider follows undo and redo. If you
 move nodes by hand or apply a layout, the slider goes back to **x1.0**, and
 **x1.0** then means the layout you have now. For a network with no nodes, the
-controls are disabled.
+controls are disabled. The slider is also inactive while a layout runs, since
+the layout would replace the scaled positions when it finishes.

@@ -362,6 +362,13 @@ export const AppCodes = {
     message: (styleId: string, networkId: string) =>
       `Network ${networkId} owns no visual style "${styleId}"`,
   },
+  /** @see src/app-api/api_docs/ErrorCodes.md#app16 */
+  LAYOUT_ALREADY_RUNNING: {
+    code: 'APP16',
+    severity: 'error',
+    message: (networkId: string) =>
+      `Another layout is running or waiting to start; no layout was started on network ${networkId}`,
+  },
 } as const satisfies Record<string, ApiErrorCodeDef>
 
 /**

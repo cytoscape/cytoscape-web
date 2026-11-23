@@ -35,7 +35,7 @@ index.html
             └─ import('./boot/bootstrap')
                  ├─ markBoot('init-exec')                      [init-exec]
                  ├─ createRoot(#root)
-                 ├─ phase RUNTIME    enableMapSet, debug, share-link key, tabManager
+                 ├─ phase RUNTIME    enableMapSet, debug, share-link key, tabManager, reset listener
                  ├─ startAuthentication()  ← not awaited; overlaps the DB open
                  │    └─ releaseTokenGate()  ← on SSO settle, any time later  [auth-settled]
                  ├─ phase DATABASE   openDatabaseForStartup()   ← the gate; fatal
@@ -79,12 +79,24 @@ reasons it is split that way: the markup module must stay dependency-free, and
 neither renderer can hand a button an `onClick` — both write the shell as an HTML
 string — so a single delegated listener on `document` serves both and survives a
 repaint. Every action is arm-then-confirm, since the only recovery worth offering
-this early is destructive. Today there is exactly one: resetting the database
+this early is destructive. Today there is exactly one: clearing the local cache
 after a `schema-too-new` open failure (`openDatabasePhase.ts`), which registers
 its handler on the failure path rather than at module scope so a healthy boot
-pays nothing. It reuses `deleteDb()` — the same primitive as the error page's
-"Reset Workspace" button, which cannot be reused directly here because it is MUI
-plus react-router and React never mounts on this path.
+pays nothing. It calls `clearLocalCache()` — the same function as the error
+page's "Clear Cache and Reload Cytoscape" button and Help › Developer › Clear
+Local Cache, whose React wrappers cannot be reused here because React never
+mounts on this path. A handler receives `setStatus`, which writes the hidden
+status line rendered under every action button: what the action is waiting for,
+or why it failed. The runner only re-enables the button on a throw, so a handler
+that fails says why first. On success it navigates to the app root
+(`appRootHref.ts`), not the current address: a share link or an `?import=` URL
+would load its data straight back into the cache that was just cleared.
+
+**Every tab hears another tab's database reset from boot on.** RUNTIME installs
+`databaseResetListener.ts` for the life of the document, before the database
+opens and before React mounts, so the Error page and the startup failure screen
+hear a Clear Local Cache from another tab like the editor and the manual do. An
+editor tab then starts over at the app root, a manual tab reloads in place.
 
 **The app renders over the SSO check, not after it.** What keeps a logged-in
 user's startup requests from going out anonymously is not ordering but

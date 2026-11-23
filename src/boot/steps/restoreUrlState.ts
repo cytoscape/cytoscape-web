@@ -153,8 +153,11 @@ const restoreNetworkViewTab = (search: URLSearchParams): void => {
   const raw = search.get('activeNetworkViewTab')
   if (raw == null) return
 
+  // Only a whole index: `NetworkTabs` matches it exactly, so a fraction would
+  // select no tab (#995). One past the last tab is handled there, where the
+  // tab count is known.
   const tabIndex = Number(raw)
-  if (!isNaN(tabIndex) && tabIndex >= 0) {
+  if (Number.isInteger(tabIndex) && tabIndex >= 0) {
     useUiStateStore.getState().setNetworkViewTabIndex(tabIndex)
   }
 }

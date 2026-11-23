@@ -50,6 +50,18 @@ The menu, top to bottom (`---` marks a divider):
   ***
   - Export Database Snapshot
   - Import Database Snapshot...
+  ***
+  - Clear Local Cache: after the "Clear Local Cache?" confirmation, deletes
+    everything Cytoscape Web keeps in this browser (`src/data/db/clearLocalCache.ts`)
+    and reloads. It lives here, last, behind a divider, so nobody runs it by
+    accident; it is a troubleshooting tool. While it runs,
+    `ClearLocalCacheProgress` covers the editor, since the tab can no longer
+    save anything; if another tab is holding a database open, the overlay says
+    which and asks the reader to close their other tabs, and the clear finishes
+    once they do. The overlay renders in a portal and makes the app root `inert`,
+    so the editor behind it is unreachable by keyboard and screen readers too.
+    A real failure keeps the overlay up with the reason, **Try Again** (a retry
+    is safe) and **Reload**.
 - License
 
 ---

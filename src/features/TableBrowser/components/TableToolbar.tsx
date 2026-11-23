@@ -14,6 +14,7 @@ import {
 import { useJoinTableToNetworkStore } from '../../TableDataLoader/store/joinTableToNetworkStore'
 import { VisualProperty } from '../../../models/VisualStyleModel'
 import { columnNameProblem } from '../utils/columnNameProblem'
+import { rowsOfSelectedElements } from '../utils/contextMenuActions'
 
 import {
   CreateTableColumnForm,
@@ -90,26 +91,36 @@ const ToolbarIconButton = ({
 const ToolbarTextButton = ({
   onClick,
   testId,
+  disabled = false,
+  title = '',
   children,
 }: {
   onClick: () => void
   testId?: string
+  disabled?: boolean
+  // Tooltip; an empty title shows none
+  title?: string
   children: React.ReactNode
 }) => (
-  <Button
-    data-testid={testId}
-    variant="outlined"
-    size="small"
-    onClick={onClick}
-    sx={{
-      textTransform: 'none',
-      color: (theme) => theme.palette.text.primary,
-      borderColor: (theme) => theme.palette.text.secondary,
-      borderRadius: 4,
-    }}
-  >
-    {children}
-  </Button>
+  <ButtonTooltip title={title}>
+    <span>
+      <Button
+        data-testid={testId}
+        variant="outlined"
+        size="small"
+        disabled={disabled}
+        onClick={onClick}
+        sx={{
+          textTransform: 'none',
+          color: (theme) => theme.palette.text.primary,
+          borderColor: (theme) => theme.palette.text.secondary,
+          borderRadius: 4,
+        }}
+      >
+        {children}
+      </Button>
+    </span>
+  </ButtonTooltip>
 )
 
 export interface TableToolbarProps {
@@ -181,6 +192,8 @@ export interface TableToolbarProps {
     colName: string,
   ) => void
   columns: any[]
+  // Elements selected in the network view, for the current table
+  selectedElementIds: IdType[]
 }
 
 export const TableToolbar: React.FC<TableToolbarProps> = ({
@@ -208,6 +221,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
   setSort,
   duplicateColumn,
   columns,
+  selectedElementIds,
 }) => {
   const showTableJoinForm = useJoinTableToNetworkStore(
     (state: any) => state.setShow,
@@ -617,17 +631,25 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
         </ToolbarTextButton>
         <ToolbarTextButton
           testId="table-toolbar-apply-value-to-selected-button"
+          disabled={selectedElementIds.length === 0}
+          title={
+            selectedElementIds.length === 0
+              ? `Select ${currentTable === nodeTable ? 'nodes' : 'edges'} in the network first`
+              : ''
+          }
           onClick={() => {
             const [columnIndex, rowIndex] = selectedCell
             const rowData = rows?.[rowIndex]
             const column = allColumns?.[columnIndex]
             if (rowData == null || column == null) return
+            const targetRows = rowsOfSelectedElements(rows, selectedElementIds)
+            if (targetRows.length === 0) return
             const columnKey = column.id
             const cellValue = (rowData as any)?.[columnKey]
             const cellEdits: CellEdit[] = []
             const prevColumnValues: CellEdit[] = []
 
-            rows?.forEach((r) => {
+            targetRows.forEach((r) => {
               const rowId = r.id
               cellEdits.push({
                 row: rowId,
@@ -660,7 +682,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
               currentTable === nodeTable ? 'node' : 'edge',
               columnKey,
               cellValue,
-              rows?.map((r) => r.id),
+              targetRows.map((r) => r.id),
             )
           }}
         >

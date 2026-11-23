@@ -16,11 +16,9 @@ import { WorkspaceStore } from '../../../models/StoreModel/WorkspaceStoreModel'
 import * as UiImpl from '../../../models/UiModel/impl/uiImpl'
 import { Workspace } from '../../../models/WorkspaceModel'
 import * as WorkspaceImpl from '../../../models/WorkspaceModel/impl/workspaceImpl'
-import { announceDatabaseReset } from '@/data/db/lifecycle'
-import { deleteDb, putWorkspaceToDb } from '../../db'
+import { putWorkspaceToDb } from '../../db'
 import { toPlainObject } from '../../db/serialization'
 import { isHydrating } from './hydrationContext'
-import { suspendWritesUntilReload } from './persistenceScheduler'
 import { useUiStateStore } from './UiStateStore'
 
 const EMPTY_WORKSPACE: Workspace = {
@@ -185,72 +183,6 @@ export const useWorkspaceStore = create(
             return state
           })
         },
-        resetWorkspace: async () => {
-          // Other tabs hold the database open, and IndexedDB will not delete a
-          // database with live connections. Ask them to let go and wait for the
-          // acknowledgements before deleting; release them afterwards so their
-          // reload lands on the freshly created database rather than racing the
-          // delete and re-creating the old workspace.
-          const releasePeers = await announceDatabaseReset()
-          const outcome = await deleteDb()
-
-          // Release the peers either way: they have already closed their
-          // connections and are waiting, so signalling lets them reload
-          // promptly instead of stalling until their timeout.
-          releasePeers()
-
-          if (outcome === 'delete-failed') {
-            // Nothing was destroyed and the connection was restored. Resetting
-            // the store to EMPTY_WORKSPACE here would show the user an empty
-            // workspace while their data is still on disk, and the next write
-            // would persist that fiction.
-            logStore.error(
-              `[${useWorkspaceStore.name}]: Workspace reset aborted — the database could not be deleted`,
-            )
-            return {
-              status: 'failed',
-              reason: 'The database could not be deleted. Nothing was changed.',
-            }
-          }
-
-          // The stores still hold the old workspace until the reload; a
-          // delayed write landing in the fresh database would bring it back
-          suspendWritesUntilReload()
-
-          // Every remaining outcome means the data is gone or on its way out
-          // (`delete-blocked` leaves the request queued in IndexedDB, so it can
-          // land at any moment). Clearing the store is therefore the honest
-          // thing to do — keeping the workspace would let the next mutation
-          // re-persist it into the fresh database, which is exactly the ghost
-          // workspace the reset handshake exists to prevent.
-          logStore.info(
-            `[${useWorkspaceStore.name}]: IndexedDB cleared (Workspace cache has been reset)`,
-          )
-          set((state) => {
-            logStore.info(
-              `[${useWorkspaceStore.name}]: Now creating a new workspace`,
-            )
-            state.workspace = EMPTY_WORKSPACE
-            return state
-          })
-
-          if (outcome === 'deleted') {
-            return { status: 'reset' }
-          }
-
-          // No usable connection remains, and the other stores still hold this
-          // workspace's networks, tables and views. Only a reload can stop them
-          // from being written back.
-          const reason =
-            outcome === 'delete-blocked'
-              ? 'Another tab is still holding the database open, so the reset could not be confirmed.'
-              : 'The workspace was cleared but the database could not be reopened.'
-          logStore.error(
-            `[${useWorkspaceStore.name}]: Workspace reset needs a reload (${outcome})`,
-          )
-          return { status: 'reload-required', reason }
-        },
-
         setNetworkModified: (networkId: IdType, isModified: boolean) => {
           set((state) => {
             state.workspace = WorkspaceImpl.setNetworkModified(

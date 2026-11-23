@@ -61,6 +61,8 @@ export interface TableContextMenuProps {
   ) => void
   selection: GridSelection
   setSelection: (selection: GridSelection) => void
+  // Elements selected in the network view, for the current table
+  selectedElementIds: IdType[]
 }
 
 export const TableContextMenu: React.FC<TableContextMenuProps> = ({
@@ -80,9 +82,11 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
   exclusiveSelect,
   selection,
   setSelection,
+  selectedElementIds,
 }) => {
   const elementTypeName = currentTableIsNodeTable ? 'Node' : 'Edge'
   const pluralElementTypeName = currentTableIsNodeTable ? 'nodes' : 'edges'
+  const noElementSelected = selectedElementIds.length === 0
 
   const onApplyToEntireColumn = React.useCallback(() => {
     if (contextMenu === null) return
@@ -121,6 +125,7 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
       postEdit,
       applyValueToElements,
       handleContextMenuClose,
+      selectedElementIds,
     })
   }, [
     contextMenu,
@@ -132,6 +137,7 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
     postEdit,
     applyValueToElements,
     handleContextMenuClose,
+    selectedElementIds,
   ])
 
   const onCopyValue = React.useCallback(() => {
@@ -239,13 +245,19 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
       </Tooltip>
 
       <Tooltip
-        title={isContextCellVirtual ? 'Cannot apply to virtual columns' : ''}
+        title={
+          isContextCellVirtual
+            ? 'Cannot apply to virtual columns'
+            : noElementSelected
+              ? `Select ${pluralElementTypeName} in the network first`
+              : ''
+        }
         placement="right"
       >
         <span>
           <MenuItem
             data-testid="context-menu-apply-to-selected"
-            disabled={isContextCellVirtual}
+            disabled={isContextCellVirtual || noElementSelected}
             onClick={onApplyToSelected}
           >
             Apply to selected {pluralElementTypeName}

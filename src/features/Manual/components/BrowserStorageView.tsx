@@ -4,11 +4,10 @@ import { type ReactElement, useCallback, useEffect, useState } from 'react'
 import { dbNameFor, profileDbNameFor } from '@/data/db/dbScope'
 import { ObjectStoreNames } from '@/data/db'
 import { ProfileStoreNames } from '@/data/db/profileDb'
-import {
-  TAB_NETWORK_KEY,
-  TAB_VIEW_STATE_KEY,
-} from '@/data/tabState/storageKeys'
-import { LLM_API_KEYS_SESSION_KEY } from '@/features/LLMQuery/store/storageKeys'
+import type {
+  CywebLocalStorageKey,
+  CywebSessionStorageKey,
+} from '@/data/db/browserStorageInventory'
 
 /**
  * What each object store of the editor's database holds, in reader terms.
@@ -51,20 +50,29 @@ const PROFILE_STORE_LABELS: Record<ProfileStoreNames, string> = {
  * page usually runs in a different tab from the editor, so it cannot see
  * what the editor's tab holds.
  */
-const SESSION_STORAGE_LABELS: Record<string, string> = {
-  [TAB_VIEW_STATE_KEY]: 'Which panels and tabs are open',
-  [TAB_NETWORK_KEY]: 'Which network is shown',
-  [LLM_API_KEYS_SESSION_KEY]: 'The LLM Query API key you entered, if any',
+const SESSION_STORAGE_LABELS: Record<CywebSessionStorageKey, string> = {
+  'cyweb.tab.viewState': 'Which panels and tabs are open',
+  'cyweb.tab.networkId': 'Which network is shown',
+  'cyweb.llm.apiKeys': 'The LLM Query API key you entered, if any',
+  'cyweb.debug.viewportTrace':
+    'A diagnostic log of recent zoom changes in the network view',
 }
 
-/** localStorage keys Cytoscape Web writes, with what they hold. */
-const LOCAL_STORAGE_LABELS: Record<string, string> = {
+/**
+ * localStorage keys Cytoscape Web writes, with what they hold. Typed over the
+ * inventory that Clear Local Cache deletes, so the two lists cannot drift.
+ */
+const LOCAL_STORAGE_LABELS: Record<CywebLocalStorageKey, string> = {
   'cyweb.onboarding': 'Whether you have seen the welcome dialog and tours',
   cytoscapeWebCrashDataConsent: 'Your crash report choice, kept one year',
   cytoscapeWebDesktopPermissionNoticeSeen:
     'Whether you have seen the Cytoscape Desktop connection notice',
   'cyweb-network-search': 'Your search box settings',
   'cyweb-debug-enabled': 'Developer logging switch',
+  debug: 'Developer logging namespaces',
+  'mui-mode': 'Light, dark or system theme',
+  'mui-color-scheme-light': 'Color scheme used in light mode',
+  'mui-color-scheme-dark': 'Color scheme used in dark mode',
 }
 
 interface StoreCount {

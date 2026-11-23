@@ -183,7 +183,7 @@ _Design: app-api-specification.md §1.5.6, §1.5.8, §3.6, §3.8, §3.10.6, §3.
 | `src/models/LayoutModel/LayoutEngine.ts` | 30    | `LayoutEngine.apply()` — callback-based API     |
 | `src/data/hooks/stores/LayoutStore.ts`   | 65    | `layoutEngines`, `preferredLayout`, `isRunning` |
 | `src/models/CxModel/impl/exporter.ts`    | —     | `exportCyNetworkToCx2()` pure function          |
-| `src/data/hooks/useRegisterNetwork.ts`   | —     | Reference layout execution flow (lines 130–155) |
+| `src/data/hooks/useRegisterNetwork.ts`   | —     | Reference layout execution flow in `applyInitialLayout` |
 
 ### Deliverables
 

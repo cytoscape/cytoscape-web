@@ -60,6 +60,14 @@ export const isGraphVisible = (cy: any): boolean => {
       return true
     }
 
+    // A hidden canvas (0 x 0) has a zero-area extent and says nothing about
+    // what will show. A fit there used to be a no-op; it is now redone when
+    // the canvas is shown (useCenterAnchoredResize), which would replace a
+    // saved viewport the graph is still visible in.
+    if (viewport.x2 <= viewport.x1 || viewport.y2 <= viewport.y1) {
+      return true
+    }
+
     // A zero-area graph (single node) has no overlap under a strict test, so
     // pad it to a point-in-rect check.
     const padded: Extent = {

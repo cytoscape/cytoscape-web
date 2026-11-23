@@ -1,4 +1,4 @@
-import { act, renderHook } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ServiceApp } from '../../models/AppModel/ServiceApp'
@@ -7,12 +7,17 @@ import { ServiceStatus } from '../../models/AppModel/ServiceStatus'
 import NetworkFn from '../../models/NetworkModel'
 import type { NetworkSummary } from '../../models/NetworkSummaryModel'
 import { createTable } from '../../models/TableModel/impl/inMemoryTable'
+import VisualStyleFn from '../../models/VisualStyleModel'
 import { useAppStore } from './stores/AppStore'
 import { useCredentialStore } from './stores/CredentialStore'
 import { useMessageStore } from './stores/MessageStore'
 import { useNetworkStore } from './stores/NetworkStore'
 import { useNetworkSummaryStore } from './stores/NetworkSummaryStore'
 import { useTableStore } from './stores/TableStore'
+import {
+  getVisualStyleSetSnapshot,
+  useVisualStyleStore,
+} from './stores/VisualStyleStore'
 import { useWorkspaceStore } from './stores/WorkspaceStore'
 import { useServiceTaskRunner } from './useServiceTaskRunner'
 
@@ -173,6 +178,192 @@ describe('useServiceTaskRunner', () => {
       algorithmName: 'Test Service',
       message: 'ok',
     })
+  })
+
+  it('waits for a layout result before applying the next action to the same network', async () => {
+    act(() => seedCurrentNetwork())
+    let finishLayout!: () => void
+    const layout = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finishLayout = resolve
+        }),
+    )
+    const selection = vi.fn()
+    mockGetHandler.mockReturnValueOnce(layout).mockReturnValueOnce(selection)
+    mockRunTask.mockResolvedValue({
+      status: ServiceStatus.Complete,
+      result: [
+        { action: ServiceAppAction.UpdateLayouts, data: [] },
+        {
+          action: ServiceAppAction.UpdateSelection,
+          data: { nodes: [1], edges: [] },
+        },
+      ],
+    })
+    const run = renderRunner()
+    const task = run(SERVICE_URL)
+    await waitFor(() => expect(layout).toHaveBeenCalledTimes(1))
+    act(() => useWorkspaceStore.getState().setCurrentNetworkId('other'))
+    expect(selection).not.toHaveBeenCalled()
+
+    finishLayout()
+    await task
+    expect(selection).toHaveBeenCalledWith({
+      networkId: NET_ID,
+      responseObj: { nodes: [1], edges: [] },
+    })
+  })
+
+  it('keeps the submitted network as the target if the user switches while the service runs', async () => {
+    act(() => seedCurrentNetwork())
+    const handler = vi.fn()
+    mockGetHandler.mockReturnValue(handler)
+    mockRunTask.mockImplementation(async () => {
+      act(() => useWorkspaceStore.getState().setCurrentNetworkId('other'))
+      return {
+        status: ServiceStatus.Complete,
+        result: [{ action: ServiceAppAction.UpdateLayouts, data: [] }],
+      }
+    })
+    const run = renderRunner()
+    await run(SERVICE_URL)
+    expect(handler).toHaveBeenCalledWith({ networkId: NET_ID, responseObj: [] })
+  })
+
+  // Review of #1004: the target is pinned when the task starts, so a network
+  // deleted meanwhile must not be written to. `updateNetwork` would add it
+  // back to every store, outside the workspace list.
+  describe('when the target network is deleted', () => {
+    const deleteTarget = (): void =>
+      act(() => {
+        useNetworkStore.getState().delete(NET_ID)
+        useTableStore.getState().delete(NET_ID)
+        useNetworkSummaryStore.getState().delete(NET_ID)
+      })
+    const handlersByAction = () => {
+      const handlers = new Map<ServiceAppAction, ReturnType<typeof vi.fn>>()
+      mockGetHandler.mockImplementation((action: ServiceAppAction) => {
+        if (!handlers.has(action)) handlers.set(action, vi.fn())
+        return handlers.get(action)
+      })
+      return handlers
+    }
+    const skippedMessages = () =>
+      useMessageStore
+        .getState()
+        .messages.filter((m) => m.message.includes('was removed'))
+
+    it('skips its actions and still runs the independent ones if it goes while the service runs', async () => {
+      act(() => seedCurrentNetwork())
+      const handlers = handlersByAction()
+      mockRunTask.mockImplementation(async () => {
+        deleteTarget()
+        return {
+          status: ServiceStatus.Complete,
+          result: [
+            { action: ServiceAppAction.UpdateNetwork, data: [] },
+            { action: ServiceAppAction.UpdateTables, data: {} },
+            { action: ServiceAppAction.UpdateLayouts, data: [] },
+            { action: ServiceAppAction.UpdateSelection, data: {} },
+            { action: ServiceAppAction.AddNetworks, data: [] },
+            { action: ServiceAppAction.OpenURL, data: {} },
+          ],
+        }
+      })
+      const run = renderRunner()
+
+      const result = await act(() => run(SERVICE_URL))
+
+      expect(result.status).toBe(ServiceStatus.Complete)
+      expect([...handlers.keys()]).toEqual([
+        ServiceAppAction.AddNetworks,
+        ServiceAppAction.OpenURL,
+      ])
+      expect(handlers.get(ServiceAppAction.AddNetworks)).toHaveBeenCalledTimes(
+        1,
+      )
+      expect(handlers.get(ServiceAppAction.OpenURL)).toHaveBeenCalledTimes(1)
+      // One notice for the run, not one per skipped action
+      expect(skippedMessages()).toHaveLength(1)
+    })
+
+    it('skips the next action if it goes while an earlier action waits', async () => {
+      act(() => seedCurrentNetwork())
+      let finishLayout!: () => void
+      const layout = vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            finishLayout = resolve
+          }),
+      )
+      const updateNetwork = vi.fn()
+      mockGetHandler.mockImplementation((action: ServiceAppAction) =>
+        action === ServiceAppAction.UpdateLayouts ? layout : updateNetwork,
+      )
+      mockRunTask.mockResolvedValue({
+        status: ServiceStatus.Complete,
+        result: [
+          { action: ServiceAppAction.UpdateLayouts, data: [] },
+          { action: ServiceAppAction.UpdateNetwork, data: [] },
+        ],
+      })
+      const run = renderRunner()
+      const task = run(SERVICE_URL)
+      await waitFor(() => expect(layout).toHaveBeenCalledTimes(1))
+
+      deleteTarget()
+      finishLayout()
+      await act(() => task)
+
+      expect(updateNetwork).not.toHaveBeenCalled()
+      expect(skippedMessages()).toHaveLength(1)
+    })
+
+    it('still rejects an unknown action', async () => {
+      act(() => seedCurrentNetwork())
+      mockGetHandler.mockReturnValue(undefined)
+      mockRunTask.mockImplementation(async () => {
+        deleteTarget()
+        return {
+          status: ServiceStatus.Complete,
+          result: [{ action: 'teleport', data: {} }],
+        }
+      })
+      const run = renderRunner()
+
+      await expect(run(SERVICE_URL)).rejects.toThrow(
+        'Unsupported action: teleport',
+      )
+    })
+  })
+
+  // CodeRabbit on #1004: `visualStyle` is captured before the token wait, so
+  // the named-style set must be too, or the request describes two styles.
+  it('sends the named-style set captured with the other inputs, before the token wait', async () => {
+    act(() => {
+      seedCurrentNetwork()
+      useVisualStyleStore
+        .getState()
+        .add(NET_ID, VisualStyleFn.createVisualStyle())
+    })
+    const atStart = getVisualStyleSetSnapshot(NET_ID)
+    expect(atStart).toBeDefined()
+    act(() =>
+      useCredentialStore.setState({
+        getToken: async () => {
+          useVisualStyleStore.getState().delete(NET_ID)
+          return 'ndex-token'
+        },
+      }),
+    )
+    const run = renderRunner()
+
+    await act(() => run(SERVICE_URL))
+
+    expect(mockRunTask).toHaveBeenCalledWith(
+      expect.objectContaining({ visualStyleSet: atStart }),
+    )
   })
 
   it('does not dispatch handlers when the task did not complete', async () => {

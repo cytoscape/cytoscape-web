@@ -3,6 +3,7 @@ import type { Core } from 'cytoscape'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  cancelPendingFit,
   panReferenceSize,
   setPanReferenceSize,
   useCenterAnchoredResize,
@@ -385,6 +386,153 @@ describe('useCenterAnchoredResize', () => {
 
       expect(panReferenceSize(asCore(cy))).toEqual({ width: 700, height: 600 })
       expect(cy.panBy).toHaveBeenCalledWith({ x: -50, y: 0 })
+    })
+  })
+
+  describe('re-fit after a fit on a canvas that was not laid out', () => {
+    // The bug (#viewportTrace): a tab reloaded in the background laid the
+    // canvas out 24 px wide, fit() zoomed to fit those 24 px, and the canvas
+    // growing back only panned, leaving the network a speck.
+
+    /** createCy plus a camera and a fit whose zoom depends on the size. */
+    const createFittableCy = (cached: Size) => {
+      const cy = createCy(cached)
+      const camera = { zoom: 1, pan: { x: 0, y: 0 } }
+      // Like Cytoscape.js: a fit on a 0 x 0 canvas does nothing.
+      const nativeFit = vi.fn((..._args: unknown[]) => {
+        const width = cy.width()
+        const height = cy.height()
+        if (width > 0 && height > 0) {
+          camera.zoom = width / 100
+          camera.pan = { x: width / 2, y: height / 2 }
+        }
+      })
+      const fake = Object.assign(cy, {
+        fit: nativeFit as (...args: unknown[]) => void,
+        nativeFit,
+        zoom: vi.fn((level?: number) => {
+          if (level !== undefined) camera.zoom = level
+          return camera.zoom
+        }),
+        pan: vi.fn(() => ({ ...camera.pan })),
+        panBy: vi.fn(({ x, y }: { x: number; y: number }) => {
+          camera.pan = { x: camera.pan.x + x, y: camera.pan.y + y }
+        }),
+        camera,
+      })
+      return fake
+    }
+
+    it('fits again once a canvas fitted at 24 px gets its real size', () => {
+      const cy = createFittableCy({ width: 24, height: 665 })
+      renderWith(cy)
+
+      cy.fit()
+      expect(cy.camera.zoom).toBeCloseTo(0.24)
+
+      resizeTo(cy, 800, 665)
+
+      expect(cy.nativeFit).toHaveBeenCalledTimes(2)
+      expect(cy.camera.zoom).toBe(8)
+      expect(cy.camera.pan).toEqual({ x: 400, y: 332.5 })
+      expect(cy.panBy).not.toHaveBeenCalled()
+      expect(cy.render).toHaveBeenCalled()
+    })
+
+    it('fits again when a fit made while hidden (0 x 0) is shown', () => {
+      const cy = createFittableCy({ width: 800, height: 600 })
+      renderWith(cy)
+      resizeTo(cy, 0, 0)
+
+      cy.fit()
+      resizeTo(cy, 800, 600)
+
+      expect(cy.nativeFit).toHaveBeenCalledTimes(2)
+      expect(cy.camera.zoom).toBe(8)
+    })
+
+    it('replays the arguments of the fit it redoes', () => {
+      const cy = createFittableCy({ width: 24, height: 665 })
+      renderWith(cy)
+
+      cy.fit('selected', 20)
+      resizeTo(cy, 800, 665)
+
+      expect(cy.nativeFit).toHaveBeenLastCalledWith('selected', 20)
+    })
+
+    it('keeps fitting while the canvas is still too small to show anything', () => {
+      const cy = createFittableCy({ width: 24, height: 665 })
+      renderWith(cy)
+
+      cy.fit()
+      resizeTo(cy, 40, 665)
+      resizeTo(cy, 800, 665)
+
+      expect(cy.nativeFit).toHaveBeenCalledTimes(3)
+      expect(cy.camera.zoom).toBe(8)
+    })
+
+    it('fits again only once: later resizes keep the center', () => {
+      const cy = createFittableCy({ width: 24, height: 665 })
+      renderWith(cy)
+
+      cy.fit()
+      resizeTo(cy, 800, 665)
+      resizeTo(cy, 600, 665)
+
+      expect(cy.nativeFit).toHaveBeenCalledTimes(2)
+      expect(cy.panBy).toHaveBeenCalledWith({ x: -100, y: 0 })
+      expect(cy.camera.zoom).toBe(8)
+    })
+
+    it('does not fit again after a fit on a canvas of real size', () => {
+      const cy = createFittableCy({ width: 800, height: 600 })
+      renderWith(cy)
+
+      cy.fit()
+      resizeTo(cy, 600, 600)
+
+      expect(cy.nativeFit).toHaveBeenCalledTimes(1)
+      expect(cy.panBy).toHaveBeenCalledWith({ x: -100, y: 0 })
+    })
+
+    it('does not override a camera changed after the small fit', () => {
+      const cy = createFittableCy({ width: 24, height: 665 })
+      renderWith(cy)
+
+      cy.fit()
+      // e.g. a saved viewport restored for another network
+      cy.zoom(3)
+      resizeTo(cy, 800, 665)
+
+      expect(cy.nativeFit).toHaveBeenCalledTimes(1)
+      expect(cy.camera.zoom).toBe(3)
+      expect(cy.panBy).toHaveBeenCalledWith({ x: 388, y: 0 })
+    })
+
+    it('does not fit again after the pending fit is cancelled', () => {
+      // renderNetwork cancels it when it swaps networks: a restored camera
+      // equal to the fitted one must not be fitted again for the new network.
+      const cy = createFittableCy({ width: 24, height: 665 })
+      renderWith(cy)
+
+      cy.fit()
+      cancelPendingFit(cy as unknown as Core)
+      resizeTo(cy, 800, 665)
+
+      expect(cy.nativeFit).toHaveBeenCalledTimes(1)
+      expect(cy.panBy).toHaveBeenCalledWith({ x: 388, y: 0 })
+    })
+
+    it('restores the native fit on unmount', () => {
+      const cy = createFittableCy({ width: 800, height: 600 })
+      const { unmount } = renderWith(cy)
+      expect(cy.fit).not.toBe(cy.nativeFit)
+
+      unmount()
+
+      expect(cy.fit).toBe(cy.nativeFit)
     })
   })
 })
