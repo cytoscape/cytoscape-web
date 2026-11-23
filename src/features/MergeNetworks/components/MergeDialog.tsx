@@ -784,25 +784,13 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
             value={mergedNetworkName}
             onChange={handleNameChange}
             error={nameMessage !== null}
-            inputProps={{
-              'data-testid': 'merge-dialog-name-input',
-              'aria-describedby': 'merged-network-name-message',
-            }}
+            // MUI renders this as a <p> linked to the input; the blank space
+            // keeps the line reserved so the dialog does not jump
+            helperText={nameMessage ?? ' '}
+            inputProps={{ 'data-testid': 'merge-dialog-name-input' }}
             fullWidth
             size="small"
           />
-          <Typography
-            id="merged-network-name-message"
-            component="caption"
-            sx={{
-              color: (theme) => theme.palette.error.main,
-              textAlign: 'left',
-              fontSize: '0.875rem',
-              ml: 0.5,
-            }}
-          >
-            {nameMessage ?? '\u00A0'}
-          </Typography>
         </FormControl>
 
         <Typography

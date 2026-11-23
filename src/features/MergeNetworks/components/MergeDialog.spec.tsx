@@ -54,6 +54,8 @@ describe('MergeDialog merged network name', () => {
     const message = screen.getByText(
       'Please enter a name for the merged network.',
     )
+    // A <caption> outside a <table> is invalid DOM nesting
+    expect(message.tagName).toBe('P')
     expect(nameInput().getAttribute('aria-invalid')).toBe('true')
     expect(nameInput().getAttribute('aria-describedby')).toBe(message.id)
   })
