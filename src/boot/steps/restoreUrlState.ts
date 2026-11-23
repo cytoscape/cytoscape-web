@@ -3,6 +3,7 @@ import { useUiStateStore } from '@/data/hooks/stores/UiStateStore'
 import { useViewModelStore } from '@/data/hooks/stores/ViewModelStore'
 import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
 import { SelectionStates } from '@/features/FloatingToolBar/ShareNetworkButton'
+import { shownSubsystemId } from '@/features/HierarchyViewer/utils/shownSubsystemId'
 import {
   DisplayMode,
   FilterConfig,
@@ -201,8 +202,8 @@ export const restoreUrlState = (
 
 /**
  * For a hierarchy subnetwork view (`<hierarchyId>_<subsystemNodeId>`), returns
- * a check that turns true once the user selects another subsystem in the
- * hierarchy, so a slow subnetwork load cannot replace their newer choice.
+ * a check that turns true once the hierarchy selection stops showing that
+ * subsystem (another one, several, or none: `shownSubsystemId`), so a slow subnetwork load cannot replace their newer choice.
  *
  * It only turns true after the subsystem has been seen selected: before the
  * link's own selection applies, the hierarchy may still hold an older one.
@@ -216,9 +217,13 @@ const subsystemDeselected = (
     return () => false
   }
   const subsystemId = viewId.slice(hierarchyId.length + 1)
+  // The viewer's own rule, not `selectedNodes[0]`: it shows no subnetwork for
+  // a selection that spans several subsystems, even one that starts with this.
   const isSubsystemSelected = (): boolean =>
-    useViewModelStore.getState().getViewModel(hierarchyId)?.selectedNodes[0] ===
-    subsystemId
+    shownSubsystemId(
+      useViewModelStore.getState().getViewModel(hierarchyId)?.selectedNodes ??
+        [],
+    ) === subsystemId
   // When the hierarchy is already loaded, restoreUrlState() selected the
   // subsystem before this guard was created, so start from the current state.
   let seenSelected = isSubsystemSelected()

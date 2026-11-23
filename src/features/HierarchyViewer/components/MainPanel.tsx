@@ -18,9 +18,9 @@ import { HcxMetaData } from '../model/HcxMetaData'
 import { SubsystemTag } from '../model/HcxMetaTag'
 import { useSubNetworkStore } from '../store/SubNetworkStore'
 import { getHcxMetadata } from '../utils/hierarchyUtil'
+import { shownSubsystemId } from '../utils/shownSubsystemId'
 import { getSubNetworkId } from '../utils/subnetworkQueryUtil'
 import { getSubsystemName } from '../utils/subsystemName'
-import { DuplicateNodeSeparator } from './CirclePackingLayout/DataBuilderUtil'
 import FilterPanel from './FilterPanel/FilterPanel'
 import { PropertyPanel } from './PropertyPanel/PropertyPanel'
 import { SubNetworkPanel } from './SubNetworkPanel'
@@ -126,26 +126,17 @@ export const MainPanel = (): JSX.Element => {
     return <MessagePanel message="Please select a subsystem" />
   }
 
-  // This is the ID of the selected subsystem in the hierarchy
-  let targetNode: IdType = selectedNodes[0]
+  // This is the ID of the selected subsystem in the hierarchy. A selection
+  // that spans several subsystems has none.
+  const targetNode: IdType | undefined = shownSubsystemId(selectedNodes)
 
-  if (selectedNodes.length > 1) {
-    // Multiple nodes are selected
-    // Check if same branches are selected
-    const normalizedIds = selectedNodes.map((nodeId) => {
-      return nodeId.split(DuplicateNodeSeparator)[0]
-    })
-    const uniqueBranches = new Set(normalizedIds)
-    if (uniqueBranches.size !== 1) {
-      return (
-        <MessagePanel
-          message="Multiple nodes are selected"
-          subMessage="Please select one subsystem to display the associated interactions"
-        />
-      )
-    } else {
-      targetNode = Array.from(uniqueBranches)[0]
-    }
+  if (targetNode === undefined) {
+    return (
+      <MessagePanel
+        message="Multiple nodes are selected"
+        subMessage="Please select one subsystem to display the associated interactions"
+      />
+    )
   }
 
   // Special case: neither of ID or membership is available

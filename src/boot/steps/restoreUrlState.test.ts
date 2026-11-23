@@ -197,4 +197,51 @@ describe('restoreUrlState selection restore (#965)', () => {
     expect(useUiStateStore.getState().ui.activeNetworkView).not.toBe(SUB_ID)
     expect(selectedNodesOf(SUB_ID)).toEqual([])
   })
+
+  // The viewer shows no subnetwork for a selection that spans several
+  // subsystems, so the linked one counts as left even though it is still the
+  // first selected node.
+  it('drops the subnetwork restore when the user adds a subsystem of another branch', () => {
+    addView(MAIN_ID)
+
+    restoreUrlState(
+      contextFor(
+        `selectednodes=${SUBSYSTEM_ID}&activeNetworkView=${SUB_ID}&selectedSubnetworkNodes=n2`,
+      ),
+      MAIN_ID,
+    )
+
+    act(() => {
+      useViewModelStore
+        .getState()
+        .exclusiveSelect(MAIN_ID, [SUBSYSTEM_ID, 'n1'], [])
+    })
+    addView(SUB_ID)
+
+    expect(useUiStateStore.getState().ui.activeNetworkView).not.toBe(SUB_ID)
+    expect(selectedNodesOf(SUB_ID)).toEqual([])
+  })
+
+  // Two drawings of one subsystem (`<id>` and its copy `<id>-<n>d`) are one
+  // branch: the viewer keeps showing that subsystem.
+  it('restores the subnetwork while only copies of its subsystem are selected', () => {
+    addView(MAIN_ID)
+
+    restoreUrlState(
+      contextFor(
+        `selectednodes=${SUBSYSTEM_ID}&activeNetworkView=${SUB_ID}&selectedSubnetworkNodes=n2`,
+      ),
+      MAIN_ID,
+    )
+
+    act(() => {
+      useViewModelStore
+        .getState()
+        .exclusiveSelect(MAIN_ID, [SUBSYSTEM_ID, `${SUBSYSTEM_ID}-1d`], [])
+    })
+    addView(SUB_ID)
+
+    expect(useUiStateStore.getState().ui.activeNetworkView).toBe(SUB_ID)
+    expect(selectedNodesOf(SUB_ID)).toEqual(['n2'])
+  })
 })
