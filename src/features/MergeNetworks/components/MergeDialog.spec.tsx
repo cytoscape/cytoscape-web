@@ -4,14 +4,14 @@ import { describe, expect, it } from 'vitest'
 
 import MergeDialog from './MergeDialog'
 
-const renderDialog = (): void => {
+const renderDialog = (workSpaceNetworks: [string, string][] = []): void => {
   render(
     <MemoryRouter>
       <MergeDialog
         open
         handleClose={() => undefined}
         uniqueName="Merged Network"
-        workSpaceNetworks={[]}
+        workSpaceNetworks={workSpaceNetworks}
         networksLoaded={{}}
       />
     </MemoryRouter>,
@@ -70,5 +70,17 @@ describe('MergeDialog merged network name', () => {
     expect(
       screen.queryByText('Please enter a name for the merged network.'),
     ).toBeNull()
+  })
+
+  it('shows a duplicate name as an error and disables Merge', () => {
+    renderDialog([['Existing network', 'net-1']])
+    fireEvent.change(nameInput(), { target: { value: ' Existing network ' } })
+    const message = screen.getByText(
+      'A network with this name already exists in your workspace.',
+    )
+    expect(message.textContent).not.toMatch(/^Warning/)
+    expect(mergeButton().disabled).toBe(true)
+    expect(nameInput().getAttribute('aria-invalid')).toBe('true')
+    expect(nameInput().getAttribute('aria-describedby')).toBe(message.id)
   })
 })
