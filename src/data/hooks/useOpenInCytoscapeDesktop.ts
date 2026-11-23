@@ -7,6 +7,7 @@ import {
   IMAGE_CUSTOM_GRAPHICS_DESKTOP_WARNING,
   IMAGE_CUSTOM_GRAPHICS_WARNING_DURATION,
 } from '../../models/CxModel/impl/customGraphicsCompat'
+import { CYTOSCAPE_DESKTOP_UNAVAILABLE_MESSAGE } from '../../models/CxModel/impl/desktopRequirement'
 import { CyNetwork } from '../../models/CyNetworkModel'
 import { IdType } from '../../models/IdType'
 import { MessageSeverity } from '../../models/MessageModel'
@@ -121,8 +122,7 @@ export const useOpenNetworkInCytoscape = () => {
       })
     } catch (error) {
       addMessage({
-        message:
-          'To use this feature, you need Cytoscape 3.6.0 or higher running on your machine (default port: 1234) and the CyNDEx-2 app installed.',
+        message: CYTOSCAPE_DESKTOP_UNAVAILABLE_MESSAGE,
         duration: 5000,
         severity: MessageSeverity.ERROR,
       })

@@ -8,6 +8,7 @@ import {
 import { ReactElement } from 'react'
 
 import { CyDialog } from '@/components/CyDialog'
+import { CYTOSCAPE_DESKTOP_REQUIREMENT } from '@/models/CxModel/impl/desktopRequirement'
 
 interface CytoscapeDesktopPermissionDialogProps {
   open: boolean
@@ -38,8 +39,7 @@ export const CytoscapeDesktopPermissionDialog = ({
           <br />
           Click <strong>Allow</strong> (or <strong>Enable</strong>) on that
           prompt to let Cytoscape Web import and export networks to and from
-          Cytoscape Desktop. Make sure Cytoscape Desktop is running with the
-          CyNDEx-2 app installed.
+          Cytoscape Desktop. Make sure you have {CYTOSCAPE_DESKTOP_REQUIREMENT}.
         </DialogContentText>
       </DialogContent>
       <DialogActions>

@@ -6,7 +6,7 @@ export-compatibility issues.
 
 ## Requirements
 
-- Cytoscape Desktop **3.6+** running, with the CyREST app (bundled by default) on port
+- Cytoscape Desktop **3.10+** running (3.9 and earlier bundle a CX Support that cannot read CX2), with the CyREST app (bundled by default) on port
   `1234`. Confirm with the `check` command below.
 - Node 18+ (uses global `fetch`). No repo dependencies — the script is standalone.
 
