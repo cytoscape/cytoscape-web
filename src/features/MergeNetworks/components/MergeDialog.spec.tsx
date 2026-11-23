@@ -1,17 +1,17 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 
 import MergeDialog from './MergeDialog'
 
-const renderDialog = (): void => {
+const renderDialog = (workSpaceNetworks: [string, string][] = []): void => {
   render(
     <MemoryRouter>
       <MergeDialog
         open
         handleClose={() => undefined}
         uniqueName="Merged Network"
-        workSpaceNetworks={[]}
+        workSpaceNetworks={workSpaceNetworks}
         networksLoaded={{}}
       />
     </MemoryRouter>,
@@ -38,5 +38,49 @@ describe('MergeDialog accessible names', () => {
     ]) {
       expect(screen.getByRole('button', { name })).toBeTruthy()
     }
+  })
+})
+
+describe('MergeDialog merged network name', () => {
+  const nameInput = (): HTMLInputElement =>
+    screen.getByTestId('merge-dialog-name-input')
+  const mergeButton = (): HTMLButtonElement =>
+    screen.getByTestId('merge-dialog-merge-button')
+
+  it('disables Merge and asks for a name when the name is cleared', () => {
+    renderDialog()
+    fireEvent.change(nameInput(), { target: { value: '' } })
+    expect(mergeButton().disabled).toBe(true)
+    const message = screen.getByText(
+      'Please enter a name for the merged network.',
+    )
+    expect(nameInput().getAttribute('aria-invalid')).toBe('true')
+    expect(nameInput().getAttribute('aria-describedby')).toBe(message.id)
+  })
+
+  it('treats a name of only spaces as empty', () => {
+    renderDialog()
+    fireEvent.change(nameInput(), { target: { value: '   ' } })
+    expect(mergeButton().disabled).toBe(true)
+  })
+
+  it('does not show the empty-name message for a real name', () => {
+    renderDialog()
+    fireEvent.change(nameInput(), { target: { value: 'My merged network' } })
+    expect(
+      screen.queryByText('Please enter a name for the merged network.'),
+    ).toBeNull()
+  })
+
+  it('shows a duplicate name as an error and disables Merge', () => {
+    renderDialog([['Existing network', 'net-1']])
+    fireEvent.change(nameInput(), { target: { value: ' Existing network ' } })
+    const message = screen.getByText(
+      'A network with this name already exists in your workspace.',
+    )
+    expect(message.textContent).not.toMatch(/^Warning/)
+    expect(mergeButton().disabled).toBe(true)
+    expect(nameInput().getAttribute('aria-invalid')).toBe('true')
+    expect(nameInput().getAttribute('aria-describedby')).toBe(message.id)
   })
 })

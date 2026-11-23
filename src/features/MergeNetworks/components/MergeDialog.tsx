@@ -172,8 +172,18 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
   const [fullScreen, setFullScreen] = useState(false) // Full screen mode for the dialog
   const [tooltipOpen, setTooltipOpen] = useState(false) // Flag to indicate whether the tooltip is open
   const [strictRemoveMode, setStrictRemoveMode] = useState(false) // Flag to indicate the rules of difference merge
-  const [isNameDuplicate, setIsNameDuplicate] = useState(false) // Flag to indicate whether the network name is a duplicate
   const existingNetNames = new Set(workSpaceNetworks.map((pair) => pair[0])) // Set of existing network names
+  // A blank name would create a network with no title: block Merge until one
+  // is entered, as the other naming dialogs do
+  const isNameBlank = mergedNetworkName.trim() === ''
+  // Derived from the name on every render, so it can never go stale
+  const isNameDuplicate = existingNetNames.has(mergedNetworkName.trim())
+  // Both name problems share one error style: red border and red message
+  const nameMessage = isNameBlank
+    ? 'Please enter a name for the merged network.'
+    : isNameDuplicate
+      ? 'A network with this name already exists in your workspace.'
+      : null
   const nodesDuplication = useNodesDuplicationStore(
     (state) => state.nodesDuplication,
   )
@@ -465,7 +475,6 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
   const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newName = event.target.value
     setMergedNetworkName(newName)
-    setIsNameDuplicate(existingNetNames.has(newName?.trim()))
   }
   // Function to handle switch in the matching table view
   const handleTableViewChange = (
@@ -582,7 +591,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
       const [newCyNetwork, networkSummary] = await createMergedNetwork(
         sourceNetworkIds,
         newNetworkId,
-        mergedNetworkName,
+        mergedNetworkName.trim(),
         networkRecords,
         nodeMatchingTableObj,
         edgeMatchingTableObj,
@@ -774,27 +783,25 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
             placeholder="Enter merged network name"
             value={mergedNetworkName}
             onChange={handleNameChange}
+            error={nameMessage !== null}
+            inputProps={{
+              'data-testid': 'merge-dialog-name-input',
+              'aria-describedby': 'merged-network-name-message',
+            }}
             fullWidth
             size="small"
-            InputProps={{
-              sx: {
-                color: (theme) =>
-                  isNameDuplicate ? theme.palette.warning.main : 'inherit',
-              },
-            }}
           />
           <Typography
+            id="merged-network-name-message"
             component="caption"
             sx={{
-              color: (theme) => theme.palette.warning.main,
+              color: (theme) => theme.palette.error.main,
               textAlign: 'left',
               fontSize: '0.875rem',
               ml: 0.5,
             }}
           >
-            {isNameDuplicate
-              ? 'Warning: A network with this name already exists in your workspace.'
-              : '\u00A0'}
+            {nameMessage ?? '\u00A0'}
           </Typography>
         </FormControl>
 
@@ -1088,7 +1095,15 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
           Cancel
         </Button>
         <Tooltip
-          title={mergeTooltipIsOpen ? mergeTooltipText : ''}
+          title={
+            mergeTooltipIsOpen
+              ? mergeTooltipText
+              : isNameBlank
+                ? 'Merge is disabled because the merged network name is empty.'
+                : isNameDuplicate
+                  ? 'Merge is disabled because a network with this name already exists in your workspace.'
+                  : ''
+          }
           placement="top"
           arrow
         >
@@ -1096,7 +1111,7 @@ const MergeDialog: React.FC<MergeDialogProps> = ({
             <Button
               data-testid="merge-dialog-merge-button"
               variant="contained"
-              disabled={mergeTooltipIsOpen}
+              disabled={mergeTooltipIsOpen || isNameBlank || isNameDuplicate}
               onClick={handleMerge}
               sx={{ px: 2.5 }}
             >
