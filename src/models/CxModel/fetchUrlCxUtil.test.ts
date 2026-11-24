@@ -43,8 +43,8 @@ const mockFetch = (options: {
       ok,
       status,
       headers: { get: () => null },
-      text: async () => body,
-      json: async () => JSON.parse(body),
+      arrayBuffer: async () =>
+        new TextEncoder().encode(body).buffer as ArrayBuffer,
     } as unknown as Response
   })
   vi.stubGlobal('fetch', fetchMock)
@@ -88,6 +88,14 @@ describe('fetchUrlCx', () => {
 
     await expect(
       fetchUrlCx('https://example.org/net.cx2', 1000),
+    ).rejects.toThrow(/too large/)
+  })
+
+  it('enforces the size limit using UTF-8 bytes rather than character count', async () => {
+    const unicodeBody = 'é'.repeat(100)
+    mockFetch({ contentLength: undefined, body: unicodeBody })
+    await expect(
+      fetchUrlCx('https://example.org/net.cx2', 100),
     ).rejects.toThrow(/too large/)
   })
 

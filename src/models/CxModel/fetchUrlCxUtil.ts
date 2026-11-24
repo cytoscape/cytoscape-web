@@ -41,11 +41,11 @@ export const fetchUrlCx = async (
     // may be absent (chunked transfer, CORS). Enforce the limit on the
     // actual body before parsing (REVIEW.md B15 — previously a missing
     // header meant no limit at all)
-    const body = await fullResponse.text()
-    if (body.length > maxSize) {
+    const body = await fullResponse.arrayBuffer()
+    if (body.byteLength > maxSize) {
       throw new Error('CX network too large')
     }
-    const data: Cx2 = JSON.parse(body)
+    const data: Cx2 = JSON.parse(new TextDecoder().decode(body))
 
     const uuid = uuidv4()
     const network = getCyNetworkFromCx2(uuid, data)
