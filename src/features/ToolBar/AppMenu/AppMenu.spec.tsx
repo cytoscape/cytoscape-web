@@ -416,6 +416,55 @@ describe('AppMenu runtime resources', () => {
     ).toBe('Hide the panel')
   })
 
+  it('keeps the open menu snapshots when resources change, until the next open', () => {
+    let shown = false
+    seedMenuItem({
+      id: 'panel',
+      isChecked: () => shown,
+      tooltip: () => (shown ? 'Hide the panel' : 'Show the panel'),
+    })
+    seedMenuItem({ id: 'gone' })
+    render(<AppMenu />)
+    openMenu()
+
+    // The app's state flips and the resource list changes while the menu
+    // stays open: one row is added, one removed.
+    shown = true
+    act(() => {
+      useAppResourceStore.setState({
+        resources: useAppResourceStore
+          .getState()
+          .resources.filter((r) => r.id !== 'gone'),
+      })
+    })
+    act(() => {
+      seedMenuItem({ id: 'late', title: 'Late Item' })
+    })
+
+    expect(screen.getByTestId('apps-menu-item-app1-late')).toBeTruthy()
+    expect(screen.queryByTestId('apps-menu-item-app1-gone')).toBeNull()
+    expect(
+      wrapperRow('apps-menu-item-app1-panel').getAttribute('aria-checked'),
+    ).toBe('false')
+    expect(
+      screen
+        .getByTestId('apps-menu-item-app1-panel')
+        .parentElement?.getAttribute('aria-label'),
+    ).toBe('Show the panel')
+
+    // The next open takes fresh snapshots.
+    fireEvent.click(screen.getByTestId('toolbar-apps-menu-menu-button'))
+    openMenu()
+    expect(
+      wrapperRow('apps-menu-item-app1-panel').getAttribute('aria-checked'),
+    ).toBe('true')
+    expect(
+      screen
+        .getByTestId('apps-menu-item-app1-panel')
+        .parentElement?.getAttribute('aria-label'),
+    ).toBe('Hide the panel')
+  })
+
   it('shows no tooltip and logs when a function tooltip throws', () => {
     seedMenuItem({
       id: 'action',
