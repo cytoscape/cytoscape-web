@@ -18,6 +18,7 @@ import { useWorkspaceStore } from '@/data/hooks/stores/WorkspaceStore'
 import { isAppLayoutEnabled } from '@/app-api/core/appLayoutEngine'
 import { CP_RENDERER_ID } from '../../HierarchyViewer/components/CirclePackingLayout/CirclePackingRenderer'
 import { isHCX } from '../../HierarchyViewer/utils/hierarchyUtil'
+import { useLayoutToolsPanelStore } from '../../LayoutTools/store/layoutToolsPanelStore'
 import { useServiceAppMenu } from '../AppMenu/useServiceAppMenu'
 import { DropdownMenuItem } from '../DropdownMenu'
 import type { LayoutAlgorithm } from '@/models/LayoutModel/LayoutAlgorithm'
@@ -99,7 +100,12 @@ vi.mock('@/data/hooks/stores/WorkspaceStore', async () => {
 
 vi.mock('../../LayoutTools/store/layoutToolsPanelStore', async () => {
   const { create } = await vi.importActual<typeof import('zustand')>('zustand')
-  return { useLayoutToolsPanelStore: create(() => ({ toggle: vi.fn() })) }
+  return {
+    useLayoutToolsPanelStore: create<any>((set: any) => ({
+      open: false,
+      toggle: () => set((state: any) => ({ open: !state.open })),
+    })),
+  }
 })
 
 vi.mock('@/data/hooks/useUndoStack', () => ({
@@ -561,5 +567,79 @@ describe('LayoutMenu fit after layout', () => {
     await runCircle()
 
     expect(fitNet2).not.toHaveBeenCalled()
+  })
+})
+
+// Layout Tools is a show/hide toggle (#1013): the row shows the panel's state
+// with a checkmark in its icon slot (no decorative icon), keeps a static
+// label, and its tooltip names what a click will do.
+describe('LayoutMenu Layout Tools toggle', () => {
+  beforeEach(() => {
+    vi.mocked(isAppLayoutEnabled).mockReturnValue(true)
+    vi.mocked(useServiceAppMenu).mockReturnValue({
+      menuItems: [],
+      dialogs: null,
+      handleRun: vi.fn(),
+    })
+    useWorkspaceStore.setState({
+      workspace: { currentNetworkId: 'net1', networkIds: ['net1'] },
+    } as any)
+    seedEngines([makeCoreEngine()])
+    useLayoutToolsPanelStore.setState({ open: false })
+  })
+
+  const toolsRow = (): HTMLElement =>
+    screen.getByRole('menuitemcheckbox', { name: /Layout Tools/ })
+
+  const tooltipOf = (): string | null =>
+    screen
+      .getByTestId('layout-menu-layout-tools')
+      .parentElement?.getAttribute('aria-label') ?? null
+
+  it('is unchecked, with an empty icon slot, while the panel is hidden', () => {
+    render(<LayoutMenu />)
+    openMenu()
+
+    expect(toolsRow().getAttribute('aria-checked')).toBe('false')
+    const content = screen.getByTestId('layout-menu-layout-tools')
+    expect(content.textContent).toBe('Layout Tools')
+    expect(content.querySelector('svg')).toBeNull()
+    expect(tooltipOf()).toBe('Show the Layout Tools panel')
+  })
+
+  it('is checked while the panel is shown', () => {
+    useLayoutToolsPanelStore.setState({ open: true })
+    render(<LayoutMenu />)
+    openMenu()
+
+    expect(toolsRow().getAttribute('aria-checked')).toBe('true')
+    const content = screen.getByTestId('layout-menu-layout-tools')
+    expect(content.querySelector('[data-testid="CheckIcon"]')).not.toBeNull()
+    expect(content.querySelector('[data-testid="BuildIcon"]')).toBeNull()
+    expect(tooltipOf()).toBe('Hide the Layout Tools panel')
+  })
+
+  it('toggles the panel and reflects the new state on reopen', async () => {
+    render(<LayoutMenu />)
+    openMenu()
+    fireEvent.click(screen.getByTestId('layout-menu-layout-tools'))
+    expect(useLayoutToolsPanelStore.getState().open).toBe(true)
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('layout-menu-layout-tools')).toBeNull(),
+    )
+    openMenu()
+    expect(toolsRow().getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('shows the panel as hidden after its own close button hides it', () => {
+    useLayoutToolsPanelStore.setState({ open: true })
+    render(<LayoutMenu />)
+    // The panel's title-bar close button calls setOpen(false) on the store.
+    act(() => {
+      useLayoutToolsPanelStore.setState({ open: false })
+    })
+    openMenu()
+    expect(toolsRow().getAttribute('aria-checked')).toBe('false')
   })
 })

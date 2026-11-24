@@ -21,4 +21,11 @@ export interface ToolbarMenuItem {
    */
   keyShortcuts?: string
   command?: () => void
+  /**
+   * Makes the row a show/hide toggle (`menuitemcheckbox`) and reports its
+   * state as `aria-checked`. A templated row passes the same value to its
+   * `DropdownMenuItem`, which draws the checkmark. Leave it undefined for
+   * one-shot actions.
+   */
+  checked?: boolean
 }

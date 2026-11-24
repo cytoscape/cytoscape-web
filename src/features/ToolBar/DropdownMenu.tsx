@@ -1,3 +1,4 @@
+import CheckIcon from '@mui/icons-material/Check'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import {
   Box,
@@ -64,7 +65,7 @@ const SUBMENU_Z_OFFSET = -1
 const focusableRows = (container: HTMLElement | null): HTMLElement[] =>
   Array.from(
     container?.querySelectorAll<HTMLElement>(
-      ':scope > [role="menuitem"][tabindex="0"]',
+      ':scope > :is([role="menuitem"], [role="menuitemcheckbox"])[tabindex="0"]',
     ) ?? [],
   ).filter((row) => row.querySelector('[aria-disabled="true"]') === null)
 
@@ -230,7 +231,10 @@ function MenuLevel({
           return (
             <Box
               key={index}
-              role="menuitem"
+              role={
+                item.checked === undefined ? 'menuitem' : 'menuitemcheckbox'
+              }
+              aria-checked={item.checked}
               tabIndex={item.disabled === true ? -1 : 0}
               aria-disabled={item.disabled === true ? true : undefined}
               aria-keyshortcuts={item.keyShortcuts}
@@ -274,7 +278,8 @@ function MenuLevel({
         const row = (
           <Box
             key={index}
-            role="menuitem"
+            role={item.checked === undefined ? 'menuitem' : 'menuitemcheckbox'}
+            aria-checked={item.checked}
             tabIndex={item.disabled === true ? -1 : 0}
             aria-disabled={item.disabled === true ? true : undefined}
             aria-haspopup={hasChildren ? 'menu' : undefined}
@@ -327,7 +332,12 @@ function MenuLevel({
               }
             }}
           >
-            {item.icon !== undefined ? (
+            {item.checked !== undefined ? (
+              // A toggle row draws its state in the icon slot, never an icon.
+              <Box sx={{ display: 'flex', width: 24, height: 24 }}>
+                {item.checked ? <CheckIcon /> : null}
+              </Box>
+            ) : item.icon !== undefined ? (
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 {item.icon}
               </Box>
@@ -693,22 +703,34 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
   )
 }
 
-interface DropdownMenuItemProps {
+interface DropdownMenuItemBaseProps {
   label: string
   tooltip?: React.ReactNode
-  icon?: React.ReactNode
-  disabled?: boolean
   onClick?: () => void
   /** Optional test anchor, so specs need not select the item by its label. */
   dataTestId?: string
   /** Keyboard shortcut shown at the end of the row, e.g. "⌘A". */
   shortcut?: string
+  disabled?: boolean
 }
+
+/**
+ * A row is either an action, which may carry a decorative icon, or a
+ * show/hide toggle, which draws a checkmark in the same slot and has no
+ * icon. The union keeps the two from being combined: one column, one
+ * meaning per row. A toggle's `ToolbarMenuItem` sets the same `checked`.
+ */
+type DropdownMenuItemProps = DropdownMenuItemBaseProps &
+  (
+    | { icon?: React.ReactNode; checked?: undefined }
+    | { checked: boolean; icon?: undefined }
+  )
 
 export const DropdownMenuItem: React.FC<DropdownMenuItemProps> = ({
   label,
   tooltip = '',
   icon = null,
+  checked,
   disabled = false,
   onClick,
   dataTestId,
@@ -744,7 +766,9 @@ export const DropdownMenuItem: React.FC<DropdownMenuItemProps> = ({
             }
           }}
         >
-          <Box sx={{ width: 24, height: 24 }}>{icon}</Box>
+          <Box sx={{ width: 24, height: 24 }}>
+            {checked === true ? <CheckIcon /> : icon}
+          </Box>
           <Box>{label}</Box>
           {shortcut !== undefined && (
             <Box
