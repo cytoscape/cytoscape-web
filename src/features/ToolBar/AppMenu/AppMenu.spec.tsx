@@ -227,6 +227,9 @@ describe('AppMenu runtime resources', () => {
 
     const row = screen.getByTestId('apps-menu-item-app1-action')
     expect(row.getAttribute('aria-disabled')).toBe('true')
+    const wrapper = wrapperRow('apps-menu-item-app1-action')
+    expect(wrapper.getAttribute('aria-disabled')).toBe('true')
+    expect(wrapper.getAttribute('tabindex')).toBe('-1')
     fireEvent.click(row)
     expect(onClick).not.toHaveBeenCalled()
   })
@@ -378,6 +381,10 @@ describe('AppMenu runtime resources', () => {
 
     const row = wrapperRow('apps-menu-item-app1-panel')
     expect(row.getAttribute('aria-checked')).toBe('true')
+    // The role-bearing row is disabled too: out of the Tab order and
+    // exposed as disabled, not only the template inside it.
+    expect(row.getAttribute('aria-disabled')).toBe('true')
+    expect(row.getAttribute('tabindex')).toBe('-1')
     const item = screen.getByTestId('apps-menu-item-app1-panel')
     expect(item.getAttribute('aria-disabled')).toBe('true')
     expect(item.querySelector('[data-testid="CheckIcon"]')).not.toBeNull()

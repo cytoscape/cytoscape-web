@@ -175,10 +175,13 @@ export const AppMenu = () => {
 
         const label = r.title ?? r.id
         const dataTestId = `apps-menu-item-${r.appId}-${r.id}`
-        // The wrapper row owns role/aria-checked; the template draws the
-        // checkmark. A toggle has no icon (registration rejects one).
+        // The wrapper row owns role/aria-checked and the focus/disabled
+        // state (tabIndex, aria-disabled), so it gets `disabled` too; the
+        // template draws the checkmark and greys itself out. A toggle has no
+        // icon (registration rejects one).
         return {
           checked,
+          disabled,
           template:
             checked === undefined ? (
               <DropdownMenuItem
