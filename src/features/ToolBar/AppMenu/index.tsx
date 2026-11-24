@@ -82,6 +82,39 @@ export const AppMenu = () => {
         }
         const disabled = !visible || !customEnabled
 
+        // A show/hide toggle (#1015): `isChecked` is snapshotted here, with
+        // `isEnabled`. A throw shows the row unchecked — still a toggle, so
+        // its role stays menuitemcheckbox. Disabled and checked combine.
+        let checked: boolean | undefined
+        if (typeof r.isChecked === 'function') {
+          try {
+            checked = r.isChecked(perAppApis) === true
+          } catch (e) {
+            logApp.error(`[AppMenu]: isChecked() threw for ${resourceId}`, e)
+            checked = false
+          }
+        }
+
+        // A function tooltip is resolved at the same moment. Anything but a
+        // string is logged and dropped rather than rendered.
+        let tooltip: string | undefined
+        if (typeof r.tooltip === 'function') {
+          try {
+            const value: unknown = r.tooltip(perAppApis)
+            if (typeof value === 'string') {
+              tooltip = value
+            } else {
+              logApp.error(
+                `[AppMenu]: tooltip() returned ${value === null ? 'null' : typeof value} for ${resourceId}, expected a string`,
+              )
+            }
+          } catch (e) {
+            logApp.error(`[AppMenu]: tooltip() threw for ${resourceId}`, e)
+          }
+        } else {
+          tooltip = r.tooltip
+        }
+
         const handleClick = (): void => {
           // Close the dropdown first — every built-in item does. Safe now
           // that onClick only kicks off work living in a separate render
@@ -103,23 +136,38 @@ export const AppMenu = () => {
           }
         }
 
+        const label = r.title ?? r.id
+        const dataTestId = `apps-menu-item-${r.appId}-${r.id}`
+        // The wrapper row owns role/aria-checked; the template draws the
+        // checkmark. A toggle has no icon (registration rejects one).
         return {
-          template: (
-            <DropdownMenuItem
-              label={r.title ?? r.id}
-              tooltip={r.tooltip}
-              icon={<MenuItemIcon icon={r.icon} />}
-              disabled={disabled}
-              onClick={handleClick}
-              dataTestId={`apps-menu-item-${r.appId}-${r.id}`}
-            />
-          ),
+          checked,
+          template:
+            checked === undefined ? (
+              <DropdownMenuItem
+                label={label}
+                tooltip={tooltip}
+                icon={<MenuItemIcon icon={r.icon} />}
+                disabled={disabled}
+                onClick={handleClick}
+                dataTestId={dataTestId}
+              />
+            ) : (
+              <DropdownMenuItem
+                label={label}
+                tooltip={tooltip}
+                checked={checked}
+                disabled={disabled}
+                onClick={handleClick}
+                dataTestId={dataTestId}
+              />
+            ),
         } as MenuItem
       })
 
     return runtimeMenuItems
-    // `open` is a deliberate extra dependency: getResourceVisibility() and
-    // isEnabled() are imperative snapshots, so rebuilding on every open
+    // `open` is a deliberate extra dependency: getResourceVisibility(),
+    // isEnabled(), isChecked() and a function tooltip are imperative snapshots, so rebuilding on every open
     // re-evaluates enablement each time the dropdown is shown (not
     // reactively while it is open — the same moment built-in menus decide).
     // eslint-disable-next-line react-hooks/exhaustive-deps -- open re-snapshots enablement

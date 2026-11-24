@@ -6,6 +6,20 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
 
 ### Added
 
+- **Apps-menu show/hide toggles** (#1015). `RegisterMenuItemOptions` gains
+  `isChecked?: (apis) => boolean`: the host calls it each time the Apps menu
+  opens, like `isEnabled`, and draws a checkmark when it returns `true`; the
+  row is a `menuitemcheckbox` with the matching `aria-checked`. The app owns
+  the state and flips it in `onClick`. A throwing `isChecked` is logged and
+  the row shown unchecked. `tooltip` is widened to
+  `string | ((apis) => string)`, resolved at the same moment, so a toggle can
+  name what a click will do ("Show the … panel" / "Hide the … panel"); a
+  throwing or non-string tooltip function is logged and shows no tooltip.
+  Convention: a fixed noun label, no `icon`, an action tooltip. Fails with
+  `APP9` for `isChecked` that is not a function, `isChecked` with `icon`, or a
+  `tooltip` that is neither a string nor a function. Additive: existing
+  registrations are unchanged, and `RegisterMenuItemOptions` stays an
+  `interface`, so apps that extend it still compile.
 - **`layout.applyLayout(networkId, { waitIfBusy: true })`** (#982) waits for a
   running layout instead of failing with `APP16`, then runs. The promise
   resolves once the call's own layout has run, so a loop of awaited calls over

@@ -471,6 +471,91 @@ describe('createResourceApi', () => {
       }
       expect(mockStore.upsertResource).not.toHaveBeenCalled()
     })
+
+    // ── show/hide toggles (#1015) ──────────────────────────────────
+
+    it('stores isChecked and a function tooltip on the resource', () => {
+      const api = createResourceApi('app1')
+      const isChecked = () => true
+      const tooltip = () => 'Hide the panel'
+      const result = api.registerMenuItem({
+        id: 'M1',
+        label: 'My Panel',
+        onClick: () => {},
+        isChecked,
+        tooltip,
+      })
+
+      expect(result.success).toBe(true)
+      expect(mockStore.upsertResource).toHaveBeenCalledWith(
+        expect.objectContaining({ isChecked, tooltip }),
+      )
+    })
+
+    it.each([
+      ['a boolean', true],
+      ['a string', 'yes'],
+      ['null', null],
+      ['an object', {}],
+    ])(
+      'returns fail(InvalidInput) when isChecked is %s',
+      (_label, isChecked) => {
+        const api = createResourceApi('app1')
+        const result = api.registerMenuItem({
+          id: 'M1',
+          label: 'My Panel',
+          onClick: () => {},
+          isChecked: isChecked as any,
+        })
+
+        expect(result.success).toBe(false)
+        if (!result.success) {
+          expect(result.error.code).toBe('APP9')
+          expect(result.error.message).toContain('isChecked')
+        }
+        expect(mockStore.upsertResource).not.toHaveBeenCalled()
+      },
+    )
+
+    it('returns fail(InvalidInput) when isChecked is combined with icon', () => {
+      const api = createResourceApi('app1')
+      const result = api.registerMenuItem({
+        id: 'M1',
+        label: 'My Panel',
+        onClick: () => {},
+        isChecked: () => false,
+        icon: 'data:image/svg+xml,%3Csvg%3E%3C/svg%3E',
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP9')
+        expect(result.error.message).toContain('icon')
+      }
+      expect(mockStore.upsertResource).not.toHaveBeenCalled()
+    })
+
+    it.each([
+      ['a number', 42],
+      ['null', null],
+      ['an object', { text: 'hi' }],
+      ['a boolean', true],
+    ])('returns fail(InvalidInput) when tooltip is %s', (_label, tooltip) => {
+      const api = createResourceApi('app1')
+      const result = api.registerMenuItem({
+        id: 'M1',
+        label: 'My Action',
+        onClick: () => {},
+        tooltip: tooltip as any,
+      })
+
+      expect(result.success).toBe(false)
+      if (!result.success) {
+        expect(result.error.code).toBe('APP9')
+        expect(result.error.message).toContain('tooltip')
+      }
+      expect(mockStore.upsertResource).not.toHaveBeenCalled()
+    })
   })
 
   // ── unregisterMenuItem ──────────────────────────────────────────

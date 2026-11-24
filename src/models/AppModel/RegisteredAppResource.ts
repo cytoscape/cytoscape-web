@@ -77,8 +77,11 @@ export interface RegisteredAppResource {
   // 'search-bar'). Entries are plain data: the host owns 100% of the
   // rendering, so a menu item can never distort the shared dropdown.
 
-  /** Optional hover text. */
-  readonly tooltip?: string
+  /**
+   * Optional hover text: a string, or a function the host calls when the
+   * menu opens. Same `unknown` convention as `onClick`.
+   */
+  readonly tooltip?: string | ((apis: unknown) => string)
   /**
    * Invoked with the app's per-app API object when the item is clicked.
    * Typed with an `unknown` argument to keep the model layer free of
@@ -91,6 +94,12 @@ export interface RegisteredAppResource {
    * `unknown` convention as `onClick`.
    */
   readonly isEnabled?: (apis: unknown) => boolean
+  /**
+   * Makes the entry a show/hide toggle: called by the host when the menu
+   * opens, `true` draws a checkmark. Never set together with `icon`
+   * (rejected at registration). Same `unknown` convention as `onClick`.
+   */
+  readonly isChecked?: (apis: unknown) => boolean
 
   // ── 'search-bar' slot only ─────────────────────────────────────
   // A network search provider stores its display name in `title` and its

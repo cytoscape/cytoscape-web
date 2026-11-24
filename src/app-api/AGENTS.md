@@ -29,7 +29,7 @@ src/app-api/
 │   ├── workspaceApi.ts         ← workspace state reads/writes (WorkspaceStore + NetworkSummaryStore)
 │   ├── contextMenuApi.ts       ← context menu item registry (ContextMenuItemStore)
 │   ├── nodeGraphicsApi.ts      ← node-graphics render hook registry (NodeGraphicsStore)
-│   ├── resourceApi.ts          ← per-app panel/menu/search-provider/modal/layout registry (AppResourceStore; modal open-state in ModalLauncherStore). 'apps-menu' entries are plain data (label/icon/onClick) — never a component
+│   ├── resourceApi.ts          ← per-app panel/menu/search-provider/modal/layout registry (AppResourceStore; modal open-state in ModalLauncherStore). 'apps-menu' entries are plain data (label/icon/onClick; isChecked makes a show/hide toggle) — never a component
 │   ├── appLayoutEngine.ts      ← 'layout-algorithm' adapter: one synthetic LayoutEngine per app in LayoutStore, the shared `apply` that runs the app's `run`, the run registry, AppCleanupRegistry wiring
 │   ├── dialogApi.ts            ← per-app Dialog API: apis.dialog.open({ title, render }) (AppDialogStore; rendered by features/AppManager/AppDialogHost through the shared AppDialogShell)
 │   ├── panelApi.ts             ← panel.open(panel, tabId?): open a collapsible pane, select a tab (UiStateStore + SidePanelStore; tabs listed by models/UiModel/impl/panelTabs.ts)

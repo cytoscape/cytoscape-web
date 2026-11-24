@@ -199,6 +199,23 @@ function runFixtureSearch(query: { query: string }): void {
 const FIXTURE_ICON_URI =
   'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="royalblue"/></svg>'
 
+// The state behind the fixture's show/hide toggle menu item. The APP owns it:
+// onClick flips it, and the host reads it through isChecked (and the tooltip
+// function) the next time the Apps menu opens. The DOM marker lets the E2E
+// confirm the click reached the app, independently of the menu.
+let togglePanelShown = false
+
+function renderToggleMarker(): void {
+  let el = document.getElementById('remote-toggle-marker')
+  if (el === null) {
+    el = document.createElement('div')
+    el.id = 'remote-toggle-marker'
+    el.setAttribute('data-testid', 'remote-toggle-marker')
+    document.body.appendChild(el)
+  }
+  el.textContent = togglePanelShown ? 'shown' : 'hidden'
+}
+
 // The slice of the per-app API object the fixture's menu handlers use. A
 // test double gets exactly the surface it calls (see cyweb.d.ts for why).
 interface MountApis {
@@ -239,9 +256,10 @@ const TestRemoteApp = {
         registerMenuItem: (opts: {
           id: string
           label: string
-          tooltip?: string
+          tooltip?: string | ((apis: MountApis) => string)
           icon?: string
           onClick: (apis: MountApis) => void | Promise<void>
+          isChecked?: (apis: MountApis) => boolean
         }) => unknown
         registerPanel: (opts: {
           id: string
@@ -379,6 +397,22 @@ const TestRemoteApp = {
       },
     })
 
+    // (5c) A show/hide toggle (#1015): a fixed noun label, no icon (the
+    // host's checkmark uses the icon slot), and a tooltip that names what a
+    // click will do. Driven by app-menu-toggle.spec.ts.
+    renderToggleMarker()
+    context.apis.resource.registerMenuItem({
+      id: 'toggle-panel',
+      label: 'Fixture Panel',
+      isChecked: () => togglePanelShown,
+      tooltip: () =>
+        togglePanelShown ? 'Hide the Fixture panel' : 'Show the Fixture panel',
+      onClick: () => {
+        togglePanelShown = !togglePanelShown
+        renderToggleMarker()
+      },
+    })
+
     // (6) Register a layout algorithm — the 'layout-algorithm' contract
     // (#734): the host adapts it into its own layout engine, so it shows up
     // in the Layout menu's app block and in Layout Settings with `spacing`
@@ -428,6 +462,7 @@ const TestRemoteApp = {
   unmount(): void {
     document.getElementById('remote-app-root')?.remove()
     document.getElementById('remote-search-result')?.remove()
+    document.getElementById('remote-toggle-marker')?.remove()
   },
 }
 

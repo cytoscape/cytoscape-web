@@ -290,6 +290,164 @@ describe('AppMenu runtime resources', () => {
     ).toBeNull()
   })
 
+  // ── show/hide toggles (#1015) ─────────────────────────────────────
+
+  /** The wrapper row that owns the menuitem role, around the template. */
+  const wrapperRow = (testId: string): HTMLElement => {
+    const row = screen
+      .getByTestId(testId)
+      .closest('[role="menuitem"], [role="menuitemcheckbox"]')
+    if (!(row instanceof HTMLElement)) throw new Error('no wrapper row')
+    return row
+  }
+
+  it('keeps a plain item a menuitem with no aria-checked', () => {
+    seedMenuItem({ id: 'action', tooltip: 'Runs the analysis' })
+    render(<AppMenu />)
+    openMenu()
+
+    const row = wrapperRow('apps-menu-item-app1-action')
+    expect(row.getAttribute('role')).toBe('menuitem')
+    expect(row.hasAttribute('aria-checked')).toBe(false)
+    expect(screen.queryByTestId('CheckIcon')).toBeNull()
+  })
+
+  it('renders a checked toggle as a checked menuitemcheckbox with a checkmark', () => {
+    seedMenuItem({ id: 'panel', title: 'My Panel', isChecked: () => true })
+    render(<AppMenu />)
+    openMenu()
+
+    const row = wrapperRow('apps-menu-item-app1-panel')
+    expect(row.getAttribute('role')).toBe('menuitemcheckbox')
+    expect(row.getAttribute('aria-checked')).toBe('true')
+    const item = screen.getByTestId('apps-menu-item-app1-panel')
+    expect(item.querySelector('[data-testid="CheckIcon"]')).not.toBeNull()
+    expect(screen.queryByTestId('apps-menu-item-icon')).toBeNull()
+  })
+
+  it('renders an unchecked toggle with aria-checked=false and no checkmark', () => {
+    seedMenuItem({ id: 'panel', title: 'My Panel', isChecked: () => false })
+    render(<AppMenu />)
+    openMenu()
+
+    const row = wrapperRow('apps-menu-item-app1-panel')
+    expect(row.getAttribute('role')).toBe('menuitemcheckbox')
+    expect(row.getAttribute('aria-checked')).toBe('false')
+    const item = screen.getByTestId('apps-menu-item-app1-panel')
+    expect(item.querySelector('[data-testid="CheckIcon"]')).toBeNull()
+  })
+
+  it('passes the per-app API object to isChecked', () => {
+    const isChecked = vi.fn((_apis: unknown) => true)
+    seedMenuItem({ id: 'panel', isChecked })
+    render(<AppMenu />)
+    openMenu()
+
+    expect(isChecked).toHaveBeenCalled()
+    const apis = isChecked.mock.calls[0][0] as any
+    expect(typeof apis.dialog.open).toBe('function')
+  })
+
+  it('shows a throwing isChecked as unchecked and logs it', () => {
+    seedMenuItem({
+      id: 'panel',
+      isChecked: () => {
+        throw new Error('nope')
+      },
+    })
+    render(<AppMenu />)
+    openMenu()
+
+    const row = wrapperRow('apps-menu-item-app1-panel')
+    expect(row.getAttribute('role')).toBe('menuitemcheckbox')
+    expect(row.getAttribute('aria-checked')).toBe('false')
+    expect(logError).toHaveBeenCalledWith(
+      expect.stringContaining('isChecked() threw for app1::apps-menu::panel'),
+      expect.any(Error),
+    )
+  })
+
+  it('shows a toggle as both disabled and checked', () => {
+    seedMenuItem({
+      id: 'panel',
+      isChecked: () => true,
+      isEnabled: () => false,
+    })
+    render(<AppMenu />)
+    openMenu()
+
+    const row = wrapperRow('apps-menu-item-app1-panel')
+    expect(row.getAttribute('aria-checked')).toBe('true')
+    const item = screen.getByTestId('apps-menu-item-app1-panel')
+    expect(item.getAttribute('aria-disabled')).toBe('true')
+    expect(item.querySelector('[data-testid="CheckIcon"]')).not.toBeNull()
+  })
+
+  it('re-evaluates isChecked and a function tooltip each time the dropdown opens', () => {
+    let shown = false
+    seedMenuItem({
+      id: 'panel',
+      isChecked: () => shown,
+      tooltip: () => (shown ? 'Hide the panel' : 'Show the panel'),
+    })
+    render(<AppMenu />)
+
+    openMenu()
+    expect(
+      wrapperRow('apps-menu-item-app1-panel').getAttribute('aria-checked'),
+    ).toBe('false')
+    expect(
+      screen
+        .getByTestId('apps-menu-item-app1-panel')
+        .parentElement?.getAttribute('aria-label'),
+    ).toBe('Show the panel')
+
+    fireEvent.click(screen.getByTestId('toolbar-apps-menu-menu-button'))
+    shown = true
+    openMenu()
+
+    expect(
+      wrapperRow('apps-menu-item-app1-panel').getAttribute('aria-checked'),
+    ).toBe('true')
+    expect(
+      screen
+        .getByTestId('apps-menu-item-app1-panel')
+        .parentElement?.getAttribute('aria-label'),
+    ).toBe('Hide the panel')
+  })
+
+  it('shows no tooltip and logs when a function tooltip throws', () => {
+    seedMenuItem({
+      id: 'action',
+      tooltip: () => {
+        throw new Error('bad tooltip')
+      },
+    })
+    render(<AppMenu />)
+    openMenu()
+
+    const item = screen.getByTestId('apps-menu-item-app1-action')
+    // No tooltip: the same empty title an item without one gets.
+    expect(item.parentElement?.getAttribute('aria-label')).toBeFalsy()
+    expect(logError).toHaveBeenCalledWith(
+      expect.stringContaining('tooltip() threw for app1::apps-menu::action'),
+      expect.any(Error),
+    )
+  })
+
+  it('shows no tooltip and logs when a function tooltip returns a non-string', () => {
+    seedMenuItem({ id: 'action', tooltip: (() => 42) as any })
+    render(<AppMenu />)
+    openMenu()
+
+    const item = screen.getByTestId('apps-menu-item-app1-action')
+    // No tooltip: the same empty title an item without one gets.
+    expect(item.parentElement?.getAttribute('aria-label')).toBeFalsy()
+    expect(logError).toHaveBeenCalledWith(
+      expect.stringContaining('tooltip() returned number'),
+    )
+  })
+
   it('omits items from inactive apps', () => {
     seedMenuItem({ id: 'action' }, { active: false })
     render(<AppMenu />)
