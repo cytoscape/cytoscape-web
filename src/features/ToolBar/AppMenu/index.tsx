@@ -18,6 +18,66 @@ import { MenuItemIcon } from './MenuItemIcon'
 import { useServiceAppMenu } from './useServiceAppMenu'
 import { catalogAppId, trackEvent } from '@/data/analytics/trackEvent'
 
+/** What an entry's app callbacks returned when the menu opened. */
+interface AppCallbackSnapshot {
+  readonly customEnabled: boolean
+  /** undefined: not a toggle. */
+  readonly checked: boolean | undefined
+  readonly tooltip: string | undefined
+}
+
+/**
+ * Calls an entry's app callbacks. A throwing `isEnabled` counts as disabled; a
+ * throwing `isChecked` shows the toggle unchecked (still a toggle, so its role
+ * stays menuitemcheckbox); a function tooltip that throws or returns anything
+ * but a string is dropped. Every failure is logged.
+ */
+function readAppCallbacks(
+  r: RegisteredAppResource,
+  perAppApis: AppContextApis,
+  resourceId: string,
+): AppCallbackSnapshot {
+  let customEnabled = true
+  if (typeof r.isEnabled === 'function') {
+    try {
+      customEnabled = r.isEnabled(perAppApis) === true
+    } catch (e) {
+      logApp.error(`[AppMenu]: isEnabled() threw for ${resourceId}`, e)
+      customEnabled = false
+    }
+  }
+
+  let checked: boolean | undefined
+  if (typeof r.isChecked === 'function') {
+    try {
+      checked = r.isChecked(perAppApis) === true
+    } catch (e) {
+      logApp.error(`[AppMenu]: isChecked() threw for ${resourceId}`, e)
+      checked = false
+    }
+  }
+
+  let tooltip: string | undefined
+  if (typeof r.tooltip === 'function') {
+    try {
+      const value: unknown = r.tooltip(perAppApis)
+      if (typeof value === 'string') {
+        tooltip = value
+      } else {
+        logApp.error(
+          `[AppMenu]: tooltip() returned ${value === null ? 'null' : typeof value} for ${resourceId}, expected a string`,
+        )
+      }
+    } catch (e) {
+      logApp.error(`[AppMenu]: tooltip() threw for ${resourceId}`, e)
+    }
+  } else {
+    tooltip = r.tooltip
+  }
+
+  return { customEnabled, checked, tooltip }
+}
+
 export const AppMenu = () => {
   const { open, setOpen } = useMenuBarMenu('apps-menu')
 
@@ -46,6 +106,16 @@ export const AppMenu = () => {
   // Read runtime menu resources from AppResourceStore
   const runtimeResources = useAppResourceStore((state) => state.resources)
 
+  // One snapshot cache per open/close: a fresh map each time `open` changes,
+  // so the next open reads every app callback again. Keyed by the resource
+  // object, so a row added while the menu is open is read once, a removed one
+  // drops out, and a re-registered one (a new object) is read again.
+  const snapshots = useMemo(
+    () => new WeakMap<RegisteredAppResource, AppCallbackSnapshot>(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- open starts a new snapshot cache
+    [open],
+  )
+
   const createAppMenu = useCallback((): MenuItem[] => {
     const runtimeMenuItems: MenuItem[] = runtimeResources
       .filter((r: RegisteredAppResource) => {
@@ -64,22 +134,22 @@ export const AppMenu = () => {
 
         // `requires` (network/selection) and app-active state come from
         // getResourceVisibility — the same rule 'right-panel' uses.
-        // `isEnabled` is an extra imperative snapshot. Both are taken at
-        // menu-build time; see the `open` dependency below.
+        // `isEnabled` is an extra imperative snapshot, taken once per open
+        // (see `snapshots`).
         const visibility = perAppApis.resource.getResourceVisibility(
           r.id,
           'apps-menu',
         )
         const visible = visibility.success ? visibility.data.visible : false
-        let customEnabled = true
-        if (typeof r.isEnabled === 'function') {
-          try {
-            customEnabled = r.isEnabled(perAppApis) === true
-          } catch (e) {
-            logApp.error(`[AppMenu]: isEnabled() threw for ${resourceId}`, e)
-            customEnabled = false
-          }
+        // The app callbacks — isEnabled, isChecked (#1015) and a function
+        // tooltip — are read once per open and reused while the menu stays
+        // open, even if the resource list changes meanwhile.
+        let snapshot = snapshots.get(r)
+        if (snapshot === undefined) {
+          snapshot = readAppCallbacks(r, perAppApis, resourceId)
+          snapshots.set(r, snapshot)
         }
+        const { customEnabled, checked, tooltip } = snapshot
         const disabled = !visible || !customEnabled
 
         const handleClick = (): void => {
@@ -103,27 +173,44 @@ export const AppMenu = () => {
           }
         }
 
+        const label = r.title ?? r.id
+        const dataTestId = `apps-menu-item-${r.appId}-${r.id}`
+        // The wrapper row owns role/aria-checked and the focus/disabled
+        // state (tabIndex, aria-disabled), so it gets `disabled` too; the
+        // template draws the checkmark and greys itself out. A toggle has no
+        // icon (registration rejects one).
         return {
-          template: (
-            <DropdownMenuItem
-              label={r.title ?? r.id}
-              tooltip={r.tooltip}
-              icon={<MenuItemIcon icon={r.icon} />}
-              disabled={disabled}
-              onClick={handleClick}
-              dataTestId={`apps-menu-item-${r.appId}-${r.id}`}
-            />
-          ),
+          checked,
+          disabled,
+          template:
+            checked === undefined ? (
+              <DropdownMenuItem
+                label={label}
+                tooltip={tooltip}
+                icon={<MenuItemIcon icon={r.icon} />}
+                disabled={disabled}
+                onClick={handleClick}
+                dataTestId={dataTestId}
+              />
+            ) : (
+              <DropdownMenuItem
+                label={label}
+                tooltip={tooltip}
+                checked={checked}
+                disabled={disabled}
+                onClick={handleClick}
+                dataTestId={dataTestId}
+              />
+            ),
         } as MenuItem
       })
 
     return runtimeMenuItems
-    // `open` is a deliberate extra dependency: getResourceVisibility() and
-    // isEnabled() are imperative snapshots, so rebuilding on every open
-    // re-evaluates enablement each time the dropdown is shown (not
-    // reactively while it is open — the same moment built-in menus decide).
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- open re-snapshots enablement
-  }, [runtimeResources, apps, handleClose, open])
+    // `snapshots` changes with `open`, so every open rebuilds the rows and
+    // re-reads getResourceVisibility() and the app callbacks (the same moment
+    // built-in menus decide). A resource change while the menu is open
+    // rebuilds too, but reuses the callbacks' snapshot for existing rows.
+  }, [runtimeResources, apps, handleClose, snapshots])
 
   /**
    * Menu model for the nested menu: app menu items, then service-app

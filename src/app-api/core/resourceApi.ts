@@ -307,12 +307,32 @@ export const createResourceApi = (appId: string): ResourceApi => ({
         )
       }
       if (
-        options.tooltip !== undefined &&
-        typeof options.tooltip !== 'string'
+        options.isChecked !== undefined &&
+        typeof options.isChecked !== 'function'
       ) {
         return fail(
           AppCodes.INVALID_INPUT,
-          `tooltip must be a string, got ${typeof options.tooltip}`,
+          `isChecked must be a function, got ${options.isChecked === null ? 'null' : typeof options.isChecked}`,
+        )
+      }
+      // A toggle draws its checkmark in the icon slot: one column, one
+      // meaning per row (the host's DropdownMenuItem enforces the same rule
+      // in its prop types; the public interface cannot without becoming a
+      // union, which would break apps that extend it).
+      if (options.isChecked !== undefined && options.icon !== undefined) {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          'isChecked and icon cannot be combined: a toggle shows its checkmark in the icon slot',
+        )
+      }
+      if (
+        options.tooltip !== undefined &&
+        typeof options.tooltip !== 'string' &&
+        typeof options.tooltip !== 'function'
+      ) {
+        return fail(
+          AppCodes.INVALID_INPUT,
+          `tooltip must be a string or a function, got ${options.tooltip === null ? 'null' : typeof options.tooltip}`,
         )
       }
       // Same contract as the 'search-bar' icon: a URI, never a component.
@@ -331,13 +351,19 @@ export const createResourceApi = (appId: string): ResourceApi => ({
         appId,
         slot: 'apps-menu',
         title: options.label,
-        tooltip: options.tooltip,
+        tooltip: options.tooltip as
+          | string
+          | ((apis: unknown) => string)
+          | undefined,
         icon: options.icon,
         order: options.order,
         group: options.group,
         requires: options.requires,
         onClick: options.onClick as (apis: unknown) => void | Promise<void>,
         isEnabled: options.isEnabled as
+          | ((apis: unknown) => boolean)
+          | undefined,
+        isChecked: options.isChecked as
           | ((apis: unknown) => boolean)
           | undefined,
       })

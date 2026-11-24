@@ -2037,13 +2037,14 @@ interface RegisterPanelOptions {
 interface RegisterMenuItemOptions {
   id: string
   label: string // text shown in the menu, required non-empty
-  tooltip?: string
-  icon?: string // http(s) URL, data:image URI, or root-relative host asset path; SVG is tinted, raster shown as-is
+  tooltip?: string | ((apis: AppContextApis) => string) // a function is resolved per open
+  icon?: string // http(s) URL, data:image URI, or root-relative host asset path; SVG is tinted, raster shown as-is; not with isChecked
   order?: number
   group?: string
   requires?: { network?: boolean; selection?: boolean } // greys the item out
   onClick: (apis: AppContextApis) => void | Promise<void>
   isEnabled?: (apis: AppContextApis) => boolean // extra check, snapshot per open
+  isChecked?: (apis: AppContextApis) => boolean // makes the item a show/hide toggle, snapshot per open
 }
 
 interface RegisterNetworkSearchProviderOptions {
@@ -2182,7 +2183,8 @@ Removes a panel. Returns `APP7` if the panel is not registered.
 Registers one entry in the shared Apps dropdown. Uses upsert semantics.
 
 The entry is **plain data**: `label`, optional `tooltip` and `icon`, an
-`onClick` handler, and enablement rules. There is no `component` — the host
+`onClick` handler, enablement rules, and an optional `isChecked` that makes it
+a show/hide toggle. There is no `component` — the host
 renders every entry as one of its own standard menu rows, so every app's item
 has the same size, font, and style as every other app's and as the host's
 built-in items. (Before 1.0 this slot took a React component; see
@@ -2200,6 +2202,18 @@ built-in items. (Before 1.0 this slot took a React component; see
 - **`isEnabled(apis)`** — optional extra check the host calls right before
   the menu is shown, for conditions `requires` cannot express. A plain
   function, not a hook; a throw is logged and counts as `false`.
+- **`tooltip`** — hover text: a string, or a function `(apis) => string` the
+  host calls each time the menu opens (the same moment as `isEnabled`). If the
+  function throws or returns something other than a string, the host logs it
+  and shows no tooltip.
+- **`isChecked(apis)`** — makes the item a **show/hide toggle**. The host
+  calls it each time the menu opens and draws a checkmark in the icon slot
+  when it returns `true`; the row is a `menuitemcheckbox` whose
+  `aria-checked` matches. The app owns the state: flip it in `onClick`, and
+  the next open shows it (the value is not updated while the menu stays
+  open). A throw is logged and the row is shown unchecked. A toggle can also
+  be disabled: the row is greyed out and still shows its check. A toggle has
+  no `icon` — registering both fails with `APP9`.
 - **`icon`** — an image URI, exactly as for a `'search-bar'` provider: an
   http(s) URL, a `data:image` URI (an inlined SVG works well), or a
   root-relative host asset path, rendered by the host at a fixed size in the
@@ -2229,9 +2243,32 @@ apis.resource.registerMenuItem({
 })
 ```
 
-| Error Code | Condition                                                                                             |
-| ---------- | ----------------------------------------------------------------------------------------------------- |
-| `APP9`     | `id` or `label` empty, `onClick`/`isEnabled` not a function, `icon` not a valid URI, or a `component` |
+**Show/hide toggles.** An item that shows or hides something follows the
+host's own convention (Layout ▸ Layout Tools): a **fixed noun label** (not
+"Show …"/"Hide …"), **no icon** (the checkmark uses that slot), and a
+**tooltip that names what a click will do**:
+
+```typescript
+let panelShown = false
+
+apis.resource.registerMenuItem({
+  id: 'my-panel',
+  label: 'My Panel', // a noun; it never changes
+  isChecked: () => panelShown,
+  tooltip: () => (panelShown ? 'Hide the My Panel panel' : 'Show the My Panel panel'),
+  onClick: (apis) => {
+    panelShown = !panelShown
+    // ...show or hide the panel...
+  },
+})
+```
+
+A one-shot action keeps a verb label and no `isChecked`, even when it shows
+something.
+
+| Error Code | Condition                                                                                                                                                                       |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP9`     | `id` or `label` empty, `onClick`/`isEnabled`/`isChecked` not a function, `isChecked` combined with `icon`, `tooltip` neither a string nor a function, `icon` not a valid URI, or a `component` |
 
 **Migrating a component-based menu item.** Replace `component` (and
 `closeOnAction`/`errorFallback`/`title`) with `label` + `onClick`. If the old

@@ -87,8 +87,14 @@ export interface RegisterMenuItemOptions {
   id: string
   /** Text shown in the menu. Required, non-empty. */
   label: string
-  /** Optional hover text. */
-  tooltip?: string
+  /**
+   * Optional hover text: a fixed string, or a function the host calls each
+   * time the menu opens (the same snapshot moment as `isEnabled`). A toggle
+   * uses the function form to name what a click will do — "Show the …
+   * panel" / "Hide the … panel". A throwing function, or one that returns
+   * something other than a string, is logged and the row shows no tooltip.
+   */
+  tooltip?: string | ((apis: AppContextApis) => string)
   /**
    * Optional icon: an http(s) URL, a `data:image` URI, or a root-relative
    * host asset path — the same contract as the 'search-bar' `icon`, rendered
@@ -99,7 +105,8 @@ export interface RegisterMenuItemOptions {
    * silhouette. Raster icons (PNG, JPEG, ...) are shown unchanged — ship one
    * to keep a logo's colors. A cross-origin http(s) SVG needs CORS headers
    * (CSS masks are fetched in CORS mode); an inlined SVG `data:` URI is the
-   * easy choice. Plain data — never a component.
+   * easy choice. Plain data — never a component. Not allowed together with
+   * `isChecked`: a toggle's checkmark uses the icon slot.
    */
   icon?: string
   order?: number
@@ -129,6 +136,18 @@ export interface RegisterMenuItemOptions {
    * `isEnabled` is logged and treated as `false`.
    */
   isEnabled?: (apis: AppContextApis) => boolean
+  /**
+   * Makes the item a show/hide toggle. The host calls it when the menu
+   * opens, as it does `isEnabled`, and draws a checkmark when it returns
+   * `true`; the row is a `menuitemcheckbox` with the matching
+   * `aria-checked`. The app owns the state: flip it in `onClick` and the
+   * next open shows it (the value is not updated while the menu stays
+   * open). A throwing `isChecked` is logged and shown as unchecked. A
+   * toggle has no `icon` — the checkmark uses the icon slot — and
+   * registering both returns `INVALID_INPUT`. Convention: keep `label` a
+   * fixed noun ("My Panel") and let a function `tooltip` name the action.
+   */
+  isChecked?: (apis: AppContextApis) => boolean
 }
 
 // ── Network search provider registration ────────────────────────
