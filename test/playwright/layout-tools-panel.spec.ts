@@ -111,3 +111,38 @@ test.describe('Layout Tools panel (#887)', () => {
     expect(reopened.panel.top).toBeCloseTo(start.panel.top, 0)
   })
 })
+
+// The Layout → Layout Tools row is a show/hide toggle (#1013): it is a
+// checkable menu row whose checkmark follows the panel, however it closed.
+test.describe('Layout Tools menu toggle (#1013)', () => {
+  const toolsRow = (page: Page): Locator =>
+    page.getByRole('menuitemcheckbox', { name: /Layout Tools/ })
+
+  const openLayoutMenu = async (page: Page): Promise<void> => {
+    await page.getByTestId('toolbar-layout-menu-menu-button').click()
+    await expect(page.getByTestId('layout-menu-layout-tools')).toBeVisible()
+  }
+
+  test('shows the panel state and hides the panel on a second click', async ({
+    page,
+  }) => {
+    await gotoAndSeedNetwork(page)
+
+    await openLayoutMenu(page)
+    await expect(toolsRow(page)).toHaveAttribute('aria-checked', 'false')
+    await page.getByTestId('layout-menu-layout-tools').click()
+    await expect(page.getByTestId(PANEL)).toBeVisible()
+
+    await openLayoutMenu(page)
+    await expect(toolsRow(page)).toHaveAttribute('aria-checked', 'true')
+    await page.getByTestId('layout-menu-layout-tools').click()
+    await expect(page.getByTestId(PANEL)).toHaveCount(0)
+
+    // Closing with the panel's own X also clears the checkmark
+    await openLayoutTools(page)
+    await page.getByTestId('floating-layout-tools-close').click()
+    await expect(page.getByTestId(PANEL)).toHaveCount(0)
+    await openLayoutMenu(page)
+    await expect(toolsRow(page)).toHaveAttribute('aria-checked', 'false')
+  })
+})

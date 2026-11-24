@@ -246,6 +246,59 @@ describe('DropdownMenu keyboard access', () => {
     expect(run).not.toHaveBeenCalled()
   })
 
+  it('renders a checkable row as a menuitemcheckbox that arrow keys reach', () => {
+    const toggle = vi.fn()
+    renderOpenMenu([
+      { template: <DropdownMenuItem label="Run" onClick={vi.fn()} /> },
+      {
+        checked: true,
+        template: (
+          <DropdownMenuItem
+            label="Panel"
+            checked={true}
+            dataTestId="panel-row"
+            onClick={toggle}
+          />
+        ),
+      },
+    ])
+
+    const row = screen.getByRole('menuitemcheckbox', { name: 'Panel' })
+    expect(row.getAttribute('aria-checked')).toBe('true')
+    expect(screen.getAllByRole('menuitem')).toHaveLength(1)
+
+    const menu = screen.getByRole('menu')
+    fireEvent.keyDown(menu, { key: 'ArrowDown' })
+    fireEvent.keyDown(menu, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(row)
+
+    fireEvent.keyDown(row, { key: 'Enter' })
+    expect(toggle).toHaveBeenCalledTimes(1)
+  })
+
+  it('marks an unchecked checkable row aria-checked="false"', () => {
+    renderOpenMenu([
+      {
+        checked: false,
+        template: <DropdownMenuItem label="Panel" checked={false} />,
+      },
+    ])
+
+    const row = screen.getByRole('menuitemcheckbox', { name: 'Panel' })
+    expect(row.getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('draws a label row with `checked` as a checkable row', () => {
+    const command = vi.fn()
+    renderOpenMenu([{ label: 'Panel', checked: true, command }])
+
+    const row = screen.getByRole('menuitemcheckbox', { name: 'Panel' })
+    expect(row.getAttribute('aria-checked')).toBe('true')
+    expect(row.querySelector('[data-testid="CheckIcon"]')).not.toBeNull()
+    fireEvent.keyDown(row, { key: 'Enter' })
+    expect(command).toHaveBeenCalledTimes(1)
+  })
+
   it("points the trigger's aria-controls at the rendered menu", () => {
     renderOpenMenu([{ label: 'Run', command: vi.fn() }])
 
@@ -413,5 +466,20 @@ describe('DropdownMenu stacking against dialogs', () => {
 
     const [topLevel, submenu] = screen.getAllByRole('menu')
     expect(zIndexOf(submenu)).toBeGreaterThan(zIndexOf(topLevel))
+  })
+})
+
+describe('DropdownMenuItem checked state', () => {
+  it('shows a check in the icon slot when checked', () => {
+    render(<DropdownMenuItem label="Panel" checked={true} dataTestId="row" />)
+    const row = screen.getByTestId('row')
+    expect(row.querySelector('[data-testid="CheckIcon"]')).not.toBeNull()
+  })
+
+  it('leaves the icon slot empty when unchecked', () => {
+    render(<DropdownMenuItem label="Panel" checked={false} dataTestId="row" />)
+    const row = screen.getByTestId('row')
+    expect(row.querySelector('[data-testid="CheckIcon"]')).toBeNull()
+    expect(row.querySelector('svg')).toBeNull()
   })
 })

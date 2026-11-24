@@ -40,7 +40,7 @@ network view.
 
 **Behavior:**
 
-- Hidden by default; **Layout → Layout Tools** toggles it through `layoutToolsPanelStore`, and the close button in its title bar hides it
+- Hidden by default; **Layout → Layout Tools** toggles it through `layoutToolsPanelStore`, and the close button in its title bar hides it. The menu row reads the same `open` flag and shows a checkmark while the panel is shown, so it stays right whichever way the panel was closed (#1013)
 - Opens in the lower-left corner of the network view
 - Moves when its title bar is dragged, and cannot be dragged out of the network view; the close button does not start a drag
 - Is placed against `NetworkTab`'s box (`position: relative`), so in a hierarchy it cannot be dragged over the TREE VIEW / CELL VIEW tabs

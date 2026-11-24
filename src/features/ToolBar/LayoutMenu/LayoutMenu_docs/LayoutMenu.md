@@ -40,7 +40,7 @@ The menu is, in order:
    - **App algorithms** — every algorithm of every app engine (`engine.appId` set), one row each, sorted by label with the app id as the tiebreak. There is deliberately no `order`/gravity option (#734): related layouts from one app stay together through a shared label prefix. A row is `disabled` above its `threshold` or when the app's `isEnabled(apis)` snapshot returns `false`; the snapshot is taken only while the menu is open, with one per-app API object per app (`buildPerAppApis`). Test id: `layout-menu-item-<appId>-<localId>`.
    - **Service apps** routed to the Layout root (`useServiceAppMenu(RootMenu.Layout)`), after the app algorithms.
 6. Divider (only with the block).
-7. **Layout Tools** (`layout-menu-layout-tools`) and **Settings...** (`layout-menu-settings`).
+7. **Layout Tools** (`layout-menu-layout-tools`) and **Settings...** (`layout-menu-settings`). Layout Tools is a show/hide toggle for the floating panel (#1013): a checkable row (`checked` from `layoutToolsPanelStore.open`) with a checkmark in its icon slot while the panel is shown and no icon otherwise. Its tooltip reads "Show the Layout Tools panel" or "Hide the Layout Tools panel". See the toggle rule in `ToolBar_docs/ToolBar.md`.
 
 Core rows carry the test id `layout-menu-item-<engine>-<algorithm>`.
 

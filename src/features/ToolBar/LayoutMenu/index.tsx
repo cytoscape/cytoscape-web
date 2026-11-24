@@ -1,4 +1,3 @@
-import BuildIcon from '@mui/icons-material/Build'
 import PlayArrowIcon from '@mui/icons-material/PlayArrow'
 import SettingsIcon from '@mui/icons-material/Settings'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -101,6 +100,7 @@ export const LayoutMenu = (): JSX.Element => {
     (state) => state.preferredLayout,
   )
   const toggleLayoutTools = useLayoutToolsPanelStore((state) => state.toggle)
+  const layoutToolsOpen = useLayoutToolsPanelStore((state) => state.open)
 
   const getViewModel = useViewModelStore((state) => state.getViewModel)
   const networkView = getViewModel(targetNetworkId)
@@ -467,12 +467,19 @@ export const LayoutMenu = (): JSX.Element => {
         ? [...thirdPartyItems, { separator: true }]
         : []),
       {
+        // A show/hide toggle: a checkmark shows the panel's state, the label
+        // stays the same and the tooltip names what a click will do (#1013).
+        checked: layoutToolsOpen,
         template: (
           <DropdownMenuItem
             dataTestId="layout-menu-layout-tools"
             label="Layout Tools"
-            icon={<BuildIcon />}
-            tooltip="Show the layout tools panel in the lower-left corner"
+            checked={layoutToolsOpen}
+            tooltip={
+              layoutToolsOpen
+                ? 'Hide the Layout Tools panel'
+                : 'Show the Layout Tools panel'
+            }
             onClick={() => {
               handleClose()
               toggleLayoutTools()
