@@ -32,8 +32,9 @@ whole.
 
 ### Copy to Clipboard
 
-- **Copy License** copies the full license text. A clipboard failure is logged
-  through `logUi`; nothing is shown to the user.
+- **Copy License** copies the full license text. If the clipboard is
+  unavailable or refuses the write, the failure is logged through `logUi` and
+  an error message tells the user that the license was not copied.
 
 ## Design Decisions
 

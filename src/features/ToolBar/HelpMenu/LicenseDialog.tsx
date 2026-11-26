@@ -11,7 +11,9 @@ import { ReactElement } from 'react'
 
 import { CyDialog } from '@/components/CyDialog'
 import { DialogCloseButton } from '@/components/DialogCloseButton'
-import { logUi } from '../../../debug'
+import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
+import { MessageSeverity } from '../../../models/MessageModel'
+import { copyToClipboard } from '../../../utils/copyToClipboard'
 
 interface LicenseDialogProps {
   open: boolean
@@ -22,6 +24,8 @@ export const LicenseDialog = ({
   open,
   onClose,
 }: LicenseDialogProps): ReactElement => {
+  const addMessage = useMessageStore((state) => state.addMessage)
+
   const LicenseText = `
   MIT License
   
@@ -45,8 +49,16 @@ export const LicenseDialog = ({
   `
 
   const handleCopyText = (): void => {
-    navigator.clipboard.writeText(LicenseText).catch((err) => {
-      logUi.error(`[${handleCopyText.name}]: Failed to copy text: `, err)
+    // copyToClipboard never throws, even without a clipboard (insecure
+    // context); it resolves false instead, which the user must be told.
+    void copyToClipboard(LicenseText).then((copied) => {
+      if (!copied) {
+        addMessage({
+          message: 'Could not copy the license to the clipboard.',
+          duration: 5000,
+          severity: MessageSeverity.ERROR,
+        })
+      }
     })
   }
 

@@ -6,10 +6,11 @@ import {
   waitFor,
   within,
 } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { deleteProfileDb, getProfileSetting } from '../../../data/db/profileDb'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
+import { MessageSeverity } from '../../../models/MessageModel'
 import { listLLMModels } from '../api/chatgpt'
 import { OLLAMA_DEFAULT_BASE_URL } from '../model/LLMProvider'
 import { useLLMQueryStore } from '../store'
@@ -762,6 +763,95 @@ describe('LLMQueryOptionsDialog', () => {
       fireEvent.click(screen.getByTestId('llm-query-options-confirm-button'))
 
       expect(loadLLMSessionKeys().openAiKey).toBe('k'.repeat(4096))
+    })
+  })
+
+  /**
+   * Issue #994: the prompt copy reports success only once the write resolves,
+   * and reports a missing clipboard or a refused write as an error.
+   */
+  describe('copying the prompt', () => {
+    const setClipboard = (clipboard: unknown): void => {
+      Object.defineProperty(navigator, 'clipboard', {
+        value: clipboard,
+        configurable: true,
+      })
+    }
+
+    afterEach(() => {
+      // jsdom has no clipboard of its own; leave none behind
+      setClipboard(undefined)
+    })
+
+    const clickCopy = (): void => {
+      render(<LLMQueryOptionsDialog open={true} handleClose={() => {}} />)
+      fireEvent.click(screen.getByTestId('llm-query-options-copy-button'))
+    }
+
+    it('shows an error, not success, when the clipboard is unavailable', async () => {
+      setClipboard(undefined)
+
+      clickCopy()
+
+      await waitFor(() =>
+        expect(useMessageStore.getState().messages).toEqual([
+          expect.objectContaining({
+            message: 'Could not copy the LLM prompt to the clipboard.',
+            severity: MessageSeverity.ERROR,
+          }),
+        ]),
+      )
+    })
+
+    it('shows an error, not success, when the write is refused', async () => {
+      const writeText = vi.fn().mockRejectedValue(new Error('NotAllowedError'))
+      setClipboard({ writeText })
+
+      clickCopy()
+
+      await waitFor(() =>
+        expect(useMessageStore.getState().messages).toEqual([
+          expect.objectContaining({
+            message: 'Could not copy the LLM prompt to the clipboard.',
+            severity: MessageSeverity.ERROR,
+          }),
+        ]),
+      )
+      expect(writeText).toHaveBeenCalledTimes(1)
+    })
+
+    it('shows success only after the write resolves', async () => {
+      let finishWrite: () => void = () => {}
+      const writeText = vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            finishWrite = resolve
+          }),
+      )
+      setClipboard({ writeText })
+      const { rawText } = useLLMQueryStore.getState().LLMTemplate
+
+      clickCopy()
+
+      await waitFor(() => expect(writeText).toHaveBeenCalledWith(rawText))
+      // Let any premature .then() run before checking nothing was reported
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      })
+      expect(useMessageStore.getState().messages).toEqual([])
+
+      await act(async () => {
+        finishWrite()
+      })
+
+      await waitFor(() =>
+        expect(useMessageStore.getState().messages).toEqual([
+          expect.objectContaining({
+            message: 'LLM prompt copied to clipboard',
+            severity: MessageSeverity.INFO,
+          }),
+        ]),
+      )
     })
   })
 })

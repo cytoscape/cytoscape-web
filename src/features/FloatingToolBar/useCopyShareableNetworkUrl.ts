@@ -10,6 +10,7 @@ import { logUi } from '../../debug'
 import { IdType } from '../../models'
 import { MessageSeverity } from '../../models/MessageModel'
 import { NetworkView } from '../../models/ViewModel'
+import { copyToClipboard } from '../../utils/copyToClipboard'
 import { useSubNetworkStore } from '../HierarchyViewer/store/SubNetworkStore'
 import { isSubnetwork } from '../HierarchyViewer/utils/hierarchyUtil'
 import { resolveShareTargetNetworkId } from './resolveShareTargetNetworkId'
@@ -126,12 +127,6 @@ export const useCopyShareableNetworkUrl = () => {
     return params
   }
 
-  const copyTextToClipboard = async (text: string): Promise<void> => {
-    if ('clipboard' in navigator) {
-      return await navigator.clipboard.writeText(text)
-    }
-  }
-
   const copyShareableNetworkUrl = (targetNetworkId?: IdType): void => {
     const currentNetworkId =
       useWorkspaceStore.getState().workspace.currentNetworkId
@@ -186,12 +181,18 @@ export const useCopyShareableNetworkUrl = () => {
       return
     }
 
-    logUi.info(
-      `[${useCopyShareableNetworkUrl.name}]: Copied Sharable URL: ${newUrl}`,
-    )
-
-    void copyTextToClipboard(newUrl).then(() => {
-      // Notify user that the sharable URL has been copied to clipboard
+    void copyToClipboard(newUrl).then((copied) => {
+      if (!copied) {
+        addMessage({
+          message: 'Could not copy the URL for sharing this network.',
+          duration: 5000,
+          severity: MessageSeverity.ERROR,
+        })
+        return
+      }
+      logUi.info(
+        `[${useCopyShareableNetworkUrl.name}]: Copied Sharable URL: ${newUrl}`,
+      )
       addMessage({
         message: 'URL for sharing this network has been copied!',
         duration: 3000,

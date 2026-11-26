@@ -23,6 +23,11 @@ import {
   handleApplyToSelected,
   handleSelectFromSelection,
 } from '../utils/contextMenuActions'
+import { gridCopyToClipboard } from '../utils/gridCopyToClipboard'
+import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
+import { logUi } from '../../../debug'
+import { MessageSeverity } from '../../../models/MessageModel'
+import { copyToClipboard } from '../../../utils/copyToClipboard'
 
 export interface TableContextMenuProps {
   contextMenu: {
@@ -86,6 +91,32 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
 }) => {
   const elementTypeName = currentTableIsNodeTable ? 'Node' : 'Edge'
   const pluralElementTypeName = currentTableIsNodeTable ? 'nodes' : 'edges'
+  const addMessage = useMessageStore((state) => state.addMessage)
+
+  // A refused or unavailable clipboard must not fail silently (or throw, as
+  // `navigator.clipboard` is undefined outside a secure context).
+  const reportIfNotCopied = React.useCallback(
+    (copied: Promise<boolean>, what: string): void => {
+      void copied.then((ok) => {
+        if (!ok) {
+          addMessage({
+            message: `Could not copy the ${what} to the clipboard.`,
+            duration: 5000,
+            severity: MessageSeverity.ERROR,
+          })
+        }
+      })
+    },
+    [addMessage],
+  )
+
+  const copyOrReport = React.useCallback(
+    (text: string, what: string): void => {
+      reportIfNotCopied(copyToClipboard(text), what)
+    },
+    [reportIfNotCopied],
+  )
+
   const noElementSelected = selectedElementIds.length === 0
 
   const onApplyToEntireColumn = React.useCallback(() => {
@@ -147,31 +178,39 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
     const column = allColumns?.[columnIndex]
     const columnKey = column.id
     const cellValue = (rowData as any)?.[columnKey]
-    navigator.clipboard.writeText(String(cellValue ?? ''))
+    copyOrReport(String(cellValue ?? ''), 'cell value')
     handleContextMenuClose()
-  }, [contextMenu, rows, allColumns, handleContextMenuClose])
+  }, [contextMenu, rows, allColumns, handleContextMenuClose, copyOrReport])
 
   const onPaste = React.useCallback(() => {
     activeEditorRef.current?.emit('paste').catch(() => {
-      console.warn('Programmatic paste blocked by browser. Please use Ctrl+V.')
+      logUi.warn(
+        '[TableContextMenu]: Programmatic paste blocked by browser. Please use Ctrl+V.',
+      )
     })
     handleContextMenuClose()
   }, [activeEditorRef, handleContextMenuClose])
 
   const onCopySelected = React.useCallback(() => {
-    activeEditorRef.current?.emit('copy')
+    const editor = activeEditorRef.current
+    if (editor !== null) {
+      reportIfNotCopied(
+        gridCopyToClipboard(() => editor.emit('copy')),
+        'selected cells',
+      )
+    }
     handleContextMenuClose()
-  }, [activeEditorRef, handleContextMenuClose])
+  }, [activeEditorRef, handleContextMenuClose, reportIfNotCopied])
 
   const onCopyId = React.useCallback(() => {
     if (contextMenu === null) return
     const [, rowIndex] = contextMenu.cell
     const elementId = getElementId(rows?.[rowIndex])
     if (elementId !== '') {
-      navigator.clipboard.writeText(elementId)
+      copyOrReport(elementId, 'ID')
     }
     handleContextMenuClose()
-  }, [contextMenu, rows, handleContextMenuClose])
+  }, [contextMenu, rows, handleContextMenuClose, copyOrReport])
 
   const onSelectInViewport = React.useCallback(() => {
     if (contextMenu === null) return
