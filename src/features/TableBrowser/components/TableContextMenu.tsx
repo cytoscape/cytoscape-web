@@ -23,6 +23,7 @@ import {
   handleApplyToSelected,
   handleSelectFromSelection,
 } from '../utils/contextMenuActions'
+import { gridCopyToClipboard } from '../utils/gridCopyToClipboard'
 import { useMessageStore } from '../../../data/hooks/stores/MessageStore'
 import { logUi } from '../../../debug'
 import { MessageSeverity } from '../../../models/MessageModel'
@@ -94,10 +95,10 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
 
   // A refused or unavailable clipboard must not fail silently (or throw, as
   // `navigator.clipboard` is undefined outside a secure context).
-  const copyOrReport = React.useCallback(
-    (text: string, what: string): void => {
-      void copyToClipboard(text).then((copied) => {
-        if (!copied) {
+  const reportIfNotCopied = React.useCallback(
+    (copied: Promise<boolean>, what: string): void => {
+      void copied.then((ok) => {
+        if (!ok) {
           addMessage({
             message: `Could not copy the ${what} to the clipboard.`,
             duration: 5000,
@@ -107,6 +108,13 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
       })
     },
     [addMessage],
+  )
+
+  const copyOrReport = React.useCallback(
+    (text: string, what: string): void => {
+      reportIfNotCopied(copyToClipboard(text), what)
+    },
+    [reportIfNotCopied],
   )
 
   const noElementSelected = selectedElementIds.length === 0
@@ -184,9 +192,15 @@ export const TableContextMenu: React.FC<TableContextMenuProps> = ({
   }, [activeEditorRef, handleContextMenuClose])
 
   const onCopySelected = React.useCallback(() => {
-    activeEditorRef.current?.emit('copy')
+    const editor = activeEditorRef.current
+    if (editor !== null) {
+      reportIfNotCopied(
+        gridCopyToClipboard(() => editor.emit('copy')),
+        'selected cells',
+      )
+    }
     handleContextMenuClose()
-  }, [activeEditorRef, handleContextMenuClose])
+  }, [activeEditorRef, handleContextMenuClose, reportIfNotCopied])
 
   const onCopyId = React.useCallback(() => {
     if (contextMenu === null) return
