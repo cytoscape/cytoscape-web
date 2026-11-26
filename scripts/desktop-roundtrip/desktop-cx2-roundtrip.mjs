@@ -16,7 +16,7 @@
  * you must confirm visually in Desktop — but it does surface import-time
  * failures (ClassCastException, NullPointerException, malformed-mapping errors).
  *
- * Requires: Cytoscape Desktop 3.6+ running with the CyREST app (default) on port
+ * Requires: Cytoscape Desktop 3.10+ running with the CyREST app (default) on port
  * 1234. Node 18+ (global fetch). No repo imports — runs standalone.
  *
  * Usage:
@@ -48,7 +48,7 @@ async function checkCmd() {
     return true
   } catch (e) {
     err('❌ Cannot reach Cytoscape Desktop at', BASE)
-    err('   Start Desktop (3.6+) with the CyREST app, or set CYREST_URL.')
+    err('   Start Desktop (3.10+) with the CyREST app, or set CYREST_URL.')
     err('   ', String(e.message ?? e))
     return false
   }

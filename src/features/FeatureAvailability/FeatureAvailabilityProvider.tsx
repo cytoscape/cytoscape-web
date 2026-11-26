@@ -1,5 +1,7 @@
 import React, { ReactNode, useContext, useMemo } from 'react'
 
+import { CYTOSCAPE_DESKTOP_UNAVAILABLE_MESSAGE } from '@/models/CxModel/impl/desktopRequirement'
+
 import { FeatureAvailabilityContext } from './FeatureAvailabilityContext'
 import { useFeatureAvailabilityPolling } from './useFeatureAvailabilityPolling'
 
@@ -25,7 +27,7 @@ export const FeatureAvailabilityProvider: React.FC<{
       return 'This feature is not available in Safari.'
     }
     if (!state.isCyDeskAvailable) {
-      return 'To use this feature, you need Cytoscape running 3.8.0 or higher on your machine (default port 1234).'
+      return CYTOSCAPE_DESKTOP_UNAVAILABLE_MESSAGE
     }
     return 'Open a copy of the current network in Cytoscape Desktop.'
   }, [state.isSafari, state.isCyDeskAvailable])
