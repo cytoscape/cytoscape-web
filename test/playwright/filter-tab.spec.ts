@@ -163,6 +163,24 @@ test.describe('FILTER tab: drag and drop', () => {
       'true',
     )
 
+  // Keyboard pick-up: Space on a focused handle. dnd-kit's KeyboardSensor
+  // listens for the arrow keys, Space and Escape only from a setTimeout it
+  // starts on pick-up (so the Space that picked up does not drop at once),
+  // and Chromium under load runs queued input before timers: keys sent
+  // straight after Space reach no listener and are lost. A timer started
+  // now runs after the sensor's (same delay, started later), so once it has
+  // fired the sensor is listening.
+  const pickUp = async (page: Page, handleTestId: string) => {
+    await page.locator(`[data-testid="${handleTestId}"]`).focus()
+    await page.keyboard.press('Space')
+    await expect(
+      page.locator('[data-testid="filter-condition-drag-preview"]'),
+    ).toBeVisible()
+    await page.evaluate(
+      () => new Promise<void>((resolve) => setTimeout(resolve, 0)),
+    )
+  }
+
   const scrollConditionsToTop = (page: Page) =>
     page
       .locator('[data-testid="filter-conditions"]')
@@ -272,20 +290,19 @@ test.describe('FILTER tab: drag and drop', () => {
     await gotoAndWaitReady(page)
     await seedNetwork(page)
     await addConditions(page, ['column', 'degree'])
-    const handle = page.locator('[data-testid="filter-condition-1-drag"]')
     // Adding the conditions leaves the pane scrolled, and the arrow keys
     // smooth-scroll it before they move the card. A pick-up while that
     // scroll still runs lands the card a gap too high, so start at the top.
     await scrollConditionsToTop(page)
 
     // Picked up, moved onto the column condition, then cancelled
-    await handle.focus()
-    await page.keyboard.press('Space')
+    await pickUp(page, 'filter-condition-1-drag')
     await expect(
       page.locator('[data-testid="filter-condition-drag-preview"]'),
     ).toHaveText('Degree filter')
     await page.keyboard.press('ArrowUp')
     await page.keyboard.press('ArrowUp')
+    await expectDropOver(page, 'filter-condition-0-row')
     await page.keyboard.press('Escape')
     await expect(
       page.locator('[data-testid="filter-condition-drag-preview"]'),
@@ -293,8 +310,7 @@ test.describe('FILTER tab: drag and drop', () => {
     expect(await order(page)).toEqual(['column', 'degree'])
 
     // The same moves, dropped with Space: the two are grouped
-    await handle.focus()
-    await page.keyboard.press('Space')
+    await pickUp(page, 'filter-condition-1-drag')
     await page.keyboard.press('ArrowUp')
     await page.keyboard.press('ArrowUp')
     await expectDropOver(page, 'filter-condition-0-row')
