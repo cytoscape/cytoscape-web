@@ -208,7 +208,8 @@ messages one at a time, so N broken apps must not queue N toasts.
 
 - App configuration UI
 - Service authentication
-- App marketplace/discovery
+- Browsing the App Store from inside Cytoscape Web (today an App Store app
+  installs through the `?installApp=` link or Install from URL)
 - Service health monitoring
 - Task queue management
 - App permissions system

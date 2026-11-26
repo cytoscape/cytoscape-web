@@ -79,6 +79,10 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
 
 ## 1.0.0-beta.5 (2026-10-05)
 
+> **Update:** Cytoscape Web 1.1.0 (2026-10-14) is the first release that
+> implements this API; the `v1.1.0` release contains the `api-types-v1.0.0-beta.5` tag.
+> The note below describes the state when this version was published.
+>
 > **Host compatibility.** This release documents the App API as implemented by
 > the Cytoscape Web build tagged `api-types-v1.0.0-beta.5` on the `development`
 > branch. **No released version of Cytoscape Web implements it yet** — the Panel
@@ -239,6 +243,10 @@ All notable changes to `@cytoscape-web/api-types` are documented here.
 
 ## 1.0.0-beta.4 (2026-09-11)
 
+> **Update:** Cytoscape Web 1.1.0 (2026-10-14) is the first release that
+> implements this API; the `v1.1.0` release contains the `api-types-v1.0.0-beta.4` tag.
+> The note below describes the state when this version was published.
+>
 > **Host compatibility.** This release documents the App API as implemented by
 > the Cytoscape Web build tagged `api-types-v1.0.0-beta.4` on the `development`
 > branch. **No released version of Cytoscape Web implements it yet** — the

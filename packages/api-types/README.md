@@ -65,11 +65,11 @@ like `import { useElementApi } from 'cyweb/ElementApi'` resolve correctly in Typ
 
 > **Host compatibility.** `1.0.0-beta.5` documents the App API as implemented
 > by the Cytoscape Web build tagged `api-types-v1.0.0-beta.5` on `development`.
-> **No released version of Cytoscape Web implements it yet.** It runs on
-> [dev1.ndexbio.org/cytoscape](https://dev1.ndexbio.org/cytoscape) once
-> `development` has been deployed there (done by hand, so it can lag);
-> production stays on the 1.0.x line until Cytoscape Web 1.1.0. **Help → About**
-> shows a deployment's build commit as a seven-character prefix. A hash says
+> **Cytoscape Web 1.1.0 and later implement it**: the `v1.1.0` release contains
+> that tag. A deployment still on 1.0.x does not. To check one that is not on a
+> release, such as [dev1.ndexbio.org/cytoscape](https://dev1.ndexbio.org/cytoscape),
+> use **Help → About**, which shows a deployment's build commit as a
+> seven-character prefix. A hash says
 > nothing about order, so check ancestry in a clone of
 > [cytoscape-web](https://github.com/cytoscape/cytoscape-web): the deployment
 > has this API when the release tag is an ancestor of its commit.
@@ -132,11 +132,9 @@ Also in beta.5 — see the bundled [CHANGELOG](./CHANGELOG.md) for details:
 
 > **Host compatibility.** `1.0.0-beta.4` documents the App API as implemented
 > by the Cytoscape Web build tagged `api-types-v1.0.0-beta.4` on `development`.
-> **No released version of Cytoscape Web implements it yet.** It runs on
-> [dev1.ndexbio.org/cytoscape](https://dev1.ndexbio.org/cytoscape) once
-> `development` has been deployed there (done by hand, so it can lag);
-> production stays on the 1.0.x line until Cytoscape Web 1.1.0. **Help → About**
-> shows a deployment's build commit as a seven-character prefix — compare it
+> **Cytoscape Web 1.1.0 and later implement it**: the `v1.1.0` release contains
+> that tag. A deployment still on 1.0.x does not. For any other deployment,
+> **Help → About** shows its build commit as a seven-character prefix — compare it
 > against `git rev-parse --short=7 'api-types-v1.0.0-beta.4^{commit}'` to know whether that
 > host has this API.
 
