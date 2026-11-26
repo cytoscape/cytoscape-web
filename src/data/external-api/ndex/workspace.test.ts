@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getNdexClient } from './client'
 import {
+  createNdexWorkspace,
   deleteNdexWorkspace,
   fetchMyNdexAccountNetworks,
   fetchMyNdexWorkspaces,
@@ -579,5 +580,64 @@ describe('deleteNdexWorkspace', () => {
     expect(mockClient.workspace.deleteCyWebWorkspace).toHaveBeenCalledWith(
       mockWorkspaceId,
     )
+  })
+})
+
+// #541: NDEx v3 resolves createCyWebWorkspace to { uuid, modificationTime }
+// although ndex-client types it as a string. Storing that object as the
+// workspace id broke the next Save Workspace.
+describe('createNdexWorkspace', () => {
+  const mockGetNdexClient = getNdexClient as import('vitest').MockedFunction<
+    typeof getNdexClient
+  >
+
+  const workspaceData = {
+    name: 'My workspace',
+    options: { currentNetwork: 'n1', activeApps: [], serviceApps: [] },
+    networkIDs: ['n1'],
+  }
+
+  const mockCreateResponse = (response: unknown) => {
+    const mockClient = {
+      workspace: {
+        createCyWebWorkspace: vi.fn().mockResolvedValue(response),
+      },
+    }
+    mockGetNdexClient.mockReturnValue(mockClient as any)
+    return mockClient
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('returns the uuid string from the { uuid, modificationTime } response', async () => {
+    const mockClient = mockCreateResponse({
+      uuid: 'workspace-uuid-1',
+      modificationTime: 1718000000000,
+    })
+
+    const result = await createNdexWorkspace(workspaceData, 'token')
+
+    expect(mockClient.workspace.createCyWebWorkspace).toHaveBeenCalledWith(
+      workspaceData,
+    )
+    expect(result).toEqual({ uuid: 'workspace-uuid-1' })
+  })
+
+  it('accepts a bare string response', async () => {
+    mockCreateResponse('workspace-uuid-2')
+
+    const result = await createNdexWorkspace(workspaceData, 'token')
+
+    expect(result).toEqual({ uuid: 'workspace-uuid-2' })
+  })
+
+  it('returns an empty uuid when the response has none', async () => {
+    mockCreateResponse({ modificationTime: 1718000000000 })
+
+    const result = await createNdexWorkspace(workspaceData, 'token')
+
+    expect(result).toEqual({ uuid: '' })
   })
 })

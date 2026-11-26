@@ -48,6 +48,8 @@ export const deriveAppOptions = (
  * Hook that returns a function to save a workspace to NDEx.
  *
  * Saves all networks in the workspace and the workspace itself to NDEx.
+ * A failed network save is reported and skipped. A failed workspace save
+ * rejects without a message, so the caller must report it.
  *
  * @returns Function to save a workspace to NDEx
  */
@@ -226,17 +228,9 @@ export const useSaveWorkspace = () => {
         severity: MessageSeverity.SUCCESS,
       })
     } catch (e) {
-      const errorMessage =
-        e instanceof Error
-          ? e.message
-          : typeof e === 'string'
-            ? e
-            : 'Unknown error occurred'
-      addMessage({
-        message: `Failed to save workspace to NDEx: ${errorMessage}`,
-        duration: 4000,
-        severity: MessageSeverity.ERROR,
-      })
+      // No banner here: every caller shows its own, worded for its action
+      // (save, update, overwrite). Showing one here too gave the user two
+      // banners for one failure (#541).
       logApi.error(
         `[${saveWorkspace.name}]: Failed to save workspace to NDEx`,
         e,
